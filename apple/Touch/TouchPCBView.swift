@@ -5,7 +5,9 @@ import SwiftUI
 /// board, a tool column sits at the left edge and the parts and checks open as sidebars.
 struct TouchPCBView: View {
     @Bindable var model: PCBModel
+    let design: DesignModel
     @Binding var showProject: Bool
+    let openDesign: () -> Void
     @State private var side: Side?
     @State private var exportURL: URL?
     @Environment(\.horizontalSizeClass) private var hSize
@@ -68,6 +70,13 @@ struct TouchPCBView: View {
                     Text("\(model.findings.count)").font(.system(size: 9, weight: .bold)).foregroundStyle(.white)
                         .padding(3).background(Color.orange, in: Circle()).offset(x: -2, y: 2)
                 }
+            }
+            Menu {
+                Button(model.linkedRevision == nil ? "Send to 3D Design" : "Update 3D Board", systemImage: "cube.transparent") { model.sendTo3D(design) }
+                Button("Mount on a Part", systemImage: "square.stack.3d.down.forward") { model.startMount(design, show: openDesign) }
+            } label: {
+                Image(systemName: "cube.transparent").font(.system(size: 17, weight: .medium)).frame(width: 40, height: 40)
+                    .overlay(alignment: .topTrailing) { if model.boardOutOfDate { Circle().fill(.orange).frame(width: 8, height: 8) } }
             }
             bar(PCBSymbol.export, "Export KiCad") { export() }
         }

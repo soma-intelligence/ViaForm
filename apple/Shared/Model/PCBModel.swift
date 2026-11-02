@@ -18,6 +18,9 @@ final class PCBModel {
     private(set) var engine: PCBEngine
     var project: PCBProject?
     var checks: PCBChecks?
+    var revision = 0
+    /// The PCB revision the 3D design's board was built from; nil when it was never sent.
+    var linkedRevision: Int?
     var undoCount = 0
     var redoCount = 0
     var sheet: Sheet = .schematic
@@ -40,6 +43,7 @@ final class PCBModel {
     func refresh() {
         if let i = engine.inspect() {
             project = i.project
+            revision = i.revision
             undoCount = i.history.undo
             redoCount = i.history.redo
         }
@@ -202,6 +206,9 @@ final class PCBModel {
     func exportKiCad(to url: URL) {
         if run("file.export_kicad", ["path": url.path]) != nil { message = "Exported \(url.lastPathComponent)"; messageIsError = false }
     }
+
+    /// The 3D board exists but was built from an older revision.
+    var boardOutOfDate: Bool { linkedRevision.map { $0 != revision } ?? false }
 
     var findings: [PCBChecks.Finding] { (checks?.erc ?? []) + (checks?.drc ?? []) }
 }

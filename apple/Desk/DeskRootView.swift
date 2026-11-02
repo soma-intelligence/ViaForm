@@ -47,7 +47,7 @@ struct DeskRootView: View {
             .frame(height: 24)
             .background(Color(nsColor: .windowBackgroundColor))
             if workspace == .electronics {
-                DeskPCBView(model: pcb)
+                DeskPCBView(model: pcb, design: model) { workspace = .design }
             } else {
                 designBody
             }
@@ -57,7 +57,17 @@ struct DeskRootView: View {
             let args = ProcessInfo.processInfo.arguments
             if args.contains("--electronics") { workspace = .electronics }
             if args.contains("--board") { workspace = .electronics; pcb.sheet = .board }
+            if args.contains("--pcb-3d") {
+                // Demo for the docs: an enclosure, the sample board sent to 3D and mounted on it.
+                model.newDesign()
+                model.run("solid.box", ["length": 80, "width": 60, "height": 12, "corner": [-10, -50, 0], "body_name": "Enclosure"])
+                pcb.sendTo3D(model)
+                PCBLink.mount(pcb, in: model, body: "Enclosure", at: [30, -20, 12], normal: [0, 0, 1])
+                model.setView(.iso)
+                model.zoomToFit()
+            }
         }
+        .onChange(of: workspace) { _, _ in pcb.syncLink(model) }
     }
 
     @ViewBuilder private var designBody: some View {
@@ -76,6 +86,7 @@ struct DeskRootView: View {
                         }
                     }
                     Spacer()
+                    PCBLinkBanner(design: model, pcb: pcb)
                     MessageBanner(model: model)
                     NavigationBar(model: model, perspective: $perspective)
                 }
@@ -295,7 +306,7 @@ enum CommandRouter {
 struct BrowserPanel: View {
     let model: DesignModel
     @Binding var shown: Bool
-    @State private var open: Set<String> = ["Bodies", "Sketches"]
+    @State private var open: Set<String> = ["Components", "Bodies", "Sketches"]
     @State private var hidden: Set<String> = []
 
     var body: some View {
@@ -316,6 +327,23 @@ struct BrowserPanel: View {
                     folder("Origin", "scope") {
                         ForEach(["XY", "XZ", "YZ"], id: \.self) { p in
                             row(2, "square", p).onTapGesture(count: 2) { model.startSketch(p) }
+                        }
+                    }
+                    if !model.assembly.isEmpty {
+                        folder("Components", "square.stack.3d.up") {
+                            ForEach(model.assembly) { c in
+                                HStack(spacing: 5) {
+                                    Image(systemName: c.linkedPCB ? "cpu" : "shippingbox").foregroundStyle(c.linkedPCB ? Color.accentColor : .secondary).frame(width: 14)
+                                    Text(c.occurrence ?? c.name).lineLimit(1)
+                                    if c.grounded { Image(systemName: "pin.fill").font(.system(size: 9)).foregroundStyle(.secondary).help("Grounded") }
+                                    if c.linkedPCB { Image(systemName: "link").font(.system(size: 9)).foregroundStyle(Color.accentColor).help("Linked to the Electronics board") }
+                                    Spacer()
+                                }
+                                .font(.system(size: 12))
+                                .padding(.leading, 36).frame(height: 20)
+                                .contentShape(Rectangle())
+                                .onTapGesture { model.selectedBodies = Set(c.bodies) }
+                            }
                         }
                     }
                     folder("Bodies", "cube.fill") {

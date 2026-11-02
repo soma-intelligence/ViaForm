@@ -17,6 +17,7 @@
 		32C85FF9F9DF86E6118DD8FA /* Viewport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7E3DBF8C22F22CC30F53043F /* Viewport.swift */; };
 		503E9557B31572D86E689111 /* PCBCanvas.swift in Sources */ = {isa = PBXBuildFile; fileRef = E7F8A9DB233DFCCADCB28E8C /* PCBCanvas.swift */; };
 		51392B889968E16F5141BE0B /* DeskPCBView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 81651A3B5C711F930D5A50FD /* DeskPCBView.swift */; };
+		6B841B6D9D85B96D94E4C7A0 /* PCBLink.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CF978D6F20333AC18E65435 /* PCBLink.swift */; };
 		6BECB281301BC41B97BAAC82 /* DesignSnapshot.swift in Sources */ = {isa = PBXBuildFile; fileRef = C2DABBF06C38BCDF71348100 /* DesignSnapshot.swift */; };
 		6ECDCE42F41B05D4E615CF3B /* Engine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9F91FE2F4309124823727F5A /* Engine.swift */; };
 		761FD96B1857F6753D989F22 /* PCBModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 10091C35305FAF972740F214 /* PCBModel.swift */; };
@@ -42,6 +43,7 @@
 		C767238AF70F73D3911527FF /* Picking.swift in Sources */ = {isa = PBXBuildFile; fileRef = EE8776ECE9A3C2BD0527662C /* Picking.swift */; };
 		CB754DFF675702371CBA5E2D /* DesignModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3BAA740678B4BF0785587D71 /* DesignModel.swift */; };
 		CF9E92D4153DDF199159AE69 /* SelfTest.swift in Sources */ = {isa = PBXBuildFile; fileRef = 920EDBDD345148F1433C4DC3 /* SelfTest.swift */; };
+		DF3D74A97B804AB78EDDCBED /* PCBLink.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CF978D6F20333AC18E65435 /* PCBLink.swift */; };
 		DFACBD6226921501384C4573 /* OrbitCamera.swift in Sources */ = {isa = PBXBuildFile; fileRef = 94FBACAA4900742426AA1D15 /* OrbitCamera.swift */; };
 		EC34956F288C81869B908A0C /* Picking.swift in Sources */ = {isa = PBXBuildFile; fileRef = EE8776ECE9A3C2BD0527662C /* Picking.swift */; };
 		F1774193735788DD11FA6477 /* OrbitCamera.swift in Sources */ = {isa = PBXBuildFile; fileRef = 94FBACAA4900742426AA1D15 /* OrbitCamera.swift */; };
@@ -55,6 +57,7 @@
 		3BAA740678B4BF0785587D71 /* DesignModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DesignModel.swift; sourceTree = "<group>"; };
 		472F985C5CC3535D219CE542 /* DeskPanels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeskPanels.swift; sourceTree = "<group>"; };
 		4F047FDE74D13F74679BE7F8 /* CommonViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CommonViews.swift; sourceTree = "<group>"; };
+		5CF978D6F20333AC18E65435 /* PCBLink.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PCBLink.swift; sourceTree = "<group>"; };
 		668312648A5618896A056442 /* PCBEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PCBEngine.swift; sourceTree = "<group>"; };
 		71736751286411C0374CED6D /* Tools.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Tools.swift; sourceTree = "<group>"; };
 		7E3DBF8C22F22CC30F53043F /* Viewport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Viewport.swift; sourceTree = "<group>"; };
@@ -153,6 +156,7 @@
 			isa = PBXGroup;
 			children = (
 				3BAA740678B4BF0785587D71 /* DesignModel.swift */,
+				5CF978D6F20333AC18E65435 /* PCBLink.swift */,
 				10091C35305FAF972740F214 /* PCBModel.swift */,
 				920EDBDD345148F1433C4DC3 /* SelfTest.swift */,
 				71736751286411C0374CED6D /* Tools.swift */,
@@ -250,6 +254,7 @@
 				F1774193735788DD11FA6477 /* OrbitCamera.swift in Sources */,
 				87F29C230195D9A5228BFCEF /* PCBCanvas.swift in Sources */,
 				80B3B0979FC2705A77221B59 /* PCBEngine.swift in Sources */,
+				6B841B6D9D85B96D94E4C7A0 /* PCBLink.swift in Sources */,
 				8190CD54925CC0E2C22619BD /* PCBModel.swift in Sources */,
 				32507D5F96388FA97202096C /* PCBPanels.swift in Sources */,
 				C767238AF70F73D3911527FF /* Picking.swift in Sources */,
@@ -279,6 +284,7 @@
 				DFACBD6226921501384C4573 /* OrbitCamera.swift in Sources */,
 				503E9557B31572D86E689111 /* PCBCanvas.swift in Sources */,
 				993547F8966B49817867CED0 /* PCBEngine.swift in Sources */,
+				DF3D74A97B804AB78EDDCBED /* PCBLink.swift in Sources */,
 				761FD96B1857F6753D989F22 /* PCBModel.swift in Sources */,
 				92E503B20F32378D2C96B723 /* PCBPanels.swift in Sources */,
 				EC34956F288C81869B908A0C /* Picking.swift in Sources */,

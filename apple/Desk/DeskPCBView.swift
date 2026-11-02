@@ -7,6 +7,8 @@ import UniformTypeIdentifiers
 /// browser on the left, the sheet in the middle and the rule checks on the right.
 struct DeskPCBView: View {
     @Bindable var model: PCBModel
+    let design: DesignModel
+    let openDesign: () -> Void
 
     var body: some View {
         VStack(spacing: 0) {
@@ -76,6 +78,13 @@ struct DeskPCBView: View {
                 big("cursorarrow", "Select (Esc)", on: model.tool == .select) { model.tool = .select }
                 big("rotate.right", "Rotate (R)") { model.rotateSelection() }.disabled(model.selection == nil)
                 big("trash", "Delete") { model.deleteSelection() }.disabled(model.selection == nil)
+            }
+            panel("3D") {
+                ZStack(alignment: .topTrailing) {
+                    big("cube.transparent", model.linkedRevision == nil ? "Send board to the 3D design" : "Update the 3D board") { model.sendTo3D(design) }
+                    if model.boardOutOfDate { Circle().fill(.orange).frame(width: 8, height: 8).offset(x: -4, y: 4) }
+                }
+                big("square.stack.3d.down.forward", "Mount on a part of the assembly") { model.startMount(design, show: openDesign) }
             }
             panel("OUTPUT") {
                 big(PCBSymbol.export, "Export KiCad board") { exportKiCad() }

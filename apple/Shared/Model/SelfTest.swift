@@ -91,6 +91,38 @@ enum SelfTest {
         pcb.undo()
         pcbCheck(pcb.redoCount == 1, "PCB undo works")
 
+
+        // ECAD to MCAD: the sample board goes into a 3D design, onto an enclosure, then follows a change.
+        let d = DesignModel()
+        let board = PCBModel(sample: true)
+        d.run("solid.box", ["length": 80, "width": 60, "height": 10, "corner": [-10, -50, 0], "body_name": "Enclosure"])
+        let pushErr = PCBLink.push(board, into: d)
+        pcbCheck(pushErr == nil && d.snapshot.bodies.contains { $0.name == "PCB Board" } && d.snapshot.bodies.contains { $0.name == "PCB R1" },
+                 "board, copper and parts built in 3D \(pushErr ?? "")")
+        pcbCheck(PCBLink.linkedRevision(d, board.project!) == board.revision && !board.boardOutOfDate, "3D board tagged with the PCB revision")
+        let mountErr = PCBLink.mount(board, in: d, body: "Enclosure", at: [30, -20, 10], normal: [0, 0, 1])
+        let joints = (try? d.engine.execute("joint.list") as? [String: Any])?["joints"] as? [[String: Any]] ?? []
+        pcbCheck(mountErr == nil && !joints.isEmpty, "board mounted on the enclosure with a rigid group \(mountErr ?? "")")
+        let comps = (try? d.engine.execute("component.list") as? [String: Any])?["components"] as? [[String: Any]] ?? []
+        let tf = (comps.first { $0["name"] as? String == "PCB LED indicator" }?["occurrences"] as? [[String: Any]])?.first?["transform"] as? [[Double]]
+        let seat = tf.flatMap { $0.count == 4 ? Array($0[3].prefix(3)) : nil } ?? []
+        pcbCheck(seat.count == 3 && abs(seat[0]) < 1e-6 && abs(seat[1]) < 1e-6 && abs(seat[2] - 10) < 1e-6, "board seated on the enclosure top (at \(seat))")
+        board.sheet = .board
+        board.move(11, to: PCBPoint(x: 30, y: 30))
+        pcbCheck(board.boardOutOfDate, "moving a footprint marks the 3D board out of date")
+        let updErr = PCBLink.push(board, into: d)
+        let joints2 = (try? d.engine.execute("joint.list") as? [String: Any])?["joints"] as? [[String: Any]] ?? []
+        pcbCheck(updErr == nil && !board.boardOutOfDate && joints2.count == joints.count, "update keeps the assembly joint \(updErr ?? "")")
+
+        // The same mount driven by a click, as the UI does it: a face of the enclosure's side.
+        d.viewSize = CGSize(width: 1200, height: 800)
+        d.setView(.front)
+        d.zoomToFit()
+        var shown = false
+        board.startMount(d) { shown = true }
+        d.click(at: d.camera.project([-5, -50, 3], size: d.viewSize), additive: false)
+        pcbCheck(shown && d.facePick == nil && d.message?.contains("mounted") == true, "mount by clicking a face (\(d.message ?? ""))")
+
         print(failures == 0 ? "ALL PASS" : "\(failures) FAILED")
         exit(failures == 0 ? 0 : 1)
     }

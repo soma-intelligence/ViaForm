@@ -13,6 +13,7 @@ Both draw with Metal and run every action through the engines' command APIs.
 ![iPad](docs/ipad.png)
 ![Schematic](docs/macos-schematic.png)
 ![Board](docs/macos-board.png)
+![Board in the assembly](docs/macos-pcb-3d.png)
 
 ## Layout
 
@@ -49,6 +50,10 @@ undo, primitives, scene) and exits. `--sample` opens the bracket sample.
 - Electronics workspace (Mac: workspace menu, iPad and iPhone: Project sidebar): place parts, wire
   pins, update the board, route (one pair or every airwire), read ERC and DRC, export a
   `.kicad_pcb`. Parts are the engine's four built-in kinds for now; KiCad library parts are next.
+- Board to 3D: Send to 3D builds the board as a component of the design (board, copper, holes,
+  part stand-ins) tagged with the PCB revision. Mount on a Part seats it on a picked face with a
+  rigid group. When the board changes, Update 3D rebuilds it inside the same component, so the
+  placement and joints stay.
 - Next steps are in `IMPROVEMENTS.md`.
 
 ## Licence

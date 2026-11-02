@@ -45,6 +45,19 @@ final class DesignModel {
     var genericCommand: CommandInfo?
     /// Where the desktop marking menu is open, in viewport points.
     var markingMenu: CGPoint?
+    /// A one-shot face pick another workspace asked for (mounting the board): body, point, normal.
+    var facePick: ((String, SIMD3<Double>, SIMD3<Double>) -> Void)?
+    var facePickPrompt: String?
+    /// Components of the assembly (not the root), refreshed with the snapshot.
+    struct AssemblyPart: Identifiable, Hashable {
+        var id: Int
+        var name: String
+        var occurrence: String?
+        var grounded: Bool
+        var bodies: [String]
+        var linkedPCB: Bool
+    }
+    var assembly: [AssemblyPart] = []
     /// The command search (S on the desktop).
     var toolboxOpen = false
 
@@ -90,6 +103,7 @@ final class DesignModel {
     func refresh() {
         snapshot = engine.inspect()
         sketchPlane = engine.sketchPlane()
+        refreshAssembly()
         rebuildScene()
     }
 
@@ -105,6 +119,17 @@ final class DesignModel {
     /// The camera moved: the grid follows it, so the scene is laid out again.
     func cameraChanged() {
         rebuildScene()
+    }
+
+    private func refreshAssembly() {
+        let comps = ((try? engine.execute("component.list")) as? [String: Any])?["components"] as? [[String: Any]] ?? []
+        assembly = comps.compactMap { c in
+            guard let id = c["id"] as? Int, id != 0, let name = c["name"] as? String else { return nil }
+            let occ = (c["occurrences"] as? [[String: Any]])?.first
+            let meta = (try? engine.execute("component.metadata", ["component": id])) as? [String: Any]
+            return AssemblyPart(id: id, name: name, occurrence: occ?["name"] as? String, grounded: occ?["grounded"] as? Bool ?? false,
+                                bodies: c["bodies"] as? [String] ?? [], linkedPCB: (meta?["description"] as? String) == PCBLink.tag)
+        }
     }
 
     func flash(_ text: String?, error: Bool = false) {
@@ -153,6 +178,14 @@ final class DesignModel {
             return
         }
         let hit = ScenePicker.pick(scene, camera: camera, at: p, size: viewSize, edges: wantsEdges)
+        if let pick = facePick {
+            if case let .face(mesh, _, point, normal)? = hit, mesh < scene.meshes.count {
+                facePick = nil
+                facePickPrompt = nil
+                pick(scene.meshes[mesh].body, point, normal)
+            }
+            return
+        }
         switch tool {
         case .sketch:
             if case let .face(_, _, point, _)? = hit {

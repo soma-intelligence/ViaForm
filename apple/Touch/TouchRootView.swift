@@ -37,7 +37,7 @@ struct TouchRootView: View {
         Group {
             if space == .electronics {
                 ZStack(alignment: .topLeading) {
-                    TouchPCBView(model: pcb, showProject: $showProject)
+                    TouchPCBView(model: pcb, design: model, showProject: $showProject) { space = .modeling }
                     if showProject, !compact {
                         ProjectSidebar(model: model, space: $space, importing: $importing, exporting: $exporting)
                             .padding(.top, 66).padding(.leading, 12)
@@ -52,7 +52,7 @@ struct TouchRootView: View {
         .sheet(isPresented: Binding(get: { compact && showProject }, set: { showProject = $0 })) {
             ProjectSidebar(model: model, space: $space, importing: $importing, exporting: $exporting).presentationDetents([.medium, .large])
         }
-        .onChange(of: space) { _, _ in showProject = false }
+        .onChange(of: space) { _, _ in showProject = false; pcb.syncLink(model) }
         .onAppear { if ProcessInfo.processInfo.arguments.contains("--board") { space = .electronics; pcb.sheet = .board } }
     }
 
@@ -76,6 +76,7 @@ struct TouchRootView: View {
                     }
                 }
                 Spacer(minLength: 0)
+                PCBLinkBanner(design: model, pcb: pcb)
                 MessageBanner(model: model)
                 if model.tool == .sketch { PlaneChooser(model: model) }
                 if model.tool != .select, model.tool != .sketch { ToolCard(model: model) }
@@ -463,6 +464,21 @@ struct ItemsPanel: View {
 
     var body: some View {
         List {
+            if !model.assembly.isEmpty {
+                Section("Components") {
+                    ForEach(model.assembly) { c in
+                        HStack {
+                            Image(systemName: c.linkedPCB ? "cpu" : "shippingbox").foregroundStyle(c.linkedPCB ? Color.accentColor : .secondary)
+                            Text(c.occurrence ?? c.name)
+                            Spacer()
+                            if c.linkedPCB { Image(systemName: "link").foregroundStyle(Color.accentColor) }
+                            if c.grounded { Image(systemName: "pin.fill").foregroundStyle(.secondary) }
+                        }
+                        .contentShape(Rectangle())
+                        .onTapGesture { model.selectedBodies = Set(c.bodies) }
+                    }
+                }
+            }
             Section("Bodies") {
                 ForEach(model.snapshot.bodies) { b in
                     HStack {
