@@ -1,7 +1,7 @@
 {
   "name": "viaform",
   "productName": "ViaForm",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "3D CAD and PCB design as one app, on the SolidCraft and PCBCraft engines",
   "license": "GPL-3.0-or-later",
   "author": "Soma Labs",
