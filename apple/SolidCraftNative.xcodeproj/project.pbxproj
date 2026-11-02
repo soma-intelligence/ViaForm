@@ -1,0 +1,530 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		0B27EC33FB188C91CD0FB614 /* Engine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9F91FE2F4309124823727F5A /* Engine.swift */; };
+		0B698A26A7DFF30E2DE4C25A /* CommonViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4F047FDE74D13F74679BE7F8 /* CommonViews.swift */; };
+		0CFBAC2DA0E694CF5312E4EF /* SolidCraftApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = C0E1553CF1628944BAC80D4E /* SolidCraftApp.swift */; };
+		13B69C54DA2006BFF5B6F960 /* DeskPanels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 472F985C5CC3535D219CE542 /* DeskPanels.swift */; };
+		15C438649CD7B81A9D28E00C /* SolidCraftApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = C0E1553CF1628944BAC80D4E /* SolidCraftApp.swift */; };
+		29AF42638020D6770E061413 /* Tools.swift in Sources */ = {isa = PBXBuildFile; fileRef = 71736751286411C0374CED6D /* Tools.swift */; };
+		32C85FF9F9DF86E6118DD8FA /* Viewport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7E3DBF8C22F22CC30F53043F /* Viewport.swift */; };
+		6BECB281301BC41B97BAAC82 /* DesignSnapshot.swift in Sources */ = {isa = PBXBuildFile; fileRef = C2DABBF06C38BCDF71348100 /* DesignSnapshot.swift */; };
+		6ECDCE42F41B05D4E615CF3B /* Engine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9F91FE2F4309124823727F5A /* Engine.swift */; };
+		7E67631A88E2C16B7318F98B /* Renderer.swift in Sources */ = {isa = PBXBuildFile; fileRef = D5F036F58AB60B91E574A437 /* Renderer.swift */; };
+		807A8DEDA6436E3A741609F3 /* Tools.swift in Sources */ = {isa = PBXBuildFile; fileRef = 71736751286411C0374CED6D /* Tools.swift */; };
+		861CE8AB7C0F8F463C0FE16E /* CommonViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4F047FDE74D13F74679BE7F8 /* CommonViews.swift */; };
+		8B060D00CC6724ACF38E2538 /* ViewCube.swift in Sources */ = {isa = PBXBuildFile; fileRef = A07CBF717913D620A72D200C /* ViewCube.swift */; };
+		8EF4102E05577B4B368D738B /* Shaders.metal in Sources */ = {isa = PBXBuildFile; fileRef = 19F4B0149FBE4D97F8B455D7 /* Shaders.metal */; };
+		9359CD6FF4C78D25A2ACC737 /* SelfTest.swift in Sources */ = {isa = PBXBuildFile; fileRef = 920EDBDD345148F1433C4DC3 /* SelfTest.swift */; };
+		95D4D22595A15C3B92A0FAEE /* Shaders.metal in Sources */ = {isa = PBXBuildFile; fileRef = 19F4B0149FBE4D97F8B455D7 /* Shaders.metal */; };
+		9CBA8E5FBF6A5C40E280240C /* Viewport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7E3DBF8C22F22CC30F53043F /* Viewport.swift */; };
+		AD2771D3B874A2D5C0CC2AC2 /* ViewCube.swift in Sources */ = {isa = PBXBuildFile; fileRef = A07CBF717913D620A72D200C /* ViewCube.swift */; };
+		B02546DA5656C34B6E2B0CD4 /* DesignModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3BAA740678B4BF0785587D71 /* DesignModel.swift */; };
+		B2AF0564D03B69812F345156 /* DesignSnapshot.swift in Sources */ = {isa = PBXBuildFile; fileRef = C2DABBF06C38BCDF71348100 /* DesignSnapshot.swift */; };
+		BFBB5AC3E01D0270BF73EC15 /* TouchRootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC2CA826AA951BCFECAF9476 /* TouchRootView.swift */; };
+		C39E1A6AD5ACEB96F685E31B /* DeskRootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8ECE174B24E9B687AD85375B /* DeskRootView.swift */; };
+		C767238AF70F73D3911527FF /* Picking.swift in Sources */ = {isa = PBXBuildFile; fileRef = EE8776ECE9A3C2BD0527662C /* Picking.swift */; };
+		CB754DFF675702371CBA5E2D /* DesignModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3BAA740678B4BF0785587D71 /* DesignModel.swift */; };
+		CF9E92D4153DDF199159AE69 /* SelfTest.swift in Sources */ = {isa = PBXBuildFile; fileRef = 920EDBDD345148F1433C4DC3 /* SelfTest.swift */; };
+		DFACBD6226921501384C4573 /* OrbitCamera.swift in Sources */ = {isa = PBXBuildFile; fileRef = 94FBACAA4900742426AA1D15 /* OrbitCamera.swift */; };
+		EC34956F288C81869B908A0C /* Picking.swift in Sources */ = {isa = PBXBuildFile; fileRef = EE8776ECE9A3C2BD0527662C /* Picking.swift */; };
+		F1774193735788DD11FA6477 /* OrbitCamera.swift in Sources */ = {isa = PBXBuildFile; fileRef = 94FBACAA4900742426AA1D15 /* OrbitCamera.swift */; };
+		F9175137D857CA16BE107647 /* Renderer.swift in Sources */ = {isa = PBXBuildFile; fileRef = D5F036F58AB60B91E574A437 /* Renderer.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		19F4B0149FBE4D97F8B455D7 /* Shaders.metal */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.metal; path = Shaders.metal; sourceTree = "<group>"; };
+		25D626545DF2243265E82C15 /* SolidCraft-macOS.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "SolidCraft-macOS.app"; sourceTree = BUILT_PRODUCTS_DIR; };
+		3BAA740678B4BF0785587D71 /* DesignModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DesignModel.swift; sourceTree = "<group>"; };
+		472F985C5CC3535D219CE542 /* DeskPanels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeskPanels.swift; sourceTree = "<group>"; };
+		4F047FDE74D13F74679BE7F8 /* CommonViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CommonViews.swift; sourceTree = "<group>"; };
+		71736751286411C0374CED6D /* Tools.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Tools.swift; sourceTree = "<group>"; };
+		7E3DBF8C22F22CC30F53043F /* Viewport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Viewport.swift; sourceTree = "<group>"; };
+		8ECE174B24E9B687AD85375B /* DeskRootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeskRootView.swift; sourceTree = "<group>"; };
+		920EDBDD345148F1433C4DC3 /* SelfTest.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SelfTest.swift; sourceTree = "<group>"; };
+		94FBACAA4900742426AA1D15 /* OrbitCamera.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OrbitCamera.swift; sourceTree = "<group>"; };
+		9F91FE2F4309124823727F5A /* Engine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Engine.swift; sourceTree = "<group>"; };
+		A07CBF717913D620A72D200C /* ViewCube.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ViewCube.swift; sourceTree = "<group>"; };
+		C0E1553CF1628944BAC80D4E /* SolidCraftApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SolidCraftApp.swift; sourceTree = "<group>"; };
+		C2DABBF06C38BCDF71348100 /* DesignSnapshot.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DesignSnapshot.swift; sourceTree = "<group>"; };
+		CC2CA826AA951BCFECAF9476 /* TouchRootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TouchRootView.swift; sourceTree = "<group>"; };
+		D5F036F58AB60B91E574A437 /* Renderer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Renderer.swift; sourceTree = "<group>"; };
+		E629EF4A7F7997A6B6C87233 /* SolidCraft-iOS.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = "SolidCraft-iOS.app"; sourceTree = BUILT_PRODUCTS_DIR; };
+		EE8776ECE9A3C2BD0527662C /* Picking.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Picking.swift; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXGroup section */
+		1B165F5189928558E3EB8F03 = {
+			isa = PBXGroup;
+			children = (
+				D95FEAC58870D0BB3D83C2CA /* Desk */,
+				B1F00466164294ABB3602BD9 /* Shared */,
+				465700F5652AC5F2C9D1BC30 /* Touch */,
+				717A338192D92BC3360A56FB /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		465700F5652AC5F2C9D1BC30 /* Touch */ = {
+			isa = PBXGroup;
+			children = (
+				CC2CA826AA951BCFECAF9476 /* TouchRootView.swift */,
+			);
+			path = Touch;
+			sourceTree = "<group>";
+		};
+		5D724FC06B3633B5333D6176 /* Render */ = {
+			isa = PBXGroup;
+			children = (
+				D5F036F58AB60B91E574A437 /* Renderer.swift */,
+				19F4B0149FBE4D97F8B455D7 /* Shaders.metal */,
+				7E3DBF8C22F22CC30F53043F /* Viewport.swift */,
+			);
+			path = Render;
+			sourceTree = "<group>";
+		};
+		717A338192D92BC3360A56FB /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				E629EF4A7F7997A6B6C87233 /* SolidCraft-iOS.app */,
+				25D626545DF2243265E82C15 /* SolidCraft-macOS.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		B0A4AFD592DD9320D1DF0075 /* UI */ = {
+			isa = PBXGroup;
+			children = (
+				4F047FDE74D13F74679BE7F8 /* CommonViews.swift */,
+				A07CBF717913D620A72D200C /* ViewCube.swift */,
+			);
+			path = UI;
+			sourceTree = "<group>";
+		};
+		B1F00466164294ABB3602BD9 /* Shared */ = {
+			isa = PBXGroup;
+			children = (
+				C0E1553CF1628944BAC80D4E /* SolidCraftApp.swift */,
+				CAA27B058765967E5EE85402 /* Engine */,
+				CF6421261A96D66E614BA8C7 /* Model */,
+				5D724FC06B3633B5333D6176 /* Render */,
+				B0A4AFD592DD9320D1DF0075 /* UI */,
+			);
+			path = Shared;
+			sourceTree = "<group>";
+		};
+		CAA27B058765967E5EE85402 /* Engine */ = {
+			isa = PBXGroup;
+			children = (
+				C2DABBF06C38BCDF71348100 /* DesignSnapshot.swift */,
+				9F91FE2F4309124823727F5A /* Engine.swift */,
+				94FBACAA4900742426AA1D15 /* OrbitCamera.swift */,
+				EE8776ECE9A3C2BD0527662C /* Picking.swift */,
+			);
+			path = Engine;
+			sourceTree = "<group>";
+		};
+		CF6421261A96D66E614BA8C7 /* Model */ = {
+			isa = PBXGroup;
+			children = (
+				3BAA740678B4BF0785587D71 /* DesignModel.swift */,
+				920EDBDD345148F1433C4DC3 /* SelfTest.swift */,
+				71736751286411C0374CED6D /* Tools.swift */,
+			);
+			path = Model;
+			sourceTree = "<group>";
+		};
+		D95FEAC58870D0BB3D83C2CA /* Desk */ = {
+			isa = PBXGroup;
+			children = (
+				472F985C5CC3535D219CE542 /* DeskPanels.swift */,
+				8ECE174B24E9B687AD85375B /* DeskRootView.swift */,
+			);
+			path = Desk;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		56A11F553641823C14F1054F /* SolidCraft-iOS */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 9C61F17CEB34947821EB2A38 /* Build configuration list for PBXNativeTarget "SolidCraft-iOS" */;
+			buildPhases = (
+				BE96FCA138A367B82E71B35C /* Sources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = "SolidCraft-iOS";
+			packageProductDependencies = (
+			);
+			productName = "SolidCraft-iOS";
+			productReference = E629EF4A7F7997A6B6C87233 /* SolidCraft-iOS.app */;
+			productType = "com.apple.product-type.application";
+		};
+		747284A9896430E3991CD4E9 /* SolidCraft-macOS */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 44FDA171C85F2872D49E02E0 /* Build configuration list for PBXNativeTarget "SolidCraft-macOS" */;
+			buildPhases = (
+				FBC7D47BD89270DCFC4DFA1C /* Sources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = "SolidCraft-macOS";
+			packageProductDependencies = (
+			);
+			productName = "SolidCraft-macOS";
+			productReference = 25D626545DF2243265E82C15 /* SolidCraft-macOS.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		876878FE8BA76107A70B825E /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = YES;
+				LastUpgradeCheck = 1430;
+				TargetAttributes = {
+				};
+			};
+			buildConfigurationList = 4F826F4FB7BC5334E7EFFE09 /* Build configuration list for PBXProject "SolidCraftNative" */;
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				Base,
+				en,
+			);
+			mainGroup = 1B165F5189928558E3EB8F03;
+			minimizedProjectReferenceProxies = 1;
+			preferredProjectObjectVersion = 77;
+			productRefGroup = 717A338192D92BC3360A56FB /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				56A11F553641823C14F1054F /* SolidCraft-iOS */,
+				747284A9896430E3991CD4E9 /* SolidCraft-macOS */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXSourcesBuildPhase section */
+		BE96FCA138A367B82E71B35C /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				861CE8AB7C0F8F463C0FE16E /* CommonViews.swift in Sources */,
+				CB754DFF675702371CBA5E2D /* DesignModel.swift in Sources */,
+				6BECB281301BC41B97BAAC82 /* DesignSnapshot.swift in Sources */,
+				6ECDCE42F41B05D4E615CF3B /* Engine.swift in Sources */,
+				F1774193735788DD11FA6477 /* OrbitCamera.swift in Sources */,
+				C767238AF70F73D3911527FF /* Picking.swift in Sources */,
+				7E67631A88E2C16B7318F98B /* Renderer.swift in Sources */,
+				9359CD6FF4C78D25A2ACC737 /* SelfTest.swift in Sources */,
+				95D4D22595A15C3B92A0FAEE /* Shaders.metal in Sources */,
+				15C438649CD7B81A9D28E00C /* SolidCraftApp.swift in Sources */,
+				29AF42638020D6770E061413 /* Tools.swift in Sources */,
+				BFBB5AC3E01D0270BF73EC15 /* TouchRootView.swift in Sources */,
+				8B060D00CC6724ACF38E2538 /* ViewCube.swift in Sources */,
+				32C85FF9F9DF86E6118DD8FA /* Viewport.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		FBC7D47BD89270DCFC4DFA1C /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				0B698A26A7DFF30E2DE4C25A /* CommonViews.swift in Sources */,
+				B02546DA5656C34B6E2B0CD4 /* DesignModel.swift in Sources */,
+				B2AF0564D03B69812F345156 /* DesignSnapshot.swift in Sources */,
+				13B69C54DA2006BFF5B6F960 /* DeskPanels.swift in Sources */,
+				C39E1A6AD5ACEB96F685E31B /* DeskRootView.swift in Sources */,
+				0B27EC33FB188C91CD0FB614 /* Engine.swift in Sources */,
+				DFACBD6226921501384C4573 /* OrbitCamera.swift in Sources */,
+				EC34956F288C81869B908A0C /* Picking.swift in Sources */,
+				F9175137D857CA16BE107647 /* Renderer.swift in Sources */,
+				CF9E92D4153DDF199159AE69 /* SelfTest.swift in Sources */,
+				8EF4102E05577B4B368D738B /* Shaders.metal in Sources */,
+				0CFBAC2DA0E694CF5312E4EF /* SolidCraftApp.swift in Sources */,
+				807A8DEDA6436E3A741609F3 /* Tools.swift in Sources */,
+				AD2771D3B874A2D5C0CC2AC2 /* ViewCube.swift in Sources */,
+				9CBA8E5FBF6A5C40E280240C /* Viewport.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		07BBD0835E2FADE4FCBEF711 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				"EXCLUDED_ARCHS[sdk=iphonesimulator*]" = x86_64;
+				INFOPLIST_KEY_LSSupportsOpeningDocumentsInPlace = YES;
+				INFOPLIST_KEY_UIFileSharingEnabled = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				"LIBRARY_SEARCH_PATHS[sdk=iphoneos*]" = "$(SRCROOT)/../bridge/target/aarch64-apple-ios/release";
+				"LIBRARY_SEARCH_PATHS[sdk=iphonesimulator*]" = "$(SRCROOT)/../bridge/target/aarch64-apple-ios-sim/release";
+				PRODUCT_BUNDLE_IDENTIFIER = me.somalabs.solidcraft;
+				PRODUCT_NAME = SolidCraft;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		1ED841CD5299D6204FC78497 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				CURRENT_PROJECT_VERSION = 1;
+				DEAD_CODE_STRIPPING = YES;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					"DEBUG=1",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = SolidCraft;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				MARKETING_VERSION = 0.1.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				OTHER_LDFLAGS = (
+					"-lsolidcraft_ffi",
+					"-lc++",
+				);
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_INCLUDE_PATHS = "$(SRCROOT)/../bridge/include";
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_STRICT_CONCURRENCY = minimal;
+				SWIFT_VERSION = 6.0;
+			};
+			name = Debug;
+		};
+		3644530280C3C04518289B84 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ARCHS = arm64;
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_IDENTITY = "-";
+				COMBINE_HIDPI_IMAGES = YES;
+				ENABLE_HARDENED_RUNTIME = NO;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.graphics-design";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				LIBRARY_SEARCH_PATHS = "$(SRCROOT)/../bridge/target/aarch64-apple-darwin/release";
+				PRODUCT_BUNDLE_IDENTIFIER = me.somalabs.solidcraft.mac;
+				PRODUCT_NAME = SolidCraft;
+				SDKROOT = macosx;
+			};
+			name = Release;
+		};
+		9E9816A829C3CC0483E4E0AB /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ARCHS = arm64;
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_IDENTITY = "-";
+				COMBINE_HIDPI_IMAGES = YES;
+				ENABLE_HARDENED_RUNTIME = NO;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.graphics-design";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				LIBRARY_SEARCH_PATHS = "$(SRCROOT)/../bridge/target/aarch64-apple-darwin/release";
+				PRODUCT_BUNDLE_IDENTIFIER = me.somalabs.solidcraft.mac;
+				PRODUCT_NAME = SolidCraft;
+				SDKROOT = macosx;
+			};
+			name = Debug;
+		};
+		C9ECAEF7FC2A80C32B9DA745 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				CURRENT_PROJECT_VERSION = 1;
+				DEAD_CODE_STRIPPING = YES;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = SolidCraft;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				MARKETING_VERSION = 0.1.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				OTHER_LDFLAGS = (
+					"-lsolidcraft_ffi",
+					"-lc++",
+				);
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_INCLUDE_PATHS = "$(SRCROOT)/../bridge/include";
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_STRICT_CONCURRENCY = minimal;
+				SWIFT_VERSION = 6.0;
+			};
+			name = Release;
+		};
+		EFBC917F72ACE96237E3B3E6 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				"EXCLUDED_ARCHS[sdk=iphonesimulator*]" = x86_64;
+				INFOPLIST_KEY_LSSupportsOpeningDocumentsInPlace = YES;
+				INFOPLIST_KEY_UIFileSharingEnabled = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				"LIBRARY_SEARCH_PATHS[sdk=iphoneos*]" = "$(SRCROOT)/../bridge/target/aarch64-apple-ios/release";
+				"LIBRARY_SEARCH_PATHS[sdk=iphonesimulator*]" = "$(SRCROOT)/../bridge/target/aarch64-apple-ios-sim/release";
+				PRODUCT_BUNDLE_IDENTIFIER = me.somalabs.solidcraft;
+				PRODUCT_NAME = SolidCraft;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		44FDA171C85F2872D49E02E0 /* Build configuration list for PBXNativeTarget "SolidCraft-macOS" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				9E9816A829C3CC0483E4E0AB /* Debug */,
+				3644530280C3C04518289B84 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		4F826F4FB7BC5334E7EFFE09 /* Build configuration list for PBXProject "SolidCraftNative" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				1ED841CD5299D6204FC78497 /* Debug */,
+				C9ECAEF7FC2A80C32B9DA745 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		9C61F17CEB34947821EB2A38 /* Build configuration list for PBXNativeTarget "SolidCraft-iOS" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				07BBD0835E2FADE4FCBEF711 /* Debug */,
+				EFBC917F72ACE96237E3B3E6 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = 876878FE8BA76107A70B825E /* Project object */;
+}

@@ -1,0 +1,4 @@
+bridge/target/
+apple/build/
+*.log
+.DS_Store

@@ -1,0 +1,5 @@
+module SolidCraftFFI {
+    header "solidcraft.h"
+    link "solidcraft_ffi"
+    export *
+}
