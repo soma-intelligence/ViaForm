@@ -3,7 +3,7 @@ import SolidCraftFFI
 
 /// The PCBCraft engine (schematic, board, KiCad export) behind the C bridge.
 final class PCBEngine {
-    private let session: OpaquePointer
+    let session: OpaquePointer
 
     init(sample: Bool = false) {
         session = pcb_session_new(sample)

@@ -1,0 +1,63 @@
+name: Engine sync
+
+# Every day: move SolidCraft and PCBCraft to their upstream tips, build and test the whole app on
+# them, and open (or refresh) a pull request. Merging it bumps the app's patch version, which
+# Release turns into signed builds that installed copies pick up on their own.
+on:
+  schedule:
+    - cron: "17 6 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  sync:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          fetch-depth: 0
+      - id: sync
+        run: scripts/engine-sync.sh
+      - if: steps.sync.outputs.changed == 'true'
+        uses: dtolnay/rust-toolchain@stable
+      - if: steps.sync.outputs.changed == 'true'
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Build and test on the new engines
+        if: steps.sync.outputs.changed == 'true'
+        run: |
+          cargo test --release -p viaform-core
+          cargo build --release -p solidcraft-ffi
+          cd electron
+          npm ci
+          npm run native
+          npm run typecheck
+          npm test
+      - name: Bump the patch version
+        if: steps.sync.outputs.changed == 'true'
+        working-directory: electron
+        run: npm version patch --no-git-tag-version
+      - name: Open or update the pull request
+        if: steps.sync.outputs.changed == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SUMMARY: ${{ steps.sync.outputs.summary }}
+        run: |
+          version=$(node -p "require('./electron/package.json').version")
+          git config user.name "viaform-bot"
+          git config user.email "viaform-bot@users.noreply.github.com"
+          git switch -C engine-sync
+          git add engines electron/package.json electron/package-lock.json
+          git commit -m "Engines: sync to upstream, ViaForm $version" -m "$SUMMARY"
+          git push --force origin engine-sync
+          body=$(printf 'Upstream engine changes, built and tested on macOS (core tests and the app end to end).\n\n%s\nMerging releases ViaForm %s.' "$SUMMARY" "$version")
+          if gh pr view engine-sync --json state -q .state 2>/dev/null | grep -q OPEN; then
+            gh pr edit engine-sync --title "Engines: sync to upstream (ViaForm $version)" --body "$body"
+          else
+            gh pr create --head engine-sync --title "Engines: sync to upstream (ViaForm $version)" --body "$body"
+          fi

@@ -1,0 +1,35 @@
+{
+  "name": "viaform",
+  "productName": "ViaForm",
+  "version": "0.2.0",
+  "description": "3D CAD and PCB design as one app, on the SolidCraft and PCBCraft engines",
+  "license": "GPL-3.0-or-later",
+  "author": "Soma Labs",
+  "homepage": "https://github.com/soma-intelligence/ViaForm",
+  "repository": "github:soma-intelligence/ViaForm",
+  "main": "out/main/main.js",
+  "private": true,
+  "scripts": {
+    "native": "node scripts/build-native.mjs",
+    "build:main": "tsc -p tsconfig.main.json",
+    "build:renderer": "vite build",
+    "build": "npm run native && npm run build:main && npm run build:renderer",
+    "start": "npm run build && electron .",
+    "test": "npm run build:main && node --test out/test/*.test.js",
+    "typecheck": "tsc -p tsconfig.main.json --noEmit && tsc -p tsconfig.renderer.json --noEmit",
+    "dist": "npm run build && electron-builder --publish never",
+    "release": "npm run build && electron-builder --publish always"
+  },
+  "dependencies": {
+    "electron-updater": "6.8.11"
+  },
+  "devDependencies": {
+    "@types/node": "22.20.5",
+    "@types/three": "0.180.0",
+    "electron": "45.2.1",
+    "electron-builder": "26.18.0",
+    "three": "0.180.0",
+    "typescript": "5.9.3",
+    "vite": "7.3.7"
+  }
+}

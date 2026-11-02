@@ -99,7 +99,7 @@ enum SelfTest {
         let pushErr = PCBLink.push(board, into: d)
         pcbCheck(pushErr == nil && d.snapshot.bodies.contains { $0.name == "PCB Board" } && d.snapshot.bodies.contains { $0.name == "PCB R1" },
                  "board, copper and parts built in 3D \(pushErr ?? "")")
-        pcbCheck(PCBLink.linkedRevision(d, board.project!) == board.revision && !board.boardOutOfDate, "3D board tagged with the PCB revision")
+        pcbCheck(PCBLink.linkedRevision(d, board) == board.revision && !board.boardOutOfDate, "3D board tagged with the PCB revision")
         let mountErr = PCBLink.mount(board, in: d, body: "Enclosure", at: [30, -20, 10], normal: [0, 0, 1])
         let joints = (try? d.engine.execute("joint.list") as? [String: Any])?["joints"] as? [[String: Any]] ?? []
         pcbCheck(mountErr == nil && !joints.isEmpty, "board mounted on the enclosure with a rigid group \(mountErr ?? "")")

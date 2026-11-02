@@ -60,4 +60,9 @@ char *pcb_inspect(const PcbSession *s);
 char *pcb_checks(const PcbSession *s);
 char *pcb_commands(void);
 
+// Board to 3D link (viaform-core): replies {"ok": ...} or {"error": ...}
+char *vf_link_push(ScSession *sc, const PcbSession *pcb);
+char *vf_link_mount(ScSession *sc, const PcbSession *pcb, const char *body, const double *point3, const double *normal3);
+int64_t vf_link_revision(ScSession *sc, const PcbSession *pcb);
+
 #endif

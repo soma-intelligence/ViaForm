@@ -1,0 +1,40 @@
+appId: me.somalabs.viaform
+productName: ViaForm
+copyright: Copyright © 2026 Soma Labs. GPL-3.0-or-later.
+directories:
+  output: dist
+  buildResources: build
+files:
+  - out/**
+  - package.json
+# The engine addon lives outside the asar archive: a native module cannot load from inside it.
+extraResources:
+  - from: native/viaform.node
+    to: viaform.node
+fileAssociations:
+  - ext: viaform
+    name: ViaForm project
+    role: Editor
+publish:
+  provider: github
+  owner: soma-intelligence
+  repo: ViaForm
+  # Each platform's job uploads into one draft; the Release workflow publishes it at the end.
+  releaseType: draft
+mac:
+  category: public.app-category.developer-tools
+  target:
+    - target: dmg
+    - target: zip
+  hardenedRuntime: true
+win:
+  target:
+    - target: nsis
+nsis:
+  oneClick: false
+  allowToChangeInstallationDirectory: true
+linux:
+  category: Development;Engineering
+  target:
+    - target: AppImage
+    - target: deb

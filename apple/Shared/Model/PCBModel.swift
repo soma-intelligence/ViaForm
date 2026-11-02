@@ -121,7 +121,7 @@ final class PCBModel {
         case let .place(kind):
             let snapped = PCBPoint(x: (p.x / 2.54).rounded() * 2.54, y: (p.y / 2.54).rounded() * 2.54)
             if let r = run("component.add", ["kind": kind, "position": ["x": snapped.x, "y": snapped.y]]) as? [String: Any],
-               let id = r["id"] as? Int { selection = id }
+               let id = (r["result"] as? [String: Any])?["id"] as? Int { selection = id }
         case .wire:
             guard let (c, pin) = pin(near: p, radius: max(slack, 1.5)) else { return }
             if let first = pending {

@@ -82,7 +82,7 @@ struct PCBChecksPanel: View {
 /// The ECAD to MCAD link, from either workspace.
 extension PCBModel {
     func syncLink(_ design: DesignModel) {
-        linkedRevision = project.flatMap { PCBLink.linkedRevision(design, $0) }
+        linkedRevision = PCBLink.linkedRevision(design, self)
     }
 
     func sendTo3D(_ design: DesignModel) {

@@ -1,0 +1,37 @@
+# One workspace for the shared core and both front-end bindings, so they build against one
+# copy of each engine.
+[workspace]
+resolver = "3"
+members = ["core", "bridge", "node"]
+# The engines are workspaces of their own.
+exclude = ["engines"]
+
+[workspace.package]
+version = "0.2.0"
+edition = "2024"
+license = "GPL-3.0-or-later"
+
+[workspace.dependencies]
+solidcraft-engine = { path = "engines/solidcraft/crates/engine" }
+pcbcraft-engine = { path = "engines/pcbcraft/crates/engine" }
+pcbcraft-io = { path = "engines/pcbcraft/crates/io" }
+viaform-core = { path = "core" }
+serde = { version = "1", features = ["derive"] }
+serde_json = { version = "1", features = ["float_roundtrip"] }
+
+# Same vendored truck fixes as the SolidCraft workspace: patches only apply from the root workspace.
+[patch.crates-io]
+truck-geometry = { path = "engines/solidcraft/vendor/truck-geometry" }
+truck-shapeops = { path = "engines/solidcraft/vendor/truck-shapeops" }
+truck-stepio = { path = "engines/solidcraft/vendor/truck-stepio" }
+truck-meshalgo = { path = "engines/solidcraft/vendor/truck-meshalgo" }
+matext4cgmath = { path = "engines/solidcraft/vendor/matext4cgmath" }
+
+[profile.dev.package."*"]
+opt-level = 2
+
+[profile.release]
+opt-level = 3
+lto = "thin"
+codegen-units = 16
+panic = "unwind"

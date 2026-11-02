@@ -1,0 +1,15 @@
+[package]
+name = "viaform-core"
+description = "ViaForm's shared core: one workspace holding a SolidCraft design and a PCBCraft project, the board to 3D link and the .viaform file"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish = false
+
+[dependencies]
+solidcraft-engine.workspace = true
+pcbcraft-engine.workspace = true
+pcbcraft-io.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+zip = { version = "9", default-features = false, features = ["deflate"] }

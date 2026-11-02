@@ -1,4 +1,4 @@
-//! C ABI over the SolidCraft engine, for the native Swift front end.
+//! C ABI over the ViaForm core (SolidCraft and PCBCraft), for the native Swift front ends.
 //!
 //! Everything the front end does goes through `sc_execute` (the engine's command registry), so
 //! the Swift app stays as thin as the egui one: it builds parameters, runs commands and draws the
@@ -11,7 +11,8 @@ use std::panic::{AssertUnwindSafe, catch_unwind};
 
 use serde_json::{Value, json};
 use solidcraft_engine::Session;
-use solidcraft_engine::render::{Camera, Rgb, Scene};
+use solidcraft_engine::render::Camera;
+use viaform_core::scene::{FlatLine, FlatScene};
 use solidcraft_engine::view;
 
 /// An open design.
@@ -21,31 +22,9 @@ pub struct ScSession {
 
 /// A scene flattened to `f32` buffers the GPU can take as they are.
 pub struct ScScene {
-    meshes: Vec<FlatMesh>,
+    flat: FlatScene,
     /// The body each mesh draws (the scene lists visible bodies in model order).
     body_names: Vec<CString>,
-    lines: Vec<FlatLine>,
-    grid: Vec<FlatLine>,
-    radius: f32,
-    background: [f32; 8],
-}
-
-struct FlatMesh {
-    positions: Vec<f32>,
-    normals: Vec<f32>,
-    indices: Vec<u32>,
-    tri_face: Vec<u32>,
-    /// B-rep edges (seams left out) as one point list, `edge_offsets[i]..edge_offsets[i + 1]`.
-    edge_points: Vec<f32>,
-    edge_offsets: Vec<u32>,
-    color: [f32; 4],
-}
-
-struct FlatLine {
-    points: Vec<f32>,
-    color: [f32; 4],
-    width: f32,
-    on_top: bool,
 }
 
 /// One body's triangles. Pointers stay valid until the scene is freed.
@@ -91,59 +70,6 @@ unsafe fn text<'a>(p: *const c_char) -> Option<&'a str> {
     }
     // SAFETY: the caller passes a NUL-terminated string that outlives this call.
     unsafe { CStr::from_ptr(p) }.to_str().ok()
-}
-
-fn rgba(c: Rgb, a: f32) -> [f32; 4] {
-    let [r, g, b] = c.f();
-    [r as f32, g as f32, b as f32, a]
-}
-
-fn edges(m: &solidcraft_engine::geom::Mesh) -> (Vec<f32>, Vec<u32>) {
-    let mut points = Vec::new();
-    let mut offsets = vec![0u32];
-    for (i, e) in m.edges.iter().enumerate() {
-        if m.seams.get(i).copied().unwrap_or(false) {
-            continue;
-        }
-        points.extend(e.iter().flat_map(|p| [p.x as f32, p.y as f32, p.z as f32]));
-        offsets.push((points.len() / 3) as u32);
-    }
-    (points, offsets)
-}
-
-fn flatten(scene: &Scene) -> ScScene {
-    let line = |l: &solidcraft_engine::render::SceneLine| FlatLine {
-        points: l.points.iter().flat_map(|p| [p.x as f32, p.y as f32, p.z as f32]).collect(),
-        color: rgba(l.color, l.alpha),
-        width: l.width as f32,
-        on_top: l.on_top,
-    };
-    let meshes = scene
-        .meshes
-        .iter()
-        .map(|m| FlatMesh {
-            positions: m.mesh.positions.iter().flat_map(|p| [p.x as f32, p.y as f32, p.z as f32]).collect(),
-            normals: m.mesh.normals.iter().flat_map(|n| [n.x as f32, n.y as f32, n.z as f32]).collect(),
-            indices: m.mesh.triangles.iter().flatten().copied().collect(),
-            tri_face: m.mesh.tri_face.clone(),
-            edge_points: edges(&m.mesh).0,
-            edge_offsets: edges(&m.mesh).1,
-            color: rgba(m.color, m.alpha() as f32),
-        })
-        .collect();
-    let mut background = [0.0; 8];
-    if let Some((top, bottom)) = scene.background {
-        background[..4].copy_from_slice(&rgba(top, 1.0));
-        background[4..].copy_from_slice(&rgba(bottom, 1.0));
-    }
-    ScScene {
-        meshes,
-        body_names: Vec::new(),
-        lines: scene.lines.iter().map(line).collect(),
-        grid: scene.grid.iter().map(line).collect(),
-        radius: scene.radius as f32,
-        background,
-    }
 }
 
 /// A new, empty design.
@@ -283,19 +209,10 @@ pub unsafe extern "C" fn sc_scene_build(s: *mut ScSession, camera: *const c_char
     // SAFETY: NUL-terminated string or null, per the contract above.
     let camera = unsafe { text(camera) };
     guard(std::ptr::null_mut(), || {
-        let cam: Camera = camera
-            .and_then(|c| serde_json::from_str(c).ok())
-            .unwrap_or_else(|| view::home_camera(&s.session));
-        let scene = view::scene(&s.session, &cam);
-        let mut flat = flatten(&scene);
-        flat.body_names = s
-            .session
-            .world_state()
-            .bodies
-            .iter()
-            .filter(|b| s.session.body_visible(&b.name))
-            .filter_map(|b| CString::new(b.name.as_str()).ok())
-            .collect();
+        let cam: Option<Camera> = camera.and_then(|c| serde_json::from_str(c).ok());
+        let flat = viaform_core::scene::build(&s.session, cam);
+        let body_names = flat.meshes.iter().filter_map(|m| CString::new(m.body.as_str()).ok()).collect();
+        let flat = ScScene { flat, body_names };
         Box::into_raw(Box::new(flat))
     })
 }
@@ -315,7 +232,7 @@ pub unsafe extern "C" fn sc_scene_free(sc: *mut ScScene) {
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn sc_scene_radius(sc: *const ScScene) -> f32 {
     // SAFETY: the caller passes a live scene.
-    unsafe { sc.as_ref() }.map_or(1.0, |sc| sc.radius)
+    unsafe { sc.as_ref() }.map_or(1.0, |sc| sc.flat.radius)
 }
 
 /// The background gradient: top RGBA then bottom RGBA (all zero when the scene has none).
@@ -326,7 +243,7 @@ pub unsafe extern "C" fn sc_scene_radius(sc: *const ScScene) -> f32 {
 pub unsafe extern "C" fn sc_scene_background(sc: *const ScScene, out: *mut f32) {
     // SAFETY: the caller passes a live scene and room for 8 floats.
     if let (Some(sc), false) = (unsafe { sc.as_ref() }, out.is_null()) {
-        unsafe { std::ptr::copy_nonoverlapping(sc.background.as_ptr(), out, 8) };
+        unsafe { std::ptr::copy_nonoverlapping(sc.flat.background.as_ptr(), out, 8) };
     }
 }
 
@@ -345,7 +262,7 @@ pub unsafe extern "C" fn sc_scene_body_name(sc: *const ScScene, i: u32) -> *cons
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn sc_scene_mesh_count(sc: *const ScScene) -> u32 {
     // SAFETY: the caller passes a live scene.
-    unsafe { sc.as_ref() }.map_or(0, |sc| sc.meshes.len() as u32)
+    unsafe { sc.as_ref() }.map_or(0, |sc| sc.flat.meshes.len() as u32)
 }
 
 /// # Safety
@@ -354,7 +271,7 @@ pub unsafe extern "C" fn sc_scene_mesh_count(sc: *const ScScene) -> u32 {
 pub unsafe extern "C" fn sc_scene_mesh(sc: *const ScScene, i: u32, out: *mut ScMeshView) -> bool {
     // SAFETY: the caller passes a live scene and a writable view.
     let (Some(sc), Some(out)) = (unsafe { sc.as_ref() }, unsafe { out.as_mut() }) else { return false };
-    let Some(m) = sc.meshes.get(i as usize) else { return false };
+    let Some(m) = sc.flat.meshes.get(i as usize) else { return false };
     *out = ScMeshView {
         positions: m.positions.as_ptr(),
         normals: m.normals.as_ptr(),
@@ -385,7 +302,7 @@ fn line_view(l: &FlatLine) -> ScLineView {
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn sc_scene_line_count(sc: *const ScScene, grid: bool) -> u32 {
     // SAFETY: the caller passes a live scene.
-    unsafe { sc.as_ref() }.map_or(0, |sc| if grid { sc.grid.len() } else { sc.lines.len() } as u32)
+    unsafe { sc.as_ref() }.map_or(0, |sc| if grid { sc.flat.grid.len() } else { sc.flat.lines.len() } as u32)
 }
 
 /// Line `i` of the scene's lines, or of its ground grid when `grid` is set.
@@ -396,7 +313,7 @@ pub unsafe extern "C" fn sc_scene_line_count(sc: *const ScScene, grid: bool) -> 
 pub unsafe extern "C" fn sc_scene_line(sc: *const ScScene, grid: bool, i: u32, out: *mut ScLineView) -> bool {
     // SAFETY: the caller passes a live scene and a writable view.
     let (Some(sc), Some(out)) = (unsafe { sc.as_ref() }, unsafe { out.as_mut() }) else { return false };
-    let list = if grid { &sc.grid } else { &sc.lines };
+    let list = if grid { &sc.flat.grid } else { &sc.flat.lines };
     let Some(l) = list.get(i as usize) else { return false };
     *out = line_view(l);
     true
@@ -457,29 +374,9 @@ pub unsafe extern "C" fn pcb_execute(s: *mut PcbSession, id: *const c_char, para
             Ok(p) => p.unwrap_or_else(|| json!({})),
             Err(e) => return json!({"error": format!("params: {e}")}),
         };
-        let r = match id {
-            "undo" => s.session.undo(),
-            "redo" => s.session.redo(),
-            "file.open" | "file.save" | "file.export_kicad" => {
-                let Some(path) = p.get("path").and_then(Value::as_str) else { return json!({"error": "path is required"}) };
-                let path = std::path::Path::new(path);
-                let done = match id {
-                    "file.open" => pcbcraft_io::load(path).and_then(|project| s.session.replace(project).map_err(|e| e.to_string())),
-                    "file.save" => pcbcraft_io::save(&s.session.project, path).map(|()| json!({"saved": path})),
-                    _ => pcbcraft_io::kicad_board(&s.session.project)
-                        .and_then(|text| pcbcraft_io::atomic_write(path, text.as_bytes()))
-                        .map(|()| json!({"exported": path})),
-                };
-                return match done {
-                    Ok(v) => json!({"ok": v}),
-                    Err(e) => json!({"error": e}),
-                };
-            }
-            _ => s.session.execute(id, p, None),
-        };
-        match r {
+        match viaform_core::pcb_execute(&mut s.session, id, p) {
             Ok(v) => json!({"ok": v}),
-            Err(e) => json!({"error": e.to_string()}),
+            Err(e) => json!({"error": e}),
         }
     });
     out(&reply)
@@ -511,4 +408,53 @@ pub unsafe extern "C" fn pcb_checks(s: *const PcbSession) -> *mut c_char {
 #[unsafe(no_mangle)]
 pub extern "C" fn pcb_commands() -> *mut c_char {
     out(&guard(json!([]), || serde_json::to_value(pcbcraft_engine::commands()).unwrap_or(Value::Null)))
+}
+
+// MARK: Board to 3D link (viaform-core), the same code the Electron app runs
+
+fn link_reply(r: Result<Value, String>) -> *mut c_char {
+    out(&match r {
+        Ok(v) => json!({"ok": v}),
+        Err(e) => json!({"error": e}),
+    })
+}
+
+/// Builds or rebuilds the board of `pcb` as a component of the design `sc`.
+///
+/// # Safety
+/// `sc` and `pcb` are live sessions.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn vf_link_push(sc: *mut ScSession, pcb: *const PcbSession) -> *mut c_char {
+    // SAFETY: the caller passes live sessions.
+    let (Some(sc), Some(pcb)) = (unsafe { sc.as_mut() }, unsafe { pcb.as_ref() }) else { return out(&json!({"error": "no session"})) };
+    link_reply(guard(Err("the engine stopped while building the board".into()), || viaform_core::link::push(&mut sc.session, &pcb.session)))
+}
+
+/// Seats the board on the face of `body` at `point` (xyz) with `normal` (xyz), with a rigid group.
+///
+/// # Safety
+/// `sc` and `pcb` are live sessions; `body` is a NUL-terminated string; `point` and `normal`
+/// point at three doubles each.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn vf_link_mount(sc: *mut ScSession, pcb: *const PcbSession, body: *const c_char, point: *const f64, normal: *const f64) -> *mut c_char {
+    // SAFETY: the caller passes live sessions, a string and two arrays of three doubles.
+    let (Some(sc), Some(pcb), Some(body)) = (unsafe { sc.as_mut() }, unsafe { pcb.as_ref() }, unsafe { text(body) }) else {
+        return out(&json!({"error": "no session"}));
+    };
+    if point.is_null() || normal.is_null() {
+        return out(&json!({"error": "no point"}));
+    }
+    let (p, n) = unsafe { (*(point as *const [f64; 3]), *(normal as *const [f64; 3])) };
+    link_reply(guard(Err("the engine stopped while mounting the board".into()), || viaform_core::link::mount(&mut sc.session, &pcb.session, body, p, n)))
+}
+
+/// The PCB revision the design's board was built from (or -1 when the design has none).
+///
+/// # Safety
+/// `sc` and `pcb` are live sessions.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn vf_link_revision(sc: *mut ScSession, pcb: *const PcbSession) -> i64 {
+    // SAFETY: the caller passes live sessions.
+    let (Some(sc), Some(pcb)) = (unsafe { sc.as_mut() }, unsafe { pcb.as_ref() }) else { return -1 };
+    guard(None, || viaform_core::link::linked_revision(&mut sc.session, &pcb.session)).map_or(-1, |r| r as i64)
 }

@@ -1,4 +1,8 @@
-bridge/target/
+target/
 apple/build/
 *.log
 .DS_Store
+node_modules/
+electron/out/
+electron/dist/
+electron/native/

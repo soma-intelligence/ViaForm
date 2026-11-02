@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:" />
+    <title>ViaForm</title>
+    <link rel="stylesheet" href="./style.css" />
+  </head>
+  <body>
+    <header id="bar">
+      <div id="workspace" class="segmented" role="tablist">
+        <button data-ws="design" class="on">DESIGN</button>
+        <button data-ws="electronics">ELECTRONICS</button>
+      </div>
+      <div id="history"></div>
+      <div id="toolbar"></div>
+    </header>
+    <div id="update-banner" hidden></div>
+    <main>
+      <aside id="left"></aside>
+      <section id="stage">
+        <div id="view3d"></div>
+        <div id="sheet" hidden><canvas id="sheet-canvas"></canvas><div id="zoom"></div></div>
+        <div id="pills"></div>
+      </section>
+      <aside id="right"></aside>
+    </main>
+    <footer id="status"><span id="status-msg"></span><span id="status-versions"></span></footer>
+    <div id="palette" hidden>
+      <div class="palette-box">
+        <input id="palette-input" placeholder="Search every command…" spellcheck="false" />
+        <ul id="palette-list"></ul>
+        <div id="palette-form" hidden>
+          <div id="palette-title"></div>
+          <pre id="palette-doc"></pre>
+          <textarea id="palette-params" spellcheck="false">{}</textarea>
+          <div class="row"><button id="palette-run" class="primary">Run</button><button id="palette-back">Back</button></div>
+        </div>
+      </div>
+    </div>
+    <dialog id="about"></dialog>
+    <script type="module" src="./main.ts"></script>
+  </body>
+</html>

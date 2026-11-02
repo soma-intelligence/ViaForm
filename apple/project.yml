@@ -34,8 +34,8 @@ targets:
         INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone: "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight"
         INFOPLIST_KEY_UIFileSharingEnabled: YES
         INFOPLIST_KEY_LSSupportsOpeningDocumentsInPlace: YES
-        "LIBRARY_SEARCH_PATHS[sdk=iphoneos*]": $(SRCROOT)/../bridge/target/aarch64-apple-ios/release
-        "LIBRARY_SEARCH_PATHS[sdk=iphonesimulator*]": $(SRCROOT)/../bridge/target/aarch64-apple-ios-sim/release
+        "LIBRARY_SEARCH_PATHS[sdk=iphoneos*]": $(SRCROOT)/../target/aarch64-apple-ios/release
+        "LIBRARY_SEARCH_PATHS[sdk=iphonesimulator*]": $(SRCROOT)/../target/aarch64-apple-ios-sim/release
         "EXCLUDED_ARCHS[sdk=iphonesimulator*]": x86_64
   SolidCraft-macOS:
     type: application
@@ -47,7 +47,7 @@ targets:
       base:
         PRODUCT_NAME: SolidCraft
         PRODUCT_BUNDLE_IDENTIFIER: me.somalabs.solidcraft.mac
-        LIBRARY_SEARCH_PATHS: $(SRCROOT)/../bridge/target/aarch64-apple-darwin/release
+        LIBRARY_SEARCH_PATHS: $(SRCROOT)/../target/aarch64-apple-darwin/release
         ARCHS: arm64
         CODE_SIGN_IDENTITY: "-"
         ENABLE_HARDENED_RUNTIME: NO

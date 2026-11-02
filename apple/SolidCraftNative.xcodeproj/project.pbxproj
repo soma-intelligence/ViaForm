@@ -316,8 +316,8 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				"LIBRARY_SEARCH_PATHS[sdk=iphoneos*]" = "$(SRCROOT)/../bridge/target/aarch64-apple-ios/release";
-				"LIBRARY_SEARCH_PATHS[sdk=iphonesimulator*]" = "$(SRCROOT)/../bridge/target/aarch64-apple-ios-sim/release";
+				"LIBRARY_SEARCH_PATHS[sdk=iphoneos*]" = "$(SRCROOT)/../target/aarch64-apple-ios/release";
+				"LIBRARY_SEARCH_PATHS[sdk=iphonesimulator*]" = "$(SRCROOT)/../target/aarch64-apple-ios-sim/release";
 				PRODUCT_BUNDLE_IDENTIFIER = me.somalabs.solidcraft;
 				PRODUCT_NAME = SolidCraft;
 				SDKROOT = iphoneos;
@@ -413,7 +413,7 @@
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
-				LIBRARY_SEARCH_PATHS = "$(SRCROOT)/../bridge/target/aarch64-apple-darwin/release";
+				LIBRARY_SEARCH_PATHS = "$(SRCROOT)/../target/aarch64-apple-darwin/release";
 				PRODUCT_BUNDLE_IDENTIFIER = me.somalabs.solidcraft.mac;
 				PRODUCT_NAME = SolidCraft;
 				SDKROOT = macosx;
@@ -433,7 +433,7 @@
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
-				LIBRARY_SEARCH_PATHS = "$(SRCROOT)/../bridge/target/aarch64-apple-darwin/release";
+				LIBRARY_SEARCH_PATHS = "$(SRCROOT)/../target/aarch64-apple-darwin/release";
 				PRODUCT_BUNDLE_IDENTIFIER = me.somalabs.solidcraft.mac;
 				PRODUCT_NAME = SolidCraft;
 				SDKROOT = macosx;
@@ -523,8 +523,8 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				"LIBRARY_SEARCH_PATHS[sdk=iphoneos*]" = "$(SRCROOT)/../bridge/target/aarch64-apple-ios/release";
-				"LIBRARY_SEARCH_PATHS[sdk=iphonesimulator*]" = "$(SRCROOT)/../bridge/target/aarch64-apple-ios-sim/release";
+				"LIBRARY_SEARCH_PATHS[sdk=iphoneos*]" = "$(SRCROOT)/../target/aarch64-apple-ios/release";
+				"LIBRARY_SEARCH_PATHS[sdk=iphonesimulator*]" = "$(SRCROOT)/../target/aarch64-apple-ios-sim/release";
 				PRODUCT_BUNDLE_IDENTIFIER = me.somalabs.solidcraft;
 				PRODUCT_NAME = SolidCraft;
 				SDKROOT = iphoneos;

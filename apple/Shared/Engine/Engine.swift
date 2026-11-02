@@ -64,7 +64,7 @@ struct SketchPlane: Equatable {
 
 /// The SolidCraft engine behind the C ABI: one open design.
 final class CADEngine {
-    private let session: OpaquePointer
+    let session: OpaquePointer
 
     init() {
         guard let s = sc_session_new() else { fatalError("SolidCraft engine could not start") }
