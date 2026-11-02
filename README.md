@@ -11,6 +11,8 @@ Both draw with Metal and run every action through the engines' command APIs.
 
 ![macOS](docs/macos.png)
 ![iPad](docs/ipad.png)
+![Schematic](docs/macos-schematic.png)
+![Board](docs/macos-board.png)
 
 ## Layout
 
@@ -44,7 +46,9 @@ undo, primitives, scene) and exits. `--sample` opens the bracket sample.
 
 - The layouts follow public descriptions of how common CAD tools are arranged
   (see `docs/ui-reference.md`). Icons are SF Symbols; colours, names and artwork are our own.
-- The PCB engine is linked into the bridge; its Swift workspace is not built yet.
+- Electronics workspace (Mac: workspace menu, iPad and iPhone: Project sidebar): place parts, wire
+  pins, update the board, route (one pair or every airwire), read ERC and DRC, export a
+  `.kicad_pcb`. Parts are the engine's four built-in kinds for now; KiCad library parts are next.
 - Next steps are in `IMPROVEMENTS.md`.
 
 ## Licence

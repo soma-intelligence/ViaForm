@@ -439,7 +439,9 @@ pub unsafe extern "C" fn pcb_session_free(s: *mut PcbSession) {
 }
 
 /// Runs one PCB command. Answers `{"ok": reply}` or `{"error": message}`.
-/// `undo` and `redo` are accepted as ids too.
+/// Besides the engine's commands: `undo`, `redo`, and the file commands `file.open`,
+/// `file.save` (PCBCraft JSON project) and `file.export_kicad` (a `.kicad_pcb` board), each
+/// with `{"path": ...}`.
 ///
 /// # Safety
 /// `s` is a live PCB session; `id` and `params` are NUL-terminated strings (`params` may be null).
@@ -458,6 +460,21 @@ pub unsafe extern "C" fn pcb_execute(s: *mut PcbSession, id: *const c_char, para
         let r = match id {
             "undo" => s.session.undo(),
             "redo" => s.session.redo(),
+            "file.open" | "file.save" | "file.export_kicad" => {
+                let Some(path) = p.get("path").and_then(Value::as_str) else { return json!({"error": "path is required"}) };
+                let path = std::path::Path::new(path);
+                let done = match id {
+                    "file.open" => pcbcraft_io::load(path).and_then(|project| s.session.replace(project).map_err(|e| e.to_string())),
+                    "file.save" => pcbcraft_io::save(&s.session.project, path).map(|()| json!({"saved": path})),
+                    _ => pcbcraft_io::kicad_board(&s.session.project)
+                        .and_then(|text| pcbcraft_io::atomic_write(path, text.as_bytes()))
+                        .map(|()| json!({"exported": path})),
+                };
+                return match done {
+                    Ok(v) => json!({"ok": v}),
+                    Err(e) => json!({"error": e}),
+                };
+            }
             _ => s.session.execute(id, p, None),
         };
         match r {

@@ -12,6 +12,7 @@ crate-type = ["staticlib"]
 [dependencies]
 solidcraft-engine = { path = "../engines/solidcraft/crates/engine" }
 pcbcraft-engine = { path = "../engines/pcbcraft/crates/engine" }
+pcbcraft-io = { path = "../engines/pcbcraft/crates/io" }
 serde_json = { version = "1", features = ["float_roundtrip"] }
 
 # Same vendored truck fixes as the core workspace: patches only apply from the root workspace.

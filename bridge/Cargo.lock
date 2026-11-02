@@ -1443,6 +1443,7 @@ name = "solidcraft-ffi"
 version = "0.1.0"
 dependencies = [
  "pcbcraft-engine",
+ "pcbcraft-io",
  "serde_json",
  "solidcraft-engine",
 ]

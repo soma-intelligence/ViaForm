@@ -4,6 +4,7 @@ import SwiftUI
 struct SolidCraftApp: App {
     #if os(macOS)
     @State private var model = DesignModel()
+    @State private var pcb = PCBModel(sample: ProcessInfo.processInfo.arguments.contains("--sample"))
     #endif
 
     init() {
@@ -13,7 +14,7 @@ struct SolidCraftApp: App {
     var body: some Scene {
         #if os(macOS)
         WindowGroup {
-            DeskRootView(model: model)
+            DeskRootView(model: model, pcb: pcb)
                 .frame(minWidth: 1000, minHeight: 640)
                 .preferredColorScheme(.light)
                 .tint(Color(red: 0.13, green: 0.55, blue: 0.95))

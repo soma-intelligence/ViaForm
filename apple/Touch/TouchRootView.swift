@@ -8,6 +8,8 @@ import UniformTypeIdentifiers
 /// from the top bar; tools in a column at the left edge; selection-driven suggestions below.
 struct TouchRootView: View {
     @State private var model = DesignModel()
+    @State private var pcb = PCBModel(sample: ProcessInfo.processInfo.arguments.contains("--sample"))
+    @State private var space: Space = ProcessInfo.processInfo.arguments.contains("--electronics") ? .electronics : .modeling
     @State private var side: SideSheet?
     @State private var showProject = false
     @State private var showCommands = false
@@ -19,6 +21,7 @@ struct TouchRootView: View {
     @Environment(\.horizontalSizeClass) private var hSize
 
     enum SideSheet { case items, history }
+    enum Space: String, CaseIterable { case modeling = "Modeling", electronics = "Electronics" }
 
     private var compact: Bool { hSize == .compact }
 
@@ -31,6 +34,29 @@ struct TouchRootView: View {
     )
 
     var body: some View {
+        Group {
+            if space == .electronics {
+                ZStack(alignment: .topLeading) {
+                    TouchPCBView(model: pcb, showProject: $showProject)
+                    if showProject, !compact {
+                        ProjectSidebar(model: model, space: $space, importing: $importing, exporting: $exporting)
+                            .padding(.top, 66).padding(.leading, 12)
+                            .transition(.move(edge: .leading).combined(with: .opacity))
+                    }
+                }
+            } else {
+                modeling
+            }
+        }
+        .animation(.snappy(duration: 0.25), value: showProject)
+        .sheet(isPresented: Binding(get: { compact && showProject }, set: { showProject = $0 })) {
+            ProjectSidebar(model: model, space: $space, importing: $importing, exporting: $exporting).presentationDetents([.medium, .large])
+        }
+        .onChange(of: space) { _, _ in showProject = false }
+        .onAppear { if ProcessInfo.processInfo.arguments.contains("--board") { space = .electronics; pcb.sheet = .board } }
+    }
+
+    private var modeling: some View {
         ZStack {
             Viewport(model: model, theme: Self.theme).ignoresSafeArea()
 
@@ -38,7 +64,7 @@ struct TouchRootView: View {
                 topBar
                 HStack(alignment: .top, spacing: 10) {
                     if showProject, !compact {
-                        ProjectSidebar(model: model, importing: $importing, exporting: $exporting)
+                        ProjectSidebar(model: model, space: $space, importing: $importing, exporting: $exporting)
                             .transition(.move(edge: .leading).combined(with: .opacity))
                     }
                     if !compact { ToolRail(model: model, compact: compact, showCommands: $showCommands) }
@@ -60,13 +86,9 @@ struct TouchRootView: View {
             .padding(.vertical, 8)
         }
         .animation(.snappy(duration: 0.25), value: side)
-        .animation(.snappy(duration: 0.25), value: showProject)
         .animation(.snappy(duration: 0.25), value: model.tool)
         .sheet(isPresented: $showCommands) { CommandBrowser(model: model) }
         // On iPhone the sidebars come up as sheets.
-        .sheet(isPresented: Binding(get: { compact && showProject }, set: { showProject = $0 })) {
-            ProjectSidebar(model: model, importing: $importing, exporting: $exporting).presentationDetents([.medium, .large])
-        }
         .sheet(isPresented: Binding(get: { compact && side != nil }, set: { if !$0 { side = nil } })) {
             Group { if side == .history { HistorySidebar(model: model) } else { ItemsPanel(model: model) } }
                 .presentationDetents([.medium, .large])
@@ -147,16 +169,21 @@ struct TouchRootView: View {
     }
 }
 
-/// Spaces and designs: Modeling is live; Visualization and Drawings are placeholders for now.
+/// Spaces and designs: Modeling and Electronics are live; Visualization and Drawings are
+/// placeholders for now.
 struct ProjectSidebar: View {
     let model: DesignModel
+    @Binding var space: TouchRootView.Space
     @Binding var importing: Bool
     @Binding var exporting: ExportKind?
 
     var body: some View {
         List {
             Section("Spaces") {
-                Label("Modeling", systemImage: "cube").foregroundStyle(Color.accentColor)
+                Button { space = .modeling } label: { Label("Modeling", systemImage: "cube") }
+                    .foregroundStyle(space == .modeling ? Color.accentColor : .primary)
+                Button { space = .electronics } label: { Label("Electronics", systemImage: "cpu") }
+                    .foregroundStyle(space == .electronics ? Color.accentColor : .primary)
                 Label("Visualization", systemImage: "sparkles").foregroundStyle(.secondary)
                 Label("Drawings", systemImage: "doc.richtext").foregroundStyle(.secondary)
             }

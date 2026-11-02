@@ -8,6 +8,8 @@ import UniformTypeIdentifiers
 /// The ribbon is built from the engine's command registry, so every command has a place.
 struct DeskRootView: View {
     @Bindable var model: DesignModel
+    let pcb: PCBModel
+    @State private var workspace = Workspace.design
     @State private var tab = "SOLID"
     @State private var showBrowser = true
     @State private var perspective = false
@@ -21,9 +23,45 @@ struct DeskRootView: View {
         edge: SIMD4(0.1, 0.1, 0.1, 1)
     )
 
+    enum Workspace: String, CaseIterable { case design = "DESIGN", electronics = "ELECTRONICS" }
+
     var body: some View {
         VStack(spacing: 0) {
             AppBar(model: model, showData: $showData)
+            HStack(spacing: 0) {
+                Menu(workspace.rawValue) {
+                    ForEach(Workspace.allCases, id: \.self) { w in
+                        Button { workspace = w } label: { Label(w.rawValue.capitalized, systemImage: w == .design ? "cube" : "cpu") }
+                    }
+                }
+                .menuStyle(.borderlessButton).fixedSize()
+                .font(.system(size: 11, weight: .bold))
+                .foregroundStyle(Color.accentColor)
+                .padding(.horizontal, 10)
+                Divider().frame(height: 16)
+                if workspace == .electronics {
+                    Text("Schematic and board on the PCBCraft engine, KiCad export").font(.system(size: 11)).foregroundStyle(.secondary).padding(.horizontal, 10)
+                }
+                Spacer()
+            }
+            .frame(height: 24)
+            .background(Color(nsColor: .windowBackgroundColor))
+            if workspace == .electronics {
+                DeskPCBView(model: pcb)
+            } else {
+                designBody
+            }
+        }
+        .background(Color(nsColor: .windowBackgroundColor))
+        .onAppear {
+            let args = ProcessInfo.processInfo.arguments
+            if args.contains("--electronics") { workspace = .electronics }
+            if args.contains("--board") { workspace = .electronics; pcb.sheet = .board }
+        }
+    }
+
+    @ViewBuilder private var designBody: some View {
+        VStack(spacing: 0) {
             Ribbon(model: model, tab: $tab)
             Divider()
             ZStack {
@@ -149,13 +187,6 @@ struct Ribbon: View {
     var body: some View {
         VStack(spacing: 0) {
             HStack(spacing: 0) {
-                Menu("DESIGN") {
-                    Text("Design workspace")
-                }
-                .menuStyle(.borderlessButton).fixedSize()
-                .font(.system(size: 11, weight: .bold))
-                .padding(.horizontal, 10)
-                Divider().frame(height: 16)
                 ForEach(tabs, id: \.self) { t in
                     Button { tab = t } label: {
                         Text(t).font(.system(size: 11, weight: .semibold))

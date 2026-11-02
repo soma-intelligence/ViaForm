@@ -57,6 +57,40 @@ enum SelfTest {
         check(m.snapshot.bodies.count == 2, "cylinder placed on the ground")
         let scene = m.scene
         check(scene.meshes.count == 2 && scene.meshes.allSatisfy { !$0.edges.isEmpty }, "scene has two meshes with edges")
+
+        // Electronics: the KiCad flow on PCBCraft, by clicks in millimetres.
+        let pcb = PCBModel()
+        func pcbCheck(_ ok: Bool, _ what: String) {
+            print(ok ? "PASS" : "FAIL", what, ok ? "" : "(\(pcb.message ?? "no message"))")
+            if !ok { failures += 1 }
+        }
+        pcb.tool = .place("resistor")
+        pcb.click(at: PCBPoint(x: 10.16, y: 10.16), scale: 10)
+        pcb.tool = .place("led")
+        pcb.click(at: PCBPoint(x: 30.48, y: 10.16), scale: 10)
+        pcbCheck(pcb.project?.components.count == 2, "two parts placed by clicks")
+        let parts = pcb.project?.components ?? []
+        pcb.tool = .wire
+        if parts.count == 2 {
+            pcb.click(at: parts[0].pinPosition(parts[0].pins[1]), scale: 10)
+            pcb.click(at: parts[1].pinPosition(parts[1].pins[0]), scale: 10)
+            pcb.click(at: parts[0].pinPosition(parts[0].pins[0]), scale: 10)
+            pcb.click(at: parts[1].pinPosition(parts[1].pins[1]), scale: 10)
+        }
+        pcbCheck(pcb.project?.wires.count == 2 && pcb.project?.nets.count == 2, "two wires by pin clicks make two nets")
+        pcb.updateBoard()
+        pcbCheck(pcb.project?.board.footprints.count == 2, "update board makes two footprints")
+        pcbCheck((pcb.checks?.airwires.count ?? 0) == 2, "two airwires before routing")
+        pcb.routeAll()
+        pcbCheck(pcb.checks?.airwires.isEmpty == true && (pcb.project?.board.tracks.count ?? 0) >= 2, "route all leaves no airwire")
+        let kicad = FileManager.default.temporaryDirectory.appendingPathComponent("viaform-selftest.kicad_pcb")
+        try? FileManager.default.removeItem(at: kicad)
+        pcb.exportKiCad(to: kicad)
+        let text = (try? String(contentsOf: kicad, encoding: .utf8)) ?? ""
+        pcbCheck(text.hasPrefix("(kicad_pcb"), "KiCad board exported (\(text.count) chars)")
+        pcb.undo()
+        pcbCheck(pcb.redoCount == 1, "PCB undo works")
+
         print(failures == 0 ? "ALL PASS" : "\(failures) FAILED")
         exit(failures == 0 ? 0 : 1)
     }

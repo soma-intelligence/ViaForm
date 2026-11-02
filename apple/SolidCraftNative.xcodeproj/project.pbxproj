@@ -13,20 +13,30 @@
 		13B69C54DA2006BFF5B6F960 /* DeskPanels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 472F985C5CC3535D219CE542 /* DeskPanels.swift */; };
 		15C438649CD7B81A9D28E00C /* SolidCraftApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = C0E1553CF1628944BAC80D4E /* SolidCraftApp.swift */; };
 		29AF42638020D6770E061413 /* Tools.swift in Sources */ = {isa = PBXBuildFile; fileRef = 71736751286411C0374CED6D /* Tools.swift */; };
+		32507D5F96388FA97202096C /* PCBPanels.swift in Sources */ = {isa = PBXBuildFile; fileRef = E622EC27BE110BDFE796377C /* PCBPanels.swift */; };
 		32C85FF9F9DF86E6118DD8FA /* Viewport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7E3DBF8C22F22CC30F53043F /* Viewport.swift */; };
+		503E9557B31572D86E689111 /* PCBCanvas.swift in Sources */ = {isa = PBXBuildFile; fileRef = E7F8A9DB233DFCCADCB28E8C /* PCBCanvas.swift */; };
+		51392B889968E16F5141BE0B /* DeskPCBView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 81651A3B5C711F930D5A50FD /* DeskPCBView.swift */; };
 		6BECB281301BC41B97BAAC82 /* DesignSnapshot.swift in Sources */ = {isa = PBXBuildFile; fileRef = C2DABBF06C38BCDF71348100 /* DesignSnapshot.swift */; };
 		6ECDCE42F41B05D4E615CF3B /* Engine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9F91FE2F4309124823727F5A /* Engine.swift */; };
+		761FD96B1857F6753D989F22 /* PCBModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 10091C35305FAF972740F214 /* PCBModel.swift */; };
 		7E67631A88E2C16B7318F98B /* Renderer.swift in Sources */ = {isa = PBXBuildFile; fileRef = D5F036F58AB60B91E574A437 /* Renderer.swift */; };
 		807A8DEDA6436E3A741609F3 /* Tools.swift in Sources */ = {isa = PBXBuildFile; fileRef = 71736751286411C0374CED6D /* Tools.swift */; };
+		80B3B0979FC2705A77221B59 /* PCBEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 668312648A5618896A056442 /* PCBEngine.swift */; };
+		8190CD54925CC0E2C22619BD /* PCBModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 10091C35305FAF972740F214 /* PCBModel.swift */; };
 		861CE8AB7C0F8F463C0FE16E /* CommonViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4F047FDE74D13F74679BE7F8 /* CommonViews.swift */; };
+		87F29C230195D9A5228BFCEF /* PCBCanvas.swift in Sources */ = {isa = PBXBuildFile; fileRef = E7F8A9DB233DFCCADCB28E8C /* PCBCanvas.swift */; };
 		8B060D00CC6724ACF38E2538 /* ViewCube.swift in Sources */ = {isa = PBXBuildFile; fileRef = A07CBF717913D620A72D200C /* ViewCube.swift */; };
 		8EF4102E05577B4B368D738B /* Shaders.metal in Sources */ = {isa = PBXBuildFile; fileRef = 19F4B0149FBE4D97F8B455D7 /* Shaders.metal */; };
+		92E503B20F32378D2C96B723 /* PCBPanels.swift in Sources */ = {isa = PBXBuildFile; fileRef = E622EC27BE110BDFE796377C /* PCBPanels.swift */; };
 		9359CD6FF4C78D25A2ACC737 /* SelfTest.swift in Sources */ = {isa = PBXBuildFile; fileRef = 920EDBDD345148F1433C4DC3 /* SelfTest.swift */; };
 		95D4D22595A15C3B92A0FAEE /* Shaders.metal in Sources */ = {isa = PBXBuildFile; fileRef = 19F4B0149FBE4D97F8B455D7 /* Shaders.metal */; };
+		993547F8966B49817867CED0 /* PCBEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 668312648A5618896A056442 /* PCBEngine.swift */; };
 		9CBA8E5FBF6A5C40E280240C /* Viewport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7E3DBF8C22F22CC30F53043F /* Viewport.swift */; };
 		AD2771D3B874A2D5C0CC2AC2 /* ViewCube.swift in Sources */ = {isa = PBXBuildFile; fileRef = A07CBF717913D620A72D200C /* ViewCube.swift */; };
 		B02546DA5656C34B6E2B0CD4 /* DesignModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3BAA740678B4BF0785587D71 /* DesignModel.swift */; };
 		B2AF0564D03B69812F345156 /* DesignSnapshot.swift in Sources */ = {isa = PBXBuildFile; fileRef = C2DABBF06C38BCDF71348100 /* DesignSnapshot.swift */; };
+		B3C4BB3D83B37B391D2F0696 /* TouchPCBView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AACFDAC08802DB97478346B4 /* TouchPCBView.swift */; };
 		BFBB5AC3E01D0270BF73EC15 /* TouchRootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC2CA826AA951BCFECAF9476 /* TouchRootView.swift */; };
 		C39E1A6AD5ACEB96F685E31B /* DeskRootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8ECE174B24E9B687AD85375B /* DeskRootView.swift */; };
 		C767238AF70F73D3911527FF /* Picking.swift in Sources */ = {isa = PBXBuildFile; fileRef = EE8776ECE9A3C2BD0527662C /* Picking.swift */; };
@@ -39,23 +49,29 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		10091C35305FAF972740F214 /* PCBModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PCBModel.swift; sourceTree = "<group>"; };
 		19F4B0149FBE4D97F8B455D7 /* Shaders.metal */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.metal; path = Shaders.metal; sourceTree = "<group>"; };
 		25D626545DF2243265E82C15 /* SolidCraft-macOS.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "SolidCraft-macOS.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		3BAA740678B4BF0785587D71 /* DesignModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DesignModel.swift; sourceTree = "<group>"; };
 		472F985C5CC3535D219CE542 /* DeskPanels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeskPanels.swift; sourceTree = "<group>"; };
 		4F047FDE74D13F74679BE7F8 /* CommonViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CommonViews.swift; sourceTree = "<group>"; };
+		668312648A5618896A056442 /* PCBEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PCBEngine.swift; sourceTree = "<group>"; };
 		71736751286411C0374CED6D /* Tools.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Tools.swift; sourceTree = "<group>"; };
 		7E3DBF8C22F22CC30F53043F /* Viewport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Viewport.swift; sourceTree = "<group>"; };
+		81651A3B5C711F930D5A50FD /* DeskPCBView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeskPCBView.swift; sourceTree = "<group>"; };
 		8ECE174B24E9B687AD85375B /* DeskRootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeskRootView.swift; sourceTree = "<group>"; };
 		920EDBDD345148F1433C4DC3 /* SelfTest.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SelfTest.swift; sourceTree = "<group>"; };
 		94FBACAA4900742426AA1D15 /* OrbitCamera.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OrbitCamera.swift; sourceTree = "<group>"; };
 		9F91FE2F4309124823727F5A /* Engine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Engine.swift; sourceTree = "<group>"; };
 		A07CBF717913D620A72D200C /* ViewCube.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ViewCube.swift; sourceTree = "<group>"; };
+		AACFDAC08802DB97478346B4 /* TouchPCBView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TouchPCBView.swift; sourceTree = "<group>"; };
 		C0E1553CF1628944BAC80D4E /* SolidCraftApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SolidCraftApp.swift; sourceTree = "<group>"; };
 		C2DABBF06C38BCDF71348100 /* DesignSnapshot.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DesignSnapshot.swift; sourceTree = "<group>"; };
 		CC2CA826AA951BCFECAF9476 /* TouchRootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TouchRootView.swift; sourceTree = "<group>"; };
 		D5F036F58AB60B91E574A437 /* Renderer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Renderer.swift; sourceTree = "<group>"; };
+		E622EC27BE110BDFE796377C /* PCBPanels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PCBPanels.swift; sourceTree = "<group>"; };
 		E629EF4A7F7997A6B6C87233 /* SolidCraft-iOS.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = "SolidCraft-iOS.app"; sourceTree = BUILT_PRODUCTS_DIR; };
+		E7F8A9DB233DFCCADCB28E8C /* PCBCanvas.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PCBCanvas.swift; sourceTree = "<group>"; };
 		EE8776ECE9A3C2BD0527662C /* Picking.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Picking.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -73,6 +89,7 @@
 		465700F5652AC5F2C9D1BC30 /* Touch */ = {
 			isa = PBXGroup;
 			children = (
+				AACFDAC08802DB97478346B4 /* TouchPCBView.swift */,
 				CC2CA826AA951BCFECAF9476 /* TouchRootView.swift */,
 			);
 			path = Touch;
@@ -101,6 +118,8 @@
 			isa = PBXGroup;
 			children = (
 				4F047FDE74D13F74679BE7F8 /* CommonViews.swift */,
+				E7F8A9DB233DFCCADCB28E8C /* PCBCanvas.swift */,
+				E622EC27BE110BDFE796377C /* PCBPanels.swift */,
 				A07CBF717913D620A72D200C /* ViewCube.swift */,
 			);
 			path = UI;
@@ -124,6 +143,7 @@
 				C2DABBF06C38BCDF71348100 /* DesignSnapshot.swift */,
 				9F91FE2F4309124823727F5A /* Engine.swift */,
 				94FBACAA4900742426AA1D15 /* OrbitCamera.swift */,
+				668312648A5618896A056442 /* PCBEngine.swift */,
 				EE8776ECE9A3C2BD0527662C /* Picking.swift */,
 			);
 			path = Engine;
@@ -133,6 +153,7 @@
 			isa = PBXGroup;
 			children = (
 				3BAA740678B4BF0785587D71 /* DesignModel.swift */,
+				10091C35305FAF972740F214 /* PCBModel.swift */,
 				920EDBDD345148F1433C4DC3 /* SelfTest.swift */,
 				71736751286411C0374CED6D /* Tools.swift */,
 			);
@@ -143,6 +164,7 @@
 			isa = PBXGroup;
 			children = (
 				472F985C5CC3535D219CE542 /* DeskPanels.swift */,
+				81651A3B5C711F930D5A50FD /* DeskPCBView.swift */,
 				8ECE174B24E9B687AD85375B /* DeskRootView.swift */,
 			);
 			path = Desk;
@@ -226,12 +248,17 @@
 				6BECB281301BC41B97BAAC82 /* DesignSnapshot.swift in Sources */,
 				6ECDCE42F41B05D4E615CF3B /* Engine.swift in Sources */,
 				F1774193735788DD11FA6477 /* OrbitCamera.swift in Sources */,
+				87F29C230195D9A5228BFCEF /* PCBCanvas.swift in Sources */,
+				80B3B0979FC2705A77221B59 /* PCBEngine.swift in Sources */,
+				8190CD54925CC0E2C22619BD /* PCBModel.swift in Sources */,
+				32507D5F96388FA97202096C /* PCBPanels.swift in Sources */,
 				C767238AF70F73D3911527FF /* Picking.swift in Sources */,
 				7E67631A88E2C16B7318F98B /* Renderer.swift in Sources */,
 				9359CD6FF4C78D25A2ACC737 /* SelfTest.swift in Sources */,
 				95D4D22595A15C3B92A0FAEE /* Shaders.metal in Sources */,
 				15C438649CD7B81A9D28E00C /* SolidCraftApp.swift in Sources */,
 				29AF42638020D6770E061413 /* Tools.swift in Sources */,
+				B3C4BB3D83B37B391D2F0696 /* TouchPCBView.swift in Sources */,
 				BFBB5AC3E01D0270BF73EC15 /* TouchRootView.swift in Sources */,
 				8B060D00CC6724ACF38E2538 /* ViewCube.swift in Sources */,
 				32C85FF9F9DF86E6118DD8FA /* Viewport.swift in Sources */,
@@ -245,10 +272,15 @@
 				0B698A26A7DFF30E2DE4C25A /* CommonViews.swift in Sources */,
 				B02546DA5656C34B6E2B0CD4 /* DesignModel.swift in Sources */,
 				B2AF0564D03B69812F345156 /* DesignSnapshot.swift in Sources */,
+				51392B889968E16F5141BE0B /* DeskPCBView.swift in Sources */,
 				13B69C54DA2006BFF5B6F960 /* DeskPanels.swift in Sources */,
 				C39E1A6AD5ACEB96F685E31B /* DeskRootView.swift in Sources */,
 				0B27EC33FB188C91CD0FB614 /* Engine.swift in Sources */,
 				DFACBD6226921501384C4573 /* OrbitCamera.swift in Sources */,
+				503E9557B31572D86E689111 /* PCBCanvas.swift in Sources */,
+				993547F8966B49817867CED0 /* PCBEngine.swift in Sources */,
+				761FD96B1857F6753D989F22 /* PCBModel.swift in Sources */,
+				92E503B20F32378D2C96B723 /* PCBPanels.swift in Sources */,
 				EC34956F288C81869B908A0C /* Picking.swift in Sources */,
 				F9175137D857CA16BE107647 /* Renderer.swift in Sources */,
 				CF9E92D4153DDF199159AE69 /* SelfTest.swift in Sources */,
