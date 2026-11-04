@@ -6,6 +6,8 @@
 //! returns is freed with `sc_string_free`. A panic inside the engine never unwinds into Swift:
 //! each entry point catches it and answers with an error.
 
+mod flow;
+
 use std::ffi::{CStr, CString, c_char};
 use std::panic::{AssertUnwindSafe, catch_unwind};
 

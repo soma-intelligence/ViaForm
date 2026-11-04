@@ -1,5 +1,6 @@
 module SolidCraftFFI {
     header "solidcraft.h"
+    header "viaform_flow.h"
     link "solidcraft_ffi"
     export *
 }

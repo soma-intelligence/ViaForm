@@ -8,6 +8,7 @@
 
 use serde_json::{Value, json};
 
+pub mod flow;
 pub mod link;
 pub mod project;
 pub mod scene;
