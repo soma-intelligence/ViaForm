@@ -10,6 +10,7 @@ struct DeskRootView: View {
     @Bindable var model: DesignModel
     let pcb: PCBModel
     @State private var workspace = Workspace.design
+    @State private var sim = SimModel()
     @State private var tab = "SOLID"
     @State private var showBrowser = true
     @State private var perspective = false
@@ -24,7 +25,16 @@ struct DeskRootView: View {
         gridOpacity: 0.3
     )
 
-    enum Workspace: String, CaseIterable { case design = "DESIGN", electronics = "ELECTRONICS" }
+    enum Workspace: String, CaseIterable {
+        case design = "DESIGN", electronics = "ELECTRONICS", simulation = "SIMULATION"
+        var symbol: String {
+            switch self {
+            case .design: "cube"
+            case .electronics: "cpu"
+            case .simulation: "wind"
+            }
+        }
+    }
 
     var body: some View {
         VStack(spacing: 0) {
@@ -32,7 +42,7 @@ struct DeskRootView: View {
             HStack(spacing: 0) {
                 Menu(workspace.rawValue) {
                     ForEach(Workspace.allCases, id: \.self) { w in
-                        Button { workspace = w } label: { Label(w.rawValue.capitalized, systemImage: w == .design ? "cube" : "cpu") }
+                        Button { workspace = w } label: { Label(w.rawValue.capitalized, systemImage: w.symbol) }
                     }
                 }
                 .menuStyle(.borderlessButton).fixedSize()
@@ -46,6 +56,8 @@ struct DeskRootView: View {
             .background(Color(nsColor: .windowBackgroundColor))
             if workspace == .electronics {
                 DeskPCBView(model: pcb, design: model) { workspace = .design }
+            } else if workspace == .simulation {
+                SimulationView(model: sim)
             } else {
                 designBody
             }
@@ -54,6 +66,7 @@ struct DeskRootView: View {
         .onAppear {
             let args = ProcessInfo.processInfo.arguments
             if args.contains("--electronics") { workspace = .electronics }
+            if args.contains("--simulation") { workspace = .simulation }
             if args.contains("--board") { workspace = .electronics; pcb.sheet = .board }
             if args.contains("--pcb-3d") {
                 // Demo for the docs: an enclosure, the sample board sent to 3D and mounted on it.

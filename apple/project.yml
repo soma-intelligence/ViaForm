@@ -24,6 +24,13 @@ targets:
     sources:
       - path: Shared
       - path: Touch
+      - path: Resources/viaform-sim.js
+        optional: true
+        buildPhase: resources
+    preBuildScripts:
+      - name: Bundle the simulation
+        script: cd "$SRCROOT/.." && sh scripts/build-sim.sh
+        basedOnDependencyAnalysis: false
     settings:
       base:
         PRODUCT_NAME: SolidCraft
@@ -43,6 +50,13 @@ targets:
     sources:
       - path: Shared
       - path: Desk
+      - path: Resources/viaform-sim.js
+        optional: true
+        buildPhase: resources
+    preBuildScripts:
+      - name: Bundle the simulation
+        script: cd "$SRCROOT/.." && sh scripts/build-sim.sh
+        basedOnDependencyAnalysis: false
     settings:
       base:
         PRODUCT_NAME: SolidCraft

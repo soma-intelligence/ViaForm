@@ -162,7 +162,7 @@ pub extern "C" fn sc_commands() -> *mut c_char {
 pub unsafe extern "C" fn sc_home_camera(s: *const ScSession) -> *mut c_char {
     // SAFETY: the caller passes a live session.
     let Some(s) = (unsafe { s.as_ref() }) else { return out(&Value::Null) };
-    out(&guard(Value::Null, || serde_json::to_value(view::home_camera(&s.session)).unwrap_or(Value::Null)))
+    out(&guard(Value::Null, || serde_json::to_value(view::home_camera(&s.session).ok()).unwrap_or(Value::Null)))
 }
 
 /// The design's model bounds as `{"min": [x,y,z], "max": [x,y,z]}`, or null when empty.
@@ -174,7 +174,7 @@ pub unsafe extern "C" fn sc_bounds(s: *const ScSession) -> *mut c_char {
     // SAFETY: the caller passes a live session.
     let Some(s) = (unsafe { s.as_ref() }) else { return out(&Value::Null) };
     out(&guard(Value::Null, || {
-        let b = view::bounds(&s.session);
+        let Ok(b) = view::bounds(&s.session) else { return Value::Null };
         if b.is_empty() {
             Value::Null
         } else {
@@ -192,7 +192,7 @@ pub unsafe extern "C" fn sc_sketch_plane(s: *const ScSession) -> *mut c_char {
     // SAFETY: the caller passes a live session.
     let Some(s) = (unsafe { s.as_ref() }) else { return out(&Value::Null) };
     out(&guard(Value::Null, || {
-        view::open_sketch_plane(&s.session).map_or(Value::Null, |p| {
+        view::open_sketch_plane(&s.session).ok().flatten().map_or(Value::Null, |p| {
             json!({"origin": [p.origin.x, p.origin.y, p.origin.z], "x_dir": [p.x.x, p.x.y, p.x.z], "y_dir": [p.y.x, p.y.y, p.y.z]})
         })
     }))

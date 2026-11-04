@@ -114,7 +114,7 @@ mod tests {
 
         let mut back = Workspace::default();
         open(&mut back, &path).unwrap();
-        let names: Vec<String> = back.cad.world_state().bodies.iter().map(|b| b.name.clone()).collect();
+        let names: Vec<String> = back.cad.world_state().unwrap().bodies.iter().map(|b| b.name.clone()).collect();
         assert!(names.iter().any(|n| n == "Cube"), "{names:?}");
         assert!(names.iter().any(|n| n == "PCB Board"), "{names:?}");
         assert_eq!(back.pcb.project, ws.pcb.project);

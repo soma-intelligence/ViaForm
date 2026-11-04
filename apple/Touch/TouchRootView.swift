@@ -9,6 +9,7 @@ import UniformTypeIdentifiers
 struct TouchRootView: View {
     @State private var model = DesignModel()
     @State private var pcb = PCBModel(sample: ProcessInfo.processInfo.arguments.contains("--sample"))
+    @State private var sim = SimModel()
     @State private var space: Space = ProcessInfo.processInfo.arguments.contains("--electronics") ? .electronics : .modeling
     @State private var side: SideSheet?
     @State private var showProject = false
@@ -21,7 +22,7 @@ struct TouchRootView: View {
     @Environment(\.horizontalSizeClass) private var hSize
 
     enum SideSheet { case items, history }
-    enum Space: String, CaseIterable { case modeling = "Modeling", electronics = "Electronics" }
+    enum Space: String, CaseIterable { case modeling = "Modeling", electronics = "Electronics", simulation = "Simulation" }
 
     private var compact: Bool { hSize == .compact }
 
@@ -44,6 +45,21 @@ struct TouchRootView: View {
                             .transition(.move(edge: .leading).combined(with: .opacity))
                     }
                 }
+            } else if space == .simulation {
+                ZStack(alignment: .topLeading) {
+                    SimulationView(model: sim, compact: true)
+                    VStack(alignment: .leading, spacing: 10) {
+                        Button { showProject.toggle() } label: {
+                            Image(systemName: "sidebar.left").font(.system(size: 17, weight: .semibold)).frame(width: 44, height: 44)
+                                .background(.regularMaterial, in: Circle())
+                        }
+                        if showProject, !compact {
+                            ProjectSidebar(model: model, space: $space, importing: $importing, exporting: $exporting)
+                                .transition(.move(edge: .leading).combined(with: .opacity))
+                        }
+                    }
+                    .padding(.top, 12).padding(.leading, 12)
+                }
             } else {
                 modeling
             }
@@ -53,7 +69,11 @@ struct TouchRootView: View {
             ProjectSidebar(model: model, space: $space, importing: $importing, exporting: $exporting).presentationDetents([.medium, .large])
         }
         .onChange(of: space) { _, _ in showProject = false; pcb.syncLink(model) }
-        .onAppear { if ProcessInfo.processInfo.arguments.contains("--board") { space = .electronics; pcb.sheet = .board } }
+        .onAppear {
+            let args = ProcessInfo.processInfo.arguments
+            if args.contains("--board") { space = .electronics; pcb.sheet = .board }
+            if args.contains("--simulation") { space = .simulation }
+        }
     }
 
     private var modeling: some View {
@@ -185,6 +205,8 @@ struct ProjectSidebar: View {
                     .foregroundStyle(space == .modeling ? Color.accentColor : .primary)
                 Button { space = .electronics } label: { Label("Electronics", systemImage: "cpu") }
                     .foregroundStyle(space == .electronics ? Color.accentColor : .primary)
+                Button { space = .simulation } label: { Label("Simulation", systemImage: "wind") }
+                    .foregroundStyle(space == .simulation ? Color.accentColor : .primary)
                 Label("Visualization", systemImage: "sparkles").foregroundStyle(.secondary)
                 Label("Drawings", systemImage: "doc.richtext").foregroundStyle(.secondary)
             }

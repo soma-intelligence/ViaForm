@@ -101,13 +101,13 @@ impl Workspace {
 
     #[napi]
     pub fn bounds(&self) -> Value {
-        let b = view::bounds(&self.ws.cad);
+        let Ok(b) = view::bounds(&self.ws.cad) else { return Value::Null };
         if b.is_empty() { Value::Null } else { json!({"min": [b.min.x, b.min.y, b.min.z], "max": [b.max.x, b.max.y, b.max.z]}) }
     }
 
     #[napi]
     pub fn sketch_plane(&self) -> Value {
-        view::open_sketch_plane(&self.ws.cad).map_or(Value::Null, |p| {
+        view::open_sketch_plane(&self.ws.cad).ok().flatten().map_or(Value::Null, |p| {
             json!({"origin": [p.origin.x, p.origin.y, p.origin.z], "x_dir": [p.x.x, p.x.y, p.x.z], "y_dir": [p.y.x, p.y.y, p.y.z]})
         })
     }

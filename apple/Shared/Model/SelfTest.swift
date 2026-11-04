@@ -123,7 +123,27 @@ enum SelfTest {
         d.click(at: d.camera.project([-5, -50, 3], size: d.viewSize), additive: false)
         pcbCheck(shown && d.facePick == nil && d.message?.contains("mounted") == true, "mount by clicking a face (\(d.message ?? ""))")
 
+        // Simulation: the shared TypeScript flight model, through JavaScriptCore.
+        for (ok, what) in MainActor.assumeIsolated({ simulationChecks() }) { check(ok, what) }
+
         print(failures == 0 ? "ALL PASS" : "\(failures) FAILED")
         exit(failures == 0 ? 0 : 1)
+    }
+
+    @MainActor
+    private static func simulationChecks() -> [(Bool, String)] {
+        var out: [(Bool, String)] = []
+        let sim = SimModel()
+        out.append((sim.error == nil && sim.world?.obstacles.isEmpty == false, "simulation bundle loads a course \(sim.error ?? "")"))
+        out.append(((sim.catalog?.weathers.count ?? 0) >= 5 && sim.parts?.parts.isEmpty == false, "simulation lists weathers and parts"))
+        sim.runToEnd()
+        out.append((sim.status?.finished == true && sim.status?.collided == false && sim.status?.crashed == false,
+                    "trained drone flies the obstacle course: \(sim.outcome ?? "not finished")"))
+        out.append((sim.trail.count > 100, "flight leaves a trail (\(sim.trail.count) points)"))
+        sim.options.weather = 2
+        sim.options.brain = "pid"
+        sim.reset()
+        out.append((sim.frame?.t == 0 && sim.trail.count == 1, "reset puts the drone back on the start"))
+        return out
     }
 }

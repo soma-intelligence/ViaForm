@@ -19,13 +19,8 @@ viaform-core = { path = "core" }
 serde = { version = "1", features = ["derive"] }
 serde_json = { version = "1", features = ["float_roundtrip"] }
 
-# Same vendored truck fixes as the SolidCraft workspace: patches only apply from the root workspace.
-[patch.crates-io]
-truck-geometry = { path = "engines/solidcraft/vendor/truck-geometry" }
-truck-shapeops = { path = "engines/solidcraft/vendor/truck-shapeops" }
-truck-stepio = { path = "engines/solidcraft/vendor/truck-stepio" }
-truck-meshalgo = { path = "engines/solidcraft/vendor/truck-meshalgo" }
-matext4cgmath = { path = "engines/solidcraft/vendor/matext4cgmath" }
+# SolidCraft's own patches (egui-wgpu, winit, accesskit) only touch its UI crates, which the
+# core does not build, so no patch section is needed here.
 
 [profile.dev.package."*"]
 opt-level = 2

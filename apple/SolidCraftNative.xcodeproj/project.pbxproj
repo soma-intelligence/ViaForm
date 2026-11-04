@@ -12,19 +12,24 @@
 		0CFBAC2DA0E694CF5312E4EF /* SolidCraftApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = C0E1553CF1628944BAC80D4E /* SolidCraftApp.swift */; };
 		13B69C54DA2006BFF5B6F960 /* DeskPanels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 472F985C5CC3535D219CE542 /* DeskPanels.swift */; };
 		15C438649CD7B81A9D28E00C /* SolidCraftApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = C0E1553CF1628944BAC80D4E /* SolidCraftApp.swift */; };
+		1B309A92337562BED3378512 /* SimModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6E1C8E498A08A4ADC2CFB7C2 /* SimModel.swift */; };
 		29AF42638020D6770E061413 /* Tools.swift in Sources */ = {isa = PBXBuildFile; fileRef = 71736751286411C0374CED6D /* Tools.swift */; };
 		32507D5F96388FA97202096C /* PCBPanels.swift in Sources */ = {isa = PBXBuildFile; fileRef = E622EC27BE110BDFE796377C /* PCBPanels.swift */; };
 		32C85FF9F9DF86E6118DD8FA /* Viewport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7E3DBF8C22F22CC30F53043F /* Viewport.swift */; };
+		35806E92862FD920239A2B82 /* SimulationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9797604A3ED0478A952FBD46 /* SimulationView.swift */; };
 		503E9557B31572D86E689111 /* PCBCanvas.swift in Sources */ = {isa = PBXBuildFile; fileRef = E7F8A9DB233DFCCADCB28E8C /* PCBCanvas.swift */; };
 		51392B889968E16F5141BE0B /* DeskPCBView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 81651A3B5C711F930D5A50FD /* DeskPCBView.swift */; };
+		5942C2B0DC5E90DF6E86A6B4 /* viaform-sim.js in Resources */ = {isa = PBXBuildFile; fileRef = 6563D39B8858701678AC28BA /* viaform-sim.js */; };
 		6B841B6D9D85B96D94E4C7A0 /* PCBLink.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CF978D6F20333AC18E65435 /* PCBLink.swift */; };
 		6BECB281301BC41B97BAAC82 /* DesignSnapshot.swift in Sources */ = {isa = PBXBuildFile; fileRef = C2DABBF06C38BCDF71348100 /* DesignSnapshot.swift */; };
 		6ECDCE42F41B05D4E615CF3B /* Engine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9F91FE2F4309124823727F5A /* Engine.swift */; };
 		761FD96B1857F6753D989F22 /* PCBModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 10091C35305FAF972740F214 /* PCBModel.swift */; };
+		7D695F687EB178102B276373 /* viaform-sim.js in Resources */ = {isa = PBXBuildFile; fileRef = 6563D39B8858701678AC28BA /* viaform-sim.js */; };
 		7E67631A88E2C16B7318F98B /* Renderer.swift in Sources */ = {isa = PBXBuildFile; fileRef = D5F036F58AB60B91E574A437 /* Renderer.swift */; };
 		807A8DEDA6436E3A741609F3 /* Tools.swift in Sources */ = {isa = PBXBuildFile; fileRef = 71736751286411C0374CED6D /* Tools.swift */; };
 		80B3B0979FC2705A77221B59 /* PCBEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 668312648A5618896A056442 /* PCBEngine.swift */; };
 		8190CD54925CC0E2C22619BD /* PCBModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 10091C35305FAF972740F214 /* PCBModel.swift */; };
+		85503B096BE6F1D5D1BC8FC9 /* SimModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6E1C8E498A08A4ADC2CFB7C2 /* SimModel.swift */; };
 		861CE8AB7C0F8F463C0FE16E /* CommonViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4F047FDE74D13F74679BE7F8 /* CommonViews.swift */; };
 		87F29C230195D9A5228BFCEF /* PCBCanvas.swift in Sources */ = {isa = PBXBuildFile; fileRef = E7F8A9DB233DFCCADCB28E8C /* PCBCanvas.swift */; };
 		8B060D00CC6724ACF38E2538 /* ViewCube.swift in Sources */ = {isa = PBXBuildFile; fileRef = A07CBF717913D620A72D200C /* ViewCube.swift */; };
@@ -36,6 +41,7 @@
 		9CBA8E5FBF6A5C40E280240C /* Viewport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7E3DBF8C22F22CC30F53043F /* Viewport.swift */; };
 		AD2771D3B874A2D5C0CC2AC2 /* ViewCube.swift in Sources */ = {isa = PBXBuildFile; fileRef = A07CBF717913D620A72D200C /* ViewCube.swift */; };
 		B02546DA5656C34B6E2B0CD4 /* DesignModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3BAA740678B4BF0785587D71 /* DesignModel.swift */; };
+		B07A48A91EC4355145699603 /* SimScene.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4A6E4318299FA802770B68B8 /* SimScene.swift */; };
 		B2AF0564D03B69812F345156 /* DesignSnapshot.swift in Sources */ = {isa = PBXBuildFile; fileRef = C2DABBF06C38BCDF71348100 /* DesignSnapshot.swift */; };
 		B3C4BB3D83B37B391D2F0696 /* TouchPCBView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AACFDAC08802DB97478346B4 /* TouchPCBView.swift */; };
 		BFBB5AC3E01D0270BF73EC15 /* TouchRootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC2CA826AA951BCFECAF9476 /* TouchRootView.swift */; };
@@ -43,11 +49,15 @@
 		C767238AF70F73D3911527FF /* Picking.swift in Sources */ = {isa = PBXBuildFile; fileRef = EE8776ECE9A3C2BD0527662C /* Picking.swift */; };
 		CB754DFF675702371CBA5E2D /* DesignModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3BAA740678B4BF0785587D71 /* DesignModel.swift */; };
 		CF9E92D4153DDF199159AE69 /* SelfTest.swift in Sources */ = {isa = PBXBuildFile; fileRef = 920EDBDD345148F1433C4DC3 /* SelfTest.swift */; };
+		D5C32BF08F1E51A45FC50C44 /* SimulationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9797604A3ED0478A952FBD46 /* SimulationView.swift */; };
+		D82384251B1425C13F91750D /* SimEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = A5F66A16B5DF112106AB9871 /* SimEngine.swift */; };
 		DF3D74A97B804AB78EDDCBED /* PCBLink.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CF978D6F20333AC18E65435 /* PCBLink.swift */; };
 		DFACBD6226921501384C4573 /* OrbitCamera.swift in Sources */ = {isa = PBXBuildFile; fileRef = 94FBACAA4900742426AA1D15 /* OrbitCamera.swift */; };
 		EC34956F288C81869B908A0C /* Picking.swift in Sources */ = {isa = PBXBuildFile; fileRef = EE8776ECE9A3C2BD0527662C /* Picking.swift */; };
+		EF40CA3F090413E87874198C /* SimScene.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4A6E4318299FA802770B68B8 /* SimScene.swift */; };
 		F1774193735788DD11FA6477 /* OrbitCamera.swift in Sources */ = {isa = PBXBuildFile; fileRef = 94FBACAA4900742426AA1D15 /* OrbitCamera.swift */; };
 		F9175137D857CA16BE107647 /* Renderer.swift in Sources */ = {isa = PBXBuildFile; fileRef = D5F036F58AB60B91E574A437 /* Renderer.swift */; };
+		FCF6CFBCE042D3138A225EB4 /* SimEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = A5F66A16B5DF112106AB9871 /* SimEngine.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -56,17 +66,22 @@
 		25D626545DF2243265E82C15 /* SolidCraft-macOS.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "SolidCraft-macOS.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		3BAA740678B4BF0785587D71 /* DesignModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DesignModel.swift; sourceTree = "<group>"; };
 		472F985C5CC3535D219CE542 /* DeskPanels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeskPanels.swift; sourceTree = "<group>"; };
+		4A6E4318299FA802770B68B8 /* SimScene.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SimScene.swift; sourceTree = "<group>"; };
 		4F047FDE74D13F74679BE7F8 /* CommonViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CommonViews.swift; sourceTree = "<group>"; };
 		5CF978D6F20333AC18E65435 /* PCBLink.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PCBLink.swift; sourceTree = "<group>"; };
+		6563D39B8858701678AC28BA /* viaform-sim.js */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.javascript; path = "viaform-sim.js"; sourceTree = "<group>"; };
 		668312648A5618896A056442 /* PCBEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PCBEngine.swift; sourceTree = "<group>"; };
+		6E1C8E498A08A4ADC2CFB7C2 /* SimModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SimModel.swift; sourceTree = "<group>"; };
 		71736751286411C0374CED6D /* Tools.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Tools.swift; sourceTree = "<group>"; };
 		7E3DBF8C22F22CC30F53043F /* Viewport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Viewport.swift; sourceTree = "<group>"; };
 		81651A3B5C711F930D5A50FD /* DeskPCBView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeskPCBView.swift; sourceTree = "<group>"; };
 		8ECE174B24E9B687AD85375B /* DeskRootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeskRootView.swift; sourceTree = "<group>"; };
 		920EDBDD345148F1433C4DC3 /* SelfTest.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SelfTest.swift; sourceTree = "<group>"; };
 		94FBACAA4900742426AA1D15 /* OrbitCamera.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OrbitCamera.swift; sourceTree = "<group>"; };
+		9797604A3ED0478A952FBD46 /* SimulationView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SimulationView.swift; sourceTree = "<group>"; };
 		9F91FE2F4309124823727F5A /* Engine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Engine.swift; sourceTree = "<group>"; };
 		A07CBF717913D620A72D200C /* ViewCube.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ViewCube.swift; sourceTree = "<group>"; };
+		A5F66A16B5DF112106AB9871 /* SimEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SimEngine.swift; sourceTree = "<group>"; };
 		AACFDAC08802DB97478346B4 /* TouchPCBView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TouchPCBView.swift; sourceTree = "<group>"; };
 		C0E1553CF1628944BAC80D4E /* SolidCraftApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SolidCraftApp.swift; sourceTree = "<group>"; };
 		C2DABBF06C38BCDF71348100 /* DesignSnapshot.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DesignSnapshot.swift; sourceTree = "<group>"; };
@@ -83,10 +98,22 @@
 			isa = PBXGroup;
 			children = (
 				D95FEAC58870D0BB3D83C2CA /* Desk */,
+				C4EC3BEFD2C2555DCD6A075F /* Resources */,
 				B1F00466164294ABB3602BD9 /* Shared */,
 				465700F5652AC5F2C9D1BC30 /* Touch */,
 				717A338192D92BC3360A56FB /* Products */,
 			);
+			sourceTree = "<group>";
+		};
+		1DF68797AC17AA0C9CAB98D4 /* Sim */ = {
+			isa = PBXGroup;
+			children = (
+				A5F66A16B5DF112106AB9871 /* SimEngine.swift */,
+				6E1C8E498A08A4ADC2CFB7C2 /* SimModel.swift */,
+				4A6E4318299FA802770B68B8 /* SimScene.swift */,
+				9797604A3ED0478A952FBD46 /* SimulationView.swift */,
+			);
+			path = Sim;
 			sourceTree = "<group>";
 		};
 		465700F5652AC5F2C9D1BC30 /* Touch */ = {
@@ -135,9 +162,18 @@
 				CAA27B058765967E5EE85402 /* Engine */,
 				CF6421261A96D66E614BA8C7 /* Model */,
 				5D724FC06B3633B5333D6176 /* Render */,
+				1DF68797AC17AA0C9CAB98D4 /* Sim */,
 				B0A4AFD592DD9320D1DF0075 /* UI */,
 			);
 			path = Shared;
+			sourceTree = "<group>";
+		};
+		C4EC3BEFD2C2555DCD6A075F /* Resources */ = {
+			isa = PBXGroup;
+			children = (
+				6563D39B8858701678AC28BA /* viaform-sim.js */,
+			);
+			path = Resources;
 			sourceTree = "<group>";
 		};
 		CAA27B058765967E5EE85402 /* Engine */ = {
@@ -181,7 +217,9 @@
 			isa = PBXNativeTarget;
 			buildConfigurationList = 9C61F17CEB34947821EB2A38 /* Build configuration list for PBXNativeTarget "SolidCraft-iOS" */;
 			buildPhases = (
+				37FB4D1657D87654ECC55743 /* Bundle the simulation */,
 				BE96FCA138A367B82E71B35C /* Sources */,
+				882C72CFF1A05A82C727F3F7 /* Resources */,
 			);
 			buildRules = (
 			);
@@ -198,7 +236,9 @@
 			isa = PBXNativeTarget;
 			buildConfigurationList = 44FDA171C85F2872D49E02E0 /* Build configuration list for PBXNativeTarget "SolidCraft-macOS" */;
 			buildPhases = (
+				0AD8E783E453D68A642AFB7C /* Bundle the simulation */,
 				FBC7D47BD89270DCFC4DFA1C /* Sources */,
+				C70C61FE214C9BD247BE2767 /* Resources */,
 			);
 			buildRules = (
 			);
@@ -242,6 +282,66 @@
 		};
 /* End PBXProject section */
 
+/* Begin PBXResourcesBuildPhase section */
+		882C72CFF1A05A82C727F3F7 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				5942C2B0DC5E90DF6E86A6B4 /* viaform-sim.js in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		C70C61FE214C9BD247BE2767 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				7D695F687EB178102B276373 /* viaform-sim.js in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXShellScriptBuildPhase section */
+		0AD8E783E453D68A642AFB7C /* Bundle the simulation */ = {
+			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+			);
+			name = "Bundle the simulation";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "cd \"$SRCROOT/..\" && sh scripts/build-sim.sh";
+		};
+		37FB4D1657D87654ECC55743 /* Bundle the simulation */ = {
+			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+			);
+			name = "Bundle the simulation";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "cd \"$SRCROOT/..\" && sh scripts/build-sim.sh";
+		};
+/* End PBXShellScriptBuildPhase section */
+
 /* Begin PBXSourcesBuildPhase section */
 		BE96FCA138A367B82E71B35C /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
@@ -261,6 +361,10 @@
 				7E67631A88E2C16B7318F98B /* Renderer.swift in Sources */,
 				9359CD6FF4C78D25A2ACC737 /* SelfTest.swift in Sources */,
 				95D4D22595A15C3B92A0FAEE /* Shaders.metal in Sources */,
+				FCF6CFBCE042D3138A225EB4 /* SimEngine.swift in Sources */,
+				1B309A92337562BED3378512 /* SimModel.swift in Sources */,
+				EF40CA3F090413E87874198C /* SimScene.swift in Sources */,
+				D5C32BF08F1E51A45FC50C44 /* SimulationView.swift in Sources */,
 				15C438649CD7B81A9D28E00C /* SolidCraftApp.swift in Sources */,
 				29AF42638020D6770E061413 /* Tools.swift in Sources */,
 				B3C4BB3D83B37B391D2F0696 /* TouchPCBView.swift in Sources */,
@@ -291,6 +395,10 @@
 				F9175137D857CA16BE107647 /* Renderer.swift in Sources */,
 				CF9E92D4153DDF199159AE69 /* SelfTest.swift in Sources */,
 				8EF4102E05577B4B368D738B /* Shaders.metal in Sources */,
+				D82384251B1425C13F91750D /* SimEngine.swift in Sources */,
+				85503B096BE6F1D5D1BC8FC9 /* SimModel.swift in Sources */,
+				B07A48A91EC4355145699603 /* SimScene.swift in Sources */,
+				35806E92862FD920239A2B82 /* SimulationView.swift in Sources */,
 				0CFBAC2DA0E694CF5312E4EF /* SolidCraftApp.swift in Sources */,
 				807A8DEDA6436E3A741609F3 /* Tools.swift in Sources */,
 				AD2771D3B874A2D5C0CC2AC2 /* ViewCube.swift in Sources */,
