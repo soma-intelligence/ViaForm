@@ -11,7 +11,8 @@ const electron = createRequire(import.meta.url)("electron");
 const PORT = 9333;
 const args = [dir, "--pcb-3d", `--remote-debugging-port=${PORT}`, ...(process.platform === "linux" ? ["--no-sandbox"] : [])];
 const app = spawn(electron, args, { stdio: "ignore" });
-const deadline = setTimeout(() => { console.log("FAIL timed out"); app.kill(); process.exit(1); }, 180_000);
+// SIGKILL: on SIGTERM the app asks whether to keep the unsaved test document and stays open.
+const deadline = setTimeout(() => { console.log("FAIL timed out"); app.kill("SIGKILL"); process.exit(1); }, 180_000);
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 let ws, id = 0;
 const pending = new Map();
@@ -75,7 +76,7 @@ const H = `
   const btn = (title) => qa("button").find((b) => (b.title || "").startsWith(title));
 `;
 
-await connect().catch((e) => { console.log(`FAIL ${e.message}`); app.kill(); process.exit(1); });
+await connect().catch((e) => { console.log(`FAIL ${e.message}`); app.kill("SIGKILL"); process.exit(1); });
 await send("Runtime.enable");
 await sleep(4000);
 
@@ -149,5 +150,5 @@ for (const [p, n, v] of results) console.log(`${p ? "PASS" : "FAIL"} ${n}${p ? "
 if (errors.length) console.log("ERRORS:\n" + errors.join("\n"));
 console.log(`${results.filter((r) => r[0]).length}/${results.length} passed`);
 clearTimeout(deadline);
-app.kill();
+app.kill("SIGKILL");
 process.exit(results.every((r) => r[0]) ? 0 : 1);

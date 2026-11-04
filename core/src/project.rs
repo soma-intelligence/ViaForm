@@ -40,7 +40,9 @@ pub fn save(ws: &mut Workspace, path: &Path) -> Result<Value, String> {
     ws.cad_execute("file.save_as", &json!({"path": design}))
         .or_else(|_| ws.cad_execute("file.save", &json!({"path": design})))?;
     pcbcraft_io::save(&ws.pcb.project, &board)?;
-    let manifest = json!({"format": "viaform", "version": FORMAT_VERSION, "app": env!("CARGO_PKG_VERSION")});
+    // The PCB revision travels with the file: the 3D board is tagged with it, so a reopened
+    // project would otherwise read as out of date with a fresh session counter.
+    let manifest = json!({"format": "viaform", "version": FORMAT_VERSION, "app": env!("CARGO_PKG_VERSION"), "pcb_revision": ws.pcb_revision()});
 
     let part = path.with_extension("viaform-part");
     {
@@ -90,6 +92,9 @@ pub fn open(ws: &mut Workspace, path: &Path) -> Result<Value, String> {
     let mut fresh = Workspace::default();
     fresh.cad_execute("doc.open", &json!({"path": design}))?;
     fresh.pcb.replace(project).map_err(|e| e.to_string())?;
+    if let Some(revision) = manifest.get("pcb_revision").and_then(Value::as_u64) {
+        fresh.pcb.revision = revision;
+    }
     *ws = fresh;
     Ok(json!({"opened": path, "version": version}))
 }
@@ -114,6 +119,7 @@ mod tests {
         assert!(names.iter().any(|n| n == "PCB Board"), "{names:?}");
         assert_eq!(back.pcb.project, ws.pcb.project);
         assert!(crate::link::linked_revision(&mut back.cad, &back.pcb).is_some());
+        assert_eq!(back.link_state()["out_of_date"], json!(false), "a reopened board is still in sync");
     }
 
     #[test]

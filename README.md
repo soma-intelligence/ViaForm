@@ -55,6 +55,16 @@ cd electron && npm ci && npm start
 core's. `npm run test:ui` starts the app and drives its interface (toolbar, browser, ViewCube,
 timeline, sketch, electronics); it needs a display. `npm run dist` packages for the current platform.
 
+`npm test` includes a flying drone built end to end (`electron/src/test/drone.ts`): a 5-inch X
+frame with motors, propellers and a 4S pack; a flight controller drawn, placed and routed to a
+clean DRC; the board seated on the frame; then mass, balance, thrust to weight, interferences and
+the propellers spun through a full turn against the airframe, with STEP and KiCad exports.
+`npm run sample:drone` writes it to `samples/` as `drone.viaform` (open it in the app),
+`drone.step` and `flight-controller.kicad_pcb`.
+
+![Drone sample, design](docs/drone-design.png)
+![Drone sample, flight controller](docs/drone-board.png)
+
 Apple apps:
 
 ```bash
