@@ -6,7 +6,7 @@
 
 import { add, col, norm, qFromEuler, qToM3, rng, scale, sub, type Rng, type V3 } from "./math";
 import { Cascade, DEFAULT_GAINS, headingOf, type Estimate, type Gains, type Setpoint } from "./control";
-import { newState, step, thrusts, Wind, type Env, type QuadParams, type QuadState } from "./physics";
+import { G, newState, step, thrusts, Wind, type Env, type QuadParams, type QuadState } from "./physics";
 import { Planner, DEFAULT_PLANNER, type PlanOut } from "./planner";
 import { Policy, policyInput } from "./policy";
 import { MOTOR_THRUST_3S_N } from "./parts";
@@ -37,6 +37,8 @@ export const TRAINED = (nn = true): Brain => ({ gains: { ...TRAINED_GAINS }, pol
 export type Mission =
   | { kind: "hover"; at: V3 }
   | { kind: "waypoints"; course: Course }
+  /** Flown by a person (the game): `Flight.pilot` holds the sticks; the course is for collisions. */
+  | { kind: "manual"; course: Course }
   /** Velocity steps (training): each entry holds from its time until the next. */
   | { kind: "track"; at: V3; steps: { t: number; v: V3 }[] };
 
@@ -46,6 +48,14 @@ export type Frame = {
   t: number; p: V3; q: [number, number, number, number]; v: V3; omega: number[]; wind: V3;
   target: V3; hits: TofHit[]; voltage: number; soc: number; residual: V3; planIndex: number;
 };
+
+/** Sticks, each -1..1: forward, left, up, and yaw rate to the left. */
+export type PilotInput = { x: number; y: number; z: number; yaw: number };
+/** "position": the drone holds its place when the sticks are centred and flies the velocity the
+ *  sticks ask for. "angle": the sticks tilt it (up to 35°) and it keeps going, as a racing quad in
+ *  angle mode; only height is held. */
+export type PilotMode = "position" | "angle";
+const PILOT_SPEED = 5, PILOT_CLIMB = 2.5, PILOT_YAW = 2.4, PILOT_TILT = (35 * Math.PI) / 180;
 
 export class Flight {
   s: QuadState;
@@ -74,14 +84,19 @@ export class Flight {
   errN = 0;
   private k = 0;
   P: QuadParams;
+  /** The sticks, for a manual mission. */
+  pilot: PilotInput = { x: 0, y: 0, z: 0, yaw: 0 };
+  pilotMode: PilotMode = "position";
+  private pilotYaw = 0;
+  private hold: V3 | null = null;
 
   constructor(base: QuadParams, public brain: Brain, public sc: Scenario) {
     this.rand = rng(sc.seed);
     // Each flight's drone differs a little from the nominal one, as real builds do.
     this.P = { ...base, mass: base.mass * (sc.massScale ?? 1), kT: base.kT * (sc.thrustScale ?? 1) };
-    const start: V3 = sc.mission.kind === "waypoints" ? add(sc.mission.course.start, [0, 0, 0]) : sc.mission.at;
+    const start: V3 = sc.mission.kind === "waypoints" || sc.mission.kind === "manual" ? add(sc.mission.course.start, [0, 0, 0]) : sc.mission.at;
     this.s = newState(start, qFromEuler(0, 0, 0));
-    if (sc.mission.kind !== "waypoints") {
+    if (sc.mission.kind !== "waypoints" && sc.mission.kind !== "manual") {
       // Start hovering: motors at hover speed, so the test measures holding, not taking off.
       const hover = Math.sqrt((this.P.mass * 9.81) / 4 / this.P.kT);
       this.s.omega = [hover, hover, hover, hover];
@@ -107,7 +122,7 @@ export class Flight {
   }
 
   get course(): Course | null {
-    return this.sc.mission.kind === "waypoints" ? this.sc.mission.course : null;
+    return this.sc.mission.kind === "waypoints" || this.sc.mission.kind === "manual" ? this.sc.mission.course : null;
   }
 
   estimate(): Estimate {
@@ -154,6 +169,29 @@ export class Flight {
       this.sp = { mode: "velocity", v: cur.v, yaw: 0 };
     }
 
+    let angleAcc: V3 | null = null;
+    if (this.sc.mission.kind === "manual" && k % 5 === 0) {
+      const u = this.pilot, c = Math.cos(this.pilotYaw), sn = Math.sin(this.pilotYaw);
+      const dz = (x: number) => (Math.abs(x) < 0.06 ? 0 : x);
+      this.pilotYaw += dz(u.yaw) * PILOT_YAW * DT * 5;
+      const vz = dz(u.z) * PILOT_CLIMB;
+      if (this.pilotMode === "angle") {
+        // Height held by the velocity loop; the tilt straight from the sticks.
+        this.sp = { mode: "velocity", v: [e.v[0], e.v[1], vz], yaw: this.pilotYaw };
+        const ax = Math.tan(PILOT_TILT) * G * dz(u.x), ay = Math.tan(PILOT_TILT) * G * dz(u.y);
+        angleAcc = [c * ax - sn * ay, sn * ax + c * ay, 0];
+      } else {
+        const fwd = dz(u.x) * PILOT_SPEED, left = dz(u.y) * PILOT_SPEED;
+        // Sticks centred: hold the spot where the drone came to rest.
+        const still = !fwd && !left;
+        if (!still) this.hold = null;
+        else if (!this.hold && Math.hypot(e.v[0], e.v[1]) < 0.4) this.hold = [e.p[0], e.p[1], e.p[2]];
+        const v: V3 = [c * fwd - sn * left, sn * fwd + c * left, vz];
+        this.sp = this.hold && !vz ? { mode: "position", p: this.hold, yaw: this.pilotYaw } : { mode: "velocity", v, yaw: this.pilotYaw };
+        if (this.hold && vz) this.hold = null;
+      }
+    }
+
     // 100 Hz outer loop, with the learned correction.
     if (k % 5 === 0) {
       if (this.sp.mode === "velocity") this.trackError += (norm(sub(this.sp.v, e.v)) - this.trackError) * 0.01;
@@ -173,6 +211,7 @@ export class Flight {
         const r = this.residual;
         this.acc = add(this.acc, [c * r[0] - sn * r[1], sn * r[0] + c * r[1], r[2]]);
       }
+      if (angleAcc) this.acc = [angleAcc[0], angleAcc[1], this.acc[2]];
     }
     const cmd = this.ctl.inner(e, this.acc, this.sp.yaw, DT);
 

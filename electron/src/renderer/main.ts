@@ -1,7 +1,7 @@
 import type { DocState, Json, LinkState, UpdateStatus, ViaFormAPI } from "../shared/api";
 import { icon } from "./icons";
 import { PART_KINDS, PcbCanvas, PcbModel } from "./pcb";
-import { BRAINS, CAMERAS, MISSIONS, SimView, type SimSettings } from "./simulation";
+import { ASSISTS, BRAINS, CAMERAS, MISSIONS, SimView, type SimSettings } from "./simulation";
 import { WEATHERS } from "../shared/sim/weather";
 import { ViewCube } from "./viewcube";
 import { Viewport, type Hit, type NavMode, type ViewName, type VisualStyle } from "./viewport";
@@ -665,12 +665,18 @@ function simulationPanels(): HTMLElement[] {
     panel("MISSION", [choice(MISSIONS, S.mission, set("mission"), 140)]),
     panel("WEATHER", [choice(WEATHERS.map((w, i) => ({ id: i, label: w.name })), S.weather, set("weather"), 170)]),
     panel("CONTROLLER", [choice(BRAINS, S.brain, set("brain"), 150)]),
-    panel("FLY", [
-      tool(v.playing ? "pause" : "play", v.playing ? "Pause (Space)" : "Fly (Space)", () => v.play()),
-      tool("revert", "Fly again from the start (R)", () => v.restart()),
-      tool("next", "Next random draw of the weather (N)", () => v.restart(true)),
-      choice([0.25, 0.5, 1, 2, 4].map((x) => ({ id: x, label: `${x}×` })), S.speed, set("speed"), 58),
-    ]),
+    ...(S.mission === "pilot"
+      ? [panel("RACE", [
+        choice(ASSISTS, S.assist, set("assist"), 160),
+        tool(v.playing ? "pause" : "play", v.playing ? "Pause" : "Resume", () => v.play()),
+        tool("revert", "Start again (Enter)", () => v.restart()),
+      ])]
+      : [panel("FLY", [
+        tool(v.playing ? "pause" : "play", v.playing ? "Pause (Space)" : "Fly (Space)", () => v.play()),
+        tool("revert", "Fly again from the start (R)", () => v.restart()),
+        tool("next", "Next random draw of the weather (N)", () => v.restart(true)),
+        choice([0.25, 0.5, 1, 2, 4].map((x) => ({ id: x, label: `${x}×` })), S.speed, set("speed"), 58),
+      ])]),
     panel("VIEW", [
       choice(CAMERAS, S.camera, set("camera"), 92),
       tool("route", "Show the sensor beams", () => v.toggle("beams"), { on: S.show.beams }),
@@ -1214,6 +1220,8 @@ document.addEventListener("keydown", (e) => {
   if (e.key === "F6") return state.ws === "design" ? viewport.fit() : sheet.fit();
   if (mod && e.key.toLowerCase() === "k") { e.preventDefault(); return void openPalette(); }
   if (mod || e.altKey) return;
+  // The game takes its flight keys (W A S D...) before the shortcuts.
+  if (state.ws === "simulation" && sim().key(e, true)) { e.preventDefault(); return; }
   if (e.key === "s" || e.key === "S") { e.preventDefault(); return void openPalette(); }
   if (state.ws === "simulation") {
     const v = sim();
@@ -1235,6 +1243,16 @@ document.addEventListener("keydown", (e) => {
   const hits = specs.filter((s) => s.key === k && s.tab && s.tab !== "RENDER");
   const s = hits.find((x) => (x.tab === "SKETCH") === sketching()) ?? hits[0];
   if (s) { e.preventDefault(); run(s); }
+});
+
+document.addEventListener("keyup", (e) => {
+  if (state.ws === "simulation" && simView?.key(e, false)) e.preventDefault();
+});
+
+// A video recorder drives the simulation frame by frame (main: --record).
+Object.assign(window, {
+  __simStage: (o: Parameters<SimView["stage"]>[0] & { caption?: string }) => { switchTo("simulation"); sim().stage(o); sim().caption(o.caption ?? null); },
+  __simStep: (dt: number, time: number) => new Promise<void>((done) => { sim().step(dt, time); requestAnimationFrame(() => done()); }),
 });
 
 api.onMenu((c) => {

@@ -2,7 +2,8 @@
 // trained controller, and flights in hard weather that must hover and finish the obstacle course.
 import { test } from "node:test";
 import * as assert from "node:assert/strict";
-import { DT, PID_ONLY, quad3, runEpisode, TRAINED, type Scenario } from "../shared/sim/sim";
+import { DT, Flight, PID_ONLY, quad3, runEpisode, TRAINED, type Scenario } from "../shared/sim/sim";
+import { Race } from "../shared/sim/race";
 import { newState, step } from "../shared/sim/physics";
 import { airDensity, Battery, Exposure, WEATHERS } from "../shared/sim/weather";
 import { OccupancyGrid } from "../shared/sim/mapping";
@@ -79,5 +80,34 @@ test("obstacle course: finished without touching anything, calm to gale", () => 
   for (const [w, seed, nn] of [["Indoor", 1, true], ["Breezy", 3, true], ["Gale", 1, false], ["Rain", 2, false], ["Snow", 3, true], ["Freezing fog", 1, false]] as const) {
     const r = runEpisode(P, TRAINED(nn), course(w, seed));
     assert.ok(r.completed && !r.collided && !r.crashed, `${w} seed ${seed}: completed ${r.completed}, collided ${r.collided}, crashed ${r.crashed}`);
+  }
+});
+
+test("game: a pilot flying the sticks passes the gates in order and lands on the pad", () => {
+  // A scripted pilot: sticks proportional to the way to the next point, yaw untouched (so the
+  // sticks are in the world frame). Its route goes round the posts and through the window.
+  const route: [number, number, number][] = [
+    [0, 0, 1.5], [4.5, 0, 1.5], [6.8, 0, 1.5], [9, -1, 1.5], [14.5, -1, 2], [16.5, 4, 2.4], [18.8, 4, 2.4],
+    [22.5, 2.1, 1.8], [25.5, 2.1, 1.8], [28.5, 0, 1.2], [30.8, 0, 1.2], [34, 0, 1.9], [36, 0, 1.9], [40, 0, 1], [40, 0, -0.5],
+  ];
+  for (const [mode, w] of [["position", "Indoor"], ["position", "Breezy"]] as const) {
+    const c = obstacleCourse();
+    const f = new Flight(P, TRAINED(), { weather: weather(w), mission: { kind: "manual", course: c }, duration: 120, seed: 1 });
+    f.pilotMode = mode;
+    const race = new Race(c);
+    race.state = "flying";
+    let at = 0;
+    for (let k = 0; !f.finished && race.state === "flying"; k++) {
+      if (k % 25 === 0) {
+        const t = route[at], p = f.s.p;
+        if (at < route.length - 1 && Math.hypot(t[0] - p[0], t[1] - p[1], t[2] - p[2]) < 0.35) at++;
+        const clamp = (x: number, m: number) => Math.max(-m, Math.min(m, x));
+        f.pilot = { x: clamp((t[0] - p[0]) * 0.6, 0.5), y: clamp((t[1] - p[1]) * 0.6, 0.5), z: clamp((t[2] - p[2]) * 1.2, 0.8), yaw: 0 };
+      }
+      f.tick();
+      if (k % 5 === 0) race.update(f.s.p, f.s.v, f.s.t, f.s.crashed || f.collided);
+    }
+    assert.equal(race.state, "finished", `${w}: ${race.state}, ${race.next} gates, at ${f.s.p.map((x) => x.toFixed(1))}`);
+    assert.equal(race.splits.length, 3);
   }
 });

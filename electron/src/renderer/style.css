@@ -262,3 +262,23 @@ b.warn, .warn { color: var(--warn); }
 .sim-bench table { border-collapse: collapse; margin: 6px 0; font-variant-numeric: tabular-nums; }
 .sim-bench td { padding: 2px 10px 2px 0; }
 .sim-bench td.note { color: var(--muted); }
+.sim-game { position: absolute; top: 12px; left: 50%; transform: translateX(-50%); text-align: center; pointer-events: none; text-shadow: 0 2px 10px rgba(0, 0, 0, 0.55); }
+.sim-game[hidden] { display: none; }
+.sim-game .timer { font-size: 44px; font-weight: 700; font-variant-numeric: tabular-nums; letter-spacing: -0.02em; }
+.sim-game .count { font-size: 120px; font-weight: 800; line-height: 1; color: #3fff9a; margin-top: 120px; }
+.sim-game .sub { font-size: 13px; color: #e8edf3; }
+.sim-pointer { position: absolute; left: 0; top: 0; pointer-events: none; display: flex; flex-direction: column; align-items: center; gap: 4px; margin: -12px 0 0 -12px; }
+.sim-pointer[hidden] { display: none; }
+.sim-pointer i { width: 24px; height: 24px; border: 3px solid #3fff9a; border-radius: 50%; box-shadow: 0 0 12px rgba(63, 255, 154, 0.7); }
+.sim-pointer.off i { border-radius: 4px; transform: rotate(45deg); }
+.sim-pointer span { font-size: 11px; font-weight: 600; color: #3fff9a; text-shadow: 0 1px 4px rgba(0, 0, 0, 0.8); white-space: nowrap; }
+.sim-help { position: absolute; left: 12px; bottom: 12px; padding: 10px 12px; font-size: 12px; display: grid; gap: 4px; }
+.sim-help[hidden] { display: none; }
+.sim-help .title { font-weight: 600; margin-bottom: 2px; }
+.sim-help div { display: flex; gap: 10px; align-items: center; }
+.sim-help kbd { min-width: 128px; font: 600 11px ui-monospace, SFMono-Regular, monospace; color: var(--text); }
+.sim-help span { color: var(--muted); }
+.sim-help .sub { color: var(--faint); font-size: 11px; }
+.sim-banner span + span { color: var(--faint); }
+.sim-caption { position: absolute; left: 50%; bottom: 46px; transform: translateX(-50%); padding: 10px 22px; border-radius: 8px; background: rgba(12, 14, 18, 0.72); backdrop-filter: blur(8px); font-size: 22px; font-weight: 600; letter-spacing: 0.01em; white-space: nowrap; }
+.sim-caption[hidden] { display: none; }

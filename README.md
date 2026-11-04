@@ -134,6 +134,26 @@ tests:
 - a hover in every weather;
 - six course flights from calm to gale.
 
+**Race mode** (mission "Fly it yourself"). You fly the drone through the three gates in order,
+then land on the pad. The trained autopilot flies the same course as a see-through ghost.
+
+Controls:
+- keyboard: W A S D to move, Space and C (or ↑ ↓) for height, Q E (or ← →) to turn, Enter to
+  restart;
+- gamepad: mode 2.
+
+Assist modes:
+- Easy: the drone holds its position when the sticks are centred.
+- Pro: angle mode. The sticks tilt the drone and only its height is held.
+
+The best time for each weather and mode is kept locally.
+
+**Video.** `npx electron . --record=docs/sim-video.mp4` (from `electron/`, after a build) films
+the shots in `electron/scripts/sim-shots.json` frame by frame and encodes them with ffmpeg.
+
+[Simulation video (53 s, 13 MB)](docs/sim-video.mp4)
+
+![Simulation, race mode](docs/sim-game.png)
 ![Simulation, rain storm](docs/sim-rain.png)
 ![Simulation, snow at −8 °C](docs/sim-snow.png)
 ![Simulation, freezing fog](docs/sim-fog.png)

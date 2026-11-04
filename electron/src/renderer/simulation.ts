@@ -2,7 +2,9 @@ import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import { rng, type V3 } from "../shared/sim/math";
 import { MOTOR_ANGLES, MOTOR_SPIN } from "../shared/sim/physics";
-import { Flight, PID_ONLY, quad3, TRAINED, type Brain, type Scenario } from "../shared/sim/sim";
+import { Flight, PID_ONLY, quad3, TRAINED, type Brain, type PilotMode, type Scenario } from "../shared/sim/sim";
+import { bestTime, CONTROLS_HELP, saveBest, Sticks } from "./game";
+import { Race } from "../shared/sim/race";
 import { clearance, obstacleCourse, randomCourse, type Course, type Obstacle } from "../shared/sim/world";
 import { airDensity, WEATHERS, type Weather } from "../shared/sim/weather";
 import { FRAME } from "../shared/sim/frame";
@@ -15,9 +17,9 @@ import { TRAINED_SCORE } from "../shared/sim/trained";
 // weather model; the companion computer's view (its time-of-flight beams, occupancy map and plan)
 // can be shown over the scene.
 
-export type Mission = "course" | "hover" | "random";
+export type Mission = "course" | "hover" | "random" | "pilot";
 export type BrainKind = "pid" | "tuned" | "nn";
-export type CameraMode = "chase" | "orbit" | "top" | "fpv";
+export type CameraMode = "chase" | "orbit" | "top" | "fpv" | "cinematic";
 export type SimSettings = {
   mission: Mission;
   weather: number;
@@ -26,10 +28,13 @@ export type SimSettings = {
   speed: number;
   camera: CameraMode;
   show: { beams: boolean; map: boolean; path: boolean };
+  /** For the game: how much the flight controller helps the pilot. */
+  assist: PilotMode;
 };
 
 export const MISSIONS: { id: Mission; label: string }[] = [
   { id: "course", label: "Obstacle course" },
+  { id: "pilot", label: "Fly it yourself (race)" },
   { id: "hover", label: "Hover in place" },
   { id: "random", label: "Random course" },
 ];
@@ -43,6 +48,11 @@ export const CAMERAS: { id: CameraMode; label: string }[] = [
   { id: "orbit", label: "Orbit" },
   { id: "top", label: "Overview" },
   { id: "fpv", label: "FPV" },
+  { id: "cinematic", label: "Cinematic" },
+];
+export const ASSISTS: { id: PilotMode; label: string }[] = [
+  { id: "position", label: "Easy: holds position" },
+  { id: "angle", label: "Pro: angle mode" },
 ];
 
 const MASS = partsMassKg(FRAME.massG);
@@ -289,7 +299,7 @@ class Precipitation {
 // MARK: The view
 
 export class SimView {
-  settings: SimSettings = { mission: "course", weather: 1, brain: "nn", seed: 1, speed: 1, camera: "chase", show: { beams: true, map: true, path: true } };
+  settings: SimSettings = { mission: "course", weather: 1, brain: "nn", seed: 1, speed: 1, camera: "chase", show: { beams: true, map: true, path: true }, assist: "position" };
   playing = true;
   flight!: Flight;
   course: Course | null = null;
@@ -329,6 +339,20 @@ export class SimView {
   private camPos = new THREE.Vector3(-3, -3, 3);
   private camLook = new THREE.Vector3();
   private benchRun: { cancel: boolean } | null = null;
+  // The game: the player's race, the autopilot flying the same course as a ghost, the sticks.
+  race: Race | null = null;
+  private ghost: Flight | null = null;
+  private ghostTime: number | null = null;
+  private ghostModel = buildDrone();
+  private sticks = new Sticks();
+  private gateGlow: THREE.MeshBasicMaterial[] = [];
+  private padRing: THREE.Mesh | null = null;
+  private gameEl: HTMLElement;
+  private pointer: HTMLElement;
+  private help: HTMLElement;
+  private newBest = false;
+  /** While a recorder drives the frames, the render loop stays out of the way. */
+  external = false;
 
   constructor(private host: HTMLElement) {
     this.renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
@@ -408,7 +432,22 @@ export class SimView {
     this.bench = document.createElement("div");
     this.bench.className = "sim-bench float";
     this.bench.hidden = true;
-    host.append(this.hud, this.card, this.banner, this.bench);
+    this.gameEl = document.createElement("div");
+    this.gameEl.className = "sim-game";
+    this.pointer = document.createElement("div");
+    this.pointer.className = "sim-pointer";
+    this.help = document.createElement("div");
+    this.help.className = "sim-help float";
+    this.help.innerHTML = `<div class="title">Controls</div>${CONTROLS_HELP.map(([k, what]) => `<div><kbd>${esc(k)}</kbd><span>${esc(what)}</span></div>`).join("")}<div class="sub">or a gamepad, mode 2</div>`;
+    host.append(this.hud, this.card, this.banner, this.bench, this.gameEl, this.pointer, this.help);
+    // The ghost: the trained autopilot, see-through.
+    this.ghostModel.group.traverse((o) => {
+      const m = (o as THREE.Mesh).material as THREE.Material | undefined;
+      if (m) { m.transparent = true; m.opacity = 0.35; m.depthWrite = false; }
+      o.castShadow = false;
+    });
+    this.scene.add(this.ghostModel.group);
+    window.addEventListener("blur", () => this.sticks.clear());
     new ResizeObserver(() => this.resize()).observe(host);
     this.restart();
   }
@@ -445,11 +484,22 @@ export class SimView {
   restart(nextSeed = false): void {
     if (nextSeed) this.settings.seed++;
     const S = this.settings, w = WEATHERS[S.weather];
-    this.course = S.mission === "course" ? obstacleCourse() : S.mission === "random" ? randomCourse(rng(S.seed * 7919)) : null;
-    const sc: Scenario = this.course
-      ? { weather: w, mission: { kind: "waypoints", course: this.course }, duration: 90, seed: S.seed }
-      : { weather: w, mission: { kind: "hover", at: [0, 0, 1.6] }, duration: 40, seed: S.seed };
+    this.course = S.mission === "course" || S.mission === "pilot" ? obstacleCourse() : S.mission === "random" ? randomCourse(rng(S.seed * 7919)) : null;
+    const sc: Scenario = S.mission === "pilot"
+      ? { weather: w, mission: { kind: "manual", course: this.course! }, duration: 600, seed: S.seed }
+      : this.course
+        ? { weather: w, mission: { kind: "waypoints", course: this.course }, duration: 90, seed: S.seed }
+        : { weather: w, mission: { kind: "hover", at: [0, 0, 1.6] }, duration: 40, seed: S.seed };
     this.flight = new Flight(PARAMS, brainOf(S.brain), sc);
+    this.flight.pilotMode = S.assist;
+    this.race = S.mission === "pilot" ? new Race(this.course!) : null;
+    this.ghost = this.race ? new Flight(PARAMS, TRAINED(), { weather: w, mission: { kind: "waypoints", course: this.course! }, duration: 90, seed: S.seed + 1 }) : null;
+    this.ghostTime = null;
+    this.newBest = false;
+    this.sticks.clear();
+    this.ghostModel.group.visible = !!this.race;
+    this.help.hidden = !this.race;
+    this.gameEl.hidden = this.pointer.hidden = !this.race;
     this.buildWorld(w);
     this.trailN = 0;
     this.acc = 0;
@@ -516,7 +566,28 @@ export class SimView {
       const start = new THREE.Mesh(new THREE.CircleGeometry(0.5, 48), new THREE.MeshStandardMaterial({ color: 0x2b2f36, roughness: 0.7 }));
       start.position.set(this.course.start[0], this.course.start[1], 0.004);
       this.world.add(pad, start);
-      for (const p of wps.slice(0, -1)) {
+      this.gateGlow = [];
+      this.padRing = null;
+      if (this.race) {
+        // Glowing frames inside the gate openings: green for the next one.
+        for (const g of this.course.gates) {
+          const m = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.8 });
+          const h = g.size / 2 - 0.03, b = 0.025, grp = new THREE.Group();
+          for (const [w, hh, y, z] of [[2 * h, b, 0, h], [2 * h, b, 0, -h], [b, 2 * h, h, 0], [b, 2 * h, -h, 0]]) {
+            const bar = new THREE.Mesh(new THREE.BoxGeometry(0.02, w, hh), m);
+            bar.position.set(0, y, z);
+            grp.add(bar);
+          }
+          grp.position.set(...g.center);
+          grp.rotation.z = g.yaw;
+          this.gateGlow.push(m);
+          this.world.add(grp);
+        }
+        this.padRing = new THREE.Mesh(new THREE.TorusGeometry(0.7, 0.03, 8, 48), new THREE.MeshBasicMaterial({ color: 0x3fff9a, transparent: true, opacity: 0 }));
+        this.padRing.position.set(end[0], end[1], 0.05);
+        this.world.add(this.padRing);
+      }
+      for (const p of this.race ? [] : wps.slice(0, -1)) {
         const m = new THREE.Mesh(new THREE.TorusGeometry(0.16, 0.012, 8, 32), new THREE.MeshBasicMaterial({ color: 0xffe14d, transparent: true, opacity: 0.55 }));
         m.position.set(p[0], p[1], p[2]);
         m.rotation.y = Math.PI / 2;
@@ -599,20 +670,115 @@ export class SimView {
     if (!this.active) return;
     const dt = Math.min(0.1, (now - this.last) / 1000);
     this.last = now;
-    const f = this.flight;
-    if (this.playing && !f.finished) {
-      this.acc += dt * this.settings.speed;
-      const ticks = Math.floor(this.acc / 0.002);
-      this.acc -= ticks * 0.002;
-      for (let i = 0; i < ticks && !f.finished; i++) f.tick();
-      if (f.finished) {
-        this.playing = false;
-        this.showResult();
-        this.onChange();
-      }
+    if (!this.external) {
+      this.advance(dt);
+      this.draw(this.playing ? dt * (this.race ? 1 : this.settings.speed) : 0, now / 1000);
     }
-    this.draw(this.playing ? dt * this.settings.speed : 0, now / 1000);
     requestAnimationFrame((t) => this.loop(t));
+  }
+
+  /** Flies `dt` seconds of wall-clock time (at the chosen speed, except in the game). */
+  private advance(dt: number): void {
+    if (this.race) return this.advanceGame(dt);
+    const f = this.flight;
+    if (!this.playing || f.finished) return;
+    this.acc += dt * this.settings.speed;
+    const ticks = Math.floor(this.acc / 0.002);
+    this.acc -= ticks * 0.002;
+    for (let i = 0; i < ticks && !f.finished; i++) f.tick();
+    if (f.finished) {
+      this.playing = false;
+      this.showResult();
+      this.onChange();
+    }
+  }
+
+  private advanceGame(dt: number): void {
+    const r = this.race!, f = this.flight, g = this.ghost!;
+    if (this.sticks.restartPressed()) return this.restart();
+    if (!this.playing) return;
+    if (r.state === "countdown") {
+      r.countdown -= dt;
+      if (r.countdown <= 0) r.state = "flying";
+      return;
+    }
+    const flying = r.state === "flying";
+    if (flying) f.pilot = this.sticks.read(dt);
+    this.acc += dt;
+    const ticks = Math.floor(this.acc / 0.002);
+    this.acc -= ticks * 0.002;
+    for (let i = 0; i < ticks; i++) {
+      if (flying) f.tick();
+      if (!g.finished) g.tick();
+    }
+    if (this.ghostTime === null && g.plan?.done) this.ghostTime = g.s.t;
+    if (!flying) return;
+    r.update(f.s.p, f.s.v, f.s.t, f.s.crashed || f.collided);
+    if (r.state === "finished") this.newBest = saveBest(this.bestKey, r.time);
+    if (r.state !== "flying") {
+      this.showGameResult();
+      this.onChange();
+    }
+  }
+
+  private get bestKey(): string {
+    return `${this.settings.weather}.${this.settings.assist}`;
+  }
+
+  /** Flight keys for the game; true when the key was used. */
+  key(e: KeyboardEvent, down: boolean): boolean {
+    if (!this.race) return false;
+    if (e.code === "Enter") {
+      if (down) this.restart();
+      return true;
+    }
+    return this.sticks.key(e.code, down);
+  }
+
+  private showGameResult(): void {
+    const r = this.race!;
+    const ai = this.ghostTime !== null ? `Autopilot ${this.ghostTime.toFixed(1)} s` : "Autopilot still flying";
+    if (r.state === "finished") {
+      const best = bestTime(this.bestKey);
+      this.banner.className = "sim-banner good";
+      this.banner.innerHTML = `<b>${r.time.toFixed(2)} s</b><span>${this.newBest ? "New best time" : `Best ${best?.toFixed(2)} s`} · ${ai}</span><span>Enter to fly again</span>`;
+    } else {
+      this.banner.className = "sim-banner bad";
+      this.banner.innerHTML = `<b>${this.flight.collided ? "Hit an obstacle" : "Crashed"}</b><span>${r.next} of ${r.gates.length} gates · ${r.time.toFixed(1)} s</span><span>Enter to try again</span>`;
+    }
+    this.banner.hidden = false;
+  }
+
+  /** The race's top line and the marker on the next gate. */
+  private renderGame(time: number): void {
+    const r = this.race!;
+    if (r.state === "countdown") {
+      this.gameEl.innerHTML = `<div class="count">${Math.ceil(r.countdown)}</div><div class="sub">Through the ${r.gates.length} gates in order, then land on the pad</div>`;
+    } else {
+      const best = bestTime(this.bestKey);
+      const ai = this.ghostTime !== null ? `${this.ghostTime.toFixed(1)} s` : "flying";
+      const stage = r.next < r.gates.length ? `Gate ${r.next + 1} of ${r.gates.length}` : "Land on the pad";
+      this.gameEl.innerHTML = `<div class="timer">${r.time.toFixed(2)}</div><div class="sub">${stage} · autopilot ${ai}${best !== null ? ` · best ${best.toFixed(2)}` : ""} · ${this.settings.assist === "angle" ? "angle mode" : "position hold"}</div>`;
+    }
+    // Marker on the next target, clamped to the screen edge when it is off screen.
+    const t = new THREE.Vector3(...r.target);
+    const dist = t.distanceTo(new THREE.Vector3(...this.flight.s.p));
+    const v = t.clone().project(this.camera);
+    const w = this.host.clientWidth, h = this.host.clientHeight;
+    let x = ((v.x + 1) / 2) * w, y = ((1 - v.y) / 2) * h;
+    const behind = v.z > 1;
+    if (behind) { x = w - x; y = h - 40; }
+    const off = behind || x < 40 || x > w - 40 || y < 40 || y > h - 40;
+    x = Math.max(40, Math.min(w - 40, x));
+    y = Math.max(40, Math.min(h - 40, y));
+    this.pointer.style.transform = `translate(${x}px, ${y}px)`;
+    this.pointer.className = `sim-pointer${off ? " off" : ""}`;
+    this.pointer.innerHTML = `<i></i><span>${r.next < r.gates.length ? `Gate ${r.next + 1}` : "Pad"} · ${dist.toFixed(0)} m</span>`;
+    this.gateGlow.forEach((m, i) => {
+      m.color.setHex(i < r.next ? 0x3d8bff : i === r.next ? 0x3fff9a : 0xffffff);
+      m.opacity = i === r.next ? 0.65 + 0.35 * Math.sin(time * 6) : i < r.next ? 0.35 : 0.5;
+    });
+    if (this.padRing) (this.padRing.material as THREE.MeshBasicMaterial).opacity = r.next >= r.gates.length ? 0.6 + 0.4 * Math.sin(time * 5) : 0;
   }
 
   private draw(dt: number, time: number): void {
@@ -696,6 +862,14 @@ export class SimView {
       sock.rotation.y = 1.3 * Math.max(0, 1 - sp / 8) + 0.05 * Math.sin(time * 9);
     }
 
+    // The autopilot's ghost.
+    if (this.ghost) {
+      const gs = this.ghost.s;
+      this.ghostModel.group.position.set(...gs.p);
+      this.ghostModel.group.quaternion.set(gs.q[1], gs.q[2], gs.q[3], gs.q[0]);
+      this.ghostModel.props.forEach((pr, i) => (pr.rotation.z += MOTOR_SPIN[i] * Math.min(gs.omega[i] * 0.004, 0.9) * (dt > 0 ? 1 : 0)));
+    }
+
     // Camera.
     const v = new THREE.Vector3(...s.v);
     const R = new THREE.Matrix4().makeRotationFromQuaternion(this.drone.group.quaternion);
@@ -705,9 +879,10 @@ export class SimView {
     fwd.normalize();
     const k = 1 - Math.exp(-4 * Math.max(dt, 0.016));
     if (S.camera === "chase") {
-      const heading = v.length() > 0.6 ? new THREE.Vector3(v.x, v.y, 0).normalize() : fwd;
-      const want = p.clone().addScaledVector(heading, -1.9).add(new THREE.Vector3(0, 0, 0.75));
-      want.addScaledVector(new THREE.Vector3(-heading.y, heading.x, 0), 0.4);
+      // Behind the way it flies; in the game, behind the way it faces (the pilot turns it).
+      const heading = !this.race && v.length() > 0.6 ? new THREE.Vector3(v.x, v.y, 0).normalize() : fwd;
+      const want = p.clone().addScaledVector(heading, -1.25).add(new THREE.Vector3(0, 0, 0.5));
+      want.addScaledVector(new THREE.Vector3(-heading.y, heading.x, 0), 0.25);
       this.camPos.lerp(want, k);
       // Never behind a post or a wall: slide in toward the drone until the camera is clear.
       if (this.course) {
@@ -715,6 +890,20 @@ export class SimView {
         for (let i = 0; i < 12 && clearance(obs, [this.camPos.x, this.camPos.y, this.camPos.z]) < 0.2; i++) this.camPos.lerp(p, 0.2);
       }
       this.camLook.lerp(p.clone().addScaledVector(heading, 0.9), k * 1.5);
+      this.camera.position.copy(this.camPos);
+      this.camera.up.set(0, 0, 1);
+      this.camera.lookAt(this.camLook);
+    } else if (S.camera === "cinematic") {
+      // A slow crane around the drone.
+      const a = time * 0.22;
+      const want = p.clone().add(new THREE.Vector3(2.6 * Math.cos(a), 2.6 * Math.sin(a), 0.7 + 0.5 * Math.sin(a * 0.7)));
+      want.z = Math.max(0.25, want.z);
+      this.camPos.lerp(want, k);
+      if (this.course) {
+        const obs = this.course.obstacles;
+        for (let i = 0; i < 12 && clearance(obs, [this.camPos.x, this.camPos.y, this.camPos.z]) < 0.2; i++) this.camPos.lerp(p, 0.2);
+      }
+      this.camLook.lerp(p, k * 2);
       this.camera.position.copy(this.camPos);
       this.camera.up.set(0, 0, 1);
       this.camera.lookAt(this.camLook);
@@ -741,6 +930,7 @@ export class SimView {
     this.sun.position.set(p.x - 8, p.y - 22, 30);
     this.sun.target.position.set(p.x, p.y, 0);
     this.renderer.render(this.scene, this.camera);
+    if (this.race) this.renderGame(time);
     if (this.frameNo % 6 === 0) this.renderHud();
   }
 
@@ -793,6 +983,26 @@ export class SimView {
 
   /** Sets up a scene and flies it to `at` seconds at once (screenshots for the docs and CI):
    *  e.g. {"weather":3,"camera":"chase","at":12}. */
+  /** One video frame: flies `dt` seconds and draws, for a recorder that captures after each. */
+  step(dt: number, time: number): void {
+    this.external = true;
+    this.advance(dt);
+    this.draw(dt, time);
+    this.renderHud();
+  }
+
+  /** A caption across the bottom of the view (videos), or none. */
+  caption(text: string | null): void {
+    let el = this.host.querySelector<HTMLElement>(".sim-caption");
+    if (!el) {
+      el = document.createElement("div");
+      el.className = "sim-caption";
+      this.host.append(el);
+    }
+    el.hidden = !text;
+    el.textContent = text ?? "";
+  }
+
   stage(o: Partial<Omit<SimSettings, "show">> & { at?: number }): void {
     const { at = 0, ...rest } = o;
     Object.assign(this.settings, rest);

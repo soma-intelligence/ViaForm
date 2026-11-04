@@ -229,6 +229,10 @@ function createWindow(): void {
   });
   win.webContents.on("did-finish-load", () => {
     win?.webContents.send("update", currentStatus());
+    // --record=<video.mp4> --shots=<shots.json>: films the simulation shot by shot, frame by frame
+    // (deterministic, whatever the machine's speed), and encodes the frames with ffmpeg.
+    const record = process.argv.find((a) => a.startsWith("--record="))?.slice(9);
+    if (record) void recordVideo(win!, record, process.argv.find((a) => a.startsWith("--shots="))?.slice(8));
     // --screenshot=<file.png> [--workspace=electronics] [--sheet=board] [--sim=...]: saves the window and quits (docs, CI smoke test).
     const shot = process.argv.find((a) => a.startsWith("--screenshot="))?.slice(13);
     if (shot) {
@@ -252,6 +256,35 @@ function createWindow(): void {
     }
   });
   title();
+}
+
+type Shot = { weather?: number; mission?: string; brain?: string; camera?: string; seed?: number; assist?: string; at?: number; duration: number; caption?: string };
+
+async function recordVideo(w: BrowserWindow, out: string, shotsFile?: string): Promise<void> {
+  const fs = require("node:fs") as typeof import("node:fs");
+  const os = require("node:os") as typeof import("node:os");
+  const { spawnSync } = require("node:child_process") as typeof import("node:child_process");
+  const shots: Shot[] = JSON.parse(fs.readFileSync(shotsFile ?? path.join(__dirname, "..", "..", "scripts", "sim-shots.json"), "utf8"));
+  const fps = 30;
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "viaform-video-"));
+  w.setContentSize(1600, 900);
+  w.webContents.setBackgroundThrottling(false);
+  await new Promise((r) => setTimeout(r, 2500));
+  let n = 0;
+  for (const shot of shots) {
+    const { duration, ...stage } = shot;
+    await w.webContents.executeJavaScript(`window.__simStage(${JSON.stringify(stage)})`);
+    for (let i = 0; i < duration * fps; i++) {
+      await w.webContents.executeJavaScript(`window.__simStep(${1 / fps}, ${n / fps})`);
+      const img = await w.webContents.capturePage();
+      fs.writeFileSync(path.join(dir, `f${String(n++).padStart(5, "0")}.jpg`), img.toJPEG(92));
+    }
+    process.stdout.write(`shot ${shots.indexOf(shot) + 1}/${shots.length}: ${n} frames\n`);
+  }
+  const r = spawnSync("ffmpeg", ["-y", "-loglevel", "error", "-framerate", String(fps), "-i", path.join(dir, "f%05d.jpg"), "-vf", "scale=1920:-2:flags=lanczos", "-c:v", "libx264", "-pix_fmt", "yuv420p", "-crf", "27", "-preset", "slow", "-movflags", "+faststart", out], { stdio: "inherit" });
+  fs.rmSync(dir, { recursive: true, force: true });
+  doc.dirty = false;
+  app.exit(r.status ?? 1);
 }
 
 // A .viaform opened from the Finder or Explorer before or after launch.
