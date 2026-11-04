@@ -53,6 +53,7 @@ export function startLibrary(window: () => BrowserWindow | null, families: () =>
     lib.setKicadRoots(lib.state().kicadRoots.filter((r) => r !== root));
     return lib.state();
   });
+  handle("library:fromLink", (url: string) => lib.fromLink(url));
   handle("library:footprint", (ref: string) => lib.footprint(ref) ?? null);
   handle("library:open", (url: string) => openUrl(url));
   handle("library:openSearch", (id: string, q: string) => {

@@ -272,8 +272,9 @@ export class LibraryPanel {
 
   private addForm(): HTMLElement {
     const f = el("form", "lib-form");
-    const manual = this.state?.sources.filter((s) => s.access === "manual") ?? [];
+    const manual = this.state?.sources.filter((s) => s.access !== "local") ?? [];
     f.innerHTML = `
+      <label class="drow"><span>Paste a link</span><input name="paste" placeholder="Amazon, AliExpress, eBay, McMaster… product page" /></label>
       <label class="drow"><span>Source</span><select name="source">${manual.map((s) => `<option value="${s.id}">${esc(s.name)}</option>`).join("")}</select></label>
       <label class="drow"><span>Part number</span><input name="partNumber" required placeholder="91290A115" /></label>
       <label class="drow"><span>Name</span><input name="name" placeholder="M3x10 socket head screw" /></label>
@@ -288,6 +289,22 @@ export class LibraryPanel {
     sel.onchange = () => {
       const s = manual.find((x) => x.id === sel.value);
       if (s && s.domain !== "both") f.querySelector<HTMLSelectElement>("select[name=domain]")!.value = s.domain;
+    };
+    // A pasted product link fills the source, the part number (ASIN, item number) and the link.
+    const paste = f.querySelector<HTMLInputElement>("input[name=paste]")!;
+    paste.onchange = async () => {
+      const r = await lib().fromLink(paste.value);
+      if ("error" in r || !r.ok) return this.host.flash("Not a web link", true);
+      const it = r.ok;
+      const set = (n: string, v?: string) => { const x = f.querySelector<HTMLInputElement | HTMLSelectElement>(`[name=${n}]`); if (x && v != null && v !== "") x.value = v; };
+      set("source", it.source);
+      set("partNumber", it.partNumber);
+      set("url", it.url);
+      set("name", it.name);
+      set("notes", it.notes);
+      if (it.domain !== "both") set("domain", it.domain);
+      if (it.savedAt) this.host.flash(`${it.name} is already in your library`);
+      (f.querySelector<HTMLInputElement>(it.partNumber ? "input[name=name]" : "input[name=partNumber]"))!.focus();
     };
     f.onsubmit = async (e) => {
       e.preventDefault();
@@ -322,7 +339,7 @@ export class LibraryPanel {
 
   private sourcesView(): HTMLElement[] {
     const out: HTMLElement[] = [el("div", "lib-hint pad", "Keys stay in this computer's keychain, never in a project file or a Git repository. Shops without an open API are never scraped: save their parts by hand.")];
-    for (const group of [["local", "ON THIS COMPUTER"], ["api", "DISTRIBUTOR APIS"], ["manual", "BY HAND"]] as const) {
+    for (const group of [["local", "ON THIS COMPUTER"], ["api", "SHOP APIS"], ["manual", "BY HAND"]] as const) {
       out.push(el("div", "dp-sec", group[1]));
       for (const s of this.state?.sources.filter((x) => x.access === group[0]) ?? []) out.push(this.sourceCard(s));
     }
@@ -361,9 +378,9 @@ export class LibraryPanel {
       const row = el("label", "drow", `<span>${esc(k.label)}</span>`);
       const input = el("input");
       input.name = k.id;
-      input.type = "password";
       input.autocomplete = "off";
-      input.placeholder = s.ready ? "Saved; type to replace" : "";
+      input.type = k.optional ? "text" : "password";
+      input.placeholder = s.ready ? `Saved; type to replace${k.placeholder ? ` (${k.placeholder})` : ""}` : k.placeholder ?? (k.optional ? "Optional" : "");
       row.append(input);
       f.append(row);
     }

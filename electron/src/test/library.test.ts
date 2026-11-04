@@ -168,3 +168,52 @@ test("every source says what it is and links only to web pages", () => {
   assert.equal(searchPage("mcmaster", "91290A115"), "https://www.mcmaster.com/91290A115");
   assert.equal(searchPage("digikey", "10k 0805"), "https://www.digikey.com/en/products/result?keywords=10k%200805");
 });
+
+test("marketplaces: signed requests, answers as items, product links read without fetching", async () => {
+  const { sigv4, amazon, aliexpress, aliSign, ebay, fromLink } = await import("../main/library/marketplaces");
+  // SigV4: the scope, the signed headers and a 64-digit signature, stable for one instant.
+  const now = new Date("2026-11-04T12:00:00Z");
+  const o = { host: "webservices.amazon.com", path: "/paapi5/searchitems", body: "{}", target: "t", access: "AK", secret: "SK", region: "us-east-1", service: "ProductAdvertisingAPI", now };
+  const h = sigv4(o);
+  assert.equal(h["x-amz-date"], "20261104T120000Z");
+  assert.match(h.Authorization, /^AWS4-HMAC-SHA256 Credential=AK\/20261104\/us-east-1\/ProductAdvertisingAPI\/aws4_request, SignedHeaders=content-encoding;content-type;host;x-amz-date;x-amz-target, Signature=[0-9a-f]{64}$/);
+  assert.equal(sigv4(o).Authorization, h.Authorization);
+  assert.notEqual(sigv4({ ...o, body: "{ }" }).Authorization, h.Authorization);
+  assert.equal(aliSign({ b: "2", a: "1" }, "s"), aliSign({ a: "1", b: "2" }, "s"));
+
+  const seen: { url: string; init?: RequestInit }[] = [];
+  const answer = (url: string): unknown => {
+    if (url.includes("paapi5")) return { SearchResult: { TotalResultCount: 1, Items: [{ ASIN: "B07XYZ1234", DetailPageURL: "https://www.amazon.com/dp/B07XYZ1234", ItemInfo: { Title: { DisplayValue: "Digital caliper 150 mm" }, ByLineInfo: { Brand: { DisplayValue: "Acme" } } }, Offers: { Listings: [{ Price: { Amount: 19.99, Currency: "USD" } }] } }] } };
+    if (url.includes("aliexpress")) return { aliexpress_affiliate_product_query_response: { resp_result: { resp_code: 200, result: { total_record_count: 1, products: { product: [{ product_id: 1005001, product_title: "MG90S servo", target_sale_price: "2.15", target_sale_price_currency: "USD", promotion_link: "https://s.click.aliexpress.com/x" }] } } } } };
+    if (url.includes("oauth2/token")) return { access_token: "e", expires_in: 7200 };
+    return { total: 1, itemSummaries: [{ itemId: "v1|1234567890|0", legacyItemId: "1234567890", title: "Hakko soldering station", price: { value: "89.00", currency: "USD" }, itemWebUrl: "https://www.ebay.com/itm/1234567890", condition: "New" }] };
+  };
+  const f: Fetch = async (url, init) => { seen.push({ url: String(url), init }); return new Response(JSON.stringify(answer(String(url))), { status: 200 }); };
+
+  const a = await amazon(f, { accessKey: "AK", secretKey: "SK", partnerTag: "me-20", marketplace: "www.amazon.fr" }, "caliper");
+  assert.equal(a.items[0].key, "amazon:B07XYZ1234");
+  assert.equal(a.items[0].prices![0].price, 19.99);
+  assert.equal(seen[0].url, "https://webservices.amazon.fr/paapi5/searchitems");
+  assert.match(String((seen[0].init!.headers as Record<string, string>).Authorization), /eu-west-1/);
+  await assert.rejects(amazon(f, { accessKey: "AK" }, "x"), /secretKey, partnerTag/);
+
+  const ali = await aliexpress(f, { appKey: "k", appSecret: "s" }, "servo");
+  assert.equal(ali.items[0].name, "MG90S servo");
+  assert.equal(ali.items[0].prices![0].price, 2.15);
+  const sent = new URLSearchParams(String(seen.at(-1)!.init!.body));
+  const { sign, ...rest } = Object.fromEntries(sent);
+  assert.equal(sign, aliSign(rest, "s"), "the request carries its own signature");
+
+  const e = await ebay(f, { clientId: "c", clientSecret: "s" }, "soldering station");
+  assert.equal(e.items[0].partNumber, "1234567890");
+  assert.equal(e.items[0].prices![0].price, 89);
+
+  assert.deepEqual(fromLink("https://www.amazon.fr/Pied-coulisse-num%C3%A9rique/dp/B07XYZ1234/ref=sr_1_3?tag=x"), { source: "amazon", partNumber: "B07XYZ1234", url: "https://www.amazon.fr/dp/B07XYZ1234" });
+  assert.equal(fromLink("https://www.aliexpress.com/item/1005004321.html?spm=a2g0o")!.partNumber, "1005004321");
+  assert.equal(fromLink("https://www.alibaba.com/product-detail/CNC-Aluminum-Part_1600123456789.html")!.partNumber, "1600123456789");
+  assert.equal(fromLink("https://www.ebay.com/itm/1234567890")!.source, "ebay");
+  assert.equal(fromLink("https://www.mcmaster.com/91290A115/")!.partNumber, "91290A115");
+  assert.equal(fromLink("https://www.temu.com/goods-g-601099512345678.html")!.partNumber, "601099512345678");
+  assert.equal(fromLink("https://example.com/thing")!.source, "custom");
+  assert.equal(fromLink("javascript:alert(1)"), null);
+});

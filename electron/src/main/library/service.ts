@@ -1,4 +1,5 @@
 import { DISTRIBUTORS, forgetTokens, type Fetch } from "./distributors";
+import { MARKETPLACES, forgetMarketTokens, fromLink } from "./marketplaces";
 import * as hardware from "./hardware";
 import * as kicad from "./kicad";
 import { SOURCES, source } from "../../shared/library/sources";
@@ -17,6 +18,8 @@ export interface Deps {
   /** KiCad roots found by default on this machine; the user's own folders are added to them. */
   kicadDefaults?: string[];
 }
+
+const required = (s: { keys?: { id: string; optional?: boolean }[] }) => (s.keys ?? []).filter((k) => !k.optional).map((k) => k.id);
 
 export class Library {
   private index: kicad.KicadIndex | null = null;
@@ -52,7 +55,7 @@ export class Library {
       }
       if (s.id === "standard") return { ...s, enabled, ready: true, detail: `${this.hardware().length} families` };
       if (s.access === "api") {
-        const ready = this.d.secrets.has(s.id, (s.keys ?? []).map((k) => k.id));
+        const ready = this.d.secrets.has(s.id, required(s));
         return { ...s, enabled, ready, detail: ready ? "Keys in the keychain" : "No keys yet" };
       }
       const n = this.d.store.items.filter((i) => i.source === s.id).length;
@@ -76,9 +79,10 @@ export class Library {
     if (want("kicad")) run("kicad", () => kicad.search(this.kicad(), query));
     if (want("standard")) run("standard", () => hardware.search(this.hardware(), query));
     for (const s of SOURCES) {
-      if (s.access !== "api" || !want(s.id) || !DISTRIBUTORS[s.id]) continue;
-      if (!this.d.secrets.has(s.id, (s.keys ?? []).map((k) => k.id))) continue;
-      run(s.id, () => DISTRIBUTORS[s.id](this.d.fetch, this.d.secrets.get(s.id), query));
+      const api = DISTRIBUTORS[s.id] ?? MARKETPLACES[s.id];
+      if (s.access !== "api" || !want(s.id) || !api) continue;
+      if (!this.d.secrets.has(s.id, required(s))) continue;
+      run(s.id, () => api(this.d.fetch, this.d.secrets.get(s.id), query));
     }
     return Promise.all(jobs);
   }
@@ -111,8 +115,19 @@ export class Library {
     const s = source(id);
     if (s?.access !== "api") throw new Error(`${id} takes no keys`);
     const allowed = new Set((s.keys ?? []).map((k) => k.id));
-    this.d.secrets.set(id, Object.fromEntries(Object.entries(keys).filter(([k]) => allowed.has(k))));
+    // Fields left blank keep their saved value; no field at all forgets the source's keys.
+    const typed = Object.fromEntries(Object.entries(keys).filter(([k, v]) => allowed.has(k) && v.trim()));
+    this.d.secrets.set(id, Object.keys(keys).length ? { ...this.d.secrets.get(id), ...typed } : {});
     forgetTokens();
+    forgetMarketTokens();
+  }
+
+  /** A pasted product link read for its shop and part number; a part already saved comes back whole. */
+  fromLink(url: string): LibraryItem | null {
+    const l = fromLink(url);
+    if (!l) return null;
+    const saved = l.partNumber ? this.d.store.item(`${l.source}:${l.partNumber}`) : undefined;
+    return saved ?? { key: "", source: l.source, partNumber: l.partNumber, name: "", domain: source(l.source)?.domain ?? "both", url: l.url };
   }
 
   setKicadRoots(roots: string[]): void {

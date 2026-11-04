@@ -66,6 +66,8 @@ export interface LibraryAPI {
   addRoot(): Promise<Reply<LibraryState | null>>;
   removeRoot(root: string): Promise<Reply<LibraryState>>;
   footprint(ref: string): Promise<Reply<string | null>>;
+  /** Reads a pasted product link (Amazon, AliExpress, eBay, McMaster...) for its shop and part number. */
+  fromLink(url: string): Promise<Reply<LibraryItem | null>>;
   open(url: string): Promise<Reply<void>>;
   openSearch(source: string, q: string): Promise<Reply<void>>;
   reveal(file: string): Promise<Reply<void>>;

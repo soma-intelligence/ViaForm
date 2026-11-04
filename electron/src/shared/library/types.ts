@@ -17,7 +17,7 @@ export interface SourceInfo {
   /** One or two sentences: what it gives and on what terms. */
   summary: string;
   /** The keys a user enters for an `api` source, stored in the OS keychain. */
-  keys?: { id: string; label: string }[];
+  keys?: { id: string; label: string; optional?: boolean; placeholder?: string }[];
   /** Where the user creates an account or reads the terms. */
   signup?: string;
   terms?: string;

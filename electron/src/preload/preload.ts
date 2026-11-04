@@ -30,6 +30,7 @@ const api: ViaFormAPI = {
     addRoot: () => ipcRenderer.invoke("library:addRoot"),
     removeRoot: (root) => ipcRenderer.invoke("library:removeRoot", root),
     footprint: (ref) => ipcRenderer.invoke("library:footprint", ref),
+    fromLink: (url) => ipcRenderer.invoke("library:fromLink", url),
     open: (url) => ipcRenderer.invoke("library:open", url),
     openSearch: (source, q) => ipcRenderer.invoke("library:openSearch", source, q),
     reveal: (file) => ipcRenderer.invoke("library:reveal", file),
