@@ -282,3 +282,57 @@ b.warn, .warn { color: var(--warn); }
 .sim-banner span + span { color: var(--faint); }
 .sim-caption { position: absolute; left: 50%; bottom: 46px; transform: translateX(-50%); padding: 10px 22px; border-radius: 8px; background: rgba(12, 14, 18, 0.72); backdrop-filter: blur(8px); font-size: 22px; font-weight: 600; letter-spacing: 0.01em; white-space: nowrap; }
 .sim-caption[hidden] { display: none; }
+
+/* Libraries: a drawer on the right of the stage */
+#library { position: absolute; top: 0; right: 0; bottom: 0; width: 380px; background: var(--panel-solid); border-left: 1px solid var(--line); box-shadow: var(--shadow); display: flex; flex-direction: column; z-index: 4; }
+#library[hidden] { display: none; }
+#library .fhead { height: 40px; color: var(--text); font-size: 12px; }
+#library .fhead svg { color: var(--accent); }
+.lib-tabs { margin: 10px 12px 4px; align-self: flex-start; }
+.lib-body { flex: 1; overflow-y: auto; padding-bottom: 16px; user-select: text; }
+.lib-search { display: flex; align-items: center; gap: 8px; margin: 8px 12px; padding: 0 10px; background: var(--chrome-2); border: 1px solid var(--line); border-radius: 6px; color: var(--muted); }
+.lib-search:focus-within { border-color: var(--accent); }
+.lib-search input { flex: 1; background: none; border: 0; outline: none; color: var(--text); font: inherit; padding: 7px 0; user-select: text; }
+.lib-filter { margin: 2px 12px 6px; display: inline-flex; }
+.lib-empty, .lib-hint { color: var(--muted); padding: 10px 14px; line-height: 1.5; }
+.lib-hint { padding: 4px 0; font-size: 11.5px; }
+.lib-hint.pad { padding: 8px 14px; }
+.lib-error { color: var(--error); padding: 4px 14px 8px; font-size: 11.5px; }
+#library .dp-sec .n { color: var(--muted); font-weight: 600; margin-left: 4px; }
+.lib-row { padding: 9px 14px; border-bottom: 1px solid var(--line-soft); }
+.lib-row:hover { background: rgba(255, 255, 255, 0.025); }
+.lib-main .t { color: var(--text); font-weight: 600; }
+.lib-main .m { color: var(--muted); font-size: 11.5px; margin-top: 1px; }
+.lib-main .d { color: var(--muted); font-size: 11.5px; margin-top: 3px; }
+.lib-main .p { color: var(--ok); font-size: 11.5px; margin-top: 3px; font-variant-numeric: tabular-nums; }
+.lib-main .f { color: var(--faint); font-size: 11px; margin-top: 3px; }
+.lib-actions { display: flex; align-items: center; gap: 6px; margin-top: 7px; flex-wrap: wrap; }
+.lib-actions .btn { padding: 3px 10px; font-size: 11.5px; }
+.lib-actions .ic { width: 26px; height: 24px; display: grid; place-items: center; border-radius: 5px; color: var(--muted); }
+.lib-actions .ic:hover { background: var(--hover); color: var(--text); }
+.lib-actions .ic.on { color: var(--ok); }
+.lib-src { font-size: 10.5px; color: var(--faint); order: -1; width: 100%; }
+.lib-links { display: flex; flex-wrap: wrap; gap: 6px; padding: 4px 14px 8px; }
+.lib-sbody .lib-links, .lib-form .lib-links, .lib-roots .lib-links { padding: 6px 0 0; }
+.lib-chip { display: inline-flex; align-items: center; gap: 4px; padding: 3px 9px; border: 1px solid var(--line); border-radius: 12px; color: var(--muted); font-size: 11.5px; }
+.lib-chip:hover { background: var(--hover); color: var(--text); }
+.lib-add { margin: 10px 12px 4px; display: inline-flex; align-items: center; gap: 6px; }
+.lib-form { margin: 6px 12px 8px; padding: 10px; border: 1px solid var(--line); border-radius: 6px; background: var(--chrome); display: flex; flex-direction: column; gap: 6px; }
+.lib-form .drow { display: grid; grid-template-columns: 90px 1fr; align-items: center; gap: 8px; color: var(--muted); font-size: 11.5px; }
+.lib-form > .btn { align-self: flex-end; }
+.lib-source { border-bottom: 1px solid var(--line-soft); }
+.lib-shead { display: flex; align-items: center; gap: 8px; padding: 8px 14px; cursor: pointer; }
+.lib-shead:hover { background: var(--hover); }
+.lib-shead .t { color: var(--text); font-weight: 600; flex: 1; }
+.lib-shead .st { color: var(--faint); font-size: 11px; }
+.lib-shead .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--line); flex: none; }
+.lib-shead .dot.ok { background: var(--ok); }
+.lib-sbody { padding: 0 14px 10px 29px; color: var(--muted); font-size: 11.5px; line-height: 1.5; }
+.lib-sbody p { margin: 0 0 6px; }
+.lib-sbody p.m { color: var(--faint); }
+.lib-sbody p.warn { color: var(--warn); }
+.lib-sbody .lib-form { margin: 6px 0; }
+.lib-root { display: flex; align-items: center; gap: 6px; font-size: 11px; color: var(--muted); }
+.lib-root span { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; direction: rtl; text-align: left; }
+.lib-root .ic { width: 20px; height: 20px; display: grid; place-items: center; border-radius: 4px; }
+.lib-root .ic:hover { background: var(--hover); }

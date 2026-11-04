@@ -52,6 +52,25 @@ export type UpdateStatus =
 /** A reply from the main process: the value, or the engine's message. */
 export type Reply<T = Json> = { ok: T } | { error: string };
 
+import type { LibraryItem, LibraryState, SearchHit } from "./library/types";
+
+/** The side libraries (src/shared/library): every call runs in the main process. */
+export interface LibraryAPI {
+  state(reindex?: boolean): Promise<Reply<LibraryState>>;
+  search(q: string, only?: string[]): Promise<Reply<SearchHit[]>>;
+  save(item: LibraryItem): Promise<Reply<LibraryItem>>;
+  remove(key: string): Promise<Reply<void>>;
+  attach(key: string): Promise<Reply<LibraryItem | null>>;
+  enable(source: string, on: boolean): Promise<Reply<void>>;
+  keys(source: string, keys: Record<string, string>): Promise<Reply<void>>;
+  addRoot(): Promise<Reply<LibraryState | null>>;
+  removeRoot(root: string): Promise<Reply<LibraryState>>;
+  footprint(ref: string): Promise<Reply<string | null>>;
+  open(url: string): Promise<Reply<void>>;
+  openSearch(source: string, q: string): Promise<Reply<void>>;
+  reveal(file: string): Promise<Reply<void>>;
+}
+
 export interface DocState {
   path: string | null;
   dirty: boolean;
@@ -75,4 +94,5 @@ export interface ViaFormAPI {
   onMenu(handler: (command: string) => void): void;
   onUpdate(handler: (status: UpdateStatus) => void): void;
   onDocChanged(handler: () => void): void;
+  library: LibraryAPI;
 }

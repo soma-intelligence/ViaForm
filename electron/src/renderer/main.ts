@@ -1,5 +1,7 @@
 import type { DocState, Json, LinkState, UpdateStatus, ViaFormAPI } from "../shared/api";
+import type { LibraryItem, Use } from "../shared/library/types";
 import { icon } from "./icons";
+import { LibraryPanel } from "./library";
 import { PART_KINDS, PcbCanvas, PcbModel } from "./pcb";
 import { ASSISTS, BRAINS, CAMERAS, MISSIONS, SimView, type SimSettings } from "./simulation";
 import { WEATHERS } from "../shared/sim/weather";
@@ -69,6 +71,15 @@ $("view3d").append(cube.el);
 viewport.onCamera = (c) => cube.update(c);
 const pcb = new PcbModel();
 const sheet = new PcbCanvas($<HTMLCanvasElement>("sheet-canvas"), pcb);
+const library = new LibraryPanel({
+  workspace: () => state.ws,
+  use: (item, u) => useLibraryItem(item, u),
+  flash: (text, error = false) => {
+    if (state.ws === "electronics") { pcb.message = text ? { text, error } : null; renderPills(); }
+    else flash(text, error);
+  },
+});
+$("stage").append(library.el);
 let simView: SimView | null = null;
 /** Built on first use: the simulation has its own WebGL context and render loop. */
 function sim(): SimView {
@@ -379,6 +390,54 @@ async function place(tool: PlaceTool, c: [number, number, number]): Promise<void
   if (tool === "sphere") await cad("solid.sphere", { diameter: v, center: [c[0], c[1], c[2] + v / 2] });
 }
 
+/** Puts a part from the side libraries into the design or the schematic. The message on failure. */
+async function useLibraryItem(item: LibraryItem, u: Use): Promise<string | null> {
+  const fail = (r: { error: string } | { ok: unknown }) => ("error" in r ? r.error : null);
+  if (u.kind === "hardware" || u.kind === "step") {
+    const r = u.kind === "hardware"
+      ? await api.cad("parts.insert", { family: u.family, size: u.size, ...(u.length != null ? { length: u.length } : {}) })
+      : await api.cad("file.insert_step", { path: u.path });
+    if ("ok" in r) { await refreshDesign(); viewport.fit(); }
+    return fail(r);
+  }
+  // Schematic parts go to the right of what is placed already.
+  const parts = pcb.project?.components ?? [];
+  const position = { x: parts.length ? Math.max(...parts.map((c) => c.position.x)) + 20 : 0, y: 0 };
+  let id: number | undefined;
+  if (u.kind === "kicad-symbol") {
+    const r = await api.pcb("component.place_library", { path: u.path, symbol: u.symbol, position });
+    if ("error" in r) return r.error;
+    id = (r.ok as { result?: { id?: number } })?.result?.id;
+    if (id != null && u.footprint) {
+      const f = await api.pcb("footprint.assign", { id, path: u.footprint });
+      if ("error" in f) { await pcb.refresh(); return `Placed, but the footprint was refused: ${f.error}`; }
+    }
+  } else if (u.kind === "schematic") {
+    const r = await api.pcb("component.add", { kind: u.part, position, value: u.value });
+    if ("error" in r) return r.error;
+  } else if (u.kind === "kicad-footprint") {
+    // On the board the selection is a footprint: its component takes the new footprint.
+    const sel = pcb.selection;
+    const component = sel == null ? undefined : pcb.sheet === "board" ? pcb.footprint(sel)?.component : sel;
+    if (component == null) return "Select a part first, then assign the footprint to it";
+    const r = await api.pcb("footprint.assign", { id: component, path: u.path });
+    if ("error" in r) return r.error;
+  }
+  await pcb.refresh();
+  render();
+  return null;
+}
+
+function libraryPanel(filter: "electronics" | "mechanical"): HTMLElement {
+  return panel("LIBRARY", [
+    tool("library", "Libraries: KiCad, standard hardware, distributors, saved parts (Ctrl+L)", () => void library.show("search", filter), { on: library.open }),
+  ], () => [
+    { icon: "search", label: "Search the Libraries", key: "Ctrl+L", run: () => void library.show("search", filter) },
+    { icon: "bom", label: "Saved Parts", run: () => void library.show("saved") },
+    { icon: "settings", label: "Library Sources and Keys", run: () => void library.show("sources") },
+  ]);
+}
+
 async function deleteBodies(): Promise<void> {
   if (!state.selected.size) return;
   await cad("solid.remove", { bodies: [...state.selected] });
@@ -552,6 +611,7 @@ function renderAppbar(): void {
   plus.classList.add("newtab");
   $("doctabs").replaceChildren(tab, plus);
   $("appbar-right").replaceChildren(
+    ab("library", "Libraries (Ctrl+L)", () => void library.toggle().then(renderAppbar), { on: library.open }),
     ab("search", "Search commands (S)", () => void openPalette()),
     ab("help", "About ViaForm", () => void about()),
   );
@@ -717,6 +777,7 @@ function renderToolbar(): void {
       const featured = FEATURED[`${state.tab}/${p.name}`]?.map(spec).filter((s): s is Spec => !!s) ?? p.items.slice(0, 3);
       bar.append(panel(p.name, featured.map(specTool), () => p.items.map((s) => entry(s.id))));
       if (state.tab === "SOLID" && p.name === "CONSTRUCT") bar.append(electronicsPanel());
+      if (state.tab === "SOLID" && p.name === "INSERT") bar.append(libraryPanel("mechanical"));
     }
     bar.append(panel("SELECT", [
       tool("select", "Select (Esc)", () => { closeDialog(); state.facePick = false; render(); }, { on: !state.place && !state.facePick }),
@@ -750,6 +811,7 @@ function renderToolbar(): void {
   }
   const linked = state.link.linked_revision != null;
   tools.push(
+    libraryPanel("electronics"),
     panel("BOARD", [tool("update", "Update PCB from schematic", () => void pcb.updateBoard().then(render))]),
     panel("MODIFY", [
       tool("select", "Select (Esc)", () => (pcb.tool = { kind: "select" }), { on: t.kind === "select" }),
@@ -1261,6 +1323,8 @@ api.onMenu((c) => {
   else if (c === "search") void openPalette();
   else if (c === "fit") state.ws === "design" ? viewport.fit() : sheet.fit();
   else if (c === "about") void about();
+  else if (c === "library") void library.toggle().then(renderAppbar);
+  else if (c.startsWith("library:")) void library.stage(c.slice(8)).then(renderAppbar);
   else if (c.startsWith("workspace:")) switchTo(c.slice(10) as Workspace);
   else if (c.startsWith("sim:")) { switchTo("simulation"); sim().stage(JSON.parse(c.slice(4))); }
   else if (c.startsWith("sheet:")) { pcb.sheet = c.slice(6) as "schematic" | "board"; render(); }

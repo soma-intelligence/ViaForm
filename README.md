@@ -172,6 +172,28 @@ cd apple && xcodegen generate && open SolidCraftNative.xcodeproj
 `SolidCraft --selftest` runs the tool paths end to end (sketch, extrude, press pull, fillet,
 undo, primitives, scene) and exits. `--sample` opens the bracket sample.
 
+## Libraries
+
+The Libraries panel (Ctrl+L, or LIBRARY in the toolbar) searches light side libraries kept beside
+the project, never inside it:
+
+- **KiCad libraries** installed on this machine, plus any folder you add: symbols place in the
+  schematic with their footprint, and the STEP model KiCad ships goes into the design.
+- **Standard hardware** (ISO, ASME, ANSI screws, nuts, washers, pins, bearings), built by the design
+  engine from its tables: search `M3x12`, `nut M5` or `608`.
+- **DigiKey, Mouser and Octopart (Nexar)** through their official APIs: price breaks, stock,
+  datasheets. You create the developer account; the keys are encrypted by the OS keychain
+  (Electron `safeStorage`) in the app's data folder, outside every project and repository.
+- **By hand** for shops without an open API (McMaster-Carr, MISUMI, LCSC, SnapMagic, GrabCAD...):
+  part number, link and notes, with the CAD file you download attached. Sites are never scraped;
+  each has a button that opens its own search page in the browser.
+
+Saved parts, attached files and settings live in `<userData>/library`. The code is in
+`electron/src/main/library` (sources in `electron/src/shared/library/sources.ts`), the panel in
+`electron/src/renderer/library.ts`, the tests in `electron/src/test/library.test.ts`.
+
+![Electron: Libraries](docs/electron-library.png)
+
 ## Notes
 
 - The layouts follow public descriptions of how common CAD tools are arranged

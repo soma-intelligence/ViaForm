@@ -1,6 +1,7 @@
 import * as path from "node:path";
 import { app, BrowserWindow, dialog, ipcMain, Menu, shell, type MenuItemConstructorOptions } from "electron";
 import { changes, loadNative, reply, type NativeWorkspace } from "./engine";
+import { startLibrary } from "./library/ipc";
 import { checkNow, currentStatus, installNow, startUpdater } from "./updater";
 import type { DocState } from "../shared/api";
 
@@ -187,6 +188,8 @@ function menu(): void {
         { label: "Electronics", accelerator: "CmdOrCtrl+2", click: send("workspace:electronics") },
         { label: "Simulation", accelerator: "CmdOrCtrl+3", click: send("workspace:simulation") },
         { type: "separator" },
+        { label: "Libraries", accelerator: "CmdOrCtrl+L", click: send("library") },
+        { type: "separator" },
         { label: "Zoom to Fit", accelerator: "F6", registerAccelerator: false, click: send("fit") },
         { label: "Home View", click: send("view:home") },
         { type: "separator" },
@@ -233,7 +236,7 @@ function createWindow(): void {
     // (deterministic, whatever the machine's speed), and encodes the frames with ffmpeg.
     const record = process.argv.find((a) => a.startsWith("--record="))?.slice(9);
     if (record) void recordVideo(win!, record, process.argv.find((a) => a.startsWith("--shots="))?.slice(8));
-    // --screenshot=<file.png> [--workspace=electronics] [--sheet=board] [--sim=...]: saves the window and quits (docs, CI smoke test).
+    // --screenshot=<file.png> [--workspace=electronics] [--sheet=board] [--sim=...] [--library=...]: saves the window and quits (docs, CI smoke test).
     const shot = process.argv.find((a) => a.startsWith("--screenshot="))?.slice(13);
     if (shot) {
       // Renderer errors to stderr, so a smoke test that captures a broken page says why.
@@ -246,6 +249,9 @@ function createWindow(): void {
         if (simArg) win?.webContents.send("menu", `sim:${simArg}`);
         const sheetArg = process.argv.find((a) => a.startsWith("--sheet="))?.slice(8);
         if (sheetArg) win?.webContents.send("menu", `sheet:${sheetArg}`);
+        // --library=search:M3x12 (or saved, sources:digikey): the Libraries panel on that tab.
+        const libArg = process.argv.find((a) => a.startsWith("--library="))?.slice(10);
+        if (libArg) win?.webContents.send("menu", `library:${libArg}`);
         setTimeout(async () => {
           const img = await win!.webContents.capturePage();
           require("node:fs").writeFileSync(shot, img.toPNG());
@@ -304,6 +310,8 @@ app.on("second-instance", (_e, argv) => {
 
 void app.whenReady().then(() => {
   ipc();
+  // The standard part tables come from a scratch design, so reading them never touches the project.
+  startLibrary(() => win, () => (new native.Workspace(false).cad("parts.library", {}) as { families: never[] }).families);
   menu();
   createWindow();
   if (pendingOpen) void openPath(pendingOpen);

@@ -106,6 +106,7 @@ const P: Record<string, string> = {
   // Insert, configure, manage
   import: "M12 3v12M7 10l5 5 5-5M4 15v5h16v-5",
   fastener: "M8 3h8v4H8zM10 7v14l2 1 2-1V7M10 11h4M10 15h4",
+  library: "M4 4h4v16H4zM9 4h4v16H9zM14.5 5.2l3.8-1 3.9 15.5-3.8 1z",
   configuration_table: "M4 4h16v16H4zM4 9h16M10 4v16",
   export: "M12 15V3M7 8l5-5 5 5M4 14v6h16v-6",
   // Surface
