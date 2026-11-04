@@ -11,13 +11,18 @@ struct PCBCanvas: View {
     @State private var drag: (id: Int?, last: CGPoint)?
     @State private var ghost: PCBPoint?
     @State private var fitted = false
+    @Environment(\.colorScheme) private var colorScheme
 
     private struct Palette {
         let paper, grid, ink, pin, wire, select, board, edge, front, back, pad, air: Color
     }
 
     private var palette: Palette {
-        model.sheet == .schematic
+        model.sheet == .schematic && colorScheme == .dark
+            ? Palette(paper: Color(red: 0.11, green: 0.12, blue: 0.14), grid: Color.white.opacity(0.06), ink: Color(white: 0.85),
+                      pin: Color(red: 0.95, green: 0.42, blue: 0.4), wire: Color(red: 0.3, green: 0.8, blue: 0.55), select: .accentColor,
+                      board: .clear, edge: .clear, front: .clear, back: .clear, pad: .clear, air: .clear)
+            : model.sheet == .schematic
             ? Palette(paper: Color(red: 0.97, green: 0.97, blue: 0.95), grid: Color.black.opacity(0.07), ink: Color(red: 0.2, green: 0.22, blue: 0.27),
                       pin: Color(red: 0.75, green: 0.2, blue: 0.2), wire: Color(red: 0.1, green: 0.5, blue: 0.35), select: .accentColor,
                       board: .clear, edge: .clear, front: .clear, back: .clear, pad: .clear, air: .clear)

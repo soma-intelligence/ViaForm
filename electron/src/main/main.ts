@@ -186,7 +186,8 @@ function menu(): void {
         { label: "Design", accelerator: "CmdOrCtrl+1", click: send("workspace:design") },
         { label: "Electronics", accelerator: "CmdOrCtrl+2", click: send("workspace:electronics") },
         { type: "separator" },
-        { label: "Zoom to Fit", accelerator: "F", registerAccelerator: false, click: send("fit") },
+        { label: "Zoom to Fit", accelerator: "F6", registerAccelerator: false, click: send("fit") },
+        { label: "Home View", click: send("view:home") },
         { type: "separator" },
         { role: "toggleDevTools" },
         { role: "togglefullscreen" },
@@ -210,7 +211,7 @@ function createWindow(): void {
     height: 900,
     minWidth: 960,
     minHeight: 600,
-    backgroundColor: "#16181c",
+    backgroundColor: "#1a1c20",
     title: "ViaForm",
     webPreferences: { preload: path.join(__dirname, "..", "preload", "preload.js"), contextIsolation: true, sandbox: true },
   });

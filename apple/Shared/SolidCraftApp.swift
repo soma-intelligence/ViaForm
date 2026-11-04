@@ -16,8 +16,8 @@ struct SolidCraftApp: App {
         WindowGroup {
             DeskRootView(model: model, pcb: pcb)
                 .frame(minWidth: 1000, minHeight: 640)
-                .preferredColorScheme(.light)
-                .tint(Color(red: 0.13, green: 0.55, blue: 0.95))
+                .preferredColorScheme(.dark)
+                .tint(Color(red: 0.24, green: 0.55, blue: 1.0))
         }
         .windowToolbarStyle(.unifiedCompact)
         .commands {

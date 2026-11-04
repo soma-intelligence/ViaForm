@@ -34,3 +34,13 @@ jobs:
           npm run typecheck
           npm test
           npm run build:renderer
+      - name: UI test (drives the app)
+        working-directory: electron
+        shell: bash
+        run: |
+          if [ "$RUNNER_OS" = "Linux" ]; then
+            sudo apt-get update && sudo apt-get install -y xvfb
+            xvfb-run -a npm run test:ui
+          else
+            npm run test:ui
+          fi

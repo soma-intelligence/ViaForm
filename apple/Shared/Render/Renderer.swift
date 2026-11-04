@@ -10,6 +10,8 @@ struct ViewportTheme {
     var edge: SIMD4<Float>
     /// Use the engine's background instead of the theme's.
     var engineBackground = false
+    /// Scales the grid's opacity, for dark backgrounds.
+    var gridOpacity: Float = 1
 }
 
 /// What is selected or under the cursor, for the highlight.
@@ -146,7 +148,12 @@ final class Renderer: NSObject, MTKViewDelegate {
         radius = Double(scene.radius)
         meshes = scene.meshes.compactMap(upload)
         (lineBuffer, lineCount) = segments(scene.lines)
-        (gridBuffer, gridCount) = segments(scene.grid)
+        let grid = theme.gridOpacity == 1 ? scene.grid : scene.grid.map { l in
+            var l = l
+            l.color.w *= theme.gridOpacity
+            return l
+        }
+        (gridBuffer, gridCount) = segments(grid)
         rebuildOverlay()
     }
 

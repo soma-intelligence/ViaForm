@@ -52,7 +52,8 @@ cd electron && npm ci && npm start
 ```
 
 `npm test` runs the app's end-to-end tests on the addon; `cargo test -p viaform-core` runs the
-core's. `npm run dist` packages for the current platform.
+core's. `npm run test:ui` starts the app and drives its interface (toolbar, browser, ViewCube,
+timeline, sketch, electronics); it needs a display. `npm run dist` packages for the current platform.
 
 Apple apps:
 

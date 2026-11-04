@@ -16,11 +16,12 @@ struct DeskRootView: View {
     @State private var showData = false
 
     static let theme = ViewportTheme(
-        backgroundTop: SIMD4(0.78, 0.83, 0.88, 1),
-        backgroundBottom: SIMD4(0.98, 0.98, 0.99, 1),
-        highlight: SIMD4(0.13, 0.55, 0.95, 1),
-        hover: SIMD4(0.45, 0.72, 1.0, 1),
-        edge: SIMD4(0.1, 0.1, 0.1, 1)
+        backgroundTop: SIMD4(0.28, 0.30, 0.34, 1),
+        backgroundBottom: SIMD4(0.13, 0.145, 0.165, 1),
+        highlight: SIMD4(0.24, 0.55, 1.0, 1),
+        hover: SIMD4(0.5, 0.74, 1.0, 1),
+        edge: SIMD4(0.05, 0.06, 0.07, 1),
+        gridOpacity: 0.3
     )
 
     enum Workspace: String, CaseIterable { case design = "DESIGN", electronics = "ELECTRONICS" }
@@ -39,9 +40,6 @@ struct DeskRootView: View {
                 .foregroundStyle(Color.accentColor)
                 .padding(.horizontal, 10)
                 Divider().frame(height: 16)
-                if workspace == .electronics {
-                    Text("Schematic and board on the PCBCraft engine, KiCad export").font(.system(size: 11)).foregroundStyle(.secondary).padding(.horizontal, 10)
-                }
                 Spacer()
             }
             .frame(height: 24)
@@ -81,7 +79,7 @@ struct DeskRootView: View {
                         if showBrowser { BrowserPanel(model: model, shown: $showBrowser).frame(width: 250) }
                         Spacer()
                         VStack(alignment: .trailing, spacing: 10) {
-                            ViewCube(model: model, size: 104, faceColor: Color(white: 0.97), edgeColor: Color(white: 0.5), textColor: Color(white: 0.28))
+                            ViewCube(model: model, size: 104, faceColor: Color(red: 0.29, green: 0.31, blue: 0.35), edgeColor: Color(white: 0.65), textColor: Color(white: 0.86))
                             if model.tool != .select || model.genericCommand != nil { CommandDialog(model: model).frame(width: 300) }
                         }
                     }
