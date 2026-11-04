@@ -1,6 +1,8 @@
 import type { DocState, Json, LinkState, UpdateStatus, ViaFormAPI } from "../shared/api";
 import { icon } from "./icons";
 import { PART_KINDS, PcbCanvas, PcbModel } from "./pcb";
+import { BRAINS, CAMERAS, MISSIONS, SimView, type SimSettings } from "./simulation";
+import { WEATHERS } from "../shared/sim/weather";
 import { ViewCube } from "./viewcube";
 import { Viewport, type Hit, type NavMode, type ViewName, type VisualStyle } from "./viewport";
 
@@ -9,11 +11,11 @@ declare global {
 }
 
 // The app shell: one project, two workspaces (Design and Electronics) over the same Workspace in
-// the main process, and the link between them shown in both. The layout follows the usual desktop
+// the main process, and the link between them shown in both; a third, Simulation, flies the drone. The layout follows the usual desktop
 // CAD arrangement (docs/ui-reference.md): application bar, toolbar of tabs and panels, a floating
 // browser, ViewCube, navigation bar, timeline, marking menu, command dialog and command search.
 
-type Workspace = "design" | "electronics";
+type Workspace = "design" | "electronics" | "simulation";
 type PlaceTool = "box" | "cylinder" | "sphere";
 interface Component { id: number; name: string; bodies: string[]; occurrences: { name: string }[] }
 interface Spec { id: string; label: string; tab: string; panel: string; params: string; icon: string; key: string | null }
@@ -67,6 +69,15 @@ $("view3d").append(cube.el);
 viewport.onCamera = (c) => cube.update(c);
 const pcb = new PcbModel();
 const sheet = new PcbCanvas($<HTMLCanvasElement>("sheet-canvas"), pcb);
+let simView: SimView | null = null;
+/** Built on first use: the simulation has its own WebGL context and render loop. */
+function sim(): SimView {
+  if (!simView) {
+    simView = new SimView($("sim"));
+    simView.onChange = () => { if (state.ws === "simulation") renderToolbar(); };
+  }
+  return simView;
+}
 
 function flash(text: string | null, error = false): void {
   state.message = text ? { text, error } : null;
@@ -618,6 +629,7 @@ function workspaceMenu(anchor: HTMLElement): void {
     { head: "WORKSPACES" },
     { icon: "box", label: "Design", key: "Ctrl+1", run: () => switchTo("design") },
     { icon: "board", label: "Electronics", key: "Ctrl+2", run: () => switchTo("electronics") },
+    { icon: "play", label: "Simulation", key: "Ctrl+3", run: () => switchTo("simulation") },
   ], 0, 0, anchor);
 }
 
@@ -634,17 +646,53 @@ function electronicsPanel(): HTMLElement {
   ]);
 }
 
+/** A labelled drop-down in a toolbar panel. */
+function choice<T extends string | number>(options: { id: T; label: string }[], value: T, set: (v: T) => void, width = 150): HTMLElement {
+  const f = el("label", "field");
+  const s = el("select");
+  s.style.width = `${width}px`;
+  s.innerHTML = options.map((o, i) => `<option value="${i}">${esc(o.label)}</option>`).join("");
+  s.value = String(options.findIndex((o) => o.id === value));
+  s.onchange = () => set(options[Number(s.value)].id);
+  f.append(s);
+  return f;
+}
+
+function simulationPanels(): HTMLElement[] {
+  const v = sim(), S = v.settings;
+  const set = <K extends keyof SimSettings>(k: K) => (x: SimSettings[K]) => v.set(k, x);
+  return [
+    panel("MISSION", [choice(MISSIONS, S.mission, set("mission"), 140)]),
+    panel("WEATHER", [choice(WEATHERS.map((w, i) => ({ id: i, label: w.name })), S.weather, set("weather"), 170)]),
+    panel("CONTROLLER", [choice(BRAINS, S.brain, set("brain"), 150)]),
+    panel("FLY", [
+      tool(v.playing ? "pause" : "play", v.playing ? "Pause (Space)" : "Fly (Space)", () => v.play()),
+      tool("revert", "Fly again from the start (R)", () => v.restart()),
+      tool("next", "Next random draw of the weather (N)", () => v.restart(true)),
+      choice([0.25, 0.5, 1, 2, 4].map((x) => ({ id: x, label: `${x}×` })), S.speed, set("speed"), 58),
+    ]),
+    panel("VIEW", [
+      choice(CAMERAS, S.camera, set("camera"), 92),
+      tool("route", "Show the sensor beams", () => v.toggle("beams"), { on: S.show.beams }),
+      tool("grid", "Show the occupancy map", () => v.toggle("map"), { on: S.show.map }),
+      tool("line", "Show the planned path", () => v.toggle("path"), { on: S.show.path }),
+    ]),
+    panel("TEST", [tool("check", v.benchmarking ? "Stop the benchmark" : "Fly every weather three times and tabulate", () => v.benchmark(), { on: v.benchmarking })]),
+  ];
+}
+
 function renderTabs(): void {
   const tabs = $("tabs");
-  const ws = el("button", "ws-menu", `${state.ws === "design" ? "DESIGN" : "ELECTRONICS"}${icon("chevron", 12)}`);
+  const ws = el("button", "ws-menu", `${state.ws.toUpperCase()}${icon("chevron", 12)}`);
   ws.title = "Change workspace";
   ws.onclick = () => workspaceMenu(ws);
-  const list = state.ws === "design" ? [...(sketching() ? ["SKETCH"] : []), ...DESIGN_TABS] : ["SCHEMATIC", "PCB"];
-  const current = state.ws === "design" ? state.tab : pcb.sheet === "schematic" ? "SCHEMATIC" : "PCB";
+  const list = state.ws === "design" ? [...(sketching() ? ["SKETCH"] : []), ...DESIGN_TABS] : state.ws === "simulation" ? ["FLIGHT"] : ["SCHEMATIC", "PCB"];
+  const current = state.ws === "design" ? state.tab : state.ws === "simulation" ? "FLIGHT" : pcb.sheet === "schematic" ? "SCHEMATIC" : "PCB";
   tabs.replaceChildren(ws, ...list.map((t) => {
     const b = el("button", `tab${t === current ? " on" : ""}${t === "SKETCH" ? " contextual" : ""}`);
     b.textContent = t;
     b.onclick = () => {
+      if (state.ws === "simulation") return;
       if (state.ws === "design") state.tab = t;
       else { pcb.sheet = t === "PCB" ? "board" : "schematic"; pcb.tool = { kind: "select" }; }
       render();
@@ -657,6 +705,7 @@ function renderToolbar(): void {
   renderTabs();
   const bar = $("toolbar");
   bar.replaceChildren();
+  if (state.ws === "simulation") return void bar.append(...simulationPanels());
   if (state.ws === "design") {
     for (const p of panelsOf(state.tab)) {
       const featured = FEATURED[`${state.tab}/${p.name}`]?.map(spec).filter((s): s is Spec => !!s) ?? p.items.slice(0, 3);
@@ -1072,6 +1121,8 @@ function renderPills(): void {
 function render(): void {
   $("view3d").hidden = state.ws !== "design";
   $("sheet").hidden = state.ws !== "electronics";
+  $("sim").hidden = state.ws !== "simulation";
+  for (const id of ["browser", "navbar"]) $(id).style.display = state.ws === "simulation" ? "none" : "";
   renderAppbar();
   renderToolbar();
   renderBrowser();
@@ -1085,8 +1136,10 @@ function render(): void {
 function switchTo(ws: Workspace): void {
   if (state.ws === ws) return;
   state.ws = ws;
-  if (ws === "electronics") closeDialog();
+  if (ws !== "design") closeDialog();
   render();
+  if (ws === "simulation") sim().setActive(true);
+  else simView?.setActive(false);
   if (ws === "electronics") requestAnimationFrame(() => sheet.draw());
 }
 
@@ -1162,6 +1215,13 @@ document.addEventListener("keydown", (e) => {
   if (mod && e.key.toLowerCase() === "k") { e.preventDefault(); return void openPalette(); }
   if (mod || e.altKey) return;
   if (e.key === "s" || e.key === "S") { e.preventDefault(); return void openPalette(); }
+  if (state.ws === "simulation") {
+    const v = sim();
+    if (e.key === " ") { e.preventDefault(); v.play(); }
+    if (e.key === "r") v.restart();
+    if (e.key === "n") v.restart(true);
+    return;
+  }
   if (state.ws === "electronics") {
     if (e.key === "w") pcb.tool = { kind: "wire" };
     if (e.key === "x") pcb.tool = { kind: "route" };
@@ -1184,6 +1244,7 @@ api.onMenu((c) => {
   else if (c === "fit") state.ws === "design" ? viewport.fit() : sheet.fit();
   else if (c === "about") void about();
   else if (c.startsWith("workspace:")) switchTo(c.slice(10) as Workspace);
+  else if (c.startsWith("sim:")) { switchTo("simulation"); sim().stage(JSON.parse(c.slice(4))); }
   else if (c.startsWith("sheet:")) { pcb.sheet = c.slice(6) as "schematic" | "board"; render(); }
   else if (c.startsWith("view:")) viewport.look(c.slice(5) as ViewName);
 });

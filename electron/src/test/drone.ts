@@ -398,7 +398,10 @@ export function flightChecks(w: Workspace): FlightReport {
     steps: 36,
     keys: [1, 2, 3, 4].map((i) => ({ joint: `Prop${i} spin`, points: [[0, 0], [36, i % 2 ? 360 : -360]] })),
   });
-  const airframe = (mp.occurrences as any[]).map((o) => o.name as string).filter((n) => n && !/^Prop\d:/.test(n) && n !== "Untitled");
+  // The routed board is left out of the sweep: its tessellation (every pad and via) is over the
+  // engine's contact-sweep budget, and it sits in the middle of the stack, far inside the prop
+  // discs, which the static interference check above already covers.
+  const airframe = (mp.occurrences as any[]).map((o) => o.name as string).filter((n) => n && !/^Prop\d:/.test(n) && !/^PCB /.test(n) && n !== "Untitled");
   const run = w.cad("motion.interference", {
     study: "Props spin",
     occurrences: [1, 2, 3, 4].map((i) => `Prop${i}:1`),

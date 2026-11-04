@@ -21,6 +21,7 @@ const P: Record<string, string> = {
   first: "M6 5v14M18 5l-9 7 9 7z",
   prev: "M17 5l-9 7 9 7zM7 5v14",
   play: "M7 4l13 8-13 8z",
+  pause: "M7 5h3.5v14H7zM13.5 5H17v14h-3.5z",
   next: "M7 5l9 7-9 7zM17 5v14",
   last: "M18 5v14M6 5l9 7-9 7z",
   orbit: "M12 3a9 9 0 1 0 0 18a9 9 0 1 0 0-18zM3 12c0 2.2 4 4 9 4s9-1.8 9-4M12 3c-2.2 0-4 4-4 9s1.8 9 4 9",

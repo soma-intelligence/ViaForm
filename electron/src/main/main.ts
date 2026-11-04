@@ -185,6 +185,7 @@ function menu(): void {
       submenu: [
         { label: "Design", accelerator: "CmdOrCtrl+1", click: send("workspace:design") },
         { label: "Electronics", accelerator: "CmdOrCtrl+2", click: send("workspace:electronics") },
+        { label: "Simulation", accelerator: "CmdOrCtrl+3", click: send("workspace:simulation") },
         { type: "separator" },
         { label: "Zoom to Fit", accelerator: "F6", registerAccelerator: false, click: send("fit") },
         { label: "Home View", click: send("view:home") },
@@ -228,12 +229,17 @@ function createWindow(): void {
   });
   win.webContents.on("did-finish-load", () => {
     win?.webContents.send("update", currentStatus());
-    // --screenshot=<file.png> [--workspace=electronics] [--sheet=board]: saves the window and quits (docs, CI smoke test).
+    // --screenshot=<file.png> [--workspace=electronics] [--sheet=board] [--sim=...]: saves the window and quits (docs, CI smoke test).
     const shot = process.argv.find((a) => a.startsWith("--screenshot="))?.slice(13);
     if (shot) {
+      // Renderer errors to stderr, so a smoke test that captures a broken page says why.
+      win?.webContents.on("console-message", (e) => { if (e.level === "error" || e.level === "warning") process.stderr.write(`renderer ${e.level}: ${e.message}\n`); });
       const ws = process.argv.find((a) => a.startsWith("--workspace="))?.slice(12);
       setTimeout(() => {
         if (ws) win?.webContents.send("menu", `workspace:${ws}`);
+        // --sim={"weather":3,"at":12,"camera":"chase"}: a simulation scene, flown to that time.
+        const simArg = process.argv.find((a) => a.startsWith("--sim="))?.slice(6);
+        if (simArg) win?.webContents.send("menu", `sim:${simArg}`);
         const sheetArg = process.argv.find((a) => a.startsWith("--sheet="))?.slice(8);
         if (sheetArg) win?.webContents.send("menu", `sheet:${sheetArg}`);
         setTimeout(async () => {

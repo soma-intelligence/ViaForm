@@ -65,6 +65,80 @@ the propellers spun through a full turn against the airframe, with STEP and KiCa
 ![Drone sample, design](docs/drone-design.png)
 ![Drone sample, flight controller](docs/drone-board.png)
 
+### Drone simulation
+
+The Simulation workspace (Ctrl+3) flies a small 3-inch drone through an obstacle course, or holds
+it in a hover, in hard weather. The same code (`electron/src/shared/sim`) runs the app, the tests
+and the training:
+
+- **Physics.** Rigid-body X quad: motor lag, thrust and torque against the air, drag, ground
+  effect, and crash and collision detection.
+- **Weather.** Seven presets, from indoor to a gale, a 25 mm/h rain storm, snow at −8 °C,
+  freezing fog and hot-and-high at 2 400 m. They set:
+  - wind: mean, turbulence and gusts;
+  - air density: temperature, altitude, humidity;
+  - rain: water film and down-force on the rotors;
+  - snow load and icing on the props;
+  - LiPo: cold internal resistance and voltage sag;
+  - time-of-flight sensors: range, plus false returns from drops and flakes.
+- **Frame by generative design** (`generative.ts`). Beam FEM over a ground structure, optimised
+  for mass under three load cases at full thrust: punch-out, radial crash and side crash. The
+  constraints are prop clearance, deflection and stress. At a 1.5 safety factor the result is a
+  3 mm carbon frame with tapered 60.2 mm arms. The frame weighs 11.0 g and the drone 153 g all up.
+  `node scripts/design-frame.mjs` reruns the study.
+- **Parts** (`parts.ts`). All on Amazon:
+  - SpeedyBee F405 Mini stack;
+  - T-Motor F1404 4600KV motors;
+  - Gemfan 3016 props;
+  - 650 mAh 3S LiPo;
+  - RadioMaster RP1 receiver;
+  - XIAO ESP32S3 companion;
+  - six VL53L1X time-of-flight sensors.
+
+  Links and masses are in the file. Prices and stock were not checked.
+- **Controller.** Cascaded PID: position, velocity, attitude, then rates and the mixer. A small
+  neural net (17-16-3) adds a correction to the acceleration command.
+  `node scripts/train-drone.mjs` trains both in two stages, over randomised weather, mass and
+  thrust:
+  1. tunes the gains (cross-entropy method);
+  2. trains the net (evolution strategies).
+
+  The script writes `trained.ts`. On held-out episodes the velocity-tracking cost was:
+
+  | Controller | Cost |
+  |---|---|
+  | Default PID | 7.53 |
+  | Trained gains | 2.77 |
+  | Trained gains + net | 2.38 |
+- **Autonomy.** Readings from the time-of-flight sensors build a 3D occupancy map in log-odds.
+  Rain and snow returns fade from it; walls stay. A* replans on that map five times a second.
+  Speed limits keep the drone able to stop before what it sees.
+
+Results on the obstacle course (seven weathers, five seeds each):
+
+| Controller | Courses completed |
+|---|---|
+| Default PID | 27/35 |
+| Trained gains | 33/35 |
+| Trained gains + net | 33/35 |
+
+Most failures are walls met in strong wind with short sensor range, such as bright sun at
+altitude. The toolbar's check button reruns this table in the app. `npm test` runs these sim
+tests:
+
+- physics;
+- weather effects;
+- frame constraints;
+- mapping;
+- training gains;
+- a hover in every weather;
+- six course flights from calm to gale.
+
+![Simulation, rain storm](docs/sim-rain.png)
+![Simulation, snow at −8 °C](docs/sim-snow.png)
+![Simulation, freezing fog](docs/sim-fog.png)
+![Simulation, course overview](docs/sim-course.png)
+
 Apple apps:
 
 ```bash
