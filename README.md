@@ -209,8 +209,9 @@ In Electronics, press Send to 3D, then Mount on a Part and click a face. See
 STEP from the design and `.kicad_pcb` from the board in every app; STL in the Apple apps, OBJ
 and 3MF on the Mac; `.viaform` for the whole project in the Electron app.
 
-**Why is ViaForm GPL?**
-The core links PCBCraft, so the whole app is licensed GPL-3.0-or-later.
+**What license is ViaForm under?**
+GPL-3.0-or-later (see `LICENSE`). Both engines it builds on, SolidCraft and PCBCraft, are
+published upstream under MIT or Apache-2.0.
 
 **Which parts can I place on a schematic?**
 The engine's four built-in kinds: resistor, capacitor, LED and connector.
@@ -276,5 +277,6 @@ Reference:
 
 ## Licence
 
-GPL-3.0-or-later (see `LICENSE`), because the core links PCBCraft, which is GPL.
-SolidCraft itself is MIT or Apache-2.0. GPL rules out App Store distribution.
+GPL-3.0-or-later (see `LICENSE`). The engines are separate projects with their own
+licenses: SolidCraft and PCBCraft are both MIT or Apache-2.0 upstream. GPL rules out App Store
+distribution.
