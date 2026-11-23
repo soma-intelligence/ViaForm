@@ -1,0 +1,827 @@
+{
+  "all_up": {
+    "center_of_mass_mm": [
+      -0.7007695863638219,
+      -0.08292161767443663,
+      24.671646672565387
+    ],
+    "inertia_kg_m2": [
+      0.00021234062127580648,
+      0.00022459702207615974,
+      0.000285017087472121
+    ],
+    "mass_g": 221.68675948979572
+  },
+  "all_up_mass_g": 221.68675948979572,
+  "arm_length_mm": 64.99725532666746,
+  "battery": {
+    "capacity_mah": 650,
+    "cells": 4,
+    "component_ref": "B1"
+  },
+  "center_of_mass_mm": [
+    -1.4991469669141908,
+    0.00812855580658308,
+    7.057960304227892
+  ],
+  "components": [
+    {
+      "mass_g": 9.34,
+      "name": "Motor 1 (cw)",
+      "position_mm": [
+        45.959999084472656,
+        45.959999084472656,
+        12.300000190734863
+      ]
+    },
+    {
+      "mass_g": 1.18,
+      "name": "Prop 1 (cw)",
+      "position_mm": [
+        45.96000146865845,
+        45.96000146865845,
+        23.350000381469727
+      ]
+    },
+    {
+      "mass_g": 0.2,
+      "name": "Motor 1 screw 1",
+      "position_mm": [
+        50.459999084472656,
+        50.459999084472656,
+        2.350000023841858
+      ]
+    },
+    {
+      "mass_g": 0.2,
+      "name": "Motor 1 screw 2",
+      "position_mm": [
+        50.459999084472656,
+        41.459999084472656,
+        2.350000023841858
+      ]
+    },
+    {
+      "mass_g": 0.2,
+      "name": "Motor 1 screw 3",
+      "position_mm": [
+        41.459999084472656,
+        41.459999084472656,
+        2.350000023841858
+      ]
+    },
+    {
+      "mass_g": 0.2,
+      "name": "Motor 1 screw 4",
+      "position_mm": [
+        41.459999084472656,
+        50.459999084472656,
+        2.350000023841858
+      ]
+    },
+    {
+      "mass_g": 9.34,
+      "name": "Motor 2 (ccw)",
+      "position_mm": [
+        45.959999084472656,
+        -45.959999084472656,
+        12.300000190734863
+      ]
+    },
+    {
+      "mass_g": 1.18,
+      "name": "Prop 2 (ccw)",
+      "position_mm": [
+        45.96000146865845,
+        -45.96000146865845,
+        23.350000381469727
+      ]
+    },
+    {
+      "mass_g": 0.2,
+      "name": "Motor 2 screw 1",
+      "position_mm": [
+        50.459999084472656,
+        -41.459999084472656,
+        2.350000023841858
+      ]
+    },
+    {
+      "mass_g": 0.2,
+      "name": "Motor 2 screw 2",
+      "position_mm": [
+        50.459999084472656,
+        -50.459999084472656,
+        2.350000023841858
+      ]
+    },
+    {
+      "mass_g": 0.2,
+      "name": "Motor 2 screw 3",
+      "position_mm": [
+        41.459999084472656,
+        -50.459999084472656,
+        2.350000023841858
+      ]
+    },
+    {
+      "mass_g": 0.2,
+      "name": "Motor 2 screw 4",
+      "position_mm": [
+        41.459999084472656,
+        -41.459999084472656,
+        2.350000023841858
+      ]
+    },
+    {
+      "mass_g": 9.34,
+      "name": "Motor 3 (cw)",
+      "position_mm": [
+        -45.959999084472656,
+        -45.959999084472656,
+        12.300000190734863
+      ]
+    },
+    {
+      "mass_g": 1.18,
+      "name": "Prop 3 (cw)",
+      "position_mm": [
+        -45.96000146865845,
+        -45.96000146865845,
+        23.350000381469727
+      ]
+    },
+    {
+      "mass_g": 0.2,
+      "name": "Motor 3 screw 1",
+      "position_mm": [
+        -41.459999084472656,
+        -41.459999084472656,
+        2.350000023841858
+      ]
+    },
+    {
+      "mass_g": 0.2,
+      "name": "Motor 3 screw 2",
+      "position_mm": [
+        -41.459999084472656,
+        -50.459999084472656,
+        2.350000023841858
+      ]
+    },
+    {
+      "mass_g": 0.2,
+      "name": "Motor 3 screw 3",
+      "position_mm": [
+        -50.459999084472656,
+        -50.459999084472656,
+        2.350000023841858
+      ]
+    },
+    {
+      "mass_g": 0.2,
+      "name": "Motor 3 screw 4",
+      "position_mm": [
+        -50.459999084472656,
+        -41.459999084472656,
+        2.350000023841858
+      ]
+    },
+    {
+      "mass_g": 9.34,
+      "name": "Motor 4 (ccw)",
+      "position_mm": [
+        -45.959999084472656,
+        45.959999084472656,
+        12.300000190734863
+      ]
+    },
+    {
+      "mass_g": 1.18,
+      "name": "Prop 4 (ccw)",
+      "position_mm": [
+        -45.96000146865845,
+        45.96000146865845,
+        23.350000381469727
+      ]
+    },
+    {
+      "mass_g": 0.2,
+      "name": "Motor 4 screw 1",
+      "position_mm": [
+        -41.459999084472656,
+        50.459999084472656,
+        2.350000023841858
+      ]
+    },
+    {
+      "mass_g": 0.2,
+      "name": "Motor 4 screw 2",
+      "position_mm": [
+        -41.459999084472656,
+        41.459999084472656,
+        2.350000023841858
+      ]
+    },
+    {
+      "mass_g": 0.2,
+      "name": "Motor 4 screw 3",
+      "position_mm": [
+        -50.459999084472656,
+        41.459999084472656,
+        2.350000023841858
+      ]
+    },
+    {
+      "mass_g": 0.2,
+      "name": "Motor 4 screw 4",
+      "position_mm": [
+        -50.459999084472656,
+        50.459999084472656,
+        2.350000023841858
+      ]
+    },
+    {
+      "mass_g": 13.5,
+      "name": "FC + ESC stack",
+      "position_mm": [
+        0.0,
+        0.0,
+        11.600000381469727
+      ]
+    },
+    {
+      "mass_g": 4.46,
+      "name": "Video transmitter",
+      "position_mm": [
+        0.0,
+        0.0,
+        20.649999618530273
+      ]
+    },
+    {
+      "mass_g": 2.0,
+      "name": "FPV camera",
+      "position_mm": [
+        23.5,
+        0.0,
+        25.0
+      ]
+    },
+    {
+      "mass_g": 2.2,
+      "name": "Receiver",
+      "position_mm": [
+        0.0,
+        0.0,
+        25.5
+      ]
+    },
+    {
+      "mass_g": 3.0,
+      "name": "XIAO ESP32S3",
+      "position_mm": [
+        0.0,
+        0.0,
+        30.149999618530273
+      ]
+    },
+    {
+      "mass_g": 79.0,
+      "name": "Battery 4S 650 mAh",
+      "position_mm": [
+        2.5,
+        0.0,
+        47.5
+      ]
+    },
+    {
+      "mass_g": 2.0,
+      "name": "Low-ESR capacitor",
+      "position_mm": [
+        -26.75,
+        18.799999713897705,
+        10.0
+      ]
+    },
+    {
+      "mass_g": 3.0,
+      "name": "XT30 pigtail",
+      "position_mm": [
+        -26.75,
+        -18.799999713897705,
+        10.0
+      ]
+    },
+    {
+      "mass_g": 0.5,
+      "name": "ToF front",
+      "position_mm": [
+        29.399999618530273,
+        0.0,
+        10.850000381469727
+      ]
+    },
+    {
+      "mass_g": 0.5,
+      "name": "ToF rear",
+      "position_mm": [
+        -38.89999961853027,
+        0.0,
+        10.850000381469727
+      ]
+    },
+    {
+      "mass_g": 0.5,
+      "name": "ToF left",
+      "position_mm": [
+        0.0,
+        21.100000381469727,
+        11.350000381469727
+      ]
+    },
+    {
+      "mass_g": 0.5,
+      "name": "ToF right",
+      "position_mm": [
+        0.0,
+        -21.100000381469727,
+        11.350000381469727
+      ]
+    },
+    {
+      "mass_g": 0.5,
+      "name": "ToF up",
+      "position_mm": [
+        -33.64999961853027,
+        0.0,
+        36.0
+      ]
+    },
+    {
+      "mass_g": 0.5,
+      "name": "ToF down",
+      "position_mm": [
+        -28.100000381469727,
+        0.0,
+        5.099999904632568
+      ]
+    },
+    {
+      "mass_g": 2.8,
+      "name": "Video antenna",
+      "position_mm": [
+        -56.5,
+        0.0,
+        20.0
+      ]
+    },
+    {
+      "mass_g": 0.5,
+      "name": "Standoff 1",
+      "position_mm": [
+        21.0,
+        10.0,
+        14.0
+      ]
+    },
+    {
+      "mass_g": 0.2,
+      "name": "Standoff 1 bottom screw",
+      "position_mm": [
+        21.0,
+        10.0,
+        2.350000023841858
+      ]
+    },
+    {
+      "mass_g": 0.2,
+      "name": "Standoff 1 top screw",
+      "position_mm": [
+        21.0,
+        10.0,
+        24.649999618530273
+      ]
+    },
+    {
+      "mass_g": 0.5,
+      "name": "Standoff 2",
+      "position_mm": [
+        21.0,
+        -10.0,
+        14.0
+      ]
+    },
+    {
+      "mass_g": 0.2,
+      "name": "Standoff 2 bottom screw",
+      "position_mm": [
+        21.0,
+        -10.0,
+        2.350000023841858
+      ]
+    },
+    {
+      "mass_g": 0.2,
+      "name": "Standoff 2 top screw",
+      "position_mm": [
+        21.0,
+        -10.0,
+        24.649999618530273
+      ]
+    },
+    {
+      "mass_g": 0.5,
+      "name": "Standoff 3",
+      "position_mm": [
+        -21.0,
+        -10.0,
+        14.0
+      ]
+    },
+    {
+      "mass_g": 0.2,
+      "name": "Standoff 3 bottom screw",
+      "position_mm": [
+        -21.0,
+        -10.0,
+        2.350000023841858
+      ]
+    },
+    {
+      "mass_g": 0.2,
+      "name": "Standoff 3 top screw",
+      "position_mm": [
+        -21.0,
+        -10.0,
+        24.649999618530273
+      ]
+    },
+    {
+      "mass_g": 0.5,
+      "name": "Standoff 4",
+      "position_mm": [
+        -21.0,
+        10.0,
+        14.0
+      ]
+    },
+    {
+      "mass_g": 0.2,
+      "name": "Standoff 4 bottom screw",
+      "position_mm": [
+        -21.0,
+        10.0,
+        2.350000023841858
+      ]
+    },
+    {
+      "mass_g": 0.2,
+      "name": "Standoff 4 top screw",
+      "position_mm": [
+        -21.0,
+        10.0,
+        24.649999618530273
+      ]
+    },
+    {
+      "mass_g": 0.6,
+      "name": "Stack bolt 1",
+      "position_mm": [
+        10.0,
+        10.0,
+        11.5
+      ]
+    },
+    {
+      "mass_g": 0.2,
+      "name": "Stack nut 1",
+      "position_mm": [
+        10.0,
+        10.0,
+        23.800000190734863
+      ]
+    },
+    {
+      "mass_g": 0.2,
+      "name": "Gummy ESC 1",
+      "position_mm": [
+        10.0,
+        10.0,
+        4.5
+      ]
+    },
+    {
+      "mass_g": 0.2,
+      "name": "Gummy FC 1",
+      "position_mm": [
+        10.0,
+        10.0,
+        11.25
+      ]
+    },
+    {
+      "mass_g": 0.6,
+      "name": "Stack bolt 2",
+      "position_mm": [
+        10.0,
+        -10.0,
+        11.5
+      ]
+    },
+    {
+      "mass_g": 0.2,
+      "name": "Stack nut 2",
+      "position_mm": [
+        10.0,
+        -10.0,
+        23.800000190734863
+      ]
+    },
+    {
+      "mass_g": 0.2,
+      "name": "Gummy ESC 2",
+      "position_mm": [
+        10.0,
+        -10.0,
+        4.5
+      ]
+    },
+    {
+      "mass_g": 0.2,
+      "name": "Gummy FC 2",
+      "position_mm": [
+        10.0,
+        -10.0,
+        11.25
+      ]
+    },
+    {
+      "mass_g": 0.6,
+      "name": "Stack bolt 3",
+      "position_mm": [
+        -10.0,
+        -10.0,
+        11.5
+      ]
+    },
+    {
+      "mass_g": 0.2,
+      "name": "Stack nut 3",
+      "position_mm": [
+        -10.0,
+        -10.0,
+        23.800000190734863
+      ]
+    },
+    {
+      "mass_g": 0.2,
+      "name": "Gummy ESC 3",
+      "position_mm": [
+        -10.0,
+        -10.0,
+        4.5
+      ]
+    },
+    {
+      "mass_g": 0.2,
+      "name": "Gummy FC 3",
+      "position_mm": [
+        -10.0,
+        -10.0,
+        11.25
+      ]
+    },
+    {
+      "mass_g": 0.6,
+      "name": "Stack bolt 4",
+      "position_mm": [
+        -10.0,
+        10.0,
+        11.5
+      ]
+    },
+    {
+      "mass_g": 0.2,
+      "name": "Stack nut 4",
+      "position_mm": [
+        -10.0,
+        10.0,
+        23.800000190734863
+      ]
+    },
+    {
+      "mass_g": 0.2,
+      "name": "Gummy ESC 4",
+      "position_mm": [
+        -10.0,
+        10.0,
+        4.5
+      ]
+    },
+    {
+      "mass_g": 0.2,
+      "name": "Gummy FC 4",
+      "position_mm": [
+        -10.0,
+        10.0,
+        11.25
+      ]
+    },
+    {
+      "mass_g": 0.1,
+      "name": "Camera screw left",
+      "position_mm": [
+        23.5,
+        8.0,
+        25.0
+      ]
+    },
+    {
+      "mass_g": 0.1,
+      "name": "Camera screw right",
+      "position_mm": [
+        23.5,
+        -8.0,
+        25.0
+      ]
+    },
+    {
+      "mass_g": 1.5,
+      "name": "Battery strap",
+      "position_mm": [
+        0.0,
+        0.0,
+        46.25
+      ]
+    }
+  ],
+  "files": {
+    "assembly": "drone/assembly.json",
+    "cage_3mf": "drone/parts/drone_cage.3mf",
+    "components_stl": "drone/drone_components.stl",
+    "frame_3mf": "drone/drone_frame.3mf",
+    "frame_stl": "drone/drone_frame.stl",
+    "plate_3mf": "drone/parts/drone_bottom_plate.3mf"
+  },
+  "frame": {
+    "center_of_mass_mm": [
+      -1.4991469669141908,
+      0.00812855580658308,
+      7.057960304227892
+    ],
+    "inertia_kg_m2": [
+      0.00004270218055887489,
+      0.000039573573324023485,
+      0.00007208326281722371
+    ],
+    "mass_g": 51.34675948979591
+  },
+  "inertia_kg_m2": [
+    0.00004270218055887489,
+    0.000039573573324023485,
+    0.00007208326281722371
+  ],
+  "mass_g": 51.34675948979591,
+  "modes_hz": [
+    351.2110086293781,
+    390.8718428667262,
+    423.953447677504,
+    454.270559044792
+  ],
+  "motor_mounts": [
+    {
+      "bolt_square_mm": 9.0,
+      "component_ref": "M1",
+      "index": 0,
+      "max_thrust_n": 3.3818013,
+      "position_mm": [
+        45.96,
+        45.96,
+        4.0
+      ],
+      "reaction_torque_nmm": 52.32193422391579,
+      "spin": "cw",
+      "thread": "M2",
+      "thrust_axis": [
+        0.0,
+        0.0,
+        1.0
+      ]
+    },
+    {
+      "bolt_square_mm": 9.0,
+      "component_ref": "M1",
+      "index": 1,
+      "max_thrust_n": 3.3818013,
+      "position_mm": [
+        45.96,
+        -45.96,
+        4.0
+      ],
+      "reaction_torque_nmm": 52.32193422391579,
+      "spin": "ccw",
+      "thread": "M2",
+      "thrust_axis": [
+        0.0,
+        0.0,
+        1.0
+      ]
+    },
+    {
+      "bolt_square_mm": 9.0,
+      "component_ref": "M1",
+      "index": 2,
+      "max_thrust_n": 3.3818013,
+      "position_mm": [
+        -45.96,
+        -45.96,
+        4.0
+      ],
+      "reaction_torque_nmm": 52.32193422391579,
+      "spin": "cw",
+      "thread": "M2",
+      "thrust_axis": [
+        0.0,
+        0.0,
+        1.0
+      ]
+    },
+    {
+      "bolt_square_mm": 9.0,
+      "component_ref": "M1",
+      "index": 3,
+      "max_thrust_n": 3.3818013,
+      "position_mm": [
+        -45.96,
+        45.96,
+        4.0
+      ],
+      "reaction_torque_nmm": 52.32193422391579,
+      "spin": "ccw",
+      "thread": "M2",
+      "thrust_axis": [
+        0.0,
+        0.0,
+        1.0
+      ]
+    }
+  ],
+  "prop_diameter_in": 3.0,
+  "schema": "viaform.drone-frame/1",
+  "structure": [
+    {
+      "cases": [
+        "punch",
+        "corner drop 30 cm",
+        "radial post hit",
+        "sideways post hit",
+        "belly drop 300 g"
+      ],
+      "feasible": true,
+      "first_mode_hz": 351.2110086293781,
+      "mass_g": 37.59882448979591,
+      "material": "Carbon fibre plate, quasi-isotropic T700",
+      "max_displacement_mm": [
+        0.0948289675583357,
+        1.61786202000133,
+        1.9401118328184574,
+        0.11388195922892426,
+        0.5192094779329279
+      ],
+      "max_stress_mpa": 193.3651521133361,
+      "part": "drone_bottom_plate",
+      "pole_strike_impact": {
+        "dynamic_amplification": 1.0545095028900149,
+        "peak_displacement_mm": 2.7594079525605006,
+        "peak_stress_mpa": 203.90539043128615,
+        "pulse_s": 0.00333
+      },
+      "safety_factor": 2.206905854956517,
+      "stress_limit_mpa": 300.0
+    },
+    {
+      "cases": [
+        "nose hit",
+        "side swipe",
+        "rear swipe",
+        "inverted drop 3 m",
+        "battery front crash"
+      ],
+      "feasible": true,
+      "first_mode_hz": 1497.3200589023304,
+      "mass_g": 13.747935,
+      "material": "PA12 carbon filled (SLS)",
+      "max_stress_mpa": 33.609937704337185,
+      "part": "drone_cage",
+      "safety_factor": 1.6364207659005134,
+      "stress_limit_mpa": 36.666666666666664
+    }
+  ],
+  "units": {
+    "inertia": "kg m^2, about the centre of mass, body axes x forward y left z up",
+    "length": "mm",
+    "mass": "g"
+  },
+  "wheelbase_mm": 129.9945106533349
+}

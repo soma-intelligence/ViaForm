@@ -1,0 +1,22 @@
+# Builds the 3-inch drone: runs the four generative studies (P1 to P4 of
+# docs/generative/drone-3in.md) around the sourced parts of docs/components/drone.json,
+# assembles them, checks the assembly and renders it. Its own workspace: not a member of the
+# ViaForm workspace.
+[package]
+name = "drone-build"
+version = "0.1.0"
+edition = "2024"
+publish = false
+
+[dependencies]
+viaform-generative = { path = "../../../../generative" }
+serde_json = { version = "1", features = ["float_roundtrip"] }
+rayon = "1.12"
+png = "0.18"
+
+[workspace]
+
+[profile.release]
+opt-level = 3
+lto = "thin"
+codegen-units = 16

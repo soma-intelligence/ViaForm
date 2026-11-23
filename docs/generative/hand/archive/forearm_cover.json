@@ -1,0 +1,520 @@
+{
+  "method": "topology",
+  "objective": "mass",
+  "name": "forearm_cover",
+  "min": [
+    -243.0,
+    -56.0,
+    29.5
+  ],
+  "max": [
+    -58.0,
+    56.0,
+    46.5
+  ],
+  "voxel": 1.0,
+  "material": {
+    "name": "PA12 (SLS)",
+    "e": 1650.0,
+    "nu": 0.4,
+    "density": 0.00101,
+    "allowable": 48.0,
+    "color": "#3a3d42"
+  },
+  "supports": [
+    {
+      "region": {
+        "shape": "box",
+        "min": [
+          -90.0,
+          -25.0,
+          29.5
+        ],
+        "max": [
+          -84.0,
+          -15.0,
+          33.5
+        ]
+      },
+      "fix": [
+        true,
+        true,
+        true
+      ]
+    },
+    {
+      "region": {
+        "shape": "box",
+        "min": [
+          -90.0,
+          15.0,
+          29.5
+        ],
+        "max": [
+          -84.0,
+          25.0,
+          33.5
+        ]
+      },
+      "fix": [
+        true,
+        true,
+        true
+      ]
+    },
+    {
+      "region": {
+        "shape": "box",
+        "min": [
+          -241.0,
+          -25.0,
+          29.5
+        ],
+        "max": [
+          -235.2,
+          -15.0,
+          33.5
+        ]
+      },
+      "fix": [
+        true,
+        true,
+        true
+      ]
+    },
+    {
+      "region": {
+        "shape": "box",
+        "min": [
+          -241.0,
+          15.0,
+          29.5
+        ],
+        "max": [
+          -235.2,
+          25.0,
+          33.5
+        ]
+      },
+      "fix": [
+        true,
+        true,
+        true
+      ]
+    }
+  ],
+  "cases": [
+    {
+      "name": "knock middle 150 N",
+      "loads": [
+        {
+          "type": "force",
+          "region": {
+            "shape": "box",
+            "min": [
+              -170.0,
+              -10.0,
+              44.6
+            ],
+            "max": [
+              -150.0,
+              10.0,
+              46.5
+            ]
+          },
+          "force": [
+            0.0,
+            0.0,
+            -150.0
+          ]
+        }
+      ],
+      "acceleration": null,
+      "weight": 1.0
+    },
+    {
+      "name": "knock front 150 N",
+      "loads": [
+        {
+          "type": "force",
+          "region": {
+            "shape": "box",
+            "min": [
+              -120.0,
+              20.0,
+              44.6
+            ],
+            "max": [
+              -100.0,
+              40.0,
+              46.5
+            ]
+          },
+          "force": [
+            0.0,
+            0.0,
+            -150.0
+          ]
+        }
+      ],
+      "acceleration": null,
+      "weight": 1.0
+    },
+    {
+      "name": "side blow 100 N",
+      "loads": [
+        {
+          "type": "force",
+          "region": {
+            "shape": "box",
+            "min": [
+              -170.0,
+              -56.0,
+              34.0
+            ],
+            "max": [
+              -150.0,
+              -54.6,
+              46.5
+            ]
+          },
+          "force": [
+            0.0,
+            100.0,
+            0.0
+          ]
+        }
+      ],
+      "acceleration": null,
+      "weight": 1.0
+    },
+    {
+      "name": "drop 100 g",
+      "loads": [],
+      "acceleration": [
+        0.0,
+        0.0,
+        -981000.0
+      ],
+      "weight": 0.5
+    }
+  ],
+  "keep_out": [
+    {
+      "shape": "box",
+      "min": [
+        -235.2,
+        -52.0,
+        29.0
+      ],
+      "max": [
+        -90.0,
+        52.0,
+        42.5
+      ]
+    },
+    {
+      "shape": "box",
+      "min": [
+        -84.0,
+        -52.0,
+        29.0
+      ],
+      "max": [
+        -62.0,
+        52.0,
+        42.5
+      ]
+    },
+    {
+      "shape": "box",
+      "min": [
+        -239.0,
+        -52.0,
+        33.5
+      ],
+      "max": [
+        -235.2,
+        52.0,
+        42.5
+      ]
+    },
+    {
+      "shape": "box",
+      "min": [
+        -239.0,
+        -52.0,
+        29.0
+      ],
+      "max": [
+        -235.2,
+        -25.0,
+        33.5
+      ]
+    },
+    {
+      "shape": "box",
+      "min": [
+        -239.0,
+        -15.0,
+        29.0
+      ],
+      "max": [
+        -235.2,
+        15.0,
+        33.5
+      ]
+    },
+    {
+      "shape": "box",
+      "min": [
+        -239.0,
+        25.0,
+        29.0
+      ],
+      "max": [
+        -235.2,
+        52.0,
+        33.5
+      ]
+    },
+    {
+      "shape": "box",
+      "min": [
+        -90.0,
+        -52.0,
+        33.5
+      ],
+      "max": [
+        -84.0,
+        52.0,
+        42.5
+      ]
+    },
+    {
+      "shape": "box",
+      "min": [
+        -90.0,
+        -52.0,
+        29.0
+      ],
+      "max": [
+        -84.0,
+        -25.0,
+        33.5
+      ]
+    },
+    {
+      "shape": "box",
+      "min": [
+        -90.0,
+        -15.0,
+        29.0
+      ],
+      "max": [
+        -84.0,
+        15.0,
+        33.5
+      ]
+    },
+    {
+      "shape": "box",
+      "min": [
+        -90.0,
+        25.0,
+        29.0
+      ],
+      "max": [
+        -84.0,
+        52.0,
+        33.5
+      ]
+    },
+    {
+      "shape": "cylinder",
+      "base": [
+        -87.0,
+        -20.0,
+        29.0
+      ],
+      "axis": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "radius": 1.7,
+      "length": 18.0
+    },
+    {
+      "shape": "cylinder",
+      "base": [
+        -87.0,
+        20.0,
+        29.0
+      ],
+      "axis": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "radius": 1.7,
+      "length": 18.0
+    },
+    {
+      "shape": "cylinder",
+      "base": [
+        -238.1,
+        -20.0,
+        29.0
+      ],
+      "axis": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "radius": 1.7,
+      "length": 18.0
+    },
+    {
+      "shape": "cylinder",
+      "base": [
+        -238.1,
+        20.0,
+        29.0
+      ],
+      "axis": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "radius": 1.7,
+      "length": 18.0
+    }
+  ],
+  "keep_in": [
+    {
+      "shape": "box",
+      "min": [
+        -243.0,
+        -56.0,
+        44.6
+      ],
+      "max": [
+        -58.0,
+        56.0,
+        46.5
+      ]
+    },
+    {
+      "shape": "box",
+      "min": [
+        -243.0,
+        -56.0,
+        29.5
+      ],
+      "max": [
+        -58.0,
+        -54.6,
+        46.5
+      ]
+    },
+    {
+      "shape": "box",
+      "min": [
+        -243.0,
+        54.6,
+        29.5
+      ],
+      "max": [
+        -58.0,
+        56.0,
+        46.5
+      ]
+    },
+    {
+      "shape": "box",
+      "min": [
+        -90.0,
+        -25.0,
+        29.5
+      ],
+      "max": [
+        -84.0,
+        -15.0,
+        33.5
+      ]
+    },
+    {
+      "shape": "box",
+      "min": [
+        -90.0,
+        15.0,
+        29.5
+      ],
+      "max": [
+        -84.0,
+        25.0,
+        33.5
+      ]
+    },
+    {
+      "shape": "box",
+      "min": [
+        -241.0,
+        -25.0,
+        29.5
+      ],
+      "max": [
+        -235.2,
+        -15.0,
+        33.5
+      ]
+    },
+    {
+      "shape": "box",
+      "min": [
+        -241.0,
+        15.0,
+        29.5
+      ],
+      "max": [
+        -235.2,
+        25.0,
+        33.5
+      ]
+    }
+  ],
+  "volume_fraction": 0.4,
+  "max_stress": null,
+  "safety_factor": 2.0,
+  "max_displacement": 1.2,
+  "min_frequency": null,
+  "symmetry": [
+    false,
+    true,
+    false
+  ],
+  "min_member": 2.0,
+  "manufacturing": {
+    "process": "additive",
+    "build": [
+      0.0,
+      0.0,
+      1.0
+    ],
+    "overhang": 45.0
+  },
+  "iterations": 25,
+  "dynamics": {
+    "modes": 3,
+    "impacts": []
+  },
+  "variants": 1,
+  "seed": 1,
+  "smoothing": 10,
+  "robust": null,
+  "frequency_modes": 3,
+  "mass_target_g": null,
+  "max_beta": 16.0,
+  "tolerance": 0.0
+}

@@ -1,0 +1,86 @@
+{
+  "cases": [
+    {
+      "compliance_nmm": 0.5114476090722496,
+      "max_displacement_mm": 0.021324627956057676,
+      "max_von_mises_mpa": 58.492274389144846,
+      "name": "flexor stall"
+    },
+    {
+      "compliance_nmm": 0.5119364882907587,
+      "max_displacement_mm": 0.02133223297940533,
+      "max_von_mises_mpa": 58.470234676420255,
+      "name": "extensor stall"
+    },
+    {
+      "compliance_nmm": 0.08738371613674902,
+      "max_displacement_mm": 0.020565386733905133,
+      "max_von_mises_mpa": 67.38703544868414,
+      "name": "side push"
+    },
+    {
+      "compliance_nmm": 0.0004420767729055884,
+      "max_displacement_mm": 0.0008421152386643757,
+      "max_von_mises_mpa": 3.3634858136448242,
+      "name": "drop 100 g"
+    },
+    {
+      "compliance_nmm": 0.062018500155686475,
+      "max_displacement_mm": 0.011510274968043077,
+      "max_von_mises_mpa": 63.23678396769035,
+      "name": "tip strike 30 N"
+    }
+  ],
+  "closed": true,
+  "feasible": true,
+  "files": {
+    "3mf": "parts/index_distal.3mf",
+    "density": "results/index_distal.dens",
+    "obj": "parts/index_distal.obj",
+    "stl": "parts/index_distal.stl",
+    "study": "studies/index_distal.json"
+  },
+  "first_frequency_hz": 3293.1230125824754,
+  "grid": {
+    "h": 0.5037037037037037,
+    "n": [
+      54,
+      28,
+      27
+    ],
+    "origin": [
+      -6.8999999999999995,
+      -7.0,
+      -6.8
+    ]
+  },
+  "impacts": [
+    {
+      "amplification": 1.0292656744923638,
+      "case": "tip strike 30 N",
+      "peak_displacement_mm": 0.011884805717811468,
+      "peak_stress_mpa": 65.08745110323271
+    }
+  ],
+  "iterations": 37,
+  "manifold": true,
+  "mass_g": 4.029201750973987,
+  "material": "AlSi10Mg (laser powder bed)",
+  "max_displacement_mm": 0.02133223297940533,
+  "max_von_mises_mpa": 67.38703544868414,
+  "mesh_volume_mm3": 1509.0643262074857,
+  "modes_hz": [
+    3293.1230125824754,
+    6915.55958202707,
+    7769.385900582807
+  ],
+  "name": "index_distal",
+  "safety_factor": 3.413119429703168,
+  "seconds": 153.206823375,
+  "stress_limit_mpa": 115.0,
+  "triangles": 43662,
+  "volume_fraction": 0.29246889038173435,
+  "voxel_mm": 0.5037037037037037,
+  "voxels": 40824,
+  "yield_mpa": 230.0
+}

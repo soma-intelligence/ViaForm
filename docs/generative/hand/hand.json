@@ -1,0 +1,1548 @@
+{
+  "all_feasible": true,
+  "dof": 24,
+  "files": {
+    "assembly": "assembly.json",
+    "components_stl": "hand_components.stl",
+    "structure_3mf": "hand_structure.3mf",
+    "structure_stl": "hand_structure.stl"
+  },
+  "joints": [
+    {
+      "axis": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "child": "index_knuckle",
+      "limits_deg": [
+        -2.0,
+        15.0
+      ],
+      "limits_from_straight_deg": [
+        -2.0,
+        15.0
+      ],
+      "name": "index/MCP_abd",
+      "origin": [
+        80.0,
+        18.0,
+        0.0
+      ],
+      "parent": "palm",
+      "rest_deg": 0.0,
+      "type": "revolute"
+    },
+    {
+      "axis": [
+        -0.0697564737441253,
+        0.9975640502598242,
+        0.0
+      ],
+      "child": "index_proximal",
+      "limits_deg": [
+        -20.0,
+        80.0
+      ],
+      "limits_from_straight_deg": [
+        -10.0,
+        90.0
+      ],
+      "name": "index/MCP_flex",
+      "origin": [
+        92.96833265337771,
+        18.90683415867363,
+        0.0
+      ],
+      "parent": "index_knuckle",
+      "rest_deg": 10.0,
+      "type": "revolute"
+    },
+    {
+      "axis": [
+        -0.0697564737441253,
+        0.9975640502598242,
+        0.0
+      ],
+      "child": "index_middle",
+      "limits_deg": [
+        -14.999999999999998,
+        90.0
+      ],
+      "limits_from_straight_deg": [
+        0.0,
+        105.0
+      ],
+      "name": "index/PIP",
+      "origin": [
+        138.15913795119593,
+        22.06688310230996,
+        -7.987816172678795
+      ],
+      "parent": "index_proximal",
+      "rest_deg": 14.999999999999998,
+      "type": "revolute"
+    },
+    {
+      "axis": [
+        -0.0697564737441253,
+        0.9975640502598242,
+        0.0
+      ],
+      "child": "index_distal",
+      "limits_deg": [
+        -10.0,
+        70.0
+      ],
+      "limits_from_straight_deg": [
+        0.0,
+        80.0
+      ],
+      "name": "index/DIP",
+      "origin": [
+        161.6657396884717,
+        23.710624821423437,
+        -18.97589097793698
+      ],
+      "parent": "index_middle",
+      "rest_deg": 10.0,
+      "type": "revolute"
+    },
+    {
+      "axis": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "child": "middle_knuckle",
+      "limits_deg": [
+        -2.0,
+        2.0
+      ],
+      "limits_from_straight_deg": [
+        -2.0,
+        2.0
+      ],
+      "name": "middle/MCP_abd",
+      "origin": [
+        82.0,
+        0.0,
+        0.0
+      ],
+      "parent": "palm",
+      "rest_deg": 0.0,
+      "type": "revolute"
+    },
+    {
+      "axis": [
+        0.0,
+        1.0,
+        0.0
+      ],
+      "child": "middle_proximal",
+      "limits_deg": [
+        -24.0,
+        76.0
+      ],
+      "limits_from_straight_deg": [
+        -10.0,
+        90.0
+      ],
+      "name": "middle/MCP_flex",
+      "origin": [
+        95.0,
+        0.0,
+        0.0
+      ],
+      "parent": "middle_knuckle",
+      "rest_deg": 14.0,
+      "type": "revolute"
+    },
+    {
+      "axis": [
+        0.0,
+        1.0,
+        0.0
+      ],
+      "child": "middle_middle",
+      "limits_deg": [
+        -20.0,
+        85.0
+      ],
+      "limits_from_straight_deg": [
+        0.0,
+        105.0
+      ],
+      "name": "middle/PIP",
+      "origin": [
+        144.4850820400758,
+        0.0,
+        -12.338016675583054
+      ],
+      "parent": "middle_proximal",
+      "rest_deg": 20.0,
+      "type": "revolute"
+    },
+    {
+      "axis": [
+        0.0,
+        1.0,
+        0.0
+      ],
+      "child": "middle_distal",
+      "limits_deg": [
+        -12.000000000000002,
+        68.0
+      ],
+      "limits_from_straight_deg": [
+        0.0,
+        80.0
+      ],
+      "name": "middle/DIP",
+      "origin": [
+        169.35620921672705,
+        0.0,
+        -29.113803779705457
+      ],
+      "parent": "middle_middle",
+      "rest_deg": 12.000000000000002,
+      "type": "revolute"
+    },
+    {
+      "axis": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "child": "ring_knuckle",
+      "limits_deg": [
+        -3.0,
+        2.0
+      ],
+      "limits_from_straight_deg": [
+        -3.0,
+        2.0
+      ],
+      "name": "ring/MCP_abd",
+      "origin": [
+        79.0,
+        -18.0,
+        0.0
+      ],
+      "parent": "palm_ulnar",
+      "rest_deg": 0.0,
+      "type": "revolute"
+    },
+    {
+      "axis": [
+        0.0697564737441253,
+        0.9975640502598242,
+        0.0
+      ],
+      "child": "ring_proximal",
+      "limits_deg": [
+        -28.0,
+        72.0
+      ],
+      "limits_from_straight_deg": [
+        -10.0,
+        90.0
+      ],
+      "name": "ring/MCP_flex",
+      "origin": [
+        91.96833265337771,
+        -18.90683415867363,
+        0.0
+      ],
+      "parent": "ring_knuckle",
+      "rest_deg": 18.0,
+      "type": "revolute"
+    },
+    {
+      "axis": [
+        0.0697564737441253,
+        0.9975640502598242,
+        0.0
+      ],
+      "child": "ring_middle",
+      "limits_deg": [
+        -26.0,
+        79.0
+      ],
+      "limits_from_straight_deg": [
+        0.0,
+        105.0
+      ],
+      "name": "ring/PIP",
+      "origin": [
+        137.50784259360452,
+        -22.091266906263492,
+        -14.832815729997474
+      ],
+      "parent": "ring_proximal",
+      "rest_deg": 26.0,
+      "type": "revolute"
+    },
+    {
+      "axis": [
+        0.0697564737441253,
+        0.9975640502598242,
+        0.0
+      ],
+      "child": "ring_distal",
+      "limits_deg": [
+        -14.0,
+        66.0
+      ],
+      "limits_from_straight_deg": [
+        0.0,
+        80.0
+      ],
+      "name": "ring/DIP",
+      "origin": [
+        158.31788081103315,
+        -23.54644653523089,
+        -34.97790847330839
+      ],
+      "parent": "ring_middle",
+      "rest_deg": 14.0,
+      "type": "revolute"
+    },
+    {
+      "axis": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "child": "little_knuckle",
+      "limits_deg": [
+        -15.0,
+        3.0
+      ],
+      "limits_from_straight_deg": [
+        -15.0,
+        3.0
+      ],
+      "name": "little/MCP_abd",
+      "origin": [
+        72.0,
+        -35.0,
+        0.0
+      ],
+      "parent": "palm_ulnar",
+      "rest_deg": 0.0,
+      "type": "revolute"
+    },
+    {
+      "axis": [
+        0.15643446504023087,
+        0.9876883405951378,
+        0.0
+      ],
+      "child": "little_proximal",
+      "limits_deg": [
+        -32.0,
+        68.0
+      ],
+      "limits_from_straight_deg": [
+        -10.0,
+        90.0
+      ],
+      "name": "little/MCP_flex",
+      "origin": [
+        84.83994842773679,
+        -37.033648045523,
+        0.0
+      ],
+      "parent": "little_knuckle",
+      "rest_deg": 22.0,
+      "type": "revolute"
+    },
+    {
+      "axis": [
+        0.15643446504023087,
+        0.9876883405951378,
+        0.0
+      ],
+      "child": "little_middle",
+      "limits_deg": [
+        -29.999999999999996,
+        75.0
+      ],
+      "limits_from_straight_deg": [
+        0.0,
+        105.0
+      ],
+      "name": "little/PIP",
+      "origin": [
+        119.63915837199639,
+        -42.545301436280596,
+        -14.235050549804656
+      ],
+      "parent": "little_proximal",
+      "rest_deg": 29.999999999999996,
+      "type": "revolute"
+    },
+    {
+      "axis": [
+        0.15643446504023087,
+        0.9876883405951378,
+        0.0
+      ],
+      "child": "little_distal",
+      "limits_deg": [
+        -16.0,
+        64.0
+      ],
+      "limits_from_straight_deg": [
+        0.0,
+        80.0
+      ],
+      "name": "little/DIP",
+      "origin": [
+        132.40887325158423,
+        -44.56782558058802,
+        -30.783276375545817
+      ],
+      "parent": "little_middle",
+      "rest_deg": 16.0,
+      "type": "revolute"
+    },
+    {
+      "axis": [
+        -0.2919193392814522,
+        0.5718498507216201,
+        0.7666621469611897
+      ],
+      "child": "thumb_cmc_saddle",
+      "limits_deg": [
+        -30.0,
+        45.0
+      ],
+      "limits_from_straight_deg": [
+        -30.0,
+        45.0
+      ],
+      "name": "thumb/CMC_abd",
+      "origin": [
+        18.0,
+        31.0,
+        -5.0
+      ],
+      "parent": "palm",
+      "rest_deg": 0.0,
+      "type": "revolute"
+    },
+    {
+      "axis": [
+        -0.7800346052768619,
+        0.32150815707397484,
+        -0.5368226145622653
+      ],
+      "child": "thumb_metacarpal",
+      "limits_deg": [
+        -35.0,
+        45.0
+      ],
+      "limits_from_straight_deg": [
+        -20.0,
+        60.0
+      ],
+      "name": "thumb/CMC_flex",
+      "origin": [
+        26.855521055508646,
+        43.075710530239064,
+        -10.635331580778228
+      ],
+      "parent": "thumb_cmc_saddle",
+      "rest_deg": 14.999999999999998,
+      "type": "revolute"
+    },
+    {
+      "axis": [
+        -0.1387238350381947,
+        0.7477035313447443,
+        0.6493805716272195
+      ],
+      "child": "thumb_mcp_yoke",
+      "limits_deg": [
+        -15.0,
+        15.0
+      ],
+      "limits_from_straight_deg": [
+        -15.0,
+        15.0
+      ],
+      "name": "thumb/MCP_abd",
+      "origin": [
+        59.19428277369276,
+        73.86920924386256,
+        -39.18292215351444
+      ],
+      "parent": "thumb_metacarpal",
+      "rest_deg": 0.0,
+      "type": "revolute"
+    },
+    {
+      "axis": [
+        -0.7800346052768619,
+        0.32150815707397484,
+        -0.5368226145622653
+      ],
+      "child": "thumb_proximal",
+      "limits_deg": [
+        -14.999999999999998,
+        55.0
+      ],
+      "limits_from_straight_deg": [
+        0.0,
+        70.0
+      ],
+      "name": "thumb/MCP_flex",
+      "origin": [
+        66.516266558942,
+        80.84132216015468,
+        -45.64652756620943
+      ],
+      "parent": "thumb_mcp_yoke",
+      "rest_deg": 14.999999999999998,
+      "type": "revolute"
+    },
+    {
+      "axis": [
+        -0.7800346052768619,
+        0.32150815707397484,
+        -0.5368226145622653
+      ],
+      "child": "thumb_distal",
+      "limits_deg": [
+        -10.0,
+        70.0
+      ],
+      "limits_from_straight_deg": [
+        0.0,
+        80.0
+      ],
+      "name": "thumb/IP",
+      "origin": [
+        90.27686122510846,
+        94.81362120528782,
+        -71.80391658926587
+      ],
+      "parent": "thumb_proximal",
+      "rest_deg": 10.0,
+      "type": "revolute"
+    },
+    {
+      "axis": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "child": "palm",
+      "limits_deg": [
+        -25.0,
+        25.0
+      ],
+      "limits_from_straight_deg": [
+        -25.0,
+        25.0
+      ],
+      "name": "wrist/radial_ulnar",
+      "origin": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "parent": "wrist_cross",
+      "rest_deg": 0.0,
+      "type": "revolute"
+    },
+    {
+      "axis": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "child": "palm_ulnar",
+      "limits_deg": [
+        -25.0,
+        0.0
+      ],
+      "limits_from_straight_deg": [
+        -25.0,
+        0.0
+      ],
+      "name": "palm/arch_CMC45",
+      "origin": [
+        38.0,
+        -12.0,
+        0.0
+      ],
+      "parent": "palm",
+      "rest_deg": 0.0,
+      "type": "revolute"
+    },
+    {
+      "axis": [
+        0.0,
+        1.0,
+        0.0
+      ],
+      "child": "wrist_cross",
+      "limits_deg": [
+        -40.0,
+        40.0
+      ],
+      "limits_from_straight_deg": [
+        -40.0,
+        40.0
+      ],
+      "name": "wrist/flex_ext",
+      "origin": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "parent": "forearm_frame",
+      "rest_deg": 0.0,
+      "type": "revolute"
+    }
+  ],
+  "loads": {
+    "drop_g": 100.0,
+    "fingertip_grip_n": 10.0,
+    "link_max_displacement_mm": 0.25,
+    "side_push_n": 5.0,
+    "tendon_active_n": 89.0,
+    "tendon_pair_n": 109.0,
+    "tendon_pretension_n": 20.0,
+    "tendon_stall_n": 166.66666666666666,
+    "wrist_servo_stall_nmm": 4100.0
+  },
+  "lowest_safety_factor": 2.4017320114818412,
+  "material": "AlSi10Mg, laser powder bed, build +z, overhang 45 deg",
+  "parts": [
+    {
+      "bodies": 1,
+      "case_max_stress_mpa": {
+        "drop 100 g": 1.2426649254045474,
+        "extensor at the tendon cap": 7.434570207457879,
+        "flexor at the tendon cap": 7.0402009994941785,
+        "side push": 7.395250588223643
+      },
+      "compliance_nmm": [
+        0.20978167745520146,
+        0.20254371717892725,
+        0.13453513646439832,
+        0.0015408822241449942
+      ],
+      "feasible": true,
+      "files": {
+        "3mf": "parts/thumb_proximal.3mf",
+        "obj": "parts/thumb_proximal.obj",
+        "stl": "parts/thumb_proximal.stl",
+        "study": "studies/thumb_proximal.json"
+      },
+      "first_mode_hz": 3745.258362364521,
+      "floating_mm3": 0.0,
+      "issues": [],
+      "mass_g": 7.338230844702663,
+      "max_displacement_mm": 0.011878772041924413,
+      "max_stress_mpa": 7.434570207457879,
+      "mesh_mm3": 2748.444047020936,
+      "name": "thumb_proximal",
+      "safety_factor": 30.936556328337435,
+      "seconds": 103.179863375,
+      "solid_mm3": 2748.401065431709,
+      "stress_limit_mpa": 115.0,
+      "triangles": 83680,
+      "unsupported_loads": [],
+      "voxels": 62250
+    },
+    {
+      "bodies": 1,
+      "case_max_stress_mpa": {
+        "drop 100 g": 0.9808099957417754,
+        "extensor at the tendon cap": 20.0175111745677,
+        "flexor at the tendon cap": 10.990713421574913,
+        "side push": 10.856056991044706
+      },
+      "compliance_nmm": [
+        0.18327128618072655,
+        0.27227473844919003,
+        0.1311808270669087,
+        0.00038027112139084633
+      ],
+      "feasible": true,
+      "files": {
+        "3mf": "parts/index_middle.3mf",
+        "obj": "parts/index_middle.obj",
+        "stl": "parts/index_middle.stl",
+        "study": "studies/index_middle.json"
+      },
+      "first_mode_hz": 5848.369111516015,
+      "floating_mm3": 0.3512320000000001,
+      "issues": [
+        "0.4 mm3 of solid no support holds (or held scraps under 1 % of the part) was dropped"
+      ],
+      "mass_g": 4.615330728960002,
+      "max_displacement_mm": 0.012492697827870934,
+      "max_stress_mpa": 20.0175111745677,
+      "mesh_mm3": 1728.6718695721222,
+      "name": "index_middle",
+      "safety_factor": 11.489939882846954,
+      "seconds": 103.323398333,
+      "solid_mm3": 1728.5882880000006,
+      "stress_limit_mpa": 115.0,
+      "triangles": 66386,
+      "unsupported_loads": [],
+      "voxels": 49300
+    },
+    {
+      "bodies": 1,
+      "case_max_stress_mpa": {
+        "drop 100 g": 2.4763714525590803,
+        "grip at the tendon cap": 60.37370265229639,
+        "side push": 27.6469147049079
+      },
+      "compliance_nmm": [
+        23.83819792350994,
+        3.2287882430195283,
+        0.010133445582020067
+      ],
+      "feasible": true,
+      "files": {
+        "3mf": "parts/palm_ulnar.3mf",
+        "obj": "parts/palm_ulnar.obj",
+        "stl": "parts/palm_ulnar.stl",
+        "study": "studies/palm_ulnar.json"
+      },
+      "first_mode_hz": 2971.5324146755383,
+      "floating_mm3": 21.788129226145752,
+      "issues": [
+        "21.8 mm3 of solid no support holds (or held scraps under 1 % of the part) was dropped"
+      ],
+      "mass_g": 18.332930127723515,
+      "max_displacement_mm": 0.10900426271880712,
+      "max_stress_mpa": 60.37370265229639,
+      "mesh_mm3": 6868.196821647114,
+      "name": "palm_ulnar",
+      "safety_factor": 3.8096056709427555,
+      "seconds": 1114.078110708,
+      "solid_mm3": 6866.265965439518,
+      "stress_limit_mpa": 115.0,
+      "triangles": 75214,
+      "unsupported_loads": [],
+      "voxels": 78474
+    },
+    {
+      "bodies": 1,
+      "case_max_stress_mpa": {
+        "drop 100 g": 3.635803992938213,
+        "extensor at the tendon cap": 47.14270016537873,
+        "flexor at the tendon cap": 49.60433623748574,
+        "side push": 44.239815596097
+      },
+      "compliance_nmm": [
+        0.9261177900293338,
+        1.0557463240121487,
+        0.7553066743399681,
+        0.0019075792843186985
+      ],
+      "feasible": true,
+      "files": {
+        "3mf": "parts/middle_middle.3mf",
+        "obj": "parts/middle_middle.obj",
+        "stl": "parts/middle_middle.stl",
+        "study": "studies/middle_middle.json"
+      },
+      "first_mode_hz": 1823.6568269200543,
+      "floating_mm3": 18.264064000000005,
+      "issues": [
+        "18.3 mm3 of solid no support holds (or held scraps under 1 % of the part) was dropped"
+      ],
+      "mass_g": 3.678947973120001,
+      "max_displacement_mm": 0.09133739897920345,
+      "max_stress_mpa": 49.60433623748574,
+      "mesh_mm3": 1378.0835485118816,
+      "name": "middle_middle",
+      "safety_factor": 4.636691415420859,
+      "seconds": 2388.686565958,
+      "solid_mm3": 1377.8831360000004,
+      "stress_limit_mpa": 115.0,
+      "triangles": 73658,
+      "unsupported_loads": [],
+      "voxels": 54375
+    },
+    {
+      "bodies": 1,
+      "case_max_stress_mpa": {
+        "drop 100 g": 2.3537391385514725,
+        "extensor at the tendon cap": 63.617493877812535,
+        "flexor at the tendon cap": 32.3720687694687,
+        "side push": 55.675743632590645
+      },
+      "compliance_nmm": [
+        0.7659058005846006,
+        1.232623359329026,
+        0.5925265500593342,
+        0.0011314316765761532
+      ],
+      "feasible": true,
+      "files": {
+        "3mf": "parts/ring_middle.3mf",
+        "obj": "parts/ring_middle.obj",
+        "stl": "parts/ring_middle.stl",
+        "study": "studies/ring_middle.json"
+      },
+      "first_mode_hz": 3172.090867791114,
+      "floating_mm3": 7.902720000000002,
+      "issues": [
+        "7.9 mm3 of solid no support holds (or held scraps under 1 % of the part) was dropped"
+      ],
+      "mass_g": 3.6728523417600014,
+      "max_displacement_mm": 0.06938932893547384,
+      "max_stress_mpa": 63.617493877812535,
+      "mesh_mm3": 1375.7974116031007,
+      "name": "ring_middle",
+      "safety_factor": 3.6153577574393516,
+      "seconds": 767.811973625,
+      "solid_mm3": 1375.6001280000005,
+      "stress_limit_mpa": 115.0,
+      "triangles": 65190,
+      "unsupported_loads": [],
+      "voxels": 51100
+    },
+    {
+      "bodies": 1,
+      "case_max_stress_mpa": {
+        "drop 100 g": 2.128792347681366,
+        "extensor at the tendon cap": 86.9748328906058,
+        "flexor at the tendon cap": 75.24273743686621,
+        "side push": 78.84031372650443
+      },
+      "compliance_nmm": [
+        1.5213190433083479,
+        1.5547753668660182,
+        1.0688206514448706,
+        0.0003651183489074462
+      ],
+      "feasible": true,
+      "files": {
+        "3mf": "parts/little_middle.3mf",
+        "obj": "parts/little_middle.obj",
+        "stl": "parts/little_middle.stl",
+        "study": "studies/little_middle.json"
+      },
+      "first_mode_hz": 2997.6920732819535,
+      "floating_mm3": 0.7024640000000002,
+      "issues": [
+        "0.7 mm3 of solid no support holds (or held scraps under 1 % of the part) was dropped"
+      ],
+      "mass_g": 2.673637693440001,
+      "max_displacement_mm": 0.1258048505652964,
+      "max_stress_mpa": 86.9748328906058,
+      "mesh_mm3": 1001.4642257306914,
+      "name": "little_middle",
+      "safety_factor": 2.6444431378130586,
+      "seconds": 355.283173125,
+      "solid_mm3": 1001.3624320000002,
+      "stress_limit_mpa": 115.0,
+      "triangles": 43024,
+      "unsupported_loads": [],
+      "voxels": 35400
+    },
+    {
+      "bodies": 1,
+      "case_max_stress_mpa": {
+        "drop 100 g": 5.613532251891983,
+        "extensor at the tendon cap": 34.18459777292399,
+        "flexor at the tendon cap": 50.37616153468461,
+        "side push": 26.26606850315972
+      },
+      "compliance_nmm": [
+        2.148252652173825,
+        1.6734847862281423,
+        0.8210828025796593,
+        0.011225339452796993
+      ],
+      "feasible": true,
+      "files": {
+        "3mf": "parts/index_proximal.3mf",
+        "obj": "parts/index_proximal.obj",
+        "stl": "parts/index_proximal.stl",
+        "study": "studies/index_proximal.json"
+      },
+      "first_mode_hz": 1692.0517742165803,
+      "floating_mm3": 3.257887517146777,
+      "issues": [
+        "3.3 mm3 of solid no support holds (or held scraps under 1 % of the part) was dropped"
+      ],
+      "mass_g": 7.718369341563787,
+      "max_displacement_mm": 0.07518548685402486,
+      "max_stress_mpa": 50.37616153468461,
+      "mesh_mm3": 2890.895130266915,
+      "name": "index_proximal",
+      "safety_factor": 4.565651550121423,
+      "seconds": 1520.108691375,
+      "solid_mm3": 2890.7750342935533,
+      "stress_limit_mpa": 115.0,
+      "triangles": 106790,
+      "unsupported_loads": [],
+      "voxels": 89856
+    },
+    {
+      "bodies": 1,
+      "case_max_stress_mpa": {
+        "drop 100 g": 5.829036719918779,
+        "extensor at the tendon cap": 20.818012718716357,
+        "flexor at the tendon cap": 21.04629830680844,
+        "side push": 23.467332084331925
+      },
+      "compliance_nmm": [
+        0.9809762436094427,
+        1.0392999625623647,
+        0.46623331952834035,
+        0.013860430301863118
+      ],
+      "feasible": true,
+      "files": {
+        "3mf": "parts/middle_proximal.3mf",
+        "obj": "parts/middle_proximal.obj",
+        "stl": "parts/middle_proximal.stl",
+        "study": "studies/middle_proximal.json"
+      },
+      "first_mode_hz": 2480.8566925179584,
+      "floating_mm3": 2.7141946064139946,
+      "issues": [
+        "2.7 mm3 of solid no support holds (or held scraps under 1 % of the part) was dropped"
+      ],
+      "mass_g": 14.230193225332547,
+      "max_displacement_mm": 0.019967459535726546,
+      "max_stress_mpa": 23.467332084331925,
+      "mesh_mm3": 5329.858563112594,
+      "name": "middle_proximal",
+      "safety_factor": 9.80085845180333,
+      "seconds": 2585.476287959,
+      "solid_mm3": 5329.66038401968,
+      "stress_limit_mpa": 115.0,
+      "triangles": 153078,
+      "unsupported_loads": [],
+      "voxels": 105336
+    },
+    {
+      "bodies": 1,
+      "case_max_stress_mpa": {
+        "drop 100 g": 4.976732913163877,
+        "extensor at the tendon cap": 25.60355920366375,
+        "flexor at the tendon cap": 24.623076464549033,
+        "side push": 27.870656687739235
+      },
+      "compliance_nmm": [
+        1.1319623023307868,
+        0.9967464776052171,
+        0.5353703862679049,
+        0.009990493628048174
+      ],
+      "feasible": true,
+      "files": {
+        "3mf": "parts/ring_proximal.3mf",
+        "obj": "parts/ring_proximal.obj",
+        "stl": "parts/ring_proximal.stl",
+        "study": "studies/ring_proximal.json"
+      },
+      "first_mode_hz": 2412.8737823754536,
+      "floating_mm3": 2.168291212011469,
+      "issues": [
+        "2.2 mm3 of solid no support holds (or held scraps under 1 % of the part) was dropped"
+      ],
+      "mass_g": 9.892641848174831,
+      "max_displacement_mm": 0.030059652505506965,
+      "max_stress_mpa": 27.870656687739235,
+      "mesh_mm3": 3705.1937710531165,
+      "name": "ring_proximal",
+      "safety_factor": 8.25240691587941,
+      "seconds": 1930.076459875,
+      "solid_mm3": 3705.109306432521,
+      "stress_limit_mpa": 115.0,
+      "triangles": 117640,
+      "unsupported_loads": [],
+      "voxels": 91233
+    },
+    {
+      "bodies": 1,
+      "case_max_stress_mpa": {
+        "drop 100 g": 4.701665919066374,
+        "extensor at the tendon cap": 33.42728666544045,
+        "flexor at the tendon cap": 38.10979371512362,
+        "side push": 33.34714811167726
+      },
+      "compliance_nmm": [
+        1.5970963073932496,
+        0.9487839521220218,
+        0.6950246431390251,
+        0.0058374141539390394
+      ],
+      "feasible": true,
+      "files": {
+        "3mf": "parts/little_proximal.3mf",
+        "obj": "parts/little_proximal.obj",
+        "stl": "parts/little_proximal.stl",
+        "study": "studies/little_proximal.json"
+      },
+      "first_mode_hz": 2624.6606764429334,
+      "floating_mm3": 1.0536960000000004,
+      "issues": [
+        "1.1 mm3 of solid no support holds (or held scraps under 1 % of the part) was dropped"
+      ],
+      "mass_g": 6.657836129280002,
+      "max_displacement_mm": 0.054969450329680695,
+      "max_stress_mpa": 38.10979371512362,
+      "mesh_mm3": 2493.6766352134073,
+      "name": "little_proximal",
+      "safety_factor": 6.035194042751431,
+      "seconds": 1669.961928,
+      "solid_mm3": 2493.5715840000007,
+      "stress_limit_mpa": 115.0,
+      "triangles": 79938,
+      "unsupported_loads": [],
+      "voxels": 60075
+    },
+    {
+      "bodies": 1,
+      "case_max_stress_mpa": {
+        "drop 100 g": 2.1720346180212533,
+        "extensor at the tendon cap": 30.06355592716506,
+        "flexor at the tendon cap": 30.052679774008247,
+        "side push": 5.289483454026043
+      },
+      "compliance_nmm": [
+        0.20904792140063763,
+        0.20946604631140278,
+        0.006256469137369503,
+        0.0005219632694782834
+      ],
+      "feasible": true,
+      "files": {
+        "3mf": "parts/index_distal.3mf",
+        "obj": "parts/index_distal.obj",
+        "stl": "parts/index_distal.stl",
+        "study": "studies/index_distal.json"
+      },
+      "first_mode_hz": 6277.058403289897,
+      "floating_mm3": 0.0,
+      "issues": [],
+      "mass_g": 3.8018926336351164,
+      "max_displacement_mm": 0.014629983922238835,
+      "max_stress_mpa": 30.06355592716506,
+      "mesh_mm3": 1423.945493188038,
+      "name": "index_distal",
+      "safety_factor": 7.650458932975884,
+      "seconds": 832.760020917,
+      "solid_mm3": 1423.9298253315042,
+      "stress_limit_mpa": 115.0,
+      "triangles": 43046,
+      "unsupported_loads": [],
+      "voxels": 40824
+    },
+    {
+      "bodies": 1,
+      "case_max_stress_mpa": {
+        "drop 100 g": 2.4561634874848894,
+        "extensor at the tendon cap": 31.625556502970067,
+        "flexor at the tendon cap": 31.615991156824578,
+        "side push": 5.936109878798384
+      },
+      "compliance_nmm": [
+        0.2567357938749834,
+        0.2568931490632374,
+        0.008700019175867069,
+        0.0007456704232718594
+      ],
+      "feasible": true,
+      "files": {
+        "3mf": "parts/middle_distal.3mf",
+        "obj": "parts/middle_distal.obj",
+        "stl": "parts/middle_distal.stl",
+        "study": "studies/middle_distal.json"
+      },
+      "first_mode_hz": 5347.110828989041,
+      "floating_mm3": 0.0,
+      "issues": [],
+      "mass_g": 3.969773730004572,
+      "max_displacement_mm": 0.01856343764353154,
+      "max_stress_mpa": 31.625556502970067,
+      "mesh_mm3": 1486.8226410307636,
+      "name": "middle_distal",
+      "safety_factor": 7.272599297292994,
+      "seconds": 532.986954708,
+      "solid_mm3": 1486.8066404511505,
+      "stress_limit_mpa": 115.0,
+      "triangles": 46776,
+      "unsupported_loads": [],
+      "voxels": 43848
+    },
+    {
+      "bodies": 1,
+      "case_max_stress_mpa": {
+        "drop 100 g": 2.1720346180212533,
+        "extensor at the tendon cap": 30.06355592716506,
+        "flexor at the tendon cap": 30.052679774008247,
+        "side push": 5.289483454026043
+      },
+      "compliance_nmm": [
+        0.20904792140063763,
+        0.20946604631140278,
+        0.006256469137369503,
+        0.0005219632694782834
+      ],
+      "feasible": true,
+      "files": {
+        "3mf": "parts/ring_distal.3mf",
+        "obj": "parts/ring_distal.obj",
+        "stl": "parts/ring_distal.stl",
+        "study": "studies/ring_distal.json"
+      },
+      "first_mode_hz": 6277.058403289897,
+      "floating_mm3": 0.0,
+      "issues": [],
+      "mass_g": 3.8018926336351164,
+      "max_displacement_mm": 0.014629983922238835,
+      "max_stress_mpa": 30.06355592716506,
+      "mesh_mm3": 1423.945493188038,
+      "name": "ring_distal",
+      "safety_factor": 7.650458932975884,
+      "seconds": 563.876154125,
+      "solid_mm3": 1423.9298253315042,
+      "stress_limit_mpa": 115.0,
+      "triangles": 43046,
+      "unsupported_loads": [],
+      "voxels": 40824
+    },
+    {
+      "bodies": 1,
+      "case_max_stress_mpa": {
+        "drop 100 g": 1.6157213658662044,
+        "extensor at the tendon cap": 25.92133477206911,
+        "flexor at the tendon cap": 25.908013685532406,
+        "side push": 3.995551015547904
+      },
+      "compliance_nmm": [
+        0.1199728383628109,
+        0.12010531143605664,
+        0.0027646152299227377,
+        0.00021981740559092714
+      ],
+      "feasible": true,
+      "files": {
+        "3mf": "parts/little_distal.3mf",
+        "obj": "parts/little_distal.obj",
+        "stl": "parts/little_distal.stl",
+        "study": "studies/little_distal.json"
+      },
+      "first_mode_hz": 9335.866100620491,
+      "floating_mm3": 0.0,
+      "issues": [],
+      "mass_g": 3.870819425233958,
+      "max_displacement_mm": 0.007701854090919042,
+      "max_stress_mpa": 25.92133477206911,
+      "mesh_mm3": 1449.7629360930578,
+      "name": "little_distal",
+      "safety_factor": 8.872999867577452,
+      "seconds": 318.813964125,
+      "solid_mm3": 1449.7451030838793,
+      "stress_limit_mpa": 115.0,
+      "triangles": 45408,
+      "unsupported_loads": [],
+      "voxels": 36450
+    },
+    {
+      "bodies": 1,
+      "case_max_stress_mpa": {
+        "drop 100 g": 3.9980275140420565,
+        "extensor at the tendon cap": 33.25764621383824,
+        "flexor at the tendon cap": 33.24627496071028,
+        "side push": 7.712362490451909
+      },
+      "compliance_nmm": [
+        0.49684281038032607,
+        0.4972998079565199,
+        0.025028131746884234,
+        0.0034295930397199863
+      ],
+      "feasible": true,
+      "files": {
+        "3mf": "parts/thumb_distal.3mf",
+        "obj": "parts/thumb_distal.obj",
+        "stl": "parts/thumb_distal.stl",
+        "study": "studies/thumb_distal.json"
+      },
+      "first_mode_hz": 2773.6914409175843,
+      "floating_mm3": 0.0,
+      "issues": [],
+      "mass_g": 4.3554375,
+      "max_displacement_mm": 0.0428882089870796,
+      "max_stress_mpa": 33.25764621383824,
+      "mesh_mm3": 1631.2563124488358,
+      "name": "thumb_distal",
+      "safety_factor": 6.915702888928406,
+      "seconds": 1306.953578791,
+      "solid_mm3": 1631.25,
+      "stress_limit_mpa": 115.0,
+      "triangles": 50254,
+      "unsupported_loads": [],
+      "voxels": 61824
+    },
+    {
+      "bodies": 1,
+      "case_max_stress_mpa": {
+        "drop 100 g": 95.76422302756943,
+        "flexion servo stall": 15.848073308377705,
+        "grip at the wrist": 33.93029386268846,
+        "side push": 76.17866548607121,
+        "tendons at the cap": 54.796869529217076
+      },
+      "compliance_nmm": [
+        59.17858394864546,
+        232.82795588573146,
+        805.9958544544451,
+        45.32792978637342,
+        7947.115727037952
+      ],
+      "feasible": true,
+      "files": {
+        "3mf": "parts/forearm_frame.3mf",
+        "obj": "parts/forearm_frame.obj",
+        "stl": "parts/forearm_frame.stl",
+        "study": "studies/forearm_frame.json"
+      },
+      "first_mode_hz": 449.13087515895126,
+      "floating_mm3": 8.01808169639188,
+      "issues": [
+        "8.0 mm3 of solid no support holds (or held scraps under 1 % of the part) was dropped"
+      ],
+      "mass_g": 370.7753209920276,
+      "max_displacement_mm": 2.0176791361642694,
+      "max_stress_mpa": 95.76422302756943,
+      "mesh_mm3": 138867.358890556,
+      "name": "forearm_frame",
+      "safety_factor": 2.4017320114818412,
+      "seconds": 1034.901495875,
+      "solid_mm3": 138867.16142023506,
+      "stress_limit_mpa": 115.0,
+      "triangles": 410028,
+      "unsupported_loads": [],
+      "voxels": 585856
+    },
+    {
+      "bodies": 1,
+      "compliance_nmm": [
+        1.5325505479995591,
+        1.7000117918613535,
+        1.775647763112969,
+        0.000054796449615994435
+      ],
+      "feasible": true,
+      "files": {
+        "3mf": "parts/index_knuckle.3mf",
+        "obj": "parts/index_knuckle.obj",
+        "stl": "parts/index_knuckle.stl",
+        "study": "studies/index_knuckle.json"
+      },
+      "first_mode_hz": 9377.660730503108,
+      "floating_mm3": 0.22380648688046642,
+      "issues": [
+        "0.2 mm3 of solid no support holds (or held scraps under 1 % of the part) was dropped"
+      ],
+      "mass_g": 2.94777985741618,
+      "max_displacement_mm": 0.0423448353211657,
+      "max_stress_mpa": 56.726328653407805,
+      "mesh_mm3": 1104.2642087999827,
+      "name": "index_knuckle",
+      "safety_factor": 4.054554656714645,
+      "seconds": 70.38997575,
+      "solid_mm3": 1104.0373997813408,
+      "stress_limit_mpa": 115.0,
+      "triangles": 35194,
+      "unsupported_loads": [],
+      "voxels": 34440
+    },
+    {
+      "bodies": 1,
+      "compliance_nmm": [
+        2.1166758966368633,
+        2.346202941333926,
+        2.178650317077573,
+        0.00012806771463678136
+      ],
+      "feasible": true,
+      "files": {
+        "3mf": "parts/middle_knuckle.3mf",
+        "obj": "parts/middle_knuckle.obj",
+        "stl": "parts/middle_knuckle.stl",
+        "study": "studies/middle_knuckle.json"
+      },
+      "first_mode_hz": 7849.784062649623,
+      "floating_mm3": 6.592367460740497,
+      "issues": [
+        "6.6 mm3 of solid no support holds (or held scraps under 1 % of the part) was dropped"
+      ],
+      "mass_g": 3.10140564137521,
+      "max_displacement_mm": 0.04814557120497782,
+      "max_stress_mpa": 81.60259962029367,
+      "mesh_mm3": 1161.8435955386033,
+      "name": "middle_knuckle",
+      "safety_factor": 2.8185376577488532,
+      "seconds": 91.402362042,
+      "solid_mm3": 1161.5751465824756,
+      "stress_limit_mpa": 115.0,
+      "triangles": 38716,
+      "unsupported_loads": [],
+      "voxels": 35670
+    },
+    {
+      "bodies": 1,
+      "compliance_nmm": [
+        1.6013383188446313,
+        1.8683286242634671,
+        2.205054330317087,
+        0.000051227833567009535
+      ],
+      "feasible": true,
+      "files": {
+        "3mf": "parts/ring_knuckle.3mf",
+        "obj": "parts/ring_knuckle.obj",
+        "stl": "parts/ring_knuckle.stl",
+        "study": "studies/ring_knuckle.json"
+      },
+      "first_mode_hz": 8514.37604732751,
+      "floating_mm3": 0.0,
+      "issues": [],
+      "mass_g": 2.94357888,
+      "max_displacement_mm": 0.04830045956794045,
+      "max_stress_mpa": 64.0334968023821,
+      "mesh_mm3": 1102.6804971863528,
+      "name": "ring_knuckle",
+      "safety_factor": 3.591870059975294,
+      "seconds": 82.436977792,
+      "solid_mm3": 1102.464,
+      "stress_limit_mpa": 115.0,
+      "triangles": 37894,
+      "unsupported_loads": [],
+      "voxels": 34020
+    },
+    {
+      "bodies": 1,
+      "compliance_nmm": [
+        1.6793058724228926,
+        1.8847604869261658,
+        3.3636632012388135,
+        0.000016852540043315582
+      ],
+      "feasible": true,
+      "files": {
+        "3mf": "parts/little_knuckle.3mf",
+        "obj": "parts/little_knuckle.obj",
+        "stl": "parts/little_knuckle.stl",
+        "study": "studies/little_knuckle.json"
+      },
+      "first_mode_hz": 8561.241509984846,
+      "floating_mm3": 0.0,
+      "issues": [],
+      "mass_g": 2.4652427977315696,
+      "max_displacement_mm": 0.08361145012392458,
+      "max_stress_mpa": 68.58828073657148,
+      "mesh_mm3": 923.6457729148182,
+      "name": "little_knuckle",
+      "safety_factor": 3.353342546715321,
+      "seconds": 62.860164917,
+      "solid_mm3": 923.3119092627601,
+      "stress_limit_mpa": 115.0,
+      "triangles": 31100,
+      "unsupported_loads": [],
+      "voxels": 28290
+    },
+    {
+      "bodies": 1,
+      "compliance_nmm": [
+        2.9449548168407222,
+        3.433525259155716,
+        3.001600358532933,
+        0.0007763970980826693
+      ],
+      "feasible": true,
+      "files": {
+        "3mf": "parts/thumb_cmc_saddle.3mf",
+        "obj": "parts/thumb_cmc_saddle.obj",
+        "stl": "parts/thumb_cmc_saddle.stl",
+        "study": "studies/thumb_cmc_saddle.json"
+      },
+      "first_mode_hz": 4670.744915775154,
+      "floating_mm3": 6.465060763888889,
+      "issues": [
+        "6.5 mm3 of solid no support holds (or held scraps under 1 % of the part) was dropped"
+      ],
+      "mass_g": 5.488505254177518,
+      "max_displacement_mm": 0.07005314535268331,
+      "max_stress_mpa": 85.55296651926932,
+      "mesh_mm3": 2055.7884673435533,
+      "name": "thumb_cmc_saddle",
+      "safety_factor": 2.68839304301852,
+      "seconds": 57.40750975,
+      "solid_mm3": 2055.619945384838,
+      "stress_limit_mpa": 115.0,
+      "triangles": 44526,
+      "unsupported_loads": [],
+      "voxels": 46128
+    },
+    {
+      "bodies": 1,
+      "compliance_nmm": [
+        4.721918000304763,
+        5.467169112840773,
+        0.6449811895703271,
+        0.013255925597163005
+      ],
+      "feasible": true,
+      "files": {
+        "3mf": "parts/thumb_metacarpal.3mf",
+        "obj": "parts/thumb_metacarpal.obj",
+        "stl": "parts/thumb_metacarpal.stl",
+        "study": "studies/thumb_metacarpal.json"
+      },
+      "first_mode_hz": 1839.233682275975,
+      "floating_mm3": 10.878291377314813,
+      "issues": [
+        "10.9 mm3 of solid no support holds (or held scraps under 1 % of the part) was dropped"
+      ],
+      "mass_g": 15.707011943732365,
+      "max_displacement_mm": 0.06378025505529487,
+      "max_stress_mpa": 70.96112035419169,
+      "mesh_mm3": 5882.976975342113,
+      "name": "thumb_metacarpal",
+      "safety_factor": 3.2412115092319542,
+      "seconds": 139.912521875,
+      "solid_mm3": 5882.776008888526,
+      "stress_limit_mpa": 115.0,
+      "triangles": 100054,
+      "unsupported_loads": [],
+      "voxels": 72384
+    },
+    {
+      "bodies": 1,
+      "compliance_nmm": [
+        1.5758800103074162,
+        1.8486382870098814,
+        1.2792286078924107,
+        0.00023088527367028469
+      ],
+      "feasible": true,
+      "files": {
+        "3mf": "parts/thumb_mcp_yoke.3mf",
+        "obj": "parts/thumb_mcp_yoke.obj",
+        "stl": "parts/thumb_mcp_yoke.stl",
+        "study": "studies/thumb_mcp_yoke.json"
+      },
+      "first_mode_hz": 6048.0329697357165,
+      "floating_mm3": 0.0,
+      "issues": [],
+      "mass_g": 2.85324548607979,
+      "max_displacement_mm": 0.056216094342895886,
+      "max_stress_mpa": 80.28581620871837,
+      "mesh_mm3": 1068.7705209904475,
+      "name": "thumb_mcp_yoke",
+      "safety_factor": 2.8647650464444543,
+      "seconds": 50.462538834,
+      "solid_mm3": 1068.631268194678,
+      "stress_limit_mpa": 115.0,
+      "triangles": 42300,
+      "unsupported_loads": [],
+      "voxels": 42108
+    },
+    {
+      "bodies": 1,
+      "compliance_nmm": [
+        24.430004268665105,
+        4.857341056021184,
+        0.09612353009824642
+      ],
+      "feasible": true,
+      "files": {
+        "3mf": "parts/palm.3mf",
+        "obj": "parts/palm.obj",
+        "stl": "parts/palm.stl",
+        "study": "studies/palm.json"
+      },
+      "first_mode_hz": 855.2330073074523,
+      "floating_mm3": 131.0,
+      "issues": [
+        "131.0 mm3 of solid no support holds (or held scraps under 1 % of the part) was dropped"
+      ],
+      "mass_g": 66.72063,
+      "max_displacement_mm": 0.08809248167416438,
+      "max_stress_mpa": 62.61446169518764,
+      "mesh_mm3": 24990.614486081395,
+      "name": "palm",
+      "safety_factor": 3.6732728154664804,
+      "seconds": 80.522419458,
+      "solid_mm3": 24989.0,
+      "stress_limit_mpa": 115.0,
+      "triangles": 139384,
+      "unsupported_loads": [],
+      "voxels": 171000
+    },
+    {
+      "bodies": 1,
+      "compliance_nmm": [
+        49.74879598790551,
+        64.0520155846227,
+        61.095733281034484,
+        7.137004780335353
+      ],
+      "feasible": true,
+      "files": {
+        "3mf": "parts/wrist_cross.3mf",
+        "obj": "parts/wrist_cross.obj",
+        "stl": "parts/wrist_cross.stl",
+        "study": "studies/wrist_cross.json"
+      },
+      "first_mode_hz": 839.8117319264796,
+      "floating_mm3": 13.224133037900877,
+      "issues": [
+        "13.2 mm3 of solid no support holds (or held scraps under 1 % of the part) was dropped"
+      ],
+      "mass_g": 21.43493620667336,
+      "max_displacement_mm": 0.885942988920245,
+      "max_stress_mpa": 89.86406522463841,
+      "mesh_mm3": 8028.856607037258,
+      "name": "wrist_cross",
+      "safety_factor": 2.55942127061641,
+      "seconds": 532.708279291,
+      "solid_mm3": 8028.065995008748,
+      "stress_limit_mpa": 115.0,
+      "triangles": 89614,
+      "unsupported_loads": [],
+      "voxels": 127750
+    }
+  ],
+  "pin_joints": 22,
+  "product": "humanoid robotic hand, 1.15 x human, tendon driven (docs/components/hand.json)",
+  "structure_mass_g": 593.0484432357798,
+  "tendon": {
+    "break_terminated_n": [
+      178.0,
+      311.0
+    ],
+    "capped_safety_factor": 2.0,
+    "component_ref": "T1",
+    "current_limit_register": "XC330-T288-T Current Limit, address 38: value and unit UNCONFIRMED, set on a load cell",
+    "how": "XC330-T288-T Current Limit (address 38) set so the spool pulls no more than pull_cap_n on the pulled tendon with its pretension (spool torque spool_torque_cap_nmm, about xc330_current_limit_a by linear interpolation of the notes' torque and current points), calibrated on a load cell before first use (current per newton UNCONFIRMED); every tendon load case of the structure uses this cap",
+    "pull_cap_n": 89.0,
+    "spool_torque_cap_nmm": 414.0,
+    "spool_torque_cap_share_of_stall": 0.414,
+    "uncapped_safety_factor": 0.9535714285714286,
+    "uncapped_stall_plus_pretension_n": 186.66666666666666,
+    "xc330_current_limit_a": 0.4072
+  }
+}
