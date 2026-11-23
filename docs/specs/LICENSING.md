@@ -202,3 +202,11 @@ bot, and no dependency other than PCBCraft is copyleft. What blocks it today:
    the new `LICENSE-*` files, `CITATION.cff` and `electron-builder.yml`).
 5. **Counsel**: confirm that code written by AI coding sessions for the owner is the owner's work
    (section 2.1), then the steps in section 3.
+
+### Owner rulings (2026-11-22)
+
+- `generative/src/solid/mma.rs`: written from Svanberg's papers (1987, 2002) and his public notes,
+  not translated from his MATLAB code. No longer a blocker.
+- Copyright holder: **Soma Labs**. Quentin Caron's contributions are assigned to Soma Labs; the new
+  `LICENSE-*` files, `CITATION.cff` and `electron-builder.yml` name Soma Labs.
+- Still open: the `top3d` port in `generative/examples/validate.rs` (item 3) and counsel (item 5).
