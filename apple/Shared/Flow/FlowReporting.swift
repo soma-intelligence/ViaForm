@@ -20,18 +20,19 @@ struct FlowReporting: ViewModifier {
     @State private var trainJob: Int?
     /// The paused state last told to the pipeline for the Generate job.
     @State private var generatePaused = false
-    /// The joint count and the assembly read the engine's joint list: done once the design
-    /// settles, not on every revision (FRONTEND-SPEC 7.2, nothing heavy on the hot path).
+    /// The joint count and the assembly read the engine's joint list: done off the main actor,
+    /// once the design settles and only when its revision moved (FRONTEND-SPEC 7.2, nothing
+    /// heavy on the hot path; UI-UX-AUDIT P0-11).
     @State private var jointsPass: Task<Void, Never>?
 
     func body(content: Content) -> some View {
         content
             .onAppear {
-                countJoints()
+                DesignJoints.forget(design)
+                scheduleJointsPass(after: .zero)
                 flow.reportDesign(design.snapshot)
                 reportDesignTree()
                 reportBoard()
-                reportAssembly()
                 reportGenerated()
             }
             .onChange(of: design.snapshot.revision) { _, _ in
@@ -42,11 +43,11 @@ struct FlowReporting: ViewModifier {
             .onChange(of: design.snapshot.path) { _, path in documentPathChanged(path) }
             .onChange(of: flow.documentEpoch) { _, _ in
                 // A fresh pipeline for another document: report what the workspaces hold now.
-                countJoints()
+                DesignJoints.forget(design)
+                scheduleJointsPass(after: .zero)
                 flow.reportDesign(design.snapshot)
                 reportDesignTree()
                 reportBoard()
-                reportAssembly()
                 reportGenerated()
             }
             .onChange(of: generate.running) { _, on in generateChanged(on) }
@@ -83,21 +84,23 @@ struct FlowReporting: ViewModifier {
     }
 
     /// Reads the engine's joint list once the design has been still for a moment (a drag or a
-    /// typed value sends many revisions): the joint count and the assembly follow.
-    private func scheduleJointsPass() {
+    /// typed value sends many revisions), off the main actor and only for a revision not read
+    /// yet: the joint count and the assembly follow.
+    private func scheduleJointsPass(after delay: Duration = .milliseconds(300)) {
         jointsPass?.cancel()
         jointsPass = Task { @MainActor in
-            try? await Task.sleep(for: .milliseconds(300))
+            if delay > .zero { try? await Task.sleep(for: delay) }
             guard !Task.isCancelled else { return }
-            countJoints()
-            reportAssembly()
+            let joints = await DesignJoints.read(design)
+            guard !Task.isCancelled else { return }
+            countJoints(joints)
+            reportAssembly(joints)
         }
     }
 
     /// Joints from the engine's own list, motors from the bodies named so: the counts follow
     /// the open design, New and Open included.
-    private func countJoints() {
-        let joints = ((try? design.engine.execute("joint.list")) as? [String: Any])?["joints"] as? [[String: Any]] ?? []
+    private func countJoints(_ joints: DesignJoints.Summary) {
         let motors = design.snapshot.bodies.filter { $0.name.localizedCaseInsensitiveContains("motor") || $0.name.localizedCaseInsensitiveContains("servo") }.count
         if flow.designJoints != joints.count { flow.designJoints = joints.count }
         if flow.designMotors != motors { flow.designMotors = motors }
@@ -173,27 +176,37 @@ struct FlowReporting: ViewModifier {
     /// to the earlier one. Nothing is reported while the design has no component (no assembly
     /// exists yet), nor while the 3D board is behind the board (the assembly would claim a board
     /// revision it does not hold).
-    private func reportAssembly() {
+    private func reportAssembly(_ joints: DesignJoints.Summary? = nil) {
         guard !design.assembly.isEmpty, !pcb.boardOutOfDate else { return }
-        Self.rebuildAssembly(flow: flow, design: design, pcb: pcb, source: "edit")
+        Self.rebuildAssembly(flow: flow, design: design, pcb: pcb, source: "edit", joints: joints)
     }
 
     /// Records the assembly from what the design and the board hold now, on the current
     /// revisions of its inputs. This is what "Re-run" on a stale Assembly does: it reads, it
     /// never changes the design (sending the board to 3D is the Electronics stage's own verb).
+    /// The joint list comes from `joints`, else the one read for this design revision, else it
+    /// is read off the main actor first.
     @MainActor
-    static func rebuildAssembly(flow: FlowModel, design: DesignModel, pcb: PCBModel, source: String = "rebuild") {
+    static func rebuildAssembly(flow: FlowModel, design: DesignModel, pcb: PCBModel, source: String = "rebuild", joints: DesignJoints.Summary? = nil) {
+        if let joints = joints ?? DesignJoints.cached(design) {
+            produceAssembly(flow: flow, design: design, pcb: pcb, source: source, joints: joints)
+            return
+        }
+        Task { @MainActor in
+            let joints = await DesignJoints.read(design)
+            guard !design.assembly.isEmpty, !pcb.boardOutOfDate else { return }
+            produceAssembly(flow: flow, design: design, pcb: pcb, source: source, joints: joints)
+        }
+    }
+
+    @MainActor
+    private static func produceAssembly(flow: FlowModel, design: DesignModel, pcb: PCBModel, source: String, joints: DesignJoints.Summary) {
         let parts = design.assembly
-        let joints = (try? design.engine.execute("joint.list")) as? [String: Any]
-        let jointList = joints?["joints"] as? [[String: Any]] ?? []
-        let jointKey = jointList.map { j in
-            ["name", "type", "kind", "component1", "component2", "occurrence1", "occurrence2"]
-                .compactMap { j[$0].map { "\($0)" } }.joined(separator: "/")
-        }.sorted()
+        let jointKey = joints.keys
         let partKey = parts.map { "\($0.id):\($0.name):\($0.occurrence ?? ""):\($0.grounded):\($0.bodies.sorted().joined(separator: ",")):\($0.linkedPCB)" }.sorted()
         let board = pcb.linkedRevision.map { "board:\($0)" } ?? "board:none"
         let fp = FlowFingerprint.of(partKey + jointKey + [board])
-        var summary = "\(parts.count) component\(parts.count == 1 ? "" : "s"), \(jointList.count) joint\(jointList.count == 1 ? "" : "s")"
+        var summary = "\(parts.count) component\(parts.count == 1 ? "" : "s"), \(joints.count) joint\(joints.count == 1 ? "" : "s")"
         if pcb.linkedRevision != nil, let b = flow.node("electronics.board")?.revisionName { summary += ", \(b)" }
         flow.produce("assemble.assembly", summary: summary, fingerprint: fp, amendWithin: source == "edit" ? 2 : nil, source: source)
     }
@@ -273,6 +286,51 @@ struct FlowReporting: ViewModifier {
             .init(id: "occ:\(p.id)", name: p.occurrence ?? p.name, kind: p.grounded ? "grounded" : "occurrence",
                   links: p.bodies.map { "part:\($0)" } + (p.linkedPCB ? ["board"] : []))
         })
+    }
+}
+
+/// The design's joint list (`joint.list`) as the pipeline needs it: a count and one sorted key
+/// per joint. Read off the main actor (the design engine holds its own lock), once per design
+/// revision; the last read is kept per design.
+@MainActor
+enum DesignJoints {
+    struct Summary: Sendable, Equatable {
+        var count = 0
+        var keys: [String] = []
+    }
+
+    private struct Entry { var revision: Int; var summary: Summary }
+    private static var last: [ObjectIdentifier: Entry] = [:]
+    /// Reads of `joint.list` since launch (the self-test checks that a still design is read once).
+    private(set) static var reads = 0
+
+    /// The summary read for the design's current revision, if any.
+    static func cached(_ design: DesignModel) -> Summary? {
+        guard let e = last[ObjectIdentifier(design)], e.revision == design.snapshot.revision else { return nil }
+        return e.summary
+    }
+
+    /// Drops the last read (another document came in, whose revision may repeat a number).
+    static func forget(_ design: DesignModel) { last[ObjectIdentifier(design)] = nil }
+
+    /// The joint list of the design's current revision: the kept one, else read off the main actor.
+    static func read(_ design: DesignModel) async -> Summary {
+        if let s = cached(design) { return s }
+        let revision = design.snapshot.revision
+        let engine = design.engine
+        reads += 1
+        let s = await Task.detached(priority: .userInitiated) { summarize(engine) }.value
+        if design.snapshot.revision == revision { last[ObjectIdentifier(design)] = Entry(revision: revision, summary: s) }
+        return s
+    }
+
+    nonisolated private static func summarize(_ engine: CADEngine) -> Summary {
+        let list = ((try? engine.execute("joint.list")) as? [String: Any])?["joints"] as? [[String: Any]] ?? []
+        let keys = list.map { j in
+            ["name", "type", "kind", "component1", "component2", "occurrence1", "occurrence2"]
+                .compactMap { j[$0].map { "\($0)" } }.joined(separator: "/")
+        }.sorted()
+        return Summary(count: list.count, keys: keys)
     }
 }
 

@@ -384,6 +384,20 @@ pub struct Candidate {
     /// Why the candidate fails or what to check, in words (empty when it passes cleanly).
     #[serde(default)]
     pub issues: Vec<String>,
+    /// False when the run was stopped before this candidate's optimisation finished: its shape
+    /// is the best iterate so far, analysed and surfaced like any other, but not settled.
+    #[serde(default = "yes")]
+    pub converged: bool,
+    /// When stopped: the iterations run before the stop (1-based count), else null.
+    #[serde(default)]
+    pub stopped_at: Option<usize>,
+    /// When stopped: the iteration whose densities the candidate keeps (1-based), else null.
+    #[serde(default)]
+    pub kept_iteration: Option<usize>,
+}
+
+fn yes() -> bool {
+    true
 }
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
@@ -396,6 +410,11 @@ pub struct Outcome {
     /// Things about the study itself to know (the grid not matching the asked box).
     #[serde(default)]
     pub warnings: Vec<String>,
+    /// True when the run was stopped by its caller: the candidates are those finished before
+    /// the stop plus, when it had run at least one iteration, the stopped one's best iterate
+    /// (`converged` false). The best candidate is chosen among them as usual.
+    #[serde(default)]
+    pub stopped: bool,
 }
 
 /// Runs a study: one optimisation per variant, then analysis and surface per candidate.
@@ -405,7 +424,8 @@ pub fn generate(study: &Study) -> Result<Outcome, String> {
 
 pub use optimize::{CANCELLED, Progress, Step};
 
-/// [`generate`], reporting progress; stops with [`CANCELLED`] when `report` answers false.
+/// [`generate`], reporting progress. When `report` answers false the run stops and keeps what
+/// it has (see [`Outcome::stopped`]); it fails with [`CANCELLED`] only when nothing was solved.
 pub fn generate_with(study: &Study, report: &mut dyn FnMut(&Progress) -> bool) -> Result<Outcome, String> {
     optimize::generate_with(study, report)
 }

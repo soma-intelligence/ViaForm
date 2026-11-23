@@ -345,6 +345,8 @@ final class BomModel {
     /// The last error, shown until dismissed (the project file's save reads it as its reason).
     var message: String?
     var messageIsError = false
+    /// Runs the failed action again (the error's Try Again); nil when it cannot be retried.
+    private(set) var retry: (() -> Void)?
     /// The last confirmation, shown once as a toast.
     var notice: BomNotice?
     /// What the engine is doing now ("Importing hand"), nil when idle.
@@ -365,6 +367,13 @@ final class BomModel {
     func say(_ text: String?, error: Bool = false) {
         message = text
         messageIsError = error
+        retry = nil
+    }
+
+    /// An error with Try Again.
+    func fail(_ text: String, retry: @escaping () -> Void) {
+        say(text, error: true)
+        self.retry = retry
     }
 
     /// A confirmation: a toast in the panel.
@@ -401,10 +410,16 @@ final class BomModel {
         }
     }
 
-    /// Runs a call off the main actor and shows the state it answers.
+    /// Runs a call off the main actor and shows the state it answers. With `design` or `pcb`,
+    /// the call reads those sessions (held for the call on the BOM's queue, never on this actor).
     @discardableResult
-    private func applyAsync(_ method: String, _ params: [String: Any] = [:]) async -> Bool {
-        do { return show(try await engine.run(method, json: BomEngine.json(params))) } catch {
+    private func applyAsync(_ method: String, _ params: [String: Any] = [:], design: CADEngine? = nil, pcb: PCBEngine? = nil) async -> Bool {
+        do {
+            let json = BomEngine.json(params)
+            let data = design == nil && pcb == nil ? try await engine.run(method, json: json)
+                : try await engine.run(method, json: json, design: design, pcb: pcb)
+            return show(data)
+        } catch {
             say(error.localizedDescription, error: true)
             return false
         }
@@ -428,6 +443,13 @@ final class BomModel {
 
     /// Waits for every job asked for so far.
     func settle() async { await chain?.value }
+
+    /// Runs `work` as the next job of the queue and answers its result.
+    private func queued(_ label: String?, _ work: @escaping @MainActor () async -> Bool) async -> Bool {
+        await withCheckedContinuation { (c: CheckedContinuation<Bool, Never>) in
+            enqueue(label) { c.resume(returning: await work()) }
+        }
+    }
 
     // MARK: What the table shows
 
@@ -532,7 +554,12 @@ final class BomModel {
         } catch { return nil }
     }
 
-    private func drop(_ steps: [Step]) { for s in steps { try? FileManager.default.removeItem(at: s.file) } }
+    /// Deletes the steps' files off the main actor.
+    private func drop(_ steps: [Step]) {
+        let files = steps.map(\.file)
+        guard !files.isEmpty else { return }
+        Task.detached(priority: .utility) { for f in files { try? FileManager.default.removeItem(at: f) } }
+    }
 
     private func clearHistory() {
         drop(undoStack + redoStack)
@@ -543,17 +570,17 @@ final class BomModel {
     /// One undoable change: the bill is saved, then each call runs in order. Answers whether the
     /// last call worked.
     @discardableResult
-    private func change(_ name: String, _ calls: [(String, [String: Any])]) async -> Bool {
+    private func change(_ name: String, _ calls: [(String, [String: Any])], design: CADEngine? = nil, pcb: PCBEngine? = nil) async -> Bool {
         let before = await snapshot()
         var ok = true
-        for (method, params) in calls where ok { ok = await applyAsync(method, params) }
+        for (method, params) in calls where ok { ok = await applyAsync(method, params, design: design, pcb: pcb) }
         if ok, let before {
             undoStack.append(Step(name: name, file: before))
             if undoStack.count > Self.undoLimit { drop([undoStack.removeFirst()]) }
             drop(redoStack)
             redoStack = []
         } else if let before {
-            try? FileManager.default.removeItem(at: before)
+            drop([Step(name: name, file: before)])
         }
         return ok
     }
@@ -564,7 +591,7 @@ final class BomModel {
             let now = await snapshot()
             if await applyAsync("load", ["path": step.file.path]) {
                 if let now { redoStack.append(Step(name: step.name, file: now)) }
-                try? FileManager.default.removeItem(at: step.file)
+                drop([step])
             } else {
                 undoStack.append(step)
             }
@@ -577,7 +604,7 @@ final class BomModel {
             let now = await snapshot()
             if await applyAsync("load", ["path": step.file.path]) {
                 if let now { undoStack.append(Step(name: step.name, file: now)) }
-                try? FileManager.default.removeItem(at: step.file)
+                drop([step])
             } else {
                 redoStack.append(step)
             }
@@ -660,7 +687,7 @@ final class BomModel {
     // MARK: Sources
 
     /// The component files of the repository (docs/components), else the BOM's test fixtures.
-    static var componentsFolder: URL? {
+    nonisolated static var componentsFolder: URL? {
         let repo = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
         let fm = FileManager.default
         if let a = ProcessInfo.processInfo.arguments.first(where: { $0.hasPrefix("--components=") }) {
@@ -677,19 +704,27 @@ final class BomModel {
         enqueue(String(localized: "Importing \(url.lastPathComponent)")) { [self] in
             let scoped = url.startAccessingSecurityScopedResource()
             defer { if scoped { url.stopAccessingSecurityScopedResource() } }
-            var isDir: ObjCBool = false
-            if FileManager.default.fileExists(atPath: url.path, isDirectory: &isDir), isDir.boolValue {
+            let isDir = await Task.detached { () -> Bool in
+                var d: ObjCBool = false
+                return FileManager.default.fileExists(atPath: url.path, isDirectory: &d) && d.boolValue
+            }.value
+            if isDir {
                 if await change(String(localized: "Import"), [("import_dir", ["dir": url.path])]) {
                     notify(String(localized: "Imported the component files of \(url.lastPathComponent)"), undo: true)
-                }
+                } else { offerRetry { [weak self] in self?.importFile(url) } }
             } else if await change(String(localized: "Import"), [("import_file", ["path": url.path])]) {
                 notify(String(localized: "Imported \(url.lastPathComponent)"), undo: true)
-            }
+            } else { offerRetry { [weak self] in self?.importFile(url) } }
         }
     }
 
+    /// Adds Try Again to the error the failed call left.
+    private func offerRetry(_ again: @escaping () -> Void) {
+        if messageIsError, message != nil { retry = again }
+    }
+
     /// The generated assembly of `name` (docs/generative/<name>/assembly.json), when there is one.
-    static func assemblyFile(_ name: String) -> URL? {
+    nonisolated static func assemblyFile(_ name: String) -> URL? {
         guard let root = GenerateProject.docsRoot else { return nil }
         let u = root.appendingPathComponent(name, isDirectory: true).appendingPathComponent("assembly.json")
         return FileManager.default.fileExists(atPath: u.path) ? u : nil
@@ -704,26 +739,36 @@ final class BomModel {
     /// the component file's sourcing), else the component file alone.
     func importAssemblies(_ names: [String]) {
         enqueue(String(localized: "Importing \(names.joined(separator: ", "))")) { [self] in
-            await runImportAssemblies(names)
+            await ActionTiming.measure("bom.import_assemblies") { await runImportAssemblies(names) }
         }
     }
 
     private func runImportAssemblies(_ names: [String]) async {
         var done: [String] = []
         var issues: [String] = []
-        for n in names {
-            if let asm = Self.assemblyFile(n) {
+        // Where each name's file is, looked up off the main actor.
+        let found = await Task.detached { () -> [(String, URL?, URL?)] in
+            names.map { n in
+                let asm = BomModel.assemblyFile(n)
+                let comp = BomModel.componentsFolder.map { $0.appendingPathComponent("\(n).json") }.flatMap { FileManager.default.fileExists(atPath: $0.path) ? $0 : nil }
+                return (n, asm, comp)
+            }
+        }.value
+        for (n, asm, comp) in found {
+            if let asm {
                 if let r = await importAssemblyAsync(asm) {
                     done.append(n)
                     issues += r
                 }
-            } else if let dir = Self.componentsFolder {
-                let u = dir.appendingPathComponent("\(n).json")
-                if FileManager.default.fileExists(atPath: u.path), await change(String(localized: "Import"), [("import_file", ["path": u.path])]) { done.append(n) }
+            } else if let comp, await change(String(localized: "Import"), [("import_file", ["path": comp.path])]) {
+                done.append(n)
             }
         }
         assemblyIssues = issues
-        if done.isEmpty { return say(String(localized: "Nothing to import for \(names.joined(separator: ", "))"), error: true) }
+        if done.isEmpty {
+            if !messageIsError { say(String(localized: "Nothing to import for \(names.joined(separator: ", "))"), error: true) }
+            return offerRetry { [weak self] in self?.importAssemblies(names) }
+        }
         let t = rollup.totals
         let what = String(localized: "Imported \(done.joined(separator: " and ")): \(t.madeLines) made, \(t.boughtLines) bought")
         if issues.isEmpty { notify(what, undo: true) } else { say(what + ". " + issues.joined(separator: "; "), error: true) }
@@ -754,7 +799,7 @@ final class BomModel {
         let before = await snapshot()
         let data: Data
         do { data = try await engine.run("import_assembly", json: BomEngine.json(["path": url.path])) } catch {
-            if let before { try? FileManager.default.removeItem(at: before) }
+            if let before { drop([Step(name: "", file: before)]) }
             say(error.localizedDescription, error: true)
             return nil
         }
@@ -767,32 +812,30 @@ final class BomModel {
         return Self.issues(data, url)
     }
 
-    /// Reads the design's parts (the design session is read on the main actor, after the
-    /// queued work).
+    /// Reads the design's parts: `assembly.bom` runs on the BOM's queue with the design session
+    /// held there, never on the main actor. Undoable.
     func syncDesign(_ design: DesignModel) {
+        let engine = design.engine
         enqueue(String(localized: "Bringing in design parts")) { [self] in
-            await settleEngine()
-            let before = await snapshot()
-            if apply({ try engine.call("sync_design", design: design.engine.session) }) {
-                if let before { undoStack.append(Step(name: String(localized: "Bring In Design Parts"), file: before)) }
-                notify(String(localized: "Design parts brought in"), undo: before != nil)
+            await ActionTiming.measure("bom.sync_design") {
+                if await change(String(localized: "Bring In Design Parts"), [("sync_design", [:])], design: engine) {
+                    notify(String(localized: "Design parts brought in"), undo: true)
+                } else { offerRetry { [weak self] in self?.syncDesign(design) } }
             }
         }
     }
 
+    /// Reads the board's components, the PCB session held on the BOM's queue. Undoable.
     func syncPCB(_ pcb: PCBModel) {
+        let engine = pcb.engine
         enqueue(String(localized: "Bringing in PCB components")) { [self] in
-            await settleEngine()
-            let before = await snapshot()
-            if apply({ try engine.call("sync_pcb", pcb: pcb.engine.session) }) {
-                if let before { undoStack.append(Step(name: String(localized: "Bring In PCB Components"), file: before)) }
-                notify(String(localized: "PCB components brought in"), undo: before != nil)
+            await ActionTiming.measure("bom.sync_pcb") {
+                if await change(String(localized: "Bring In PCB Components"), [("sync_pcb", [:])], pcb: engine) {
+                    notify(String(localized: "PCB components brought in"), undo: true)
+                } else { offerRetry { [weak self] in self?.syncPCB(pcb) } }
             }
         }
     }
-
-    /// Lets the engine queue drain before a call that waits on it from the main actor.
-    private func settleEngine() async { _ = try? await engine.run("state", json: "{}") }
 
     /// Selecting a design line lights its bodies in the viewport.
     func highlight(_ design: DesignModel) {
@@ -922,55 +965,86 @@ final class BomModel {
         }
     }
 
-    /// Writes the project. The BOM panel's own Save then posts `.viaformProjectSaved`, so the
-    /// pipeline writes its `flow.json` into the file too (`ProjectFiles.save` does that itself).
-    /// Synchronous: it reads the design and board sessions, which live on the main actor.
+    /// Writes the project, off the main actor: the BOM's queue holds the design and board
+    /// sessions while the engine writes the file. The BOM panel's own Save then posts
+    /// `.viaformProjectSaved`, so the pipeline writes its `flow.json` into the file too
+    /// (`ProjectFiles.save` does that itself). Runs after the BOM work asked for before it.
     @discardableResult
-    func saveProject(_ url: URL, design: DesignModel, pcb: PCBModel) -> Bool {
-        say(nil)
-        guard apply({ try engine.call("save_project", ["path": url.path], design: design.engine.session, pcb: pcb.engine.session) }) else { return false }
-        notify(String(localized: "Saved \(url.lastPathComponent) with its bill of materials"), reveal: url)
-        return true
+    func saveProject(_ url: URL, design: DesignModel, pcb: PCBModel) async -> Bool {
+        let (cad, board) = (design.engine, pcb.engine)
+        return await queued(String(localized: "Saving \(url.lastPathComponent)")) { [self] in
+            say(nil)
+            let scoped = url.startAccessingSecurityScopedResource()
+            defer { if scoped { url.stopAccessingSecurityScopedResource() } }
+            guard await applyAsync("save_project", ["path": url.path], design: cad, pcb: board) else { return false }
+            notify(String(localized: "Saved \(url.lastPathComponent) with its bill of materials"), reveal: url)
+            return true
+        }
     }
 
-    /// Opens the project. The BOM panel's own Open then posts `.viaformProjectOpened`, so the
-    /// pipeline reads its `flow.json` back.
+    /// Opens the project, off the main actor (the engine replaces the design, the board and the
+    /// bill on the BOM's queue), then refreshes the views. The BOM panel's own Open then posts
+    /// `.viaformProjectOpened`, so the pipeline reads its `flow.json` back.
     @discardableResult
-    func openProject(_ url: URL, design: DesignModel, pcb: PCBModel) -> Bool {
-        let scoped = url.startAccessingSecurityScopedResource()
-        defer { if scoped { url.stopAccessingSecurityScopedResource() } }
-        say(nil)
-        guard apply({ try engine.call("open_project", ["path": url.path], design: design.engine.session, pcb: pcb.engine.session) }) else { return false }
-        clearHistory()
-        refreshFailures = [:]
-        refreshSummary = nil
-        design.refresh()
-        design.zoomToFit()
-        pcb.refresh()
-        notify(doc.lines.isEmpty ? String(localized: "Opened \(url.lastPathComponent) (no bill of materials in it)") : String(localized: "Opened \(url.lastPathComponent)"))
-        return true
+    func openProject(_ url: URL, design: DesignModel, pcb: PCBModel) async -> Bool {
+        let (cad, board) = (design.engine, pcb.engine)
+        return await queued(String(localized: "Opening \(url.lastPathComponent)")) { [self] in
+            say(nil)
+            let scoped = url.startAccessingSecurityScopedResource()
+            defer { if scoped { url.stopAccessingSecurityScopedResource() } }
+            guard await applyAsync("open_project", ["path": url.path], design: cad, pcb: board) else { return false }
+            clearHistory()
+            refreshFailures = [:]
+            refreshSummary = nil
+            design.refresh()
+            design.zoomToFit()
+            pcb.refresh()
+            notify(doc.lines.isEmpty ? String(localized: "Opened \(url.lastPathComponent) (no bill of materials in it)") : String(localized: "Opened \(url.lastPathComponent)"))
+            return true
+        }
     }
 
     /// The BOM panel's own Save and Open: the file, then the notification the pipeline follows.
     /// The window's own models carry the pipeline along (never a broadcast: another window's
-    /// pipeline must not write into this file).
+    /// pipeline must not write into this file). A failure offers Try Again.
     func saveFromPanel(_ url: URL, design: DesignModel, pcb: PCBModel) {
-        if let c = ProjectFiles.context(for: design) {
-            ProjectFiles.save(url, in: c)
-        } else if saveProject(url, design: design, pcb: pcb) {
-            NotificationCenter.default.post(name: .viaformProjectSaved, object: url)
+        let t0 = ActionTiming.now()
+        Task { [self] in
+            let ok: Bool
+            if let c = ProjectFiles.context(for: design) {
+                ok = await ProjectFiles.save(url, in: c)
+            } else {
+                ok = await saveProject(url, design: design, pcb: pcb)
+                if ok { NotificationCenter.default.post(name: .viaformProjectSaved, object: url) }
+            }
+            if !ok {
+                if message == nil { say(String(localized: "\(url.lastPathComponent) could not be saved."), error: true) }
+                offerRetry { [weak self] in self?.saveFromPanel(url, design: design, pcb: pcb) }
+            }
         }
+        ActionTiming.click("bom.save_project", since: t0)
     }
 
     func openFromPanel(_ url: URL, design: DesignModel, pcb: PCBModel) {
-        if let c = ProjectFiles.context(for: design) {
-            ProjectFiles.open(url, in: c)
-            return
+        let t0 = ActionTiming.now()
+        Task { [self] in
+            let ok: Bool
+            if let c = ProjectFiles.context(for: design) {
+                ok = await ProjectFiles.open(url, in: c)
+            } else {
+                ok = await openProject(url, design: design, pcb: pcb)
+                if ok {
+                    let scoped = url.startAccessingSecurityScopedResource()
+                    NotificationCenter.default.post(name: .viaformProjectOpened, object: url)
+                    if scoped { url.stopAccessingSecurityScopedResource() }
+                }
+            }
+            if !ok {
+                if message == nil { say(String(localized: "\(url.lastPathComponent) could not be opened."), error: true) }
+                offerRetry { [weak self] in self?.openFromPanel(url, design: design, pcb: pcb) }
+            }
         }
-        guard openProject(url, design: design, pcb: pcb) else { return }
-        let scoped = url.startAccessingSecurityScopedResource()
-        defer { if scoped { url.stopAccessingSecurityScopedResource() } }
-        NotificationCenter.default.post(name: .viaformProjectOpened, object: url)
+        ActionTiming.click("bom.open_project", since: t0)
     }
 
     /// Only http(s) links leave the app.

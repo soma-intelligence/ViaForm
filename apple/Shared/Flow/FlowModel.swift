@@ -629,6 +629,31 @@ final class FlowModel {
         documentEpoch += 1
     }
 
+    /// The project at `url` was just written with this pipeline's `flow.json` in it, off the main
+    /// actor (`ProjectFiles.save`): the pipeline now lives in that file.
+    func adoptSavedProject(_ url: URL) {
+        isProjectFile = true
+        documentKey = url.path
+        scheduleAutosave()
+    }
+
+    /// The project at `url` was just opened and its pipeline read off the main actor
+    /// (`ProjectFiles.open`): `doc` is its `flow.json`, else the autosave kept for it, else nil
+    /// for a fresh pipeline. The same result as `openProject(_:)`, without the file reads.
+    func adoptOpenedProject(_ url: URL, doc: Any?) {
+        pendingSave?.cancel()
+        isProjectFile = true
+        documentKey = url.path
+        if let doc, (call(["op": "import", "doc": doc])?["error"]) == nil {
+            refresh()
+            version += 1
+            scheduleAutosave()
+        } else {
+            send(["op": "reset"], save: false)
+        }
+        documentEpoch += 1
+    }
+
     // MARK: Plumbing
 
     /// A command built elsewhere (the assembly engine's `produce`), sent as is.

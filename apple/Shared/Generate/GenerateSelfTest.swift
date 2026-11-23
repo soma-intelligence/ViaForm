@@ -1,7 +1,8 @@
 import Foundation
 
 /// The generative path for `--selftest`: a study run as an engine job (progress, then its
-/// candidate built in one undo step without a second run), a cancelled job, and both sample
+/// candidate built in one undo step without a second run), a cancelled job, a stopped job keeping
+/// its best design so far, and both sample
 /// projects (studies read, assembly inserted with its real components, joints driven).
 @MainActor
 enum GenerateSelfTest {
@@ -47,6 +48,24 @@ enum GenerateSelfTest {
             out.append((message == "cancelled" && Date().timeIntervalSince(t) < 10, "generative job cancels (\(message), \(String(format: "%.1f", Date().timeIntervalSince(t))) s)"))
         } catch {
             out.append((false, "generative cancel: \(error.localizedDescription)"))
+        }
+        // Stopped mid-run, the job keeps its best design so far: a surfaced candidate flagged
+        // not converged with the iteration it stopped at; a second stop changes nothing.
+        do {
+            var big = s
+            big.voxel = 2
+            big.iterations = 400
+            let job = try GenerateJob(json: try GenerateEngine.json(big))
+            while job.progress.iteration < 20 && job.progress.running { Thread.sleep(forTimeInterval: 0.01) }
+            job.cancel()
+            job.cancel()
+            let o = try job.summary()
+            let c = o.stoppedCandidate
+            let at = c?.stoppedAt ?? 0
+            out.append((o.stopped && c != nil && !(c?.converged ?? true) && at >= 20 && at < 400 && (c?.mesh.triangleCount ?? 0) > 0 && !job.progress.running,
+                        "generative stop keeps the best so far (stopped at \(at), kept \(c?.keptIteration ?? 0), \(c?.mesh.triangleCount ?? 0) triangles)"))
+        } catch {
+            out.append((false, "generative stop and keep: \(error.localizedDescription)"))
         }
 
         // Live progress: the history grows while the study solves, a coarse shape comes back

@@ -126,6 +126,9 @@ enum SelfTest {
         // Generative design: a study as an engine job, and the sample projects' assemblies.
         for (ok, what) in MainActor.assumeIsolated({ GenerateSelfTest.checks() }) { check(ok, what) }
 
+        // UI-UX-AUDIT P0-11: project save and open, BOM part import and the joint list off the main actor.
+        for (ok, what) in MainActor.assumeIsolated({ BomSelfTest.checks() }) { check(ok, what) }
+
         // Simulation: the Rust flight model (sim/), through the bridge.
         for (ok, what) in MainActor.assumeIsolated({ simulationChecks() }) { check(ok, what) }
 

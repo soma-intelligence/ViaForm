@@ -88,6 +88,23 @@ targets:
         ARCHS: arm64
         CODE_SIGN_IDENTITY: "-"
         GENERATE_INFOPLIST_FILE: YES
+  # The robot safety gate (UI-UX-AUDIT P0-14), hosted in the Mac app.
+  ViaFormRobotTests:
+    type: bundle.unit-test
+    platform: macOS
+    sources:
+      - path: RobotTests
+    dependencies:
+      - target: ViaForm-macOS
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: me.somalabs.viaform.robottests
+        TEST_HOST: $(BUILT_PRODUCTS_DIR)/ViaForm.app/Contents/MacOS/ViaForm
+        BUNDLE_LOADER: $(TEST_HOST)
+        OTHER_LDFLAGS: []
+        ARCHS: arm64
+        CODE_SIGN_IDENTITY: "-"
+        GENERATE_INFOPLIST_FILE: YES
 schemes:
   ViaFormThemeTests:
     build:
@@ -96,3 +113,10 @@ schemes:
     test:
       targets:
         - ViaFormThemeTests
+  ViaFormRobotTests:
+    build:
+      targets:
+        ViaFormRobotTests: [test]
+    test:
+      targets:
+        - ViaFormRobotTests

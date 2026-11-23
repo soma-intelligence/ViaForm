@@ -4,9 +4,12 @@ import ViaFormFFI
 /// The bill of materials through the C bridge (`vf_bom_*`, crate `viaform-bom`): one handle
 /// and one JSON call. Calls that read the design or the board take their sessions.
 ///
-/// Every call runs on one serial queue, in the order it was asked for: `run` answers off the main
-/// actor (imports, exports, edits, price checks), `call` waits for its turn (the project file's
-/// save and open, which read the design and board sessions on the main actor).
+/// Every call runs on one serial queue, in the order it was asked for, so the handle is never
+/// used from two threads at once. `run` answers off the main actor (imports, exports, edits,
+/// price checks, and the calls that read the design or the board: the project file's save and
+/// open, bringing in design parts and PCB components), holding those engines' sessions for the
+/// whole call. `call` waits for its turn on the caller's thread (the BOM's first state, and the
+/// Generate self-test's assembly import).
 final class BomEngine: @unchecked Sendable {
     private let handle: OpaquePointer
     private let queue = DispatchQueue(label: "me.somalabs.viaform.bom", qos: .userInitiated)
@@ -29,6 +32,25 @@ final class BomEngine: @unchecked Sendable {
     func run(_ method: String, json body: String) async throws -> Data {
         return try await withCheckedThrowingContinuation { (c: CheckedContinuation<Data, Error>) in
             queue.async { c.resume(with: Result { try self.perform(method, body, design: nil, pcb: nil) }) }
+        }
+    }
+
+    /// Runs `method` off the caller's thread with the design and the board sessions held for the
+    /// whole call (`CADEngine.withSession`, `PCBEngine.withSession`, always in that order, the
+    /// order the board link takes them on the main thread). The main thread waits for these
+    /// sessions only if it touches the design or the board while the call runs.
+    func run(_ method: String, json body: String, design: CADEngine?, pcb: PCBEngine?) async throws -> Data {
+        return try await withCheckedThrowingContinuation { (c: CheckedContinuation<Data, Error>) in
+            queue.async {
+                c.resume(with: Result {
+                    func board(_ sc: OpaquePointer?) throws -> Data {
+                        guard let pcb else { return try self.perform(method, body, design: sc, pcb: nil) }
+                        return try pcb.withSession { try self.perform(method, body, design: sc, pcb: $0) }
+                    }
+                    guard let design else { return try board(nil) }
+                    return try design.withSession { try board($0) }
+                })
+            }
         }
     }
 

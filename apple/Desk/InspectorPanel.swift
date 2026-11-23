@@ -318,8 +318,11 @@ struct InspectorPanel: View {
                                 reason: safety.connected ? String(localized: "Robot connected") : String(localized: "No robot connected"))
                     kv(String(localized: "Robot"), safety.connected ? String(localized: "Connected") : String(localized: "Not connected"))
                 }
-                kv(String(localized: "Link"), String(localized: "USB bus adapter or ViaForm bridge"))
-                kv(String(localized: "Latency"), safety.connected ? String(localized: "Measuring") : String(localized: "Not measured, no robot"))
+                kv(String(localized: "Link"), safety.linkKind?.title ?? String(localized: "USB bus adapter or ViaForm bridge"))
+                kv(String(localized: "Latency"), safety.linkKind == .simulated ? String(localized: "None, simulated")
+                    : (safety.connected ? String(localized: "Measuring") : String(localized: "Not measured, no robot")))
+                kv(String(localized: "Session"), safety.sessionConfirmed ? String(localized: "Motion confirmed")
+                    : String(localized: "Asks before the first motion"))
             }
             section("Safety") {
                 EStopButton()
@@ -350,25 +353,9 @@ struct InspectorPanel: View {
                                message: String(localized: "Train a policy, then run it on the robot here."),
                                actionTitle: String(localized: "Open Train")) { actions.open(.train) }
                 }
-                Button {
-                    runOnRobot(policy: policy)
-                } label: {
-                    Label("Run on Robot", systemImage: safety.canMove ? "play.fill" : "lock.fill").frame(maxWidth: .infinity)
-                }
-                .buttonStyle(.vfSecondary)
-                .vfDisabled(!safety.canMove || policy == nil,
-                            reason: safety.lockReason ?? String(localized: "Train a policy first"))
+                // Through the gate: confirmed once per session, capped, blocked by the e-stop.
+                RobotRunPolicyButton(confirm: $confirm, policy: policy, fullWidth: true)
             }
-        }
-    }
-
-    /// The first motion of a session asks "Run on Robot?" with the limits and the revision.
-    private func runOnRobot(policy: String?) {
-        let start = { _ = RobotSafety.shared.beginMotion() }
-        if let c = safety.requireConfirm(target: String(localized: "The trained policy"), revision: policy, perform: start) {
-            confirm = c
-        } else {
-            start()
         }
     }
 

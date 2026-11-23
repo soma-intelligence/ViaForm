@@ -770,13 +770,14 @@ struct ProjectWindow: View {
             // Check for the docs and the review: save the open project as a .viaform, start a
             // new design, open the file again, and print the pipeline before and after.
             let url = URL(fileURLWithPath: String(arg.dropFirst("--project-roundtrip=".count)))
-            DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
+            Task { @MainActor in
+                try? await Task.sleep(for: .seconds(2))
                 let c = ProjectFiles.Context(design: model, pcb: pcb, bom: bom, flow: flow)
                 let before = flow.nodes.map { "\($0.id)=\($0.revision)" }.joined(separator: " ")
-                let saved = ProjectFiles.save(url, in: c)
+                let saved = await ProjectFiles.save(url, in: c)
                 ProjectFiles.newDesign(model, in: c)
                 let fresh = flow.nodes.map { "\($0.id)=\($0.revision)" }.joined(separator: " ")
-                ProjectFiles.open(url, in: c)
+                await ProjectFiles.open(url, in: c)
                 let after = flow.nodes.map { "\($0.id)=\($0.revision)" }.joined(separator: " ")
                 print("roundtrip saved=\(saved)\n before: \(before)\n new:    \(fresh)\n after:  \(after)\n product: \(flow.product) key: \(flow.documentKey ?? "-")")
                 print("roundtrip \(before == after && saved ? "PASSED" : "FAILED")")

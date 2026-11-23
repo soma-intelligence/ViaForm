@@ -584,6 +584,12 @@ struct StudyCandidate: Identifiable, Hashable, Sendable {
     var issues: [String] = []
     /// Rough cost index, USD (the engine's summary only): material plus machine time.
     var cost: Double?
+    /// False for the best design so far of a run that was stopped: analysed and surfaced like
+    /// the others, but its optimisation did not settle.
+    var converged = true
+    /// When the run was stopped: the iterations it had run, and the iteration this keeps.
+    var stoppedAt: Int?
+    var keptIteration: Int?
 
     init(_ v: JSONValue, index: Int) {
         id = v["id"].int ?? index
@@ -599,6 +605,9 @@ struct StudyCandidate: Identifiable, Hashable, Sendable {
         meshMM3 = v["mesh_mm3"].double ?? 0
         issues = v["issues"].array.compactMap(\.string)
         cost = v["cost"].double
+        stoppedAt = v["stopped_at"].int
+        keptIteration = v["kept_iteration"].int
+        converged = v["converged"].bool ?? (stoppedAt == nil)
     }
 }
 
@@ -610,11 +619,18 @@ struct StudyOutcome: Hashable, Sendable {
     var seconds: Double
     /// About the study itself (the grid not matching the box asked for).
     var warnings: [String] = []
+    /// The run was stopped before its end; its candidates are what it had (see
+    /// `StudyCandidate.converged`).
+    var stopped = false
 
     init(_ v: JSONValue) {
         candidates = v["candidates"].array.enumerated().map { StudyCandidate($1, index: $0) }
         best = v["best"].int ?? 0
         seconds = v["seconds"].double ?? 0
         warnings = v["warnings"].array.compactMap(\.string)
+        stopped = v["stopped"].bool ?? (candidates.contains { !$0.converged } || warnings.contains { $0.hasPrefix("stopped ") })
     }
+
+    /// The stopped candidate, if any (the one whose optimisation was cut short).
+    var stoppedCandidate: StudyCandidate? { candidates.first { !$0.converged } }
 }

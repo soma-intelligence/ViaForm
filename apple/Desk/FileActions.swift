@@ -30,39 +30,71 @@ enum FileActions {
         if replaces { ProjectGuard.confirmDiscard(model, verb: String(localized: "Open")) { go() } } else { go() }
     }
 
-    /// Saves the open project in place, else asks where. Answers whether the file was written.
-    @discardableResult
-    static func save(_ model: DesignModel) -> Bool {
+    /// Saves the open project in place, else asks where. The write runs off the main actor
+    /// (UI-UX-AUDIT P0-11); `done` hears whether the file was written, after a failed save's
+    /// alert and its Save As.
+    static func save(_ model: DesignModel, then done: ((Bool) -> Void)? = nil) {
+        let t0 = ActionTiming.now()
+        defer { ActionTiming.click("file.save", since: t0) }
         let c = ProjectFiles.context(for: model)
         if let c, c.flow.isProjectFile, let key = c.flow.documentKey {
-            return report(ProjectFiles.save(URL(fileURLWithPath: key), in: c), c: c, url: URL(fileURLWithPath: key))
+            let url = URL(fileURLWithPath: key)
+            Task { report(await ProjectFiles.save(url, in: c), c: c, url: url, then: done) }
+            return
         }
         if let path = model.snapshot.path {
-            let ok = model.run("file.save", ["path": path]) != nil
-            if ok, let c { ProjectFiles.markSaved(c) }
-            return report(ok, c: c, url: URL(fileURLWithPath: path), design: model)
+            Task {
+                let revisions = c.map { (design: $0.design.snapshot.revision, board: $0.pcb.revision) }
+                let ok = await saveDesign(model, "file.save", path: path)
+                if ok, let c { ProjectFiles.markSaved(c, design: revisions?.design, board: revisions?.board) }
+                report(ok, c: c, url: URL(fileURLWithPath: path), design: model, then: done)
+            }
+            return
         }
-        return saveAs(model)
+        saveAs(model, then: done)
     }
 
-    @discardableResult
-    static func saveAs(_ model: DesignModel) -> Bool {
+    static func saveAs(_ model: DesignModel, then done: ((Bool) -> Void)? = nil) {
         let c = ProjectFiles.context(for: model)
         let p = NSSavePanel()
         let name = c.map { ProjectTitle.of(flow: $0.flow, design: model) } ?? model.snapshot.name
         p.nameFieldStringValue = name + ".viaform"
         p.allowedContentTypes = ["viaform", "sc"].compactMap { UTType(filenameExtension: $0) }
         p.allowsOtherFileTypes = false
-        guard p.runModal() == .OK, let url = p.url else { return false }
+        guard p.runModal() == .OK, let url = p.url else { done?(false); return }
+        let t0 = ActionTiming.now()
+        defer { ActionTiming.click("file.save", since: t0) }
         if ProjectFiles.isProject(url), let c {
-            return report(ProjectFiles.save(url, in: c), c: c, url: url)
+            Task { report(await ProjectFiles.save(url, in: c), c: c, url: url, then: done) }
+            return
         }
-        let ok = model.run("file.save_as", ["path": url.path]) != nil
-        if ok, let c {
-            c.flow.adoptDocument(url.path)
-            ProjectFiles.markSaved(c)
+        Task {
+            let revisions = c.map { (design: $0.design.snapshot.revision, board: $0.pcb.revision) }
+            let ok = await saveDesign(model, "file.save_as", path: url.path)
+            if ok, let c {
+                c.flow.adoptDocument(url.path)
+                ProjectFiles.markSaved(c, design: revisions?.design, board: revisions?.board)
+            }
+            report(ok, c: c, url: url, design: model, then: done)
         }
-        return report(ok, c: c, url: url, design: model)
+    }
+
+    /// Writes the design file (`.sc`) on a worker: the design engine holds its own lock, so the
+    /// main actor only waits if it touches the design meanwhile. The snapshot (path, edited
+    /// mark) is read again on the main actor after.
+    private static func saveDesign(_ model: DesignModel, _ command: String, path: String) async -> Bool {
+        let engine = model.engine
+        let busy = ProjectFiles.activity(for: model)
+        busy?.begin(String(localized: "Saving \((path as NSString).lastPathComponent)"))
+        let failure = await ActionTiming.measure("design.save") {
+            await Task.detached(priority: .userInitiated) { () -> String? in
+                do { try engine.execute(command, ["path": path]); return nil } catch { return error.localizedDescription }
+            }.value
+        }
+        busy?.end()
+        model.refresh()
+        if let failure { model.flash(failure, error: true) }
+        return failure == nil
     }
 
     static func newDesign(_ model: DesignModel) {
@@ -87,11 +119,12 @@ enum FileActions {
         }
     }
 
-    /// Shows why a save failed and offers Save As; answers `ok`.
-    private static func report(_ ok: Bool, c: ProjectFiles.Context?, url: URL, design: DesignModel? = nil) -> Bool {
+    /// Shows why a save failed and offers Save As; tells `done` whether the file was written.
+    private static func report(_ ok: Bool, c: ProjectFiles.Context?, url: URL, design: DesignModel? = nil, then done: ((Bool) -> Void)?) {
         guard !ok else {
             (c?.design ?? design)?.flash(String(localized: "Saved \(url.lastPathComponent)"))
-            return true
+            done?(true)
+            return
         }
         let reason = c?.bom.message ?? design?.message ?? c?.design.message
         let a = NSAlert()
@@ -101,9 +134,10 @@ enum FileActions {
         a.addButton(withTitle: String(localized: "Save As…"))
         a.addButton(withTitle: String(localized: "Cancel"))
         if a.runModal() == .alertFirstButtonReturn, let model = c?.design ?? design {
-            return saveAs(model)
+            saveAs(model, then: done)
+            return
         }
-        return false
+        done?(false)
     }
 
     private static func alert(_ text: String, detail: String) {
@@ -125,7 +159,7 @@ enum ProjectGuard {
     static func confirmDiscard(_ model: DesignModel, verb: String, proceed: @escaping () -> Void) {
         guard let c = ProjectFiles.context(for: model), ProjectFiles.isEdited(c) else { proceed(); return }
         switch ask(c, verb: verb) {
-        case .save: if FileActions.save(model) { proceed() }
+        case .save: FileActions.save(model) { ok in if ok { proceed() } }
         case .discard: proceed()
         case .cancel: break
         }
@@ -151,23 +185,32 @@ enum ProjectGuard {
         }
     }
 
-    /// Quit: asks for each edited window in turn. False cancels the quit.
-    static func confirmQuit() -> Bool {
-        for c in ProjectFiles.all where ProjectFiles.isEdited(c) {
+    /// Quit: asks for each edited window in turn; `done(false)` cancels the quit. A save runs
+    /// off the main actor and the next window is asked once it is written.
+    static func confirmQuit(_ done: @escaping (Bool) -> Void) {
+        var queue = ProjectFiles.all.filter(ProjectFiles.isEdited)
+        func next() {
+            guard !queue.isEmpty else { return done(true) }
+            let c = queue.removeFirst()
             switch ask(c, verb: String(localized: "Quit")) {
-            case .save: if !FileActions.save(c.design) { return false }
-            case .discard: continue
-            case .cancel: return false
+            case .save: FileActions.save(c.design) { ok in ok ? next() : done(false) }
+            case .discard: next()
+            case .cancel: done(false)
             }
         }
-        return true
+        next()
     }
 }
 
 /// The app delegate's quit check (`applicationShouldTerminate`).
 final class ViaFormAppDelegate: NSObject, NSApplicationDelegate {
     func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
-        MainActor.assumeIsolated { ProjectGuard.confirmQuit() } ? .terminateNow : .terminateCancel
+        MainActor.assumeIsolated {
+            guard ProjectFiles.all.contains(where: ProjectFiles.isEdited) else { return .terminateNow }
+            // Saves run off the main actor: the answer comes once they are written.
+            ProjectGuard.confirmQuit { sender.reply(toApplicationShouldTerminate: $0) }
+            return .terminateLater
+        }
     }
 
     func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool { false }
@@ -198,10 +241,14 @@ struct ProjectWindowGuard: NSViewRepresentable {
         override func viewDidMoveToWindow() {
             super.viewDidMoveToWindow()
             guard let w = window, proxy == nil || w.delegate !== proxy else { return }
-            let p = CloseProxy(original: w.delegate) { [weak self] in
+            let p = CloseProxy(original: w.delegate) { [weak self, weak w] in
                 guard let c = self?.project, ProjectFiles.isEdited(c) else { return true }
                 switch ProjectGuard.ask(c, verb: String(localized: "Close")) {
-                case .save: return FileActions.save(c.design)
+                case .save:
+                    // The save runs off the main actor; the window closes once it is written
+                    // (then nothing is edited, so the close goes through).
+                    FileActions.save(c.design) { ok in if ok { w?.performClose(nil) } }
+                    return false
                 case .discard: return true
                 case .cancel: return false
                 }

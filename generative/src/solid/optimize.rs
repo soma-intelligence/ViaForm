@@ -669,7 +669,8 @@ pub fn generate(study: &Study) -> Result<Outcome, String> {
     generate_with(study, &mut |_| true)
 }
 
-/// The error a run stopped by its caller answers.
+/// The error a run stopped by its caller answers when it had nothing to keep (stopped before
+/// its first iteration).
 pub const CANCELLED: &str = "cancelled";
 
 /// Where a running study is, for front ends: which variant, which iteration of how many (the
@@ -712,8 +713,13 @@ pub struct Step<'a> {
     pub density: &'a [f64],
 }
 
-/// [`generate`], reporting progress after every iteration; the run stops with [`CANCELLED`] as
-/// soon as `report` answers false (between iterations, or between variants for frames).
+/// [`generate`], reporting progress after every iteration. As soon as `report` answers false
+/// (between iterations, or between variants for frames) the run stops and keeps what it has:
+/// the variants already finished, plus the stopped variant's best iterate so far (the latest
+/// sharpness reached, lowest objective, among iterates that meet every constraint; else the
+/// last one), analysed and surfaced like a finished candidate with `converged` false. The
+/// outcome then has `stopped` true. It fails with [`CANCELLED`] when nothing usable was solved
+/// (no iteration ran, or the kept shape holds no solid yet and no variant finished).
 pub fn generate_with(study: &Study, report: &mut dyn FnMut(&Progress) -> bool) -> Result<Outcome, String> {
     generate_observed(study, report, None)
 }
@@ -725,12 +731,19 @@ pub fn generate_observed(study: &Study, report: &mut dyn FnMut(&Progress) -> boo
     let n = study.variants.clamp(1, 16);
     let mut candidates = Vec::with_capacity(n);
     let iterations = study.iterations.max(1);
+    let mut warnings = Vec::new();
+    let mut stopped = false;
     for k in 0..n {
         let mut p = Progress { variant: k, variants: n, iteration: 0, iterations, objective: f64::NAN, stage: "optimising".into() };
         if !report(&p) {
-            return Err(CANCELLED.into());
+            if candidates.is_empty() {
+                return Err(CANCELLED.into());
+            }
+            stopped = true;
+            warnings.push(format!("stopped after {k} of {n} variants"));
+            break;
         }
-        let layout = match study.method {
+        let (layout, stop) = match study.method {
             Method::Topology => {
                 let live = observe.is_some();
                 let mut each = |s: &Step| {
@@ -743,20 +756,56 @@ pub fn generate_observed(study: &Study, report: &mut dyn FnMut(&Progress) -> boo
                     }
                     true
                 };
-                optimize_run(study, variant_fraction(study.volume_fraction, k, n), live, &mut each)?.0
+                let (layout, trace) = optimize_run(study, variant_fraction(study.volume_fraction, k, n), live, &mut each)?;
+                (layout, trace.stopped)
             }
-            Method::Frame => frame3d::optimize(study, study.seed.wrapping_add(k as u64 * 0x9E37_79B9))?,
+            Method::Frame => (frame3d::optimize(study, study.seed.wrapping_add(k as u64 * 0x9E37_79B9))?, None),
         };
-        p.iteration = p.iterations;
         p.stage = "analysing".into();
-        if !report(&p) {
-            return Err(CANCELLED.into());
+        match stop {
+            Some(stop) => {
+                // Stopped mid-run: the kept iterate is analysed and surfaced, then the run ends.
+                p.iteration = stop.iteration;
+                report(&p);
+                stopped = true;
+                // A kept shape with no solid yet (stopped in the first, still grey iterations)
+                // is nothing to build: the run then ends as if nothing was solved.
+                let solid = layout.mesh.is_some() || layout.density.iter().any(|&d| d >= 0.5);
+                let kept = if solid { candidate(study, k, layout) } else { Err("no voxel holds material yet".to_string()) }.and_then(|c| if c.mesh.indices.is_empty() { Err("no voxel holds material yet".to_string()) } else { Ok(c) });
+                match kept {
+                    Ok(mut c) => {
+                        c.converged = false;
+                        c.stopped_at = Some(stop.iteration);
+                        c.kept_iteration = Some(stop.kept);
+                        warnings.push(format!(
+                            "stopped at iteration {} of {}: candidate {k} keeps iteration {}{}, not converged",
+                            stop.iteration,
+                            stop.planned,
+                            stop.kept,
+                            if stop.feasible { "" } else { " (no iterate met every constraint yet)" }
+                        ));
+                        candidates.push(c);
+                    }
+                    Err(e) if !candidates.is_empty() => warnings.push(format!("stopped at iteration {}: variant {k} had no usable shape yet ({e})", stop.iteration)),
+                    Err(_) => return Err(CANCELLED.into()),
+                }
+                break;
+            }
+            None => {
+                p.iteration = p.iterations;
+                // A stop asked during the analysis keeps this finished candidate.
+                let halt = !report(&p);
+                candidates.push(candidate(study, k, layout)?);
+                if halt && k + 1 < n {
+                    stopped = true;
+                    warnings.push(format!("stopped after {} of {n} variants", k + 1));
+                    break;
+                }
+            }
         }
-        candidates.push(candidate(study, k, layout)?);
     }
     report(&Progress { variant: n - 1, variants: n, iteration: iterations, iterations, objective: f64::NAN, stage: "done".into() });
     let best = best(&candidates);
-    let mut warnings = Vec::new();
     let g = Grid::new(study.min, study.max, study.voxel);
     let err = g.extent_error(study.min, study.max);
     if err > 0.01 {
@@ -766,7 +815,7 @@ pub fn generate_observed(study: &Study, report: &mut dyn FnMut(&Progress) -> boo
             study.max[0] - study.min[0], study.max[1] - study.min[1], study.max[2] - study.min[2], 100.0 * err
         ));
     }
-    Ok(Outcome { candidates, best, seconds: start.elapsed().as_secs_f64(), warnings })
+    Ok(Outcome { candidates, best, seconds: start.elapsed().as_secs_f64(), warnings, stopped })
 }
 
 /// Analyses a layout and surfaces it into a candidate.
@@ -818,7 +867,7 @@ pub fn candidate(study: &Study, id: usize, layout: Layout) -> Result<Candidate, 
     };
     let feasible = feasible(study, &analysis, &mut issues);
     let volume_fraction = density.iter().map(|&d| d as f64).sum::<f64>() / density.len().max(1) as f64;
-    Ok(Candidate { id, method: study.method, mass_g, volume_fraction, feasible, analysis, history: layout.history, grid: g, density, mesh, mesh_mm3, issues })
+    Ok(Candidate { id, method: study.method, mass_g, volume_fraction, feasible, analysis, history: layout.history, grid: g, density, mesh, mesh_mm3, issues, converged: true, stopped_at: None, kept_iteration: None })
 }
 
 fn feasible(study: &Study, a: &Analysis, issues: &mut Vec<String>) -> bool {
@@ -1349,6 +1398,45 @@ pub struct Trace {
     pub lambdas: Vec<f64>,
     /// Largest design change of the last step.
     pub change: f64,
+    /// Set when the caller stopped the run: the layout is then the kept iterate.
+    pub stopped: Option<Stop>,
+}
+
+/// Where a stopped run was and which iterate it kept.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct Stop {
+    /// Iterations run (1-based count of the last one).
+    pub iteration: usize,
+    /// Iterations planned at the stop (grows with stress rounds).
+    pub planned: usize,
+    /// The iteration kept (1-based).
+    pub kept: usize,
+    /// Whether the kept iterate met every constraint (within 1 %).
+    pub feasible: bool,
+}
+
+/// The iterate a stopped run keeps, chosen as the run goes.
+struct Kept {
+    beta: f64,
+    objective: f64,
+    iteration: usize,
+    feasible: bool,
+    phys: Vec<f64>,
+}
+
+impl Kept {
+    /// Whether an iterate at `beta` with `objective` beats this one: a feasible iterate beats an
+    /// infeasible one; among equals, a sharper one (projection continuation makes earlier,
+    /// greyer iterates read stiffer than what would be built), then the lower objective; among
+    /// infeasible ones, the latest.
+    fn beaten_by(&self, feasible: bool, beta: f64, objective: f64) -> bool {
+        match (self.feasible, feasible) {
+            (false, true) => true,
+            (true, false) => false,
+            (false, false) => true,
+            (true, true) => beta > self.beta || (beta == self.beta && objective <= self.objective),
+        }
+    }
 }
 
 /// [`optimize_with`], with what the run did.
@@ -1378,8 +1466,9 @@ fn peak_stress(m: &Model, smat: &[[f64; 24]; 6], us: &[Vec<f64>], phys: &[f64], 
         .fold(0.0, f64::max)
 }
 
-/// [`optimize_traced`], reporting each [`Step`] (`live` fills its peak stress, NaN otherwise);
-/// stops with [`CANCELLED`] when `report` answers false.
+/// [`optimize_traced`], reporting each [`Step`] (`live` fills its peak stress, NaN otherwise).
+/// When `report` answers false the run stops and answers the best iterate so far (see [`Kept`])
+/// with `trace.stopped` set.
 fn optimize_run(study: &Study, volume_fraction: f64, live: bool, report: &mut dyn FnMut(&Step) -> bool) -> Result<(Layout, Trace), String> {
     let mut ev = Evaluator::new(study, volume_fraction)?;
     let groups = ev.m.groups;
@@ -1399,6 +1488,7 @@ fn optimize_run(study: &Study, volume_fraction: f64, live: bool, report: &mut dy
     let mut trace = Trace { target: ev.vf, ..Trace::default() };
     let stage = (iterations / 5).max(1);
     let mut phys = Vec::new();
+    let mut kept: Option<Kept> = None;
     // Stress and displacement limits are far from linear in the densities: shorter steps.
     let hard = ev.ci_stress.is_some() || ev.ci_disp.is_some();
     // The main run, then (stress-limited studies) up to three short rounds at full sharpness,
@@ -1431,8 +1521,18 @@ fn optimize_run(study: &Study, volume_fraction: f64, live: bool, report: &mut dy
             grid: g,
             density: &e.chain.phys,
         };
+        let objective = step.objective;
+        let feasible = e.g.iter().all(|&v| v <= 0.01);
+        if kept.as_ref().is_none_or(|k| k.beaten_by(feasible, beta, objective)) {
+            kept = Some(Kept { beta, objective, iteration: it + 1, feasible, phys: e.chain.phys.clone() });
+        }
         if !report(&step) {
-            return Err(CANCELLED.into());
+            let k = kept.take().expect("set just above");
+            trace.iterations = it + 1;
+            trace.volume = e.vol;
+            trace.stopped = Some(Stop { iteration: it + 1, planned: total, kept: k.iteration, feasible: k.feasible });
+            let density = k.phys.iter().map(|&r| r as f32).collect();
+            return Ok((Layout { grid: g, density, mesh: None, history }, trace));
         }
         trace.compliances = e.comps.clone();
         trace.volume = e.vol;
@@ -1758,13 +1858,70 @@ mod tests {
         assert_eq!(o.candidates.len(), 1);
         assert!(seen.iter().any(|(i, st)| *i == 6 && st == "optimising"), "{seen:?}");
         assert_eq!(seen.last().map(|x| x.1.as_str()), Some("done"));
-        let mut n = 0;
-        let e = generate_with(&s, &mut |_| {
-            n += 1;
-            n < 3
-        });
+        // Stopped before the first iteration: nothing to keep.
+        let e = generate_with(&s, &mut |_| false);
         assert_eq!(e.unwrap_err(), CANCELLED);
-        assert_eq!(n, 3);
+    }
+
+    /// A stop mid-run keeps the best iterate so far as a usable, surfaced candidate flagged not
+    /// converged; asking again (every later report answers false too) changes nothing.
+    #[test]
+    fn a_stopped_run_keeps_its_best_iterate() {
+        let s = cantilever();
+        let mut asked = 0;
+        let mut calls = 0;
+        let o = generate_with(&s, &mut |p| {
+            calls += 1;
+            if p.stage == "optimising" && p.iteration >= 15 {
+                asked += 1;
+                return false;
+            }
+            asked == 0
+        })
+        .unwrap();
+        assert!(o.stopped);
+        assert_eq!(o.candidates.len(), 1);
+        let c = &o.candidates[0];
+        assert!(!c.converged);
+        assert_eq!(c.stopped_at, Some(15));
+        let kept = c.kept_iteration.unwrap();
+        assert!((1..=15).contains(&kept), "kept {kept}");
+        assert_eq!(c.history.len(), 15);
+        assert!(c.mass_g > 0.0 && c.analysis.max_stress.iter().all(|v| v.is_finite()));
+        assert!(!c.mesh.indices.is_empty() && iso::is_closed(&c.mesh), "the kept shape surfaces");
+        assert!(o.warnings.iter().any(|w| w.contains("stopped at iteration 15")), "{:?}", o.warnings);
+        assert_eq!(o.best, 0);
+        // The stop is asked once by the solver; the rest of the run only reports.
+        assert_eq!(asked, 1, "{calls} calls");
+        // The stopped candidate serialises with its status, and reads back.
+        let v = serde_json::to_value(&o).unwrap();
+        assert_eq!(v["stopped"], serde_json::json!(true));
+        assert_eq!(v["candidates"][0]["converged"], serde_json::json!(false));
+        assert_eq!(v["candidates"][0]["stopped_at"], serde_json::json!(15));
+        let back: Outcome = serde_json::from_value(v).unwrap();
+        assert_eq!(back.candidates[0].stopped_at, Some(15));
+    }
+
+    /// With several variants, a stop in the second keeps the first finished one (converged) and
+    /// the second's best iterate.
+    #[test]
+    fn a_stop_in_a_later_variant_keeps_the_finished_ones() {
+        let mut s = cantilever();
+        s.variants = 2;
+        s.iterations = 20;
+        let o = generate_with(&s, &mut |p| !(p.variant == 1 && p.stage == "optimising" && p.iteration >= 12)).unwrap();
+        assert!(o.stopped);
+        assert_eq!(o.candidates.len(), 2);
+        assert!(o.candidates[0].converged && o.candidates[0].stopped_at.is_none());
+        assert!(!o.candidates[1].converged && o.candidates[1].stopped_at == Some(12));
+        // An outcome written before the status existed reads as converged.
+        let mut v = serde_json::to_value(&o.candidates[0]).unwrap();
+        let m = v.as_object_mut().unwrap();
+        m.remove("converged");
+        m.remove("stopped_at");
+        m.remove("kept_iteration");
+        let c: Candidate = serde_json::from_value(v).unwrap();
+        assert!(c.converged && c.stopped_at.is_none());
     }
 
     /// Observing hands every iteration's figures and densities, in order.

@@ -554,7 +554,8 @@ struct BomStatusLine: View {
                 }
             }
             if let m = model.message {
-                InlineError(m, severity: model.messageIsError ? .error : .warning, dismiss: { model.say(nil) })
+                InlineError(m, severity: model.messageIsError ? .error : .warning,
+                            retry: model.retry.map { again in { model.say(nil); again() } }, dismiss: { model.say(nil) })
             }
         }
     }
@@ -834,7 +835,8 @@ struct BomPanel: View {
             panel.allowedContentTypes = [.commaSeparatedText]
             guard panel.runModal() == .OK, let url = panel.url else { return }
             do {
-                try e.text.write(to: url, atomically: true, encoding: .utf8)
+                let text = e.text
+                try await Task.detached(priority: .userInitiated) { try text.write(to: url, atomically: true, encoding: .utf8) }.value
                 model.notify(String(localized: "Exported \(url.lastPathComponent)"), reveal: url)
             } catch { model.say(error.localizedDescription, error: true) }
         }
@@ -1049,7 +1051,8 @@ struct BomPanel: View {
             guard let e = await model.export(format, supplier: supplier) else { return }
             let url = documents.appendingPathComponent(e.filename)
             do {
-                try e.text.write(to: url, atomically: true, encoding: .utf8)
+                let text = e.text
+                try await Task.detached(priority: .userInitiated) { try text.write(to: url, atomically: true, encoding: .utf8) }.value
                 model.notify(String(localized: "Saved \(e.filename) in ViaForm's Documents (Files app)"))
             } catch { model.say(error.localizedDescription, error: true) }
         }

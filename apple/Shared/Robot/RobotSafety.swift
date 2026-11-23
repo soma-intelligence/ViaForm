@@ -47,8 +47,23 @@ final class RobotSafety {
 
     // MARK: Link and motion
 
-    /// A robot is connected over the bus adapter or the bridge. Set by the link (task P7-2).
-    var connected = false
+    /// A robot is connected (simulated, bus adapter or bridge). Set by `connect` and `disconnect`.
+    private(set) var connected = false
+    /// The link every motion goes through. Only this gate commands it.
+    @ObservationIgnored private(set) var link: (any RobotLink)?
+    /// The link's last reported state, mirrored each tick so views observe it.
+    private(set) var linkState: RobotState?
+    /// The kind of the connected link, for the connection choice and the device rows.
+    private(set) var linkKind: RobotLinkKind?
+    /// What the robot is doing now ("Jog Elbow", "Demo 1"), nil at rest.
+    private(set) var activity: String?
+    /// The joint targets of the running motion, one frame per `planRate` tick.
+    @ObservationIgnored private var plan: [[Double]] = []
+    @ObservationIgnored private var planRate: Double = 50
+    @ObservationIgnored private var planTime: Double = 0
+    @ObservationIgnored private var driver: Task<Void, Never>?
+    /// The control rate (VIAFORM-SPEC 6.4: 50 Hz default).
+    static let controlRate: Double = 50
     /// The first motion of this session was confirmed (`requireConfirm`). Cleared by an e-stop,
     /// so motion after a stop needs a new confirmation.
     private(set) var sessionConfirmed = false
@@ -138,8 +153,13 @@ final class RobotSafety {
 
     // MARK: E-stop API (ProjectWindow calls `stop(source:)` and `escape()`)
 
-    /// Latches the stop: motion ends, torque goes off, the session needs a new confirmation.
+    /// Latches the stop: torque goes off on the link now (not on the next tick), motion ends,
+    /// the session needs a new confirmation.
     func stop(source: String) {
+        link?.torqueOff()
+        plan = []
+        activity = nil
+        linkState = link?.state
         stopped = true
         moving = false
         sessionConfirmed = false
@@ -164,6 +184,8 @@ final class RobotSafety {
         stopped = false
         source = ""
         at = nil
+        link?.torqueOn()
+        linkState = link?.state
     }
 
     // MARK: Motion confirmation
@@ -221,13 +243,168 @@ final class RobotSafety {
     }
 
     /// Motion ended normally (path done, teleop released).
-    func endMotion() { moving = false }
+    func endMotion() {
+        moving = false
+        activity = nil
+        plan = []
+    }
+
+    // MARK: Link
+
+    /// Connects a link. Motion still needs this session's confirmation; a latched e-stop keeps
+    /// torque off. `autoTick` runs the control loop at `controlRate` (tests tick by hand).
+    func connect(_ link: any RobotLink, autoTick: Bool = true) {
+        disconnect()
+        self.link = link
+        linkKind = link.kind
+        connected = true
+        sessionConfirmed = false
+        if stopped { link.torqueOff() } else { link.hold() }
+        linkState = link.state
+        guard autoTick else { return }
+        let dt = 1 / Self.controlRate
+        driver = Task { @MainActor [weak self] in
+            while !Task.isCancelled {
+                try? await Task.sleep(for: .seconds(dt))
+                guard let self, !Task.isCancelled else { return }
+                self.tick(dt: dt)
+            }
+        }
+    }
+
+    /// Holds the pose and drops the link. The next connection needs a new confirmation.
+    func disconnect() {
+        driver?.cancel()
+        driver = nil
+        link?.hold()
+        if moving { endMotion() }
+        link = nil
+        linkKind = nil
+        linkState = nil
+        connected = false
+        sessionConfirmed = false
+    }
+
+    /// The caps as the link receives them, read from the stored settings.
+    var commandLimits: RobotCommandLimits {
+        RobotCommandLimits(speed: speedCap / 100, torque: torqueLimit / 100)
+    }
+
+    /// The workspace fence: targets clamped to the joint limits while it is on.
+    func fenced(_ targets: [Double]) -> [Double] {
+        guard fenceEnabled, let joints = link?.joints, joints.count == targets.count else { return targets }
+        return zip(targets, joints).map { min(max($0, $1.range.lowerBound), $1.range.upperBound) }
+    }
+
+    // MARK: Motion gate
+
+    /// A motion verb. Every one goes through `submit` (or `request`, which asks first).
+    enum Motion {
+        /// Teleop: one joint by `delta` degrees from its commanded target.
+        case jog(joint: Int, delta: Double)
+        /// A pose committed from a drag (twin or Assemble IK), joint targets in degrees.
+        case pose([Double], label: String)
+        /// A path (demo replay, policy rollout), frames of joint targets at `rate` Hz.
+        case trajectory([[Double]], rate: Double, label: String)
+    }
+
+    enum Refusal: Error, Equatable {
+        case noRobot, stopped, unconfirmed, badRequest
+    }
+
+    /// Starts `motion` when the gate allows it: a link, no latched e-stop, this session confirmed.
+    /// Targets pass the fence; the caps go with every command. Returns why it was refused, or nil.
+    @discardableResult
+    func submit(_ motion: Motion) -> Refusal? {
+        guard let link else { return .noRobot }
+        guard !stopped else { return .stopped }
+        guard sessionConfirmed else { return .unconfirmed }
+        let n = link.joints.count
+        let frames: [[Double]]
+        let rate: Double
+        let label: String
+        switch motion {
+        case .jog(let j, let delta):
+            guard link.joints.indices.contains(j) else { return .badRequest }
+            var t = plan.last ?? link.state.targets
+            t[j] += delta
+            frames = [t]
+            rate = Self.controlRate
+            label = String(localized: "Jog \(link.joints[j].name)")
+        case .pose(let p, let l):
+            frames = [p]; rate = Self.controlRate; label = l
+        case .trajectory(let f, let r, let l):
+            frames = f; rate = r; label = l
+        }
+        guard !frames.isEmpty, rate > 0, frames.allSatisfy({ $0.count == n }) else { return .badRequest }
+        plan = frames.map(fenced)
+        planRate = rate
+        planTime = 0
+        activity = label
+        guard beginMotion() else { plan = []; activity = nil; return .unconfirmed }
+        link.command(targets: plan[0], limits: commandLimits)
+        linkState = link.state
+        return nil
+    }
+
+    /// From a view: runs `motion`, or hands `present` the "Run on Robot?" confirmation first
+    /// when this session has not confirmed. Returns why it is locked, or nil.
+    @discardableResult
+    func request(_ motion: Motion, target: String, revision: String? = nil, simSuccessRate: Double? = nil,
+                 present: (ConfirmRequest) -> Void) -> String? {
+        if let reason = lockReason { return reason }
+        if let c = requireConfirm(target: target, revision: revision, simSuccessRate: simSuccessRate,
+                                  perform: { [weak self] in _ = self?.submit(motion) }) {
+            present(c)
+            return nil
+        }
+        submit(motion)
+        return nil
+    }
+
+    /// One control cycle: the running plan's frame goes out with the current caps, the link
+    /// steps, the state is mirrored. Motion ends once the last frame is reached and settled.
+    func tick(dt: Double) {
+        guard let link else { return }
+        if moving, !stopped, !plan.isEmpty {
+            planTime += dt
+            let i = min(Int(planTime * planRate), plan.count - 1)
+            link.command(targets: plan[i], limits: commandLimits)
+            link.tick(dt: dt)
+            let s = link.state
+            let settled = zip(s.targets, s.positions).allSatisfy { abs($0 - $1) < 0.05 }
+                && s.velocities.allSatisfy { abs($0) < 0.5 }
+            if i == plan.count - 1, settled { endMotion() }
+        } else {
+            link.tick(dt: dt)
+        }
+        linkState = link.state
+    }
+
+    // MARK: Paths until phase 7
+
+    /// A synthetic path (VIAFORM-SPEC P3-3: synthetic demo until phase 7): a smooth wave within
+    /// half of each joint's range, `seconds` long at `rate` Hz, starting and ending at rest.
+    static func syntheticPath(joints: [RobotJointSpec], seconds: Double = 3, rate: Double = controlRate,
+                              phase: Double = 0) -> [[Double]] {
+        let count = max(2, Int(seconds * rate))
+        return (0..<count).map { k in
+            let u = Double(k) / Double(count - 1)
+            let envelope = sin(.pi * u)
+            return joints.enumerated().map { i, j in
+                let home = min(max(0, j.range.lowerBound), j.range.upperBound)
+                let span = (j.range.upperBound - j.range.lowerBound) / 4
+                let wave = sin(2 * .pi * u + Double(i) * 0.7 + phase)
+                return min(max(home + envelope * span * wave, j.range.lowerBound), j.range.upperBound)
+            }
+        }
+    }
 }
 
 // MARK: - Self checks
 
-/// `--robot-selftest`: one line per check, exit code 1 on any failure. The app has no unit test
-/// target for model code; this follows `FlowSelfTest`.
+/// `--robot-selftest`: one line per check, exit code 1 on any failure. The gate checks also run
+/// in `ViaFormRobotTests`; this follows `FlowSelfTest`.
 @MainActor
 enum RobotSafetySelfTest {
     static func run() -> Never {
@@ -252,7 +429,7 @@ enum RobotSafetySelfTest {
         s.speedCap = 25
         check("speed cap persists", RobotSafety(defaults: d).speedCap == 25)
 
-        s.connected = true
+        s.connect(SimulatedRobotLink(), autoTick: false)
         check("connected: limits shown", s.speedCapText == VFFormat.value(25, .percent))
         check("unconfirmed: beginMotion refused", !s.beginMotion())
         var ran = false
@@ -281,8 +458,110 @@ enum RobotSafetySelfTest {
         _ = s.escape(now: t0)
         check("Esc twice 1 s apart does not stop", !s.escape(now: t0.addingTimeInterval(1.0)) && !s.stopped)
 
+        // The gate with the simulated link.
+        for (name, ok) in RobotGateChecks.run(defaults: d) { check(name, ok) }
+
         print(failures == 0 ? "robot selftest: all passed" : "robot selftest: \(failures) failed")
         exit(failures == 0 ? 0 : 1)
+    }
+}
+
+// MARK: - Gate checks
+
+/// The motion gate driven through `SimulatedRobotLink`, by hand ticks at the control rate. Shared
+/// by `--robot-selftest` and the unit tests (`ViaFormRobotTests`).
+@MainActor
+enum RobotGateChecks {
+    static func run(defaults: UserDefaults) -> [(String, Bool)] {
+        var out: [(String, Bool)] = []
+        func check(_ name: String, _ ok: Bool) { out.append(("gate: " + name, ok)) }
+        let dt = 1 / RobotSafety.controlRate
+        let g = RobotSafety(defaults: defaults)
+        g.speedCap = RobotSafety.defaultSpeedCap
+        g.torqueLimit = RobotSafety.defaultTorqueLimit
+        g.fenceEnabled = true
+
+        check("no link: motion refused", g.submit(.jog(joint: 0, delta: 10)) == (.noRobot))
+        let link = SimulatedRobotLink()
+        g.connect(link, autoTick: false)
+        let rest = link.state.positions
+        check("connect: connected, session not confirmed", g.connected && !g.sessionConfirmed && g.linkKind == .simulated)
+
+        // No motion without confirmation.
+        check("unconfirmed: submit refused", g.submit(.jog(joint: 2, delta: 10)) == (.unconfirmed))
+        for _ in 0..<25 { g.tick(dt: dt) }
+        check("unconfirmed: robot did not move", link.state.positions == rest && !g.moving)
+        var sheet: ConfirmRequest?
+        let locked = g.request(.jog(joint: 2, delta: 10), target: "Jog", present: { sheet = $0 })
+        check("request asks to confirm first", locked == nil && sheet != nil && !g.moving)
+        for _ in 0..<10 { g.tick(dt: dt) }
+        check("unanswered confirmation: still no motion", link.state.positions == rest)
+        sheet?.perform()
+        check("confirming starts the jog", g.sessionConfirmed && g.moving && link.state.targets[2] == rest[2] + 10)
+
+        // Caps come from RobotSafety.
+        check("caps sent from the settings", link.lastLimits == RobotCommandLimits(speed: 0.30, torque: 0.60))
+        var maxV = 0.0, maxE = 0.0
+        for _ in 0..<150 {
+            g.tick(dt: dt)
+            maxV = max(maxV, link.state.velocities.map(abs).max() ?? 0)
+            maxE = max(maxE, link.state.efforts.max() ?? 0)
+        }
+        check("jog reached its target and motion ended", abs(link.state.positions[2] - (rest[2] + 10)) < 0.1 && !g.moving && g.activity == nil)
+        g.speedCap = 10
+        g.torqueLimit = 20
+        let far = link.joints.map { $0.range.upperBound }
+        g.submit(.pose(far, label: "Far"))
+        maxV = 0; maxE = 0
+        for _ in 0..<50 {
+            g.tick(dt: dt)
+            for (i, j) in link.joints.enumerated() { maxV = max(maxV, abs(link.state.velocities[i]) / j.ratedSpeed) }
+            maxE = max(maxE, link.state.efforts.max() ?? 0)
+        }
+        check("speed cap clamps joint speed", maxV <= 0.10 + 1e-9 && maxV > 0.05)
+        check("torque limit clamps effort", maxE <= 20 + 1e-9 && maxE > 0)
+        check("lowered caps reach the link", link.lastLimits == RobotCommandLimits(speed: 0.10, torque: 0.20))
+
+        // Fence.
+        g.submit(.pose(link.joints.map { $0.range.upperBound + 500 }, label: "Out"))
+        check("fence clamps targets to the joint limits", link.state.targets == far)
+        check("bad pose refused", g.submit(.pose([1, 2], label: "Short")) == (.badRequest))
+
+        // E-stop latches and cuts within one tick.
+        g.speedCap = 100
+        g.torqueLimit = 100
+        g.submit(.trajectory(RobotSafety.syntheticPath(joints: link.joints), rate: RobotSafety.controlRate, label: "Demo"))
+        for _ in 0..<10 { g.tick(dt: dt) }
+        let wasMoving = g.moving && (link.state.velocities.map(abs).max() ?? 0) > 1
+        g.stop(source: RobotSafety.StopSource.button.rawValue)
+        let held = link.state.positions
+        check("e-stop: torque off at once", wasMoving && !link.state.torqueOn && link.state.velocities.allSatisfy { $0 == 0 })
+        g.tick(dt: dt)
+        check("e-stop: no motion on the next tick", link.state.positions == held && !g.moving)
+        check("e-stop latches: motion refused", g.submit(.jog(joint: 0, delta: 5)) == (.stopped))
+        var asked = false
+        let reason = g.request(.jog(joint: 0, delta: 5), target: "Jog", present: { _ in asked = true })
+        check("e-stop latches: request locked, no sheet", reason != nil && !asked)
+        for _ in 0..<25 { g.tick(dt: dt) }
+        check("e-stop latches: still no motion", link.state.positions == held)
+
+        // Re-enable flow: torque back, holding; motion needs a new confirmation.
+        g.reenable()
+        check("re-enable: torque on, holding the pose", link.state.torqueOn && link.state.targets == held && !g.stopped)
+        check("re-enable: motion needs a new confirmation", g.submit(.jog(joint: 0, delta: 5)) == (.unconfirmed))
+        sheet = nil
+        g.request(.jog(joint: 0, delta: 5), target: "Jog", present: { sheet = $0 })
+        sheet?.perform()
+        check("re-enable: confirmed again, motion runs", g.moving && link.state.targets[0] == held[0] + 5)
+        _ = g.escape(now: Date(timeIntervalSince1970: 0))
+        _ = g.escape(now: Date(timeIntervalSince1970: 0.3))
+        check("Esc twice cuts motion", g.stopped && !g.moving && !link.state.torqueOn)
+        g.reenable()
+
+        g.disconnect()
+        check("disconnect: no robot, session cleared", !g.connected && !g.sessionConfirmed && g.linkState == nil)
+        check("disconnect: motion refused", g.submit(.jog(joint: 0, delta: 5)) == (.noRobot))
+        return out
     }
 }
 

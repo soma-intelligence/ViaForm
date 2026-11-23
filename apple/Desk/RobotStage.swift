@@ -1,14 +1,15 @@
 #if os(macOS)
 import SwiftUI
 
-/// The Robot stage (VIAFORM-SPEC 7.9) before the hardware link exists: the canvas keeps the two
-/// places the live twin and the camera feed will take, the safety bar is always in view, and the
-/// bottom panel holds the telemetry and record controls. Every motion verb stays disabled until
-/// a robot is connected (robot-protocol, task P7-2).
+/// The Robot stage (VIAFORM-SPEC 7.9): the safety bar always in view, the connection choice
+/// (the simulated robot until the hardware link, task P7-2), the live twin with the joints, and
+/// the motion verbs. Every verb goes through `RobotSafety`: confirmed once per session, blocked
+/// while the e-stop is latched, capped by the stored limits, framed in red while moving.
 struct RobotStage: View {
     @Environment(\.viaFormTheme) private var theme
     let flow: FlowModel
     let actions: StageActions
+    @State private var confirm: ConfirmRequest?
 
     private var safety: RobotSafety { RobotSafety.shared }
 
@@ -19,18 +20,35 @@ struct RobotStage: View {
                 RobotStoppedBanner().vfTransition(.move(edge: .top).combined(with: .opacity))
             }
             HStack(spacing: VFSpace.l) {
-                pane(title: String(localized: "Digital twin"), symbol: "figure.arms.open",
-                     line: String(localized: "Measured pose as a solid, commanded pose as a ghost, at 50 Hz once a robot is connected."))
-                pane(title: String(localized: "Camera"), symbol: "video",
-                     line: String(localized: "The robot's camera feed shows here, beside the twin, while you teleoperate and record."))
+                if safety.connected {
+                    RobotTwinView()
+                        .padding(VFSpace.l)
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                        .background(RoundedRectangle(cornerRadius: VFRadius.floating, style: .continuous).fill(theme.panel.opacity(0.55)))
+                    ScrollView {
+                        VStack(alignment: .leading, spacing: VFSpace.l) {
+                            RobotJointsPanel(confirm: $confirm)
+                            RobotMotionVerbs(confirm: $confirm, policy: flow.revisionName(of: "train"))
+                        }
+                        .padding(VFSpace.l)
+                    }
+                    .frame(minWidth: 300, maxWidth: 380, maxHeight: .infinity)
+                    .background(RoundedRectangle(cornerRadius: VFRadius.floating, style: .continuous).fill(theme.panel.opacity(0.55)))
+                } else {
+                    pane(title: String(localized: "Digital twin"), symbol: "figure.arms.open",
+                         line: String(localized: "Measured pose as a solid, commanded pose as a ghost, at 50 Hz once a robot is connected."))
+                    pane(title: String(localized: "Camera"), symbol: "video",
+                         line: String(localized: "The robot's camera feed shows here, beside the twin, while you teleoperate and record."))
+                }
             }
             .motionFrame()
-            if !safety.connected { connectCard }
+            RobotConnectionCard(source: flow.revisionName(of: "assemble") ?? String(localized: "the assembly"))
         }
         .vfAnimation(.easeOut(duration: VFMotion.fast), value: safety.stopped)
         .padding(VFSpace.xl)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(theme.viewportGradient)
+        .confirmSheet($confirm)
     }
 
     private func pane(title: String, symbol: String, line: String) -> some View {
@@ -55,28 +73,6 @@ struct RobotStage: View {
         )
         .accessibilityElement(children: .combine)
     }
-
-    /// The connect hint. Its verb is the ribbon's primary action ("Connect Robot").
-    private var connectCard: some View {
-        let source = flow.revisionName(of: "assemble") ?? String(localized: "the assembly")
-        return HStack(spacing: VFSpace.l) {
-            Image(systemName: "cable.connector")
-                .font(VFFont.glyph(20))
-                .foregroundStyle(theme.inkSecondary)
-                .accessibilityHidden(true)
-            VStack(alignment: .leading, spacing: VFSpace.xxs) {
-                Text("No robot connected").font(VFFont.rowEmphasis).foregroundStyle(theme.ink)
-                Text(String(localized: "Connect a servo bus adapter over USB, or the ViaForm bridge over Wi-Fi. The joint map comes from \(source)."))
-                    .font(VFFont.small).foregroundStyle(theme.inkSecondary)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-            .frame(maxWidth: .infinity, alignment: .leading)
-        }
-        .padding(VFSpace.l)
-        .frame(maxWidth: 720)
-        .vfSurface(.floating, radius: VFRadius.floating)
-        .accessibilityElement(children: .combine)
-    }
 }
 
 /// The Robot stage's bottom panel: telemetry per joint and the record control, empty until a
@@ -89,6 +85,20 @@ struct RobotTelemetryPanel: View {
         [String(localized: "Position"), String(localized: "Current"), String(localized: "Temperature")]
     }
 
+    /// The peak over the joints, or "No data" before a robot streams.
+    private func reading(_ channel: String) -> String {
+        guard let s = safety.linkState else { return String(localized: "No data") }
+        switch channel {
+        case String(localized: "Position"):
+            let err = zip(s.targets, s.positions).map { abs($0 - $1) }.max() ?? 0
+            return String(localized: "Tracking error \(VFFormat.value(err, .angle))")
+        case String(localized: "Current"):
+            return String(localized: "Peak \(VFFormat.value(s.efforts.max() ?? 0, .percent))")
+        default:
+            return String(localized: "Not reported")
+        }
+    }
+
     var body: some View {
         HStack(alignment: .top, spacing: VFSpace.xl) {
             VStack(alignment: .leading, spacing: VFSpace.s) {
@@ -97,15 +107,16 @@ struct RobotTelemetryPanel: View {
                     ForEach(channels, id: \.self) { k in
                         VStack(alignment: .leading, spacing: VFSpace.xs) {
                             Text(k).font(VFFont.small).foregroundStyle(theme.inkSecondary).lineLimit(1)
-                            Text("No data")
+                            Text(reading(k))
                                 .font(VFFont.micro)
-                                .foregroundStyle(theme.inkTertiary)
+                                .monospacedDigit()
+                                .foregroundStyle(safety.linkState == nil ? theme.inkTertiary : theme.ink)
                                 .padding(VFSpace.s)
                                 .frame(minWidth: 96, maxWidth: 200, minHeight: 54)
                                 .background(RoundedRectangle(cornerRadius: VFRadius.control, style: .continuous).fill(theme.well))
                         }
                         .accessibilityElement(children: .ignore)
-                        .accessibilityLabel(Text("\(k), no data"))
+                        .accessibilityLabel(Text("\(k), \(reading(k))"))
                     }
                 }
             }

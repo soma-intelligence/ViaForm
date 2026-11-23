@@ -241,6 +241,36 @@
         }
       }
     },
+    "%@ connected": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ connecté"
+          }
+        }
+      }
+    },
+    "%@ could not be opened.": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Impossible d’ouvrir %@."
+          }
+        }
+      }
+    },
+    "%@ could not be saved.": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Impossible d’enregistrer %@."
+          }
+        }
+      }
+    },
     "%@ each": {
       "localizations": {
         "fr": {
@@ -437,6 +467,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "%@ par itération"
+          }
+        }
+      }
+    },
+    "%@ pose": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pose %@"
           }
         }
       }
@@ -717,6 +757,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "%@, %@, %@, %@"
+          }
+        }
+      }
+    },
+    "%@, connected": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@, connecté"
           }
         }
       }
@@ -2201,6 +2251,16 @@
         }
       }
     },
+    "Asks before the first motion": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Demande avant le premier mouvement"
+          }
+        }
+      }
+    },
     "Assembly": {
       "localizations": {
         "fr": {
@@ -2227,6 +2287,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "À"
+          }
+        }
+      }
+    },
+    "At rest": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Au repos"
           }
         }
       }
@@ -2417,6 +2487,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Jeu"
+          }
+        }
+      }
+    },
+    "Base": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Base"
           }
         }
       }
@@ -3791,6 +3871,16 @@
         }
       }
     },
+    "Comes with the hardware link": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Arrive avec la liaison matérielle"
+          }
+        }
+      }
+    },
     "Coming soon": {
       "localizations": {
         "fr": {
@@ -3831,12 +3921,32 @@
         }
       }
     },
+    "Commanded": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Commandé"
+          }
+        }
+      }
+    },
     "Commands": {
       "localizations": {
         "fr": {
           "stringUnit": {
             "state": "translated",
             "value": "Commandes"
+          }
+        }
+      }
+    },
+    "Commands play on a servo model with the same safety gate. No hardware moves.": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Les commandes jouent sur un modèle de servos avec le même contrôle de sécurité. Aucun matériel ne bouge."
           }
         }
       }
@@ -3931,6 +4041,16 @@
         }
       }
     },
+    "Connect %@": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Connecter %@"
+          }
+        }
+      }
+    },
     "Connect a robot first.": {
       "localizations": {
         "fr": {
@@ -3947,6 +4067,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Connecte un adaptateur de bus de servos en USB, ou la passerelle ViaForm en Wi-Fi. La carte des liaisons vient de %@."
+          }
+        }
+      }
+    },
+    "Connect a servo bus adapter over USB, or the ViaForm bridge over Wi-Fi. The joint map comes from %@. Try the flow first with the simulated robot.": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Branche un adaptateur de bus servo en USB, ou le pont ViaForm en Wi-Fi. La carte des articulations vient de %@. Essaie d'abord le parcours avec le robot simulé."
           }
         }
       }
@@ -4421,6 +4551,16 @@
         }
       }
     },
+    "Demo 1 replay": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Relecture de la démo 1"
+          }
+        }
+      }
+    },
     "Density": {
       "localizations": {
         "fr": {
@@ -4641,6 +4781,16 @@
         }
       }
     },
+    "Disconnect": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Déconnecter"
+          }
+        }
+      }
+    },
     "Dismiss": {
       "localizations": {
         "fr": {
@@ -4817,6 +4967,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Déplacer l'extrémité"
+          }
+        }
+      }
+    },
+    "Drag a joint first": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fais d'abord glisser une articulation"
           }
         }
       }
@@ -5187,6 +5347,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Effort"
+          }
+        }
+      }
+    },
+    "Elbow": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Coude"
           }
         }
       }
@@ -6381,6 +6551,16 @@
         }
       }
     },
+    "Gripper": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pince"
+          }
+        }
+      }
+    },
     "Grounded": {
       "localizations": {
         "fr": {
@@ -7061,6 +7241,16 @@
         }
       }
     },
+    "It has been solving for %@. Keep its best design so far as a candidate (not converged), or discard the run. Cancel keeps it running.": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Le calcul tourne depuis %@. Garde sa meilleure forme obtenue comme candidat (non convergé), ou abandonne le calcul. Annuler le laisse continuer."
+          }
+        }
+      }
+    },
     "Items": {
       "localizations": {
         "fr": {
@@ -7221,6 +7411,36 @@
         }
       }
     },
+    "Jog %@": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Déplacer %@"
+          }
+        }
+      }
+    },
+    "Jog %@ down": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Descendre %@"
+          }
+        }
+      }
+    },
+    "Jog %@ up": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Monter %@"
+          }
+        }
+      }
+    },
     "Join": {
       "localizations": {
         "fr": {
@@ -7331,6 +7551,16 @@
         }
       }
     },
+    "Keep Best So Far": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Garder le meilleur"
+          }
+        }
+      }
+    },
     "Keep Both": {
       "localizations": {
         "fr": {
@@ -7387,6 +7617,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Zone d'exclusion"
+          }
+        }
+      }
+    },
+    "Keeping the best design so far.": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Conservation de la meilleure forme obtenue."
           }
         }
       }
@@ -8341,6 +8581,16 @@
         }
       }
     },
+    "Motion confirmed": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mouvement confirmé"
+          }
+        }
+      }
+    },
     "Motion study": {
       "localizations": {
         "fr": {
@@ -8547,6 +8797,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Aller à une pose enregistrée"
+          }
+        }
+      }
+    },
+    "Move to pose": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aller à la pose"
           }
         }
       }
@@ -9401,6 +9661,16 @@
         }
       }
     },
+    "None, simulated": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aucune, simulé"
+          }
+        }
+      }
+    },
     "Not applied, no robot": {
       "localizations": {
         "fr": {
@@ -9521,6 +9791,46 @@
         }
       }
     },
+    "Not converged": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Non convergé"
+          }
+        }
+      }
+    },
+    "Opening %@": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ouverture de %@"
+          }
+        }
+      }
+    },
+    "Saving %@": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Enregistrement de %@"
+          }
+        }
+      }
+    },
+    "not converged": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "non convergé"
+          }
+        }
+      }
+    },
     "Not flown yet": {
       "localizations": {
         "fr": {
@@ -9601,6 +9911,16 @@
         }
       }
     },
+    "Not reported": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Non rapporté"
+          }
+        }
+      }
+    },
     "Not set": {
       "localizations": {
         "fr": {
@@ -9667,6 +9987,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Rien de construit pour l'instant"
+          }
+        }
+      }
+    },
+    "Nothing dragged": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rien n'a été déplacé"
           }
         }
       }
@@ -10637,6 +10967,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Charge utile"
+          }
+        }
+      }
+    },
+    "Peak %@": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pic %@"
           }
         }
       }
@@ -12121,12 +12461,32 @@
         }
       }
     },
+    "Replay Demo on Robot": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rejouer la démo sur le robot"
+          }
+        }
+      }
+    },
     "Replays a recorded demonstration on the servos and compares": {
       "localizations": {
         "fr": {
           "stringUnit": {
             "state": "translated",
             "value": "Rejoue une démonstration enregistrée sur les servos et compare"
+          }
+        }
+      }
+    },
+    "Reset Pose": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Réinitialiser la pose"
           }
         }
       }
@@ -13381,6 +13741,16 @@
         }
       }
     },
+    "Session": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Session"
+          }
+        }
+      }
+    },
     "Set joint values and the tip target in the inspector": {
       "localizations": {
         "fr": {
@@ -13497,6 +13867,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Raccourci %@"
+          }
+        }
+      }
+    },
+    "Shoulder": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Épaule"
           }
         }
       }
@@ -13787,6 +14167,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "La simulation n'est pas disponible pour ce produit"
+          }
+        }
+      }
+    },
+    "Simulated robot": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Robot simulé"
           }
         }
       }
@@ -14311,6 +14701,16 @@
         }
       }
     },
+    "Stop and keep the best so far": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Arrêter et garder le meilleur"
+          }
+        }
+      }
+    },
     "Stop Job": {
       "localizations": {
         "fr": {
@@ -14337,6 +14737,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Arrête le robot pour changer ses limites"
+          }
+        }
+      }
+    },
+    "Stop the robot to disconnect": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Arrête le robot pour le déconnecter"
           }
         }
       }
@@ -14371,6 +14781,16 @@
         }
       }
     },
+    "Stop the study and keep its best design so far (Command-.). After 30 s it asks first.": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Arrête l'étude et garde sa meilleure forme obtenue (Commande-.). Après 30 s, une confirmation est demandée."
+          }
+        }
+      }
+    },
     "Stop the study. Its candidates are not kept.": {
       "localizations": {
         "fr": {
@@ -14397,6 +14817,46 @@
           "stringUnit": {
             "state": "translated",
             "value": "Arrêté à %@"
+          }
+        }
+      }
+    },
+    "Stopped at iteration %lld": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Arrêté à l'itération %lld"
+          }
+        }
+      }
+    },
+    "stopped at iteration %lld, not converged": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "arrêté à l'itération %lld, non convergé"
+          }
+        }
+      }
+    },
+    "Stopped at iteration %lld. The best design so far is kept as candidate %lld, not converged.": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Arrêté à l'itération %1$lld. La meilleure forme obtenue est conservée comme candidat %2$lld, non convergé."
+          }
+        }
+      }
+    },
+    "Stopped before a usable shape formed. The last results are kept.": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Arrêté avant qu'une forme exploitable n'apparaisse. Les derniers résultats sont conservés."
           }
         }
       }
@@ -14431,12 +14891,32 @@
         }
       }
     },
+    "Stopped. The finished candidates are kept.": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Arrêté. Les candidats terminés sont conservés."
+          }
+        }
+      }
+    },
     "Stopped. The last results are kept.": {
       "localizations": {
         "fr": {
           "stringUnit": {
             "state": "translated",
             "value": "Arrêté. Les derniers résultats sont conservés."
+          }
+        }
+      }
+    },
+    "Stopping. Keeping the best design so far.": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Arrêt en cours. La meilleure forme obtenue est conservée."
           }
         }
       }
@@ -14457,6 +14937,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "S'arrête après l'itération en cours et garde le meilleur cerveau obtenu"
+          }
+        }
+      }
+    },
+    "Stops the study and keeps its best design so far as a candidate": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Arrête l'étude et garde sa meilleure forme obtenue comme candidat"
           }
         }
       }
@@ -14697,6 +15187,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Système suit l'apparence du Mac ou de l'iPad. Clair et Sombre en fixent une."
+          }
+        }
+      }
+    },
+    "The run was stopped before this design settled. Run again to let it converge.": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Le calcul a été arrêté avant que cette forme se stabilise. Relance-le pour qu'il converge."
           }
         }
       }
@@ -15067,6 +15567,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "La conception n'a pas encore de corps. Modélise d'abord une pièce dans Conception."
+          }
+        }
+      }
+    },
+    "The dragged pose": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "La pose déplacée"
           }
         }
       }
@@ -15821,6 +16331,16 @@
         }
       }
     },
+    "Tracking error %@": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Erreur de suivi %@"
+          }
+        }
+      }
+    },
     "Tracks the demo within %@ RMS": {
       "localizations": {
         "fr": {
@@ -16027,6 +16547,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "URDF"
+          }
+        }
+      }
+    },
+    "USB bus adapter": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Adaptateur de bus USB"
           }
         }
       }
@@ -16531,6 +17061,16 @@
         }
       }
     },
+    "ViaForm bridge": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pont ViaForm"
+          }
+        }
+      }
+    },
     "View": {
       "localizations": {
         "fr": {
@@ -16947,6 +17487,26 @@
           "stringUnit": {
             "state": "translated",
             "value": "Pire contrainte dans le temps"
+          }
+        }
+      }
+    },
+    "Wrist pitch": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tangage du poignet"
+          }
+        }
+      }
+    },
+    "Wrist roll": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Roulis du poignet"
           }
         }
       }
@@ -17567,6 +18127,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "positions standard"
+          }
+        }
+      }
+    },
+    "synthetic demo": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "démo synthétique"
           }
         }
       }

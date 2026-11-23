@@ -388,11 +388,12 @@ final class GenerateModel {
         return String(decoding: try JSONSerialization.data(withJSONObject: obj), as: UTF8.self)
     }
 
-    /// Runs the study in the engine on its own thread, following its iterations; Cancel stops
-    /// it at the next one.
+    /// Runs the study in the engine on its own thread, following its iterations; Stop ends it at
+    /// the next one and keeps its best design so far, Discard drops it.
     func run() {
         let study = study
         stopRequested = false
+        stopping = false
         error = nil
         notice = nil
         let job: GenerateJob
@@ -442,7 +443,9 @@ final class GenerateModel {
                 }
             }.value
             guard let self, id == self.runID else { return }
+            let stopped = self.stopping
             self.running = false
+            self.stopping = false
             self.runningJob = nil
             switch result {
             case .success(let (o, previews, open)):
@@ -458,11 +461,20 @@ final class GenerateModel {
                 self.selected = o.candidates.indices.contains(o.best) ? o.best : (o.candidates.isEmpty ? nil : 0)
                 self.display = o.candidates.isEmpty ? .setup : .result
                 if o.candidates.isEmpty { self.error = String(localized: "The study gave no candidates. Loosen the limits or add volume, then run again.") }
+                if let c = o.stoppedCandidate, let n = c.stoppedAt {
+                    self.notice = String(localized: "Stopped at iteration \(n). The best design so far is kept as candidate \(c.id + 1), not converged.")
+                } else if o.stopped || stopped {
+                    self.notice = String(localized: "Stopped. The finished candidates are kept.")
+                }
                 Self.calibrate(seconds: o.seconds > 0 ? o.seconds : Date().timeIntervalSince(self.startedAt ?? Date()), units: units, overhead: overhead)
                 self.afterRun?()
                 self.afterRun = nil
             case .failure(let e):
-                if e.localizedDescription == "cancelled" { self.notice = String(localized: "Stopped. The last results are kept.") } else { self.error = e.localizedDescription }
+                if e.localizedDescription == "cancelled" {
+                    self.notice = String(localized: "Stopped before a usable shape formed. The last results are kept.")
+                } else {
+                    self.error = e.localizedDescription
+                }
             }
         }
     }
@@ -508,26 +520,45 @@ final class GenerateModel {
     /// Seconds the running study has been going.
     var runAge: Double { running ? Date().timeIntervalSince(startedAt ?? Date()) : 0 }
 
-    /// A stop that throws away more than this many seconds of solving asks first.
+    /// A stop of a run older than this many seconds asks first: keep the best so far, discard
+    /// the run, or keep it running.
     static let confirmStopAfter = 30.0
 
     /// Set when a stop needs confirming; the Generate view shows the question.
     var stopRequested = false
 
-    /// Stop from a button, a menu or the jobs list: at once for a young run, else asks first.
+    /// True between a stop that keeps the best so far and the engine's answer (the kept design
+    /// is analysed and surfaced first, a few seconds at most).
+    var stopping = false
+
+    /// Stop from a button, Command-., a menu or the jobs list: at once (keeping the best design
+    /// so far) for a young run, else asks first.
     func requestStop() {
-        guard running else { return }
+        guard running, !stopping else { return }
         if runAge > Self.confirmStopAfter { stopRequested = true } else { cancel() }
     }
 
-    /// Stops the running study: the engine stops at its next iteration and its answer is dropped.
+    /// Stops the running study at its next iteration and keeps its best design so far: the
+    /// engine answers it as a candidate flagged not converged, which opens like any result.
+    /// Asking again while it stops does nothing.
     func cancel() {
+        stopRequested = false
+        guard running, !stopping, let job = runningJob else { return }
+        stopping = true
+        paused = false
+        job.cancel()
+        notice = String(localized: "Stopping. Keeping the best design so far.")
+    }
+
+    /// Stops the running study and drops its answer; the last results stay.
+    func discard() {
         stopRequested = false
         guard running else { return }
         runningJob?.cancel()
         runningJob = nil
         runID += 1
         running = false
+        stopping = false
         paused = false
         notice = String(localized: "Stopped. The last results are kept.")
     }

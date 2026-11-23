@@ -14,7 +14,7 @@ struct LiveRunPanel: View {
         VStack(alignment: .leading, spacing: VFSpace.m) {
             HStack(spacing: VFSpace.m) {
                 VStack(alignment: .leading, spacing: VFSpace.xxs) {
-                    Text(model.paused ? "Paused" : "Solving").font(VFFont.rowEmphasis).foregroundStyle(theme.ink)
+                    Text(model.stopping ? "Stopping…" : model.paused ? "Paused" : "Solving").font(VFFont.rowEmphasis).foregroundStyle(theme.ink)
                     if let p = model.progress {
                         Text(GenerateRunBar.describe(p)).font(VFFont.small).foregroundStyle(theme.inkSecondary)
                     }
@@ -24,7 +24,8 @@ struct LiveRunPanel: View {
                              label: model.paused ? String(localized: "Resume") : String(localized: "Pause after this iteration")) {
                     model.togglePause()
                 }
-                VFIconButton("stop.fill", label: String(localized: "Stop"), role: .destructive) { model.requestStop() }
+                VFIconButton("stop.fill", label: String(localized: "Stop and keep the best so far"), role: .destructive) { model.requestStop() }
+                    .vfDisabled(model.stopping, reason: String(localized: "Keeping the best design so far."))
             }
             HStack(spacing: VFSpace.l) {
                 figure(String(localized: "Time left"), eta)

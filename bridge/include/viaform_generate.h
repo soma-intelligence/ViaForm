@@ -18,8 +18,13 @@ VfGenJob *vf_generate_start(const char *spec_json, char **error);
 //  iterations), per_iteration (s), paused_seconds, preview (latest preview version)}.
 // Poll it a few times a second; it never waits.
 char *vf_generate_progress(const VfGenJob *job);
+// Asks the run to stop at its next iteration; it then keeps its best design so far. Safe to
+// call again, before or after the run ends.
 void vf_generate_cancel(const VfGenJob *job);
-// Waits for the run: {"ok": outcome} or {"error": message} ("cancelled" when stopped).
+// Waits for the run: {"ok": outcome} or {"error": message}. A stopped run answers its outcome
+// with stopped true: the candidates finished before the stop plus the stopped one's best iterate
+// so far (converged false), analysed and surfaced like the others. "cancelled" only when it was
+// stopped before any usable shape.
 char *vf_generate_outcome(const VfGenJob *job);
 // Builds candidate (-1: the best) into the design, one undo step: {"ok": {candidate, body, commands}}.
 char *vf_generate_build(ScSession *s, const VfGenJob *job, int64_t candidate);
@@ -31,7 +36,10 @@ void vf_generate_pause(const VfGenJob *job, bool paused);
 char *vf_generate_history(const VfGenJob *job, uint64_t from);
 // Waits for the run: {"ok": {candidates, best, seconds, warnings}}, each candidate's figures
 // (no densities, no surface; `triangles` counts it) plus cost (rough $ index) and f1 (Hz or
-// null). Small, so results open at once; take surfaces with vf_generate_mesh.
+// null), converged (false: a stopped run's kept iterate), stopped_at (iterations run at the stop,
+// else null) and kept_iteration (the iteration kept, else null); a stopped run adds a warning
+// starting "stopped at iteration". Small, so results open at once; take surfaces with
+// vf_generate_mesh.
 char *vf_generate_summary(const VfGenJob *job);
 
 // A triangle mesh as flat arrays, world mm: vertex_count xyz triples, index_count indices

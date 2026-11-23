@@ -109,7 +109,8 @@ fn a_job_reports_progress_and_builds_its_outcome() {
     assert!(seen >= 0.0 && t.elapsed().as_secs_f64() < 5.0);
 }
 
-/// Cancelling stops the run at its next iteration with the `cancelled` error.
+/// Cancelling stops the run at its next iteration: it keeps its best design so far (flagged
+/// stopped, not converged) or, with no solid formed yet, answers the `cancelled` error.
 #[test]
 fn a_cancelled_job_stops_early() {
     use viaform_core::generative::Job;
@@ -122,7 +123,10 @@ fn a_cancelled_job_stops_early() {
     }
     job.cancel();
     let t = std::time::Instant::now();
-    assert_eq!(job.outcome().unwrap_err(), "cancelled");
+    match job.summary() {
+        Ok(s) => assert_eq!(s["candidates"][0]["converged"], false, "{s}"),
+        Err(e) => assert_eq!(e, "cancelled"),
+    }
     assert!(t.elapsed().as_secs_f64() < 5.0, "stopped in {:.2} s", t.elapsed().as_secs_f64());
     assert!(job.progress()["cancelled"].as_bool().unwrap_or(false));
 }

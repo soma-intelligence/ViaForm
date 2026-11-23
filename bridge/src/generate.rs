@@ -52,7 +52,8 @@ pub unsafe extern "C" fn vf_generate_progress(job: *const VfGenJob) -> *mut c_ch
     out(&guard(json!({"error": "progress"}), || j.job.progress()))
 }
 
-/// Asks the study to stop at its next iteration.
+/// Asks the study to stop at its next iteration. The run then keeps its best design so far
+/// (see `vf_generate_summary`). Safe to call again, before or after the run ends.
 ///
 /// # Safety
 /// `job` is a live job.
@@ -64,8 +65,10 @@ pub unsafe extern "C" fn vf_generate_cancel(job: *const VfGenJob) {
     }
 }
 
-/// Waits for the study, then answers `{"ok": outcome}` or `{"error": message}` (`cancelled`
-/// when it was stopped). Can be asked again.
+/// Waits for the study, then answers `{"ok": outcome}` or `{"error": message}`. A stopped run
+/// answers its outcome with `stopped` true (the candidates finished before the stop plus the
+/// stopped one's best iterate, `converged` false); `cancelled` only when it was stopped before
+/// any usable shape. Can be asked again.
 ///
 /// # Safety
 /// `job` is a live job (any thread).
@@ -114,7 +117,9 @@ pub unsafe extern "C" fn vf_generate_history(job: *const VfGenJob, from: u64) ->
 
 /// Waits for the study, then answers `{"ok": {candidates, best, seconds, warnings}}` with each
 /// candidate's figures, `cost` and `f1` but no densities or surface (small: results open at
-/// once), or `{"error"}`.
+/// once), or `{"error"}`. Each candidate carries `converged` (false for a stopped run's kept
+/// iterate), `stopped_at` (iterations run at the stop, else null) and `kept_iteration`; a
+/// stopped run adds a warning that starts with "stopped at iteration".
 ///
 /// # Safety
 /// `job` is a live job (any thread).
@@ -255,5 +260,112 @@ pub unsafe extern "C" fn vf_generate_free(job: *mut VfGenJob) {
     if !job.is_null() {
         // SAFETY: from `vf_generate_start`, freed once.
         drop(unsafe { Box::from_raw(job) });
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::ffi::{CStr, CString};
+
+    /// A 40 x 10 x 16 mm bracket on 1 mm voxels, held on its left face, pulled down at its right
+    /// end, with far more iterations than a test waits for.
+    const BRACKET: &str = r#"{
+        "name": "Bracket3D", "min": [0, 0, 0], "max": [40, 10, 16], "voxel": 1.0,
+        "iterations": 400, "volume_fraction": 0.3,
+        "supports": [{"region": {"shape": "box", "min": [-0.1, -1, -1], "max": [0.1, 11, 17]}}],
+        "cases": [{"name": "tip", "loads": [{"type": "force", "region": {"shape": "box", "min": [39.9, -1, 7], "max": [41, 11, 9]}, "force": [0, 0, -300]}]}]
+    }"#;
+
+    fn reply(r: *mut c_char) -> Value {
+        // SAFETY: `r` came from `out`.
+        let v = serde_json::from_str(unsafe { CStr::from_ptr(r) }.to_str().unwrap()).unwrap();
+        // SAFETY: returned by this library.
+        unsafe { crate::sc_string_free(r) };
+        v
+    }
+
+    fn start() -> *mut VfGenJob {
+        let spec = CString::new(BRACKET).unwrap();
+        // SAFETY: NUL-terminated spec; no error slot.
+        let job = unsafe { vf_generate_start(spec.as_ptr(), std::ptr::null_mut()) };
+        assert!(!job.is_null());
+        job
+    }
+
+    /// Waits until the run reaches iteration `n`.
+    fn reach(job: *mut VfGenJob, n: u64) {
+        let t = std::time::Instant::now();
+        loop {
+            // SAFETY: live job.
+            let p = reply(unsafe { vf_generate_progress(job) });
+            if p["iteration"].as_u64().unwrap_or(0) >= n || !p["running"].as_bool().unwrap_or(false) {
+                break;
+            }
+            assert!(t.elapsed().as_secs() < 120, "never reached iteration {n}: {p}");
+            std::thread::sleep(std::time::Duration::from_millis(5));
+        }
+    }
+
+    /// Stopping mid-run keeps the best design so far: the summary flags it stopped and not
+    /// converged with its iteration, the surface comes out, and asking again (cancel, outcome,
+    /// summary) after the stop changes nothing.
+    #[test]
+    fn a_stopped_job_keeps_its_best_design() {
+        let job = start();
+        reach(job, 20);
+        // SAFETY: live job, for every call below.
+        unsafe {
+            vf_generate_cancel(job);
+            vf_generate_cancel(job);
+        }
+        let s = reply(unsafe { vf_generate_summary(job) });
+        let ok = &s["ok"];
+        assert!(ok.is_object(), "{s}");
+        assert_eq!(ok["candidates"].as_array().map(Vec::len), Some(1), "{s}");
+        let c = &ok["candidates"][0];
+        assert_eq!(c["converged"], false);
+        let at = c["stopped_at"].as_u64().expect("stopped_at");
+        assert!(at >= 20 && at < 400, "{c}");
+        assert!(c["kept_iteration"].as_u64().is_some_and(|k| k >= 1 && k <= at));
+        assert!(c["mass_g"].as_f64().is_some_and(|m| m > 0.0) && c["triangles"].as_u64().is_some_and(|t| t > 0));
+        assert!(ok["warnings"].as_array().unwrap().iter().any(|w| w.as_str().is_some_and(|w| w.starts_with("stopped at iteration"))), "{s}");
+        let p = reply(unsafe { vf_generate_progress(job) });
+        assert_eq!(p["running"], false);
+        assert_eq!(p["cancelled"], true);
+        // The surface of the kept candidate, best and by index.
+        for pick in [-1, 0] {
+            let m = unsafe { vf_generate_mesh(job, pick) };
+            assert!(!m.is_null());
+            // SAFETY: a live mesh from this library.
+            let head = unsafe { &*m };
+            assert!(head.vertex_count > 0 && head.index_count > 0 && head.index_count % 3 == 0);
+            unsafe { vf_generate_mesh_free(m) };
+        }
+        // Repeated asks after the stop are safe and answer the same.
+        unsafe { vf_generate_cancel(job) };
+        let again = reply(unsafe { vf_generate_summary(job) });
+        assert_eq!(again["ok"]["candidates"][0]["stopped_at"], c["stopped_at"]);
+        let full = reply(unsafe { vf_generate_outcome(job) });
+        assert_eq!(full["ok"]["stopped"], true);
+        unsafe { vf_generate_free(job) };
+    }
+
+    /// A stop before any solid formed has nothing to keep: `cancelled`, and no surface.
+    #[test]
+    fn a_job_stopped_at_once_answers_cancelled() {
+        let job = start();
+        // SAFETY: live job, for every call below.
+        unsafe {
+            vf_generate_cancel(job);
+            vf_generate_cancel(job);
+        }
+        let o = reply(unsafe { vf_generate_outcome(job) });
+        assert_eq!(o["error"], "cancelled", "{o}");
+        assert!(unsafe { vf_generate_mesh(job, -1) }.is_null());
+        unsafe {
+            vf_generate_cancel(job);
+            vf_generate_free(job);
+        }
     }
 }

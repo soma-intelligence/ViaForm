@@ -111,6 +111,11 @@ final class CADEngine: @unchecked Sendable {
 
     deinit { sc_session_free(raw) }
 
+    /// Runs `body` with the session to itself, on any thread: a worker that hands the session to
+    /// another engine (the BOM's project save and open) holds it for the whole call, and the main
+    /// thread waits for it only if it touches the design meanwhile.
+    func withSession<T>(_ body: (OpaquePointer) throws -> T) rethrows -> T { try locked(body) }
+
     /// Runs `body` with the session to itself.
     private func locked<T>(_ body: (OpaquePointer) throws -> T) rethrows -> T {
         lock.lock()

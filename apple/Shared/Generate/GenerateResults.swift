@@ -22,6 +22,9 @@ struct GenerateResults: View {
                         Spacer()
                         FeasibleBadge(feasible: c.feasible)
                     }
+                    if !c.converged {
+                        StoppedLine(candidate: c)
+                    }
                     if model.stale {
                         Label("The setup changed since this run. Build uses the study as it was run.", systemImage: "exclamationmark.circle")
                             .font(VFFont.row)

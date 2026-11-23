@@ -2,7 +2,8 @@ import SwiftUI
 
 // The Robot stage's safety bar (FRONTEND-SPEC 5 `SafetyBar`, 7.9, R-8), shared by the Mac and
 // the iPad: a real e-stop button, the speed cap, the torque limit, the fence and the link state.
-// Limits read from `RobotSafety`; with no robot they read "Not applied, no robot".
+// Limits read from `RobotSafety`; with no robot they read "Not applied, no robot". With a link
+// they are the caps the gate sends with every command.
 
 /// Always in view wherever motion can start.
 struct SafetyBar: View {
@@ -63,7 +64,7 @@ struct SafetyBar: View {
             VFStatusDot(status: safety.connected ? .current : .empty,
                         reason: safety.connected ? String(localized: "Robot connected")
                                                  : String(localized: "No robot connected"))
-            Text(safety.connected ? "Connected" : "No robot connected")
+            Text(safety.linkKind.map { String(localized: "\($0.title), connected") } ?? String(localized: "No robot connected"))
                 .font(VFFont.small)
                 .foregroundStyle(theme.inkSecondary)
         }

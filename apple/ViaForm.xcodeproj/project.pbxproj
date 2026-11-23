@@ -54,6 +54,7 @@
 		41D9885A228D29746933D829 /* Shaders.metal in Sources */ = {isa = PBXBuildFile; fileRef = D27D89BE87A01C0D5E2FDD5A /* Shaders.metal */; };
 		42BD4E4F4A31B489447A5D16 /* DeskSamples.swift in Sources */ = {isa = PBXBuildFile; fileRef = 158F7142E1B8372A403569DA /* DeskSamples.swift */; };
 		43A0CDB29EEE0447E55D3914 /* GenerateProject.swift in Sources */ = {isa = PBXBuildFile; fileRef = 87277DE0D5BC3B1308EEE679 /* GenerateProject.swift */; };
+		43A870CB4B800FCA1890D433 /* RobotControls.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4143B3D1CFF69171214AFA1C /* RobotControls.swift */; };
 		44792EAF51683E6E735D7001 /* MotionStudyPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 19150837D68FE717C60EC679 /* MotionStudyPanel.swift */; };
 		452206F39BC5AE7468D8F9C5 /* FlowModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A395958B23240FC0BA75D3E1 /* FlowModel.swift */; };
 		455205CE334BD19D66A463AE /* SimModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0ECB311A23317BC6EF253428 /* SimModel.swift */; };
@@ -74,6 +75,7 @@
 		58477E389B51B128FE25FB7A /* StageLeaves.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1D55A82506873CC48785050D /* StageLeaves.swift */; };
 		5947F5D76B9869CBCD3DCBBE /* ViewCube.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3A8178DF7AA3953AC62B3368 /* ViewCube.swift */; };
 		5B23C20D2850D1010E987552 /* AnchorLayout.swift in Sources */ = {isa = PBXBuildFile; fileRef = B2D59B958F7312691F78BF6B /* AnchorLayout.swift */; };
+		5C3C24A405338A23129B4DFA /* ActionTiming.swift in Sources */ = {isa = PBXBuildFile; fileRef = C01E5584047833E806519E42 /* ActionTiming.swift */; };
 		5CD25CEBAA72E372201BF803 /* PCBModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 473F2F992C7761C7C9AD43FD /* PCBModel.swift */; };
 		5E21203224CEE2558532413E /* Shaders.metal in Sources */ = {isa = PBXBuildFile; fileRef = D27D89BE87A01C0D5E2FDD5A /* Shaders.metal */; };
 		5E702E91D6071985364AEBDE /* ThemeTokens.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4E5F62431967C8A466E2EEB3 /* ThemeTokens.swift */; };
@@ -97,6 +99,7 @@
 		774C7B24030D74AAE42A9A30 /* GenerateProject.swift in Sources */ = {isa = PBXBuildFile; fileRef = 87277DE0D5BC3B1308EEE679 /* GenerateProject.swift */; };
 		7795ECB74DEFAF895DA3AB93 /* PhysService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55521679B4C4AE4DA2FA5599 /* PhysService.swift */; };
 		7845F1B66C2771ACB258D95B /* ElectronicsOverlays.swift in Sources */ = {isa = PBXBuildFile; fileRef = E325639CD6C7A3355D3C095C /* ElectronicsOverlays.swift */; };
+		7945EB117E9AA7AAC53A7539 /* RobotLink.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DC0B8AE960CD5E771B6E323 /* RobotLink.swift */; };
 		79F2C41C22C219AD3E396B05 /* ThemeTokens.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4E5F62431967C8A466E2EEB3 /* ThemeTokens.swift */; };
 		7A0CE3B249B415CE959A23A4 /* ProjectWindow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F05F4DB6823381A05553073 /* ProjectWindow.swift */; };
 		7A48C2AE297A6F18F5DE4019 /* PipelineBar.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0CCAA779364E45A7A3E82397 /* PipelineBar.swift */; };
@@ -110,6 +113,7 @@
 		808F4CD6EDA5C16B67ADE197 /* Workspace.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8B77851FE80D93BC4A977096 /* Workspace.swift */; };
 		810D3E272FC6731CCA5703C4 /* DesignInteractions.swift in Sources */ = {isa = PBXBuildFile; fileRef = AC71EA0E9ACCEFAD1EEB0E21 /* DesignInteractions.swift */; };
 		813C9AED6DAA470BE4552921 /* LibraryModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 70F287175383DC60FE643E34 /* LibraryModel.swift */; };
+		81B69F785BB279755C7FF76A /* RobotGateTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D3B79DFABB837A14D97432DC /* RobotGateTests.swift */; };
 		8322210442B1B3EEADEB1B15 /* SimEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 67E99099D00DED4DA1E6373D /* SimEngine.swift */; };
 		8324966B3F96409C3DC2871B /* Controls.swift in Sources */ = {isa = PBXBuildFile; fileRef = CF8E0AB058DD54C9C4F95ED4 /* Controls.swift */; };
 		8468D289D48D1B432FC0FBFE /* Viewport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3E47F1ACDD894F23C4C24EB5 /* Viewport.swift */; };
@@ -117,6 +121,7 @@
 		84838198DA0E65F9CBCECD87 /* CommonViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3AF8D32DFF65087A948E5F3E /* CommonViews.swift */; };
 		8494EDF052033A32736DA2CD /* DeskCommands.swift in Sources */ = {isa = PBXBuildFile; fileRef = BBE5A9FD6E7926576EAF8115 /* DeskCommands.swift */; };
 		88484E3D33F36FF509846E0E /* ThemeBridges.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3C8952B94A6BD068EA734518 /* ThemeBridges.swift */; };
+		88AA1B027D873DF12C8C849E /* BomSelfTest.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6FCD678DF2B15800B741BEB1 /* BomSelfTest.swift */; };
 		894268853E1C683D84B0CCAC /* ToolIcons in Resources */ = {isa = PBXBuildFile; fileRef = 812579DC75498AA5D6AB6F9A /* ToolIcons */; };
 		89B3159D830DE25DADF25FA4 /* DesignOverlays.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE05A3B1F7FF42A5FBB5397F /* DesignOverlays.swift */; };
 		8A9FD46674AE39C280D95ACF /* ThemeSwiftUI.swift in Sources */ = {isa = PBXBuildFile; fileRef = 11EF93C933E6DDAE430B1887 /* ThemeSwiftUI.swift */; };
@@ -155,6 +160,7 @@
 		B2C2F93881D1428FDAE6F2DD /* AssembleRibbon.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49E4EB1E7224E801CD93B176 /* AssembleRibbon.swift */; };
 		B3715CBEAB9163413A0E107E /* GenerateView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BF6F7F2C2210DB9F6EA962AC /* GenerateView.swift */; };
 		B3C9EC5BAE5C5154AA50EC60 /* DesignHandleView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C41AA0C5BFAF525D50C1171A /* DesignHandleView.swift */; };
+		B51C275EF9C017DEE54172D4 /* BomSelfTest.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6FCD678DF2B15800B741BEB1 /* BomSelfTest.swift */; };
 		B528E1EB9750966F89CA877E /* StageScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = 82C736CF5517A6097BC26B67 /* StageScreen.swift */; };
 		B5544FF71536C6613615D198 /* AssembleOutline.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0C81CE6BDCE7075F2D6E9C2 /* AssembleOutline.swift */; };
 		B5742B7C66065580FB5DF417 /* FlowReporting.swift in Sources */ = {isa = PBXBuildFile; fileRef = 81C44FC197697E742BFD9D38 /* FlowReporting.swift */; };
@@ -180,6 +186,7 @@
 		CCDF0557F2A1E03C6D1F3398 /* AssembleCanvas.swift in Sources */ = {isa = PBXBuildFile; fileRef = D54D03BA238A53AEC7C1B5BB /* AssembleCanvas.swift */; };
 		CCFC80DB3700E742762FE545 /* SafetyBar.swift in Sources */ = {isa = PBXBuildFile; fileRef = EBAFC253B7A42923CFA29A47 /* SafetyBar.swift */; };
 		CE06B5F275D92DBDF932234E /* GenerateLive.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6B939933A9E0F62B0A7AE880 /* GenerateLive.swift */; };
+		CF65BDCC1795CCA8C3E92E09 /* RobotControls.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4143B3D1CFF69171214AFA1C /* RobotControls.swift */; };
 		D080A405F4FC979B1884E382 /* PCBPanels.swift in Sources */ = {isa = PBXBuildFile; fileRef = C81FE9B08BAC2FE15C4782C9 /* PCBPanels.swift */; };
 		D175689D645D1D3D294F3048 /* GenerateModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4B73B87698BA8F6AB6B165B0 /* GenerateModel.swift */; };
 		D288DE625B05360C4D90FAD0 /* VFFormat.swift in Sources */ = {isa = PBXBuildFile; fileRef = 27BF97E5EDE4A9B8609D480D /* VFFormat.swift */; };
@@ -199,6 +206,7 @@
 		E048DA4B68FA69EE27756D5A /* ThemeContrastTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8B9EC32AFA0404543AD23DB8 /* ThemeContrastTests.swift */; };
 		E07A5D36F35B92ACD5588DEB /* DesignSnapshot.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6C8F56EE92D2D96DA8018CEB /* DesignSnapshot.swift */; };
 		E1736518CE2AED30D51FE174 /* ThemeIcons.swift in Sources */ = {isa = PBXBuildFile; fileRef = 09C1CC6ED285A89FDDD8D4BD /* ThemeIcons.swift */; };
+		E4107720390F96A31C4C0C70 /* RobotLink.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DC0B8AE960CD5E771B6E323 /* RobotLink.swift */; };
 		E752D1AE69D6B00D26043C74 /* PCBLink.swift in Sources */ = {isa = PBXBuildFile; fileRef = B937F795CB3634310244CC31 /* PCBLink.swift */; };
 		E7B21467520187C902468296 /* TouchTools.swift in Sources */ = {isa = PBXBuildFile; fileRef = D3348CCBF6EC8201DB8C834A /* TouchTools.swift */; };
 		EB90358ADA7188FD24C3AE48 /* SimEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 67E99099D00DED4DA1E6373D /* SimEngine.swift */; };
@@ -216,7 +224,18 @@
 		FEB29680EA676AFB8813BC97 /* StageScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = 82C736CF5517A6097BC26B67 /* StageScreen.swift */; };
 		FEDF94B77466C586A213ECAB /* FlowReporting.swift in Sources */ = {isa = PBXBuildFile; fileRef = 81C44FC197697E742BFD9D38 /* FlowReporting.swift */; };
 		FF0E13BDCDAD76FAAD39B097 /* PCBCanvas.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1D1F18AE0D526C526FF07AB4 /* PCBCanvas.swift */; };
+		FFF31539CE5E1346EAA75ADC /* ActionTiming.swift in Sources */ = {isa = PBXBuildFile; fileRef = C01E5584047833E806519E42 /* ActionTiming.swift */; };
 /* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		DCCE7985094A835C82C8AA31 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 946B487ED5E502A6144629F8 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 89CABD020BEC8A8CBBD2672A;
+			remoteInfo = "ViaForm-macOS";
+		};
+/* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
 		00ACB60D5FFC225C8B39DAED /* RobotStage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RobotStage.swift; sourceTree = "<group>"; };
@@ -235,6 +254,7 @@
 		158F7142E1B8372A403569DA /* DeskSamples.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeskSamples.swift; sourceTree = "<group>"; };
 		17DA5977B196459CB15CA2C8 /* BomSnapshot.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BomSnapshot.swift; sourceTree = "<group>"; };
 		19150837D68FE717C60EC679 /* MotionStudyPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MotionStudyPanel.swift; sourceTree = "<group>"; };
+		1B30AC6D67986DF424F89675 /* ViaFormRobotTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = ViaFormRobotTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		1D1F18AE0D526C526FF07AB4 /* PCBCanvas.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PCBCanvas.swift; sourceTree = "<group>"; };
 		1D55A82506873CC48785050D /* StageLeaves.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StageLeaves.swift; sourceTree = "<group>"; };
 		1E5D5350203B9FB4524480A8 /* BomView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BomView.swift; sourceTree = "<group>"; };
@@ -256,6 +276,7 @@
 		3C8952B94A6BD068EA734518 /* ThemeBridges.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ThemeBridges.swift; sourceTree = "<group>"; };
 		3D4FD2C46FE16D31DB60B3BB /* TouchSimulation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TouchSimulation.swift; sourceTree = "<group>"; };
 		3E47F1ACDD894F23C4C24EB5 /* Viewport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Viewport.swift; sourceTree = "<group>"; };
+		4143B3D1CFF69171214AFA1C /* RobotControls.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RobotControls.swift; sourceTree = "<group>"; };
 		449F6407A04E701EC32C49EC /* ArmSimModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ArmSimModel.swift; sourceTree = "<group>"; };
 		466A997B860A8133F0D40F16 /* OrbitCamera.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OrbitCamera.swift; sourceTree = "<group>"; };
 		4703D95C4A9E63AA156A562F /* DeskRootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeskRootView.swift; sourceTree = "<group>"; };
@@ -282,6 +303,7 @@
 		6CD8D4940B52AE54BF44CF8B /* GenerateSelfTest.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GenerateSelfTest.swift; sourceTree = "<group>"; };
 		6CEDFFDD0B0AD9CE8D7E2D74 /* DeskPanels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeskPanels.swift; sourceTree = "<group>"; };
 		6EEE6EBA2A05CA8304BE1099 /* Feedback.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Feedback.swift; sourceTree = "<group>"; };
+		6FCD678DF2B15800B741BEB1 /* BomSelfTest.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BomSelfTest.swift; sourceTree = "<group>"; };
 		70F287175383DC60FE643E34 /* LibraryModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LibraryModel.swift; sourceTree = "<group>"; };
 		745D83EC2D8B367AF2C4D43E /* Localizable.xcstrings */ = {isa = PBXFileReference; lastKnownFileType = text.json.xcstrings; path = Localizable.xcstrings; sourceTree = "<group>"; };
 		77AFC3A2C7D25A9CCBE7322B /* BoardLink.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BoardLink.swift; sourceTree = "<group>"; };
@@ -297,6 +319,7 @@
 		8B77851FE80D93BC4A977096 /* Workspace.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Workspace.swift; sourceTree = "<group>"; };
 		8B9EC32AFA0404543AD23DB8 /* ThemeContrastTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ThemeContrastTests.swift; sourceTree = "<group>"; };
 		8CF96691C3875966F13A13B2 /* WorkspaceDropdown.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkspaceDropdown.swift; sourceTree = "<group>"; };
+		8DC0B8AE960CD5E771B6E323 /* RobotLink.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RobotLink.swift; sourceTree = "<group>"; };
 		8E7A7342C5CF91D1D030B88A /* SimulationView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SimulationView.swift; sourceTree = "<group>"; };
 		8F4CB49F555B9AB7E2A36188 /* Renderer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Renderer.swift; sourceTree = "<group>"; };
 		91C036D6015EFE2DDF1E3A0F /* PCBEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PCBEngine.swift; sourceTree = "<group>"; };
@@ -320,6 +343,7 @@
 		BBE5A9FD6E7926576EAF8115 /* DeskCommands.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeskCommands.swift; sourceTree = "<group>"; };
 		BCCC7ECED1451E6038404754 /* ViaFormApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ViaFormApp.swift; sourceTree = "<group>"; };
 		BF6F7F2C2210DB9F6EA962AC /* GenerateView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GenerateView.swift; sourceTree = "<group>"; };
+		C01E5584047833E806519E42 /* ActionTiming.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActionTiming.swift; sourceTree = "<group>"; };
 		C35ABFFBB4159AA7329E6AEC /* AssembleHand.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AssembleHand.swift; sourceTree = "<group>"; };
 		C41AA0C5BFAF525D50C1171A /* DesignHandleView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DesignHandleView.swift; sourceTree = "<group>"; };
 		C56835A90545A792F505BDF9 /* FileActions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FileActions.swift; sourceTree = "<group>"; };
@@ -330,6 +354,7 @@
 		D08BF28BFF34B87DB2D1D583 /* TouchPCBView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TouchPCBView.swift; sourceTree = "<group>"; };
 		D27D89BE87A01C0D5E2FDD5A /* Shaders.metal */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.metal; path = Shaders.metal; sourceTree = "<group>"; };
 		D3348CCBF6EC8201DB8C834A /* TouchTools.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TouchTools.swift; sourceTree = "<group>"; };
+		D3B79DFABB837A14D97432DC /* RobotGateTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RobotGateTests.swift; sourceTree = "<group>"; };
 		D54D03BA238A53AEC7C1B5BB /* AssembleCanvas.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AssembleCanvas.swift; sourceTree = "<group>"; };
 		DF0007C33A406D97992E697F /* SelfTest.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SelfTest.swift; sourceTree = "<group>"; };
 		E1C6E78CCAA984C21A0C131E /* BomModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BomModel.swift; sourceTree = "<group>"; };
@@ -493,6 +518,7 @@
 			children = (
 				2E2BB86202B52F0837C52025 /* Desk */,
 				E357811CE99E0F92EDD9814B /* Resources */,
+				F2E9A51B2CE4C1A6F027CA1A /* RobotTests */,
 				A93855E50AEA7FDF9D07E667 /* Shared */,
 				42FD655DD067268DD2A8F842 /* Touch */,
 				D7432B8164CE50942F527BB3 /* Products */,
@@ -550,6 +576,8 @@
 		C6A3F4054C18844DD030AC3F /* Robot */ = {
 			isa = PBXGroup;
 			children = (
+				4143B3D1CFF69171214AFA1C /* RobotControls.swift */,
+				8DC0B8AE960CD5E771B6E323 /* RobotLink.swift */,
 				65085BBD229CB770B45F114C /* RobotSafety.swift */,
 			);
 			path = Robot;
@@ -572,6 +600,7 @@
 			children = (
 				9E8E7AEF7C51418121D1A24C /* ViaForm-iOS.app */,
 				32072027D9206A643F2BFB1B /* ViaForm-macOS.app */,
+				1B30AC6D67986DF424F89675 /* ViaFormRobotTests.xctest */,
 				ACC0CDE5BDE79E39F0433B99 /* ViaFormThemeTests.xctest */,
 			);
 			name = Products;
@@ -634,17 +663,45 @@
 		E8E91DF040A9B535135FF021 /* Bom */ = {
 			isa = PBXGroup;
 			children = (
+				C01E5584047833E806519E42 /* ActionTiming.swift */,
 				FE87EDD189629AF434131B00 /* BomEngine.swift */,
 				E1C6E78CCAA984C21A0C131E /* BomModel.swift */,
+				6FCD678DF2B15800B741BEB1 /* BomSelfTest.swift */,
 				17DA5977B196459CB15CA2C8 /* BomSnapshot.swift */,
 				1E5D5350203B9FB4524480A8 /* BomView.swift */,
 			);
 			path = Bom;
 			sourceTree = "<group>";
 		};
+		F2E9A51B2CE4C1A6F027CA1A /* RobotTests */ = {
+			isa = PBXGroup;
+			children = (
+				D3B79DFABB837A14D97432DC /* RobotGateTests.swift */,
+			);
+			path = RobotTests;
+			sourceTree = "<group>";
+		};
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
+		19ADEE9A4DD5E1B931D3FFCE /* ViaFormRobotTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = E3183CC64CCC662EE005CE94 /* Build configuration list for PBXNativeTarget "ViaFormRobotTests" */;
+			buildPhases = (
+				30068B91C65B26E0D7F6F8EC /* Sources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				AC3F89C5BFB37CB857E7014A /* PBXTargetDependency */,
+			);
+			name = ViaFormRobotTests;
+			packageProductDependencies = (
+			);
+			productName = ViaFormRobotTests;
+			productReference = 1B30AC6D67986DF424F89675 /* ViaFormRobotTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
 		89CABD020BEC8A8CBBD2672A /* ViaForm-macOS */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = 286EE6E30F8BA86B8863E53D /* Build configuration list for PBXNativeTarget "ViaForm-macOS" */;
@@ -727,6 +784,7 @@
 				EDFF17E4BFCF3D4ADA5A317B /* ViaForm-iOS */,
 				89CABD020BEC8A8CBBD2672A /* ViaForm-macOS */,
 				DC8D1193097FCD2EF7496F74 /* ViaFormThemeTests */,
+				19ADEE9A4DD5E1B931D3FFCE /* ViaFormRobotTests */,
 			);
 		};
 /* End PBXProject section */
@@ -759,6 +817,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				5C3C24A405338A23129B4DFA /* ActionTiming.swift in Sources */,
 				5B23C20D2850D1010E987552 /* AnchorLayout.swift in Sources */,
 				45F0E6435A6E3B762DA4F125 /* ArmSimModel.swift in Sources */,
 				4F76E648E2FF890B7659A319 /* ArmSimulationView.swift in Sources */,
@@ -773,6 +832,7 @@
 				DD2FA4C6042B2644D1BDECAD /* BoardLink.swift in Sources */,
 				997DA648626DB8408AEB1EA0 /* BomEngine.swift in Sources */,
 				69925C02D3FA537217239D41 /* BomModel.swift in Sources */,
+				88AA1B027D873DF12C8C849E /* BomSelfTest.swift in Sources */,
 				AC078529EF3F007CED72EE0B /* BomSnapshot.swift in Sources */,
 				66D3C2AFE3674E704DE7C8A7 /* BomView.swift in Sources */,
 				0F74FDFC8AF32599E4450DFD /* CommandIcon.swift in Sources */,
@@ -821,6 +881,8 @@
 				AD976AE3DFB40817F035D4D5 /* Picking.swift in Sources */,
 				1216BB38EE3DD4D764E3391E /* ProjectFiles.swift in Sources */,
 				62A9140FC49EC507611B0744 /* Renderer.swift in Sources */,
+				43A870CB4B800FCA1890D433 /* RobotControls.swift in Sources */,
+				E4107720390F96A31C4C0C70 /* RobotLink.swift in Sources */,
 				0543BE7177CBE3FC85E571D6 /* RobotSafety.swift in Sources */,
 				1EEED8435B924ED07C03AEDA /* SafetyBar.swift in Sources */,
 				F752B643B9D84441CE8ECF3B /* SelfTest.swift in Sources */,
@@ -857,6 +919,14 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		30068B91C65B26E0D7F6F8EC /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				81B69F785BB279755C7FF76A /* RobotGateTests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		6237626F774226FDC19AA67E /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -870,6 +940,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				FFF31539CE5E1346EAA75ADC /* ActionTiming.swift in Sources */,
 				0C60ABAA25C1A07FAE590D57 /* AnchorLayout.swift in Sources */,
 				B64EDB7680AA12AC9BE7004D /* ArmSimModel.swift in Sources */,
 				EC49288D9603B709FCD08FA5 /* ArmSimulationView.swift in Sources */,
@@ -885,6 +956,7 @@
 				1EFE7E99307E806B3F8EDC3C /* BoardLink.swift in Sources */,
 				2B46C834278D5E319F225141 /* BomEngine.swift in Sources */,
 				CA69B2EDAA55DC2C38FA8620 /* BomModel.swift in Sources */,
+				B51C275EF9C017DEE54172D4 /* BomSelfTest.swift in Sources */,
 				8B9AF8C706C97D9970BF2D55 /* BomSnapshot.swift in Sources */,
 				6B399A93AACBD2BBC530BA8A /* BomView.swift in Sources */,
 				5433BD75576A4347947609E2 /* BrowserSidebar.swift in Sources */,
@@ -947,6 +1019,8 @@
 				ABB33B6E4704EABC8013EA36 /* ProjectFiles.swift in Sources */,
 				7A0CE3B249B415CE959A23A4 /* ProjectWindow.swift in Sources */,
 				6A0908119113F7C48838249C /* Renderer.swift in Sources */,
+				CF65BDCC1795CCA8C3E92E09 /* RobotControls.swift in Sources */,
+				7945EB117E9AA7AAC53A7539 /* RobotLink.swift in Sources */,
 				547CEAD638381918CA515B94 /* RobotSafety.swift in Sources */,
 				11DAAEFA2967528EDDB2F725 /* RobotStage.swift in Sources */,
 				CCFC80DB3700E742762FE545 /* SafetyBar.swift in Sources */,
@@ -981,7 +1055,36 @@
 		};
 /* End PBXSourcesBuildPhase section */
 
+/* Begin PBXTargetDependency section */
+		AC3F89C5BFB37CB857E7014A /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 89CABD020BEC8A8CBBD2672A /* ViaForm-macOS */;
+			targetProxy = DCCE7985094A835C82C8AA31 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
 /* Begin XCBuildConfiguration section */
+		0A2D07DB49ADC3E5D9AD24B1 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ARCHS = arm64;
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_IDENTITY = "-";
+				COMBINE_HIDPI_IMAGES = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+					"@loader_path/../Frameworks",
+				);
+				OTHER_LDFLAGS = (
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = me.somalabs.viaform.robottests;
+				SDKROOT = macosx;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/ViaForm.app/Contents/MacOS/ViaForm";
+			};
+			name = Release;
+		};
 		1610EA173D8735FD644C9642 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -1056,6 +1159,27 @@
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 				SWIFT_STRICT_CONCURRENCY = minimal;
 				SWIFT_VERSION = 6.0;
+			};
+			name = Debug;
+		};
+		1C9364943E7073E0844F2324 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ARCHS = arm64;
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_IDENTITY = "-";
+				COMBINE_HIDPI_IMAGES = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+					"@loader_path/../Frameworks",
+				);
+				OTHER_LDFLAGS = (
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = me.somalabs.viaform.robottests;
+				SDKROOT = macosx;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/ViaForm.app/Contents/MacOS/ViaForm";
 			};
 			name = Debug;
 		};
@@ -1296,6 +1420,15 @@
 			buildConfigurations = (
 				1610EA173D8735FD644C9642 /* Debug */,
 				31B4FDE8355B350A1F764AB0 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		E3183CC64CCC662EE005CE94 /* Build configuration list for PBXNativeTarget "ViaFormRobotTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				1C9364943E7073E0844F2324 /* Debug */,
+				0A2D07DB49ADC3E5D9AD24B1 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Debug;

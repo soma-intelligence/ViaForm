@@ -55,14 +55,16 @@ struct GenerateView: View {
                               set: { if $0 == nil { model.stopRequested = false } }))
     }
 
-    /// Stopping a run that has solved for a while asks first (FRONTEND-SPEC 6.4).
+    /// Stopping a run that has solved for a while asks first (FRONTEND-SPEC 6.4): keep the best
+    /// design so far (the default), discard the run, or keep it running (Cancel).
     private var stopRequest: ConfirmRequest {
         ConfirmRequest(
             title: String(localized: "Stop the study?"),
-            message: String(localized: "It has been solving for \(readableDuration(model.runAge)). Its candidates are not kept; the last results stay."),
-            verb: String(localized: "Stop"),
-            destructive: true,
+            message: String(localized: "It has been solving for \(readableDuration(model.runAge)). Keep its best design so far as a candidate (not converged), or discard the run. Cancel keeps it running."),
+            verb: String(localized: "Keep Best So Far"),
+            destructive: false,
             perform: { model.cancel() },
+            alternate: (title: String(localized: "Discard"), perform: { model.discard() }),
             cancel: { model.stopRequested = false })
     }
 
@@ -203,10 +205,14 @@ struct GenerateRunBar: View {
         HStack(spacing: VFSpace.l) {
             VStack(alignment: .leading, spacing: VFSpace.xxs) {
                 if model.running {
-                    Button(role: .destructive) { model.requestStop() } label: { Label("Stop", systemImage: "stop.fill") }
-                        .buttonStyle(.vfSecondary)
+                    Button(role: .destructive) { model.requestStop() } label: {
+                        Label(model.stopping ? "Stopping…" : "Stop", systemImage: "stop.fill")
+                    }
+                        .buttonStyle(.vfSecondary(loading: model.stopping))
                         .fixedSize()
-                        .help("Stop the study. Its candidates are not kept.")
+                        .vfDisabled(model.stopping, reason: String(localized: "Keeping the best design so far."))
+                        .help("Stop the study and keep its best design so far (Command-.). After 30 s it asks first.")
+                        .accessibilityHint(Text("Stops the study and keeps its best design so far as a candidate"))
                 } else {
                     Button { model.run() } label: { Label("Run", systemImage: model.outcome == nil ? "play.fill" : "arrow.clockwise") }
                         .buttonStyle(.vfPrimary)
@@ -357,9 +363,12 @@ struct CandidateStrip: View {
     static func label(_ c: StudyCandidate, index i: Int, best: Bool) -> String {
         let mass = VFFormat.mass(c.massG), sf = formatFactor(c.analysis.safetyFactor)
         let fit = c.feasible ? String(localized: "within the limits") : String(localized: "over a limit")
-        return best
+        let base = best
             ? String(localized: "Candidate \(i + 1), best, \(mass), safety factor \(sf), \(fit)")
             : String(localized: "Candidate \(i + 1), \(mass), safety factor \(sf), \(fit)")
+        guard !c.converged else { return base }
+        let stop = c.stoppedAt.map { String(localized: "stopped at iteration \($0), not converged") } ?? String(localized: "not converged")
+        return base + ", " + stop
     }
 }
 
@@ -407,6 +416,9 @@ struct CandidateCard: View {
                 .font(VFFont.small)
                 .foregroundStyle(theme.inkSecondary)
                 .lineLimit(1)
+            if !candidate.converged {
+                StoppedLine(candidate: candidate, compact: compact)
+            }
         }
         .frame(width: width)
         .padding(VFSpace.m)
@@ -432,6 +444,47 @@ struct FeasibleBadge: View {
             .padding(.horizontal, VFSpace.s).padding(.vertical, VFSpace.xxs)
             .foregroundStyle(tint)
             .background(tint.opacity(0.15), in: Capsule())
+            .accessibilityElement(children: .combine)
+    }
+}
+
+/// A stopped run's kept design: "Stopped at iteration N" and a "Not converged" badge, in words
+/// and a shape, never the colour alone.
+struct StoppedLine: View {
+    @Environment(\.viaFormTheme) private var theme
+    let candidate: StudyCandidate
+    var compact = false
+
+    var body: some View {
+        let layout = compact ? AnyLayout(VStackLayout(alignment: .leading, spacing: VFSpace.xxs)) : AnyLayout(HStackLayout(spacing: VFSpace.xs))
+        layout {
+            if let n = candidate.stoppedAt {
+                Text("Stopped at iteration \(n)")
+                    .font(VFFont.micro)
+                    .foregroundStyle(theme.inkSecondary)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.8)
+            }
+            if !compact { Spacer(minLength: 0) }
+            NotConvergedBadge()
+        }
+        .accessibilityElement(children: .combine)
+    }
+}
+
+/// The badge on a candidate whose optimisation was stopped before it settled.
+struct NotConvergedBadge: View {
+    @Environment(\.viaFormTheme) private var theme
+
+    var body: some View {
+        Label(String(localized: "Not converged"), systemImage: "hourglass.bottomhalf.filled")
+            .labelStyle(.titleAndIcon)
+            .font(VFFont.micro)
+            .lineLimit(1)
+            .padding(.horizontal, VFSpace.s).padding(.vertical, VFSpace.xxs)
+            .foregroundStyle(theme.warning)
+            .background(theme.warning.opacity(0.15), in: Capsule())
+            .help("The run was stopped before this design settled. Run again to let it converge.")
             .accessibilityElement(children: .combine)
     }
 }
