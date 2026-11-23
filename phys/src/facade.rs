@@ -3,7 +3,9 @@
 //! `{"ok": ...}` or `{"error", "code"}` with the codes of [`crate::error`].
 //!
 //! Ops:
-//! - `world_new` `{builtin | model | drone | assembly + scenario, settings, actuator, ground}`:
+//! - `world_new` `{builtin | model | drone | assembly + scenario, settings, actuator, ground,
+//!   engine}` (`engine` "phys", the default, or "mujoco", which the C bridge routes to
+//!   viaform-mujoco):
 //!   the current world. `builtin` is `so101_arm` or `hand5`; `model` a kin model; `actuator`
 //!   the kind for every motor (default an STS3215 class servo); `drone` a sim `QuadParams`
 //!   (plus `state`, `power`); `assembly` + `scenario` load a scenario (alias `scenario_load`).
@@ -137,6 +139,14 @@ impl Phys {
     }
 
     fn world_new(&mut self, p: &Value) -> Result<Value, PhysError> {
+        // `engine`: "phys" (default) or "mujoco"; MuJoCo runs in viaform-mujoco, which the C
+        // bridge selects before this facade sees the call.
+        let engine = p.get("engine").and_then(Value::as_str).or_else(|| p.get("scenario").and_then(|s| s.get("engine")).and_then(Value::as_str)).unwrap_or("phys");
+        match engine {
+            "phys" => {}
+            "mujoco" => return Err(PhysError::new(crate::error::codes::ENGINE_UNAVAILABLE, "engine mujoco runs through viaform-mujoco (the bridge selects it); this facade is phys")),
+            other => return Err(params(format!("engine {other}: phys or mujoco"))),
+        }
         let settings: Settings = match p.get("settings") {
             Some(s) => serde_json::from_value(s.clone()).map_err(|e| params(format!("settings: {e}")))?,
             None => Settings::default(),

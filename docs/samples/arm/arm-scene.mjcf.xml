@@ -1,0 +1,90 @@
+<!-- Exported by viaform-mujoco from a viaform-phys model. SI units, Z up. -->
+<mujoco model="arm">
+  <compiler angle="radian" inertiafromgeom="false" boundmass="1e-6" boundinertia="1e-12" balanceinertia="true"/>
+  <option timestep="0.001" gravity="0 0 -9.81" integrator="implicitfast" cone="elliptic"/>
+  <default>
+    <joint solreflimit="0.002 1"/>
+    <geom contype="0" conaffinity="0" condim="3" solref="0.02 1" rgba="0.7 0.72 0.75 1"/>
+    <equality solref="0.002 1"/>
+  </default>
+  <worldbody>
+    <light pos="0 0 3" dir="0 0 -1" directional="true"/>
+    <geom name="ground" type="plane" size="0 0 1" friction="0.8 0.005 0.0001"/>
+    <geom name="table" type="box" size="0.4 0.3 0.015" pos="0 0 0.035" friction="0.8 0.005 0.0001"/>
+    <body name="base" pos="0 0 0.05">
+      <inertial pos="0 0 0.02" mass="0.25" fullinertia="0.00024166666666666664 0.00024166666666666664 0.0004166666666666666 0 0 0"/>
+      <geom name="base" type="box" size="0.05 0.05 0.02" pos="0 0 0.02" friction="0.8 0.005 0.0001"/>
+      <body name="shoulder" pos="0 0 0.04">
+        <inertial pos="0 0 0.025" mass="0.06" fullinertia="0.000024999999999999998 0.000024999999999999998 0.000024999999999999998 0 0 0"/>
+        <joint name="shoulder_pan" type="hinge" axis="0 0 1" limited="true" range="-1.9198621771937625 1.9198621771937625" damping="0.02" frictionloss="0.05" armature="0.00119025"/>
+        <geom name="shoulder" type="box" size="0.025 0.025 0.025" pos="0 0 0.025" friction="0.8 0.005 0.0001"/>
+        <body name="upper_arm" pos="0 0 0.05">
+          <inertial pos="0 0 0.049" mass="0.05" fullinertia="0.00004668333333333333 0.00004376666666666666 0.000010416666666666666 0 0 0"/>
+          <joint name="shoulder_lift" type="hinge" axis="0 1 0" limited="true" range="-1.7453292519943295 1.7453292519943295" damping="0.02" frictionloss="0.05" armature="0.00119025"/>
+          <geom name="upper_arm" type="box" size="0.015 0.02 0.049" pos="0 0 0.049" friction="0.8 0.005 0.0001"/>
+          <body name="forearm" pos="0 0 0.098">
+            <inertial pos="0 0 0.049999999999999975" mass="0.04" fullinertia="0.00003633333333333333 0.00003633333333333333 0.000006 0 0 0"/>
+            <joint name="elbow" type="hinge" axis="0 1 0" limited="true" range="-0.17453292519943295 2.356194490192345" damping="0.02" frictionloss="0.05" armature="0.00119025"/>
+            <geom name="forearm" type="box" size="0.015 0.015 0.05" pos="0 0 0.05" friction="0.8 0.005 0.0001"/>
+            <body name="wrist" pos="0 0 0.1">
+              <inertial pos="0 0 0.02" mass="0.03" fullinertia="0.0000062499999999999995 0.0000054400000000000004 0.00000369 0 0 0"/>
+              <joint name="wrist_pitch" type="hinge" axis="0 1 0" limited="true" range="-1.7453292519943295 1.7453292519943295" damping="0.02" frictionloss="0.05" armature="0.00119025"/>
+              <geom name="wrist" type="box" size="0.012 0.015 0.02" pos="0 0 0.02" friction="0.8 0.005 0.0001"/>
+              <body name="gripper" pos="0 0 0.04">
+                <inertial pos="0 0 0.025" mass="0.035" fullinertia="0.000009916666666666668 0.000011958333333333334 0.000007291666666666667 0 0 0"/>
+                <joint name="wrist_roll" type="hinge" axis="0 0 1" limited="true" range="-2.792526803190927 2.792526803190927" damping="0.02" frictionloss="0.05" armature="0.00119025"/>
+                <geom name="gripper" type="box" size="0.02 0.015 0.025" pos="0 0 0.025" friction="0.8 0.005 0.0001"/>
+                <body name="jaw" pos="0.012 0 0.05">
+                  <inertial pos="0.0005 0 0.021" mass="0.012" fullinertia="0.000002164 0.000001989 0.0000006249999999999999 0 0 0"/>
+                  <joint name="gripper" type="hinge" axis="0 1 0" limited="true" range="-0.17453292519943295 1.7453292519943295" damping="0.02" frictionloss="0.05" armature="0.00119025"/>
+                  <geom name="jaw" type="box" size="0.0075 0.01 0.021" pos="0.0005 0 0.021" friction="0.8 0.005 0.0001"/>
+                </body>
+              </body>
+            </body>
+          </body>
+        </body>
+      </body>
+    </body>
+    <body name="cube" pos="0.2 0 0.065">
+      <inertial pos="0 0 0" mass="0.02" fullinertia="0.000003 0.000003 0.000003 0 0 0"/>
+      <freejoint name="cube_free"/>
+      <geom name="cube" type="box" size="0.015 0.015 0.015" friction="0.8 0.005 0.0001"/>
+    </body>
+  </worldbody>
+  <contact>
+    <pair geom1="base" geom2="upper_arm" condim="3" friction="0.8 0.8 0.005 0.0001 0.0001" solref="0.02 1"/>
+    <pair geom1="base" geom2="forearm" condim="3" friction="0.8 0.8 0.005 0.0001 0.0001" solref="0.02 1"/>
+    <pair geom1="base" geom2="wrist" condim="3" friction="0.8 0.8 0.005 0.0001 0.0001" solref="0.02 1"/>
+    <pair geom1="base" geom2="gripper" condim="3" friction="0.8 0.8 0.005 0.0001 0.0001" solref="0.02 1"/>
+    <pair geom1="base" geom2="jaw" condim="3" friction="0.8 0.8 0.005 0.0001 0.0001" solref="0.02 1"/>
+    <pair geom1="base" geom2="cube" condim="3" friction="0.8 0.8 0.005 0.0001 0.0001" solref="0.02 1"/>
+    <pair geom1="shoulder" geom2="ground" condim="3" friction="0.8 0.8 0.005 0.0001 0.0001" solref="0.02 1"/>
+    <pair geom1="shoulder" geom2="table" condim="3" friction="0.8 0.8 0.005 0.0001 0.0001" solref="0.02 1"/>
+    <pair geom1="shoulder" geom2="cube" condim="3" friction="0.8 0.8 0.005 0.0001 0.0001" solref="0.02 1"/>
+    <pair geom1="upper_arm" geom2="ground" condim="3" friction="0.8 0.8 0.005 0.0001 0.0001" solref="0.02 1"/>
+    <pair geom1="upper_arm" geom2="table" condim="3" friction="0.8 0.8 0.005 0.0001 0.0001" solref="0.02 1"/>
+    <pair geom1="upper_arm" geom2="cube" condim="3" friction="0.8 0.8 0.005 0.0001 0.0001" solref="0.02 1"/>
+    <pair geom1="forearm" geom2="ground" condim="3" friction="0.8 0.8 0.005 0.0001 0.0001" solref="0.02 1"/>
+    <pair geom1="forearm" geom2="table" condim="3" friction="0.8 0.8 0.005 0.0001 0.0001" solref="0.02 1"/>
+    <pair geom1="forearm" geom2="cube" condim="3" friction="0.8 0.8 0.005 0.0001 0.0001" solref="0.02 1"/>
+    <pair geom1="wrist" geom2="ground" condim="3" friction="0.8 0.8 0.005 0.0001 0.0001" solref="0.02 1"/>
+    <pair geom1="wrist" geom2="table" condim="3" friction="0.8 0.8 0.005 0.0001 0.0001" solref="0.02 1"/>
+    <pair geom1="wrist" geom2="cube" condim="3" friction="0.8 0.8 0.005 0.0001 0.0001" solref="0.02 1"/>
+    <pair geom1="gripper" geom2="ground" condim="3" friction="0.8 0.8 0.005 0.0001 0.0001" solref="0.02 1"/>
+    <pair geom1="gripper" geom2="table" condim="3" friction="0.8 0.8 0.005 0.0001 0.0001" solref="0.02 1"/>
+    <pair geom1="gripper" geom2="cube" condim="3" friction="0.8 0.8 0.005 0.0001 0.0001" solref="0.02 1"/>
+    <pair geom1="jaw" geom2="ground" condim="3" friction="0.8 0.8 0.005 0.0001 0.0001" solref="0.02 1"/>
+    <pair geom1="jaw" geom2="table" condim="3" friction="0.8 0.8 0.005 0.0001 0.0001" solref="0.02 1"/>
+    <pair geom1="jaw" geom2="cube" condim="3" friction="0.8 0.8 0.005 0.0001 0.0001" solref="0.02 1"/>
+    <pair geom1="ground" geom2="cube" condim="3" friction="0.8 0.8 0.005 0.0001 0.0001" solref="0.02 1"/>
+    <pair geom1="table" geom2="cube" condim="3" friction="0.8 0.8 0.005 0.0001 0.0001" solref="0.02 1"/>
+  </contact>
+  <actuator>
+    <general name="shoulder_pan" joint="shoulder_pan" gear="1" gainprm="20" biastype="affine" biasprm="0 -20 -0.3" forcelimited="true" forcerange="-2.646 2.646"/>
+    <general name="shoulder_lift" joint="shoulder_lift" gear="1" gainprm="20" biastype="affine" biasprm="0 -20 -0.3" forcelimited="true" forcerange="-2.646 2.646"/>
+    <general name="elbow" joint="elbow" gear="1" gainprm="20" biastype="affine" biasprm="0 -20 -0.3" forcelimited="true" forcerange="-2.646 2.646"/>
+    <general name="wrist_pitch" joint="wrist_pitch" gear="1" gainprm="20" biastype="affine" biasprm="0 -20 -0.3" forcelimited="true" forcerange="-2.646 2.646"/>
+    <general name="wrist_roll" joint="wrist_roll" gear="1" gainprm="20" biastype="affine" biasprm="0 -20 -0.3" forcelimited="true" forcerange="-2.646 2.646"/>
+    <general name="gripper" joint="gripper" gear="1" gainprm="20" biastype="affine" biasprm="0 -20 -0.3" forcelimited="true" forcerange="-2.646 2.646"/>
+  </actuator>
+</mujoco>

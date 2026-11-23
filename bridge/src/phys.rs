@@ -7,21 +7,125 @@
 //! `batch_new`, `batch_step`, `episode_start`, `job_poll`, `job_cancel`, `model_info`).
 //! Replies are `{"ok": result}` or `{"error": message, "code": code}`, freed with
 //! `sc_string_free`.
+//!
+//! Engines: `world_new` / `scenario_load` take `"engine": "phys" | "mujoco"` (top level or in
+//! the scenario; default phys). The handle then routes every op and the binary entries to that
+//! engine, with the same JSON shapes and the same flat poses. MuJoCo runs when the bridge is
+//! built with `--features mujoco`; otherwise asking for it answers `engine.unavailable`. One
+//! more op, `mjcf_export` `{path?}` (or with `builtin | model | assembly + scenario`), returns
+//! the current or given model as MJCF on either engine, with or without the feature.
 
 use std::ffi::c_char;
 
 use serde_json::{Value, json};
+use viaform_mujoco::MjPhys;
 use viaform_phys::Phys;
 
 use super::{guard, out, text};
 
+/// Which engine the handle's current world runs on.
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum Engine {
+    Phys,
+    Mujoco,
+}
+
 pub struct VfPhys {
     phys: Phys,
+    mj: MjPhys,
+    engine: Engine,
+}
+
+impl VfPhys {
+    fn call(&mut self, op: &str, p: &Value) -> Value {
+        match op {
+            "world_new" | "scenario_load" => match viaform_mujoco::load::engine_of(p) {
+                "mujoco" => {
+                    let r = viaform_mujoco::call(&mut self.mj, op, p);
+                    if r.get("ok").is_some() {
+                        self.engine = Engine::Mujoco;
+                    }
+                    r
+                }
+                _ => {
+                    let r = viaform_phys::call(&mut self.phys, op, p);
+                    if r.get("ok").is_some() {
+                        self.engine = Engine::Phys;
+                    }
+                    r
+                }
+            },
+            "mjcf_export" => match self.engine {
+                Engine::Mujoco if !has_model(p) => viaform_mujoco::call(&mut self.mj, op, p),
+                _ => viaform_phys::facade::reply(viaform_mujoco::mjcf_export(p, self.phys.world_mut().map(|w| &*w))),
+            },
+            _ => match self.engine {
+                Engine::Phys => viaform_phys::call(&mut self.phys, op, p),
+                Engine::Mujoco => viaform_mujoco::call(&mut self.mj, op, p),
+            },
+        }
+    }
+
+    /// Steps the current world: 0, -1 without a world, -2 when the step failed.
+    fn step(&mut self, steps: usize) -> i32 {
+        let r = match self.engine {
+            Engine::Phys => self.phys.step(steps),
+            Engine::Mujoco => self.mj.step(steps),
+        };
+        match r {
+            Ok(()) => 0,
+            Err(e) if e.code == "world.none" || e.code == "engine.unavailable" => -1,
+            Err(_) => -2,
+        }
+    }
+
+    /// Writes up to `n` link poses; `None` without a world.
+    fn poses(&mut self, out: &mut [f64]) -> Option<usize> {
+        match self.engine {
+            Engine::Phys => self.phys.world_mut().map(|w| w.poses_flat(out)),
+            Engine::Mujoco => self.mj.poses_flat(out),
+        }
+    }
+
+    fn nlinks(&mut self) -> Option<usize> {
+        match self.engine {
+            Engine::Phys => self.phys.world_mut().map(|w| w.model.nlinks()),
+            Engine::Mujoco => self.mj.nlinks(),
+        }
+    }
+
+    fn set_controls(&mut self, c: &[f64]) -> Option<usize> {
+        match self.engine {
+            Engine::Phys => {
+                let w = self.phys.world_mut()?;
+                let k = w.act.len().min(c.len());
+                for (a, v) in c.iter().take(k).enumerate() {
+                    if v.is_finite() {
+                        w.set_control(a, *v);
+                    }
+                }
+                Some(k)
+            }
+            Engine::Mujoco => self.mj.set_controls_flat(c),
+        }
+    }
+
+    /// Number of actuators of the current world (to size the controls slice).
+    fn nact(&mut self) -> Option<usize> {
+        match self.engine {
+            Engine::Phys => self.phys.world_mut().map(|w| w.act.len()),
+            Engine::Mujoco => self.mj.nact(),
+        }
+    }
+}
+
+fn has_model(p: &Value) -> bool {
+    ["builtin", "model", "assembly"].iter().any(|k| p.get(*k).is_some())
 }
 
 #[unsafe(no_mangle)]
 pub extern "C" fn vf_phys_new() -> *mut VfPhys {
-    guard(std::ptr::null_mut(), || Box::into_raw(Box::new(VfPhys { phys: Phys::new() })))
+    guard(std::ptr::null_mut(), || Box::into_raw(Box::new(VfPhys { phys: Phys::new(), mj: MjPhys::new(), engine: Engine::Phys })))
 }
 
 /// # Safety
@@ -53,7 +157,7 @@ pub unsafe extern "C" fn vf_phys_call(h: *mut VfPhys, op: *const c_char, params:
             },
             _ => json!({}),
         };
-        viaform_phys::call(&mut h.phys, op, &p)
+        h.call(op, &p)
     });
     out(&reply)
 }
@@ -69,14 +173,13 @@ pub unsafe extern "C" fn vf_phys_state_poses(h: *mut VfPhys, out: *mut f64, n: i
     // SAFETY: the caller passes a live handle.
     let Some(h) = (unsafe { h.as_mut() }) else { return -1 };
     guard(-1, || {
-        let Some(w) = h.phys.world_mut() else { return -1 };
-        let nl = w.model.nlinks();
+        let Some(nl) = h.nlinks() else { return -1 };
         let k = nl.min(n.max(0) as usize);
         if out.is_null() || k == 0 {
             return k as i32;
         }
         let mut buf = vec![0.0; 7 * nl];
-        w.poses_flat(&mut buf);
+        h.poses(&mut buf);
         // SAFETY: `out` has room for `n * 7 >= k * 7` doubles.
         unsafe { std::ptr::copy_nonoverlapping(buf.as_ptr(), out, 7 * k) };
         k as i32
@@ -93,11 +196,7 @@ pub unsafe extern "C" fn vf_phys_state_poses(h: *mut VfPhys, out: *mut f64, n: i
 pub unsafe extern "C" fn vf_phys_step(h: *mut VfPhys, steps: i32, out: *mut f64, n: i32) -> i32 {
     // SAFETY: the caller passes a live handle.
     let Some(hh) = (unsafe { h.as_mut() }) else { return -1 };
-    let r = guard(-2, || match hh.phys.step(steps.max(0) as usize) {
-        Ok(()) => 0,
-        Err(e) if e.code == "world.none" => -1,
-        Err(_) => -2,
-    });
+    let r = guard(-2, || hh.step(steps.max(0) as usize));
     if r != 0 {
         return r;
     }
@@ -118,16 +217,11 @@ pub unsafe extern "C" fn vf_phys_set_controls(h: *mut VfPhys, controls: *const f
         return -1;
     }
     guard(-1, || {
-        let Some(w) = h.phys.world_mut() else { return -1 };
-        let k = w.act.len().min(n.max(0) as usize);
+        let Some(na) = h.nact() else { return -1 };
+        let k = na.min(n.max(0) as usize);
         // SAFETY: `controls` points to `n >= k` doubles.
         let c = unsafe { std::slice::from_raw_parts(controls, k) };
-        for (a, v) in c.iter().enumerate() {
-            if v.is_finite() {
-                w.set_control(a, *v);
-            }
-        }
-        k as i32
+        h.set_controls(c).map_or(-1, |k| k as i32)
     })
 }
 
@@ -171,6 +265,39 @@ mod tests {
         }
         let st = call(h, "world_state", "{}");
         assert!((st["ok"]["q"][0].as_f64().unwrap() - 0.3).abs() < 0.02);
+        // SAFETY: handle from vf_phys_new, not used afterwards.
+        unsafe { vf_phys_free(h) };
+    }
+
+    #[test]
+    fn engine_selection() {
+        let h = vf_phys_new();
+        // MJCF export works on phys worlds, with or without MuJoCo.
+        call(h, "world_new", r#"{"builtin": "so101_arm"}"#);
+        let x = call(h, "mjcf_export", "{}");
+        assert!(x["ok"]["xml"].as_str().unwrap().contains("<mujoco model="), "{x}");
+        let r = call(h, "world_new", r#"{"builtin": "so101_arm", "engine": "mujoco"}"#);
+        if cfg!(feature = "mujoco") {
+            assert_eq!(r["ok"]["engine"], "mujoco", "{r}");
+            let targets = [0.3, -0.2, 0.4, 0.0, 0.1, 0.0];
+            // SAFETY: live handle, 6 doubles.
+            assert_eq!(unsafe { vf_phys_set_controls(h, targets.as_ptr(), 6) }, 6);
+            let mut poses = vec![0.0; 7 * 8];
+            // SAFETY: live handle, room for 8 links.
+            assert_eq!(unsafe { vf_phys_step(h, 500, poses.as_mut_ptr(), 8) }, 7);
+            assert_eq!(&poses[0..7], &[0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0]);
+            let st = call(h, "world_state", "{}");
+            assert!((st["ok"]["q"][0].as_f64().unwrap() - 0.3).abs() < 0.02, "{st}");
+        } else {
+            assert_eq!(r["code"], "engine.unavailable", "{r}");
+            // The phys world stays current.
+            let st = call(h, "world_state", "{}");
+            assert!(st.get("ok").is_some());
+        }
+        // Back to phys on the same handle.
+        let r = call(h, "world_new", r#"{"builtin": "so101_arm", "engine": "phys"}"#);
+        assert!(r.get("ok").is_some());
+        assert!(call(h, "model_info", "{}")["ok"].get("engine").is_none());
         // SAFETY: handle from vf_phys_new, not used afterwards.
         unsafe { vf_phys_free(h) };
     }

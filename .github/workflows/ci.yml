@@ -48,3 +48,32 @@ jobs:
           else
             npm run test:ui
           fi
+
+  # MuJoCo backend (mujoco/README.md): fetches the pinned official release, then builds and
+  # tests viaform-mujoco and the bridge with the feature. macOS and Linux only; separate from
+  # the job above, which builds without MuJoCo.
+  mujoco:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-latest, ubuntu-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - name: Cache MuJoCo
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/Library/Caches/viaform-mujoco
+            ~/.cache/viaform-mujoco
+          key: mujoco-3.17.0-${{ runner.os }}-${{ runner.arch }}
+      - name: Fetch MuJoCo
+        run: bash mujoco/scripts/fetch-mujoco.sh
+      - name: MuJoCo backend tests
+        run: |
+          cargo test --release -p viaform-mujoco --features mujoco -- --nocapture --test-threads 1
+          cargo test --release -p viaform-ffi --features mujoco --lib phys

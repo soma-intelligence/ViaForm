@@ -50,6 +50,10 @@ pub mod codes {
     pub const SCENARIO: &str = "scenario.invalid";
     /// No job with this id.
     pub const NO_JOB: &str = "job.none";
+    /// The engine a world asks for is not built into this binary (MuJoCo without its feature).
+    pub const ENGINE_UNAVAILABLE: &str = "engine.unavailable";
+    /// The engine cannot run this model (the drone on MuJoCo).
+    pub const ENGINE_UNSUPPORTED: &str = "engine.unsupported";
 }
 
 pub(crate) fn params(msg: impl Into<String>) -> PhysError {

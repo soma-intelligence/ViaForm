@@ -93,6 +93,16 @@ objects costs more per contact.
 `vf_phys_step(h, steps, out, n)` and `vf_phys_state_poses(h, out, n)` write `[x, y, z, qw, qx,
 qy, qz]` per link, `vf_phys_set_controls(h, controls, n)`.
 
+## MuJoCo backend
+
+`mujoco/` (`viaform-mujoco`) runs the same model, scenarios and JSON ops on MuJoCo 3.17.0
+(google-deepmind/mujoco, Apache-2.0) behind the off-by-default `mujoco` cargo feature:
+`world_new` or `scenario_load` with `"engine": "mujoco"` through `vf_phys_call` selects it
+(`engine.unavailable` when the bridge is built without the feature). It also exports any phys
+model as MJCF for MuJoCo's viewer (`mjcf_export`). Build steps, the cross-validation of phys
+against MuJoCo (double pendulum, arm under gravity, incline, sample arm scenario), throughput,
+platform status (no iOS or iPadOS) and licence notices: [`mujoco/README.md`](../mujoco/README.md).
+
 ## Limits
 
 - Semi-implicit Euler is first order: energy of a chaotic swing drifts at 1 ms (RK4 is there
