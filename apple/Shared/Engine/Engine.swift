@@ -151,7 +151,40 @@ final class CADEngine: @unchecked Sendable {
         let reply = locked { Self.take(sc_execute($0, id, params)) }
         guard let obj = Self.parse(reply) as? [String: Any] else { throw EngineError(message: "No reply from \(id)") }
         if let error = obj["error"] as? String { throw EngineError(message: error) }
-        return obj["ok"] ?? NSNull()
+        let ok = obj["ok"] ?? NSNull()
+        note(id, params, ok)
+        return ok
+    }
+
+    /// The names of the undo and redo steps (`UndoLabels`): "Undo Extrude" in the Edit menu.
+    let undoLabels = UndoLabels(limit: 200)
+
+    /// The top undo and redo step names for the depths the snapshot reports.
+    func undoNames(undo: Int, redo: Int) -> (undo: String?, redo: String?) { undoLabels.labels(undo: undo, redo: redo) }
+
+    private static let labels: [String: String] = Dictionary(commands.map { ($0.id, $0.label) }, uniquingKeysWith: { a, _ in a })
+
+    /// Commands that only read (or save a copy) leave the undo stack alone.
+    private static func reads(_ id: String) -> Bool {
+        id.hasSuffix(".list") || id.hasSuffix(".inspect") || id.hasSuffix(".metadata") || id.hasSuffix(".revision")
+            || id.contains("snap") || id.contains("measure") || id.hasPrefix("select.") || id.hasPrefix("view.")
+            || id.hasPrefix("ui.") || id.hasPrefix("file.save") || id.hasPrefix("file.export") || id.hasPrefix("export.")
+            || id.hasPrefix("render.") || id == "edit.checkpoint" || id == "edit.restore_checkpoint"
+    }
+
+    private func note(_ id: String, _ params: String, _ ok: Any) {
+        let reply = ok as? [String: Any]
+        switch id {
+        case "edit.undo": undoLabels.undid(reply?["undone"] as? String)
+        case "edit.redo": undoLabels.redid(reply?["redone"] as? String)
+        case "edit.checkpoint": if let c = reply?["checkpoint"] as? Int { undoLabels.checkpoint(c) }
+        case "edit.restore_checkpoint":
+            let p = Self.parse(params) as? [String: Any]
+            if let c = p?["checkpoint"] as? Int { undoLabels.restored(c, forget: p?["forget"] as? Bool ?? false) }
+        case "file.new", "file.open": undoLabels.reset()
+        default:
+            if !Self.reads(id) { undoLabels.ran(Self.labels[id] ?? "") }
+        }
     }
 
     func runScript(_ script: Data) throws {

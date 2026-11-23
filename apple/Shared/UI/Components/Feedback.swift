@@ -274,6 +274,8 @@ struct ConfirmRequest: Identifiable {
     /// A third choice (Don't Save), shown between the verb and Cancel.
     var alternate: (title: String, perform: () -> Void)? = nil
     var cancel: (() -> Void)? = nil
+    /// The cancel button's words when "Cancel" would not say what it does ("Keep Running").
+    var cancelTitle: String? = nil
 }
 
 extension View {
@@ -288,7 +290,11 @@ extension View {
             if let alt = r.alternate {
                 Button(alt.title, role: .destructive) { alt.perform() }
             }
-            Button("Cancel", role: .cancel) { r.cancel?() }
+            if let t = r.cancelTitle {
+                Button(t, role: .cancel) { r.cancel?() }
+            } else {
+                Button("Cancel", role: .cancel) { r.cancel?() }
+            }
         } message: { r in
             Text(r.message)
         }

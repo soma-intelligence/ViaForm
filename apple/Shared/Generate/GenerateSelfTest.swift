@@ -49,6 +49,14 @@ enum GenerateSelfTest {
         } catch {
             out.append((false, "generative cancel: \(error.localizedDescription)"))
         }
+        // The grasp test reads the hand into a model of its own: the Generate project stays.
+        do {
+            let g = GenerateModel(reading: "drone")
+            let studies = g.project?.studies.count ?? 0
+            let hand = GenerateModel(reading: "hand")
+            out.append((g.project?.name == "drone" && g.project?.studies.count == studies && hand.project?.name == "hand" && !hand.joints.isEmpty,
+                        "grasp test reads the hand (\(hand.joints.count) joints) without touching the Generate project (\(g.project?.name ?? "none"))"))
+        }
         // Stopped mid-run, the job keeps its best design so far: a surfaced candidate flagged
         // not converged with the iteration it stopped at; a second stop changes nothing.
         do {

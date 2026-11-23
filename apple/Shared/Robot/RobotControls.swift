@@ -23,6 +23,7 @@ struct RobotConnectionCard: View {
                     Text(title).font(VFFont.rowEmphasis).foregroundStyle(theme.ink)
                     Text(line)
                         .font(VFFont.small).foregroundStyle(theme.inkSecondary)
+                        .lineLimit(4)
                         .fixedSize(horizontal: false, vertical: true)
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -152,6 +153,7 @@ struct RobotJointsPanel: View {
             }
             if let notice {
                 Text(notice).font(VFFont.small).foregroundStyle(theme.danger)
+                    .lineLimit(3)
                     .fixedSize(horizontal: false, vertical: true)
             }
         }
@@ -265,4 +267,39 @@ struct RobotRunPolicyButton: View {
 
 private extension Array {
     subscript(robotAt i: Int) -> Element? { indices.contains(i) ? self[i] : nil }
+}
+
+/// "Send Pose to Robot" for the Assemble IK drag: the solved joint values go to the robot as one
+/// pose through the gate (confirmed once per session, fenced, capped, blocked by the e-stop).
+/// Values map in joint order onto the link's joints; missing ones keep their commanded target.
+struct RobotSendPoseButton: View {
+    /// The solved joint values in the assembly's joint order (degrees, mm for a slider).
+    let values: () -> [Double]
+    @State private var confirm: ConfirmRequest?
+    @State private var notice: String?
+    private var safety: RobotSafety { RobotSafety.shared }
+
+    var body: some View {
+        Button {
+            notice = safety.request(.pose(RobotSafety.poseTargets(values(), for: safety.link), label: String(localized: "IK pose")),
+                                    target: String(localized: "The IK pose"), present: { confirm = $0 })
+        } label: {
+            Label("Send Pose to Robot", systemImage: safety.canMove ? "arrow.up.forward.circle" : "lock.fill")
+                .frame(maxWidth: .infinity)
+        }
+        .buttonStyle(.vfSecondary)
+        .vfDisabled(!safety.canMove, reason: safety.lockReason ?? "")
+        .help(String(localized: "Moves the connected robot to this pose. Asks once per session."))
+        .confirmSheet($confirm)
+    }
+}
+
+extension RobotSafety {
+    /// Assembly joint values onto the link's joints, in order; the rest keep their target.
+    static func poseTargets(_ values: [Double], for link: (any RobotLink)?) -> [Double] {
+        guard let link else { return values }
+        var t = link.state.targets
+        for i in t.indices where i < values.count { t[i] = values[i] }
+        return t
+    }
 }

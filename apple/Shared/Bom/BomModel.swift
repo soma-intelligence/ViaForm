@@ -349,6 +349,9 @@ final class BomModel {
     private(set) var retry: (() -> Void)?
     /// The last confirmation, shown once as a toast.
     var notice: BomNotice?
+    /// Moves on every change to the bill (edits, imports, undo, redo, the build count): the
+    /// window's "edited" mark compares it (P0-2).
+    private(set) var editRevision = 0
     /// What the engine is doing now ("Importing hand"), nil when idle.
     private(set) var busy: String?
     private var pending = 0
@@ -574,6 +577,7 @@ final class BomModel {
         let before = await snapshot()
         var ok = true
         for (method, params) in calls where ok { ok = await applyAsync(method, params, design: design, pcb: pcb) }
+        if ok { editRevision += 1 }
         if ok, let before {
             undoStack.append(Step(name: name, file: before))
             if undoStack.count > Self.undoLimit { drop([undoStack.removeFirst()]) }
@@ -590,6 +594,7 @@ final class BomModel {
             guard let step = undoStack.popLast() else { return }
             let now = await snapshot()
             if await applyAsync("load", ["path": step.file.path]) {
+                editRevision += 1
                 if let now { redoStack.append(Step(name: step.name, file: now)) }
                 drop([step])
             } else {
@@ -603,6 +608,7 @@ final class BomModel {
             guard let step = redoStack.popLast() else { return }
             let now = await snapshot()
             if await applyAsync("load", ["path": step.file.path]) {
+                editRevision += 1
                 if let now { undoStack.append(Step(name: step.name, file: now)) }
                 drop([step])
             } else {
@@ -615,7 +621,7 @@ final class BomModel {
 
     func setBuilds(_ n: Int) {
         let n = max(1, n)
-        enqueue(nil) { [self] in await applyAsync("set", ["builds": n]) }
+        enqueue(nil) { [self] in if await applyAsync("set", ["builds": n]) { editRevision += 1 } }
     }
 
     private func edit(_ name: String, _ ids: [String], _ changes: [String: Any]) {
@@ -804,6 +810,7 @@ final class BomModel {
             return nil
         }
         guard show(data) else { return nil }
+        editRevision += 1
         if let before {
             undoStack.append(Step(name: String(localized: "Import"), file: before))
             drop(redoStack)

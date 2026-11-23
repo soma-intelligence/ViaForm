@@ -1721,6 +1721,16 @@
         }
       }
     },
+    "A robot is already connected.": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Un robot est déjà connecté."
+          }
+        }
+      }
+    },
     "A run is going": {
       "localizations": {
         "fr": {
@@ -1847,6 +1857,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Ajouter un cas"
+          }
+        }
+      }
+    },
+    "Add Component": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ajouter un composant"
           }
         }
       }
@@ -4047,6 +4067,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Connecter %@"
+          }
+        }
+      }
+    },
+    "Connect Wire": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Relier le fil"
           }
         }
       }
@@ -6871,6 +6901,16 @@
         }
       }
     },
+    "IK pose": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pose IK"
+          }
+        }
+      }
+    },
     "IK target": {
       "localizations": {
         "fr": {
@@ -7241,12 +7281,12 @@
         }
       }
     },
-    "It has been solving for %@. Keep its best design so far as a candidate (not converged), or discard the run. Cancel keeps it running.": {
+    "It has been solving for %@. Keep its best design so far as a candidate (not converged), discard the run, or keep it running.": {
       "localizations": {
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Le calcul tourne depuis %@. Garde sa meilleure forme obtenue comme candidat (non convergé), ou abandonne le calcul. Annuler le laisse continuer."
+            "value": "Le calcul tourne depuis %@. Garde sa meilleure forme obtenue comme candidat (non convergé), abandonne le calcul, ou laisse-le continuer."
           }
         }
       }
@@ -7597,6 +7637,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Garder dehors"
+          }
+        }
+      }
+    },
+    "Keep Running": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Laisser tourner"
           }
         }
       }
@@ -8721,12 +8771,32 @@
         }
       }
     },
+    "Move Component": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Déplacer le composant"
+          }
+        }
+      }
+    },
     "Move Earlier": {
       "localizations": {
         "fr": {
           "stringUnit": {
             "state": "translated",
             "value": "Avancer"
+          }
+        }
+      }
+    },
+    "Move Footprint": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Déplacer l’empreinte"
           }
         }
       }
@@ -8817,6 +8887,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Monter de 1 mm"
+          }
+        }
+      }
+    },
+    "Moves the connected robot to this pose. Asks once per session.": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Déplace le robot connecté vers cette pose. Demande une fois par session."
           }
         }
       }
@@ -9801,6 +9881,16 @@
         }
       }
     },
+    "Not undone: the design changed after this step. Use Edit, Undo to go back step by step.": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Non annulé : le design a changé depuis cette étape. Utilise Édition, Annuler pour revenir étape par étape."
+          }
+        }
+      }
+    },
     "Opening %@": {
       "localizations": {
         "fr": {
@@ -9811,12 +9901,52 @@
         }
       }
     },
+    "Rotate Component": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pivoter le composant"
+          }
+        }
+      }
+    },
+    "Rotate Footprint": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pivoter l’empreinte"
+          }
+        }
+      }
+    },
+    "Route Track": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Router la piste"
+          }
+        }
+      }
+    },
     "Saving %@": {
       "localizations": {
         "fr": {
           "stringUnit": {
             "state": "translated",
             "value": "Enregistrement de %@"
+          }
+        }
+      }
+    },
+    "Update Board": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mettre à jour la carte"
           }
         }
       }
@@ -13061,6 +13191,16 @@
         }
       }
     },
+    "Send Pose to Robot": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Envoyer la pose au robot"
+          }
+        }
+      }
+    },
     "STEP": {
       "localizations": {
         "fr": {
@@ -15191,6 +15331,16 @@
         }
       }
     },
+    "The IK pose": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "La pose IK"
+          }
+        }
+      }
+    },
     "The run was stopped before this design settled. Run again to let it converge.": {
       "localizations": {
         "fr": {
@@ -16967,6 +17117,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Utiliser comme scénario d'entraînement"
+          }
+        }
+      }
+    },
+    "Use the controls in the Robot stage.": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Utilise les commandes de l'étape Robot."
           }
         }
       }

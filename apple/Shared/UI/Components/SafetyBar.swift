@@ -106,8 +106,9 @@ struct EStopButton: View {
         .buttonStyle(.plain)
         #if os(iOS)
         .hoverEffect(.highlight)
-        // A hardware keyboard: Space presses it; Esc twice is handled by the stage.
-        .keyboardShortcut(.space, modifiers: [])
+        // A hardware keyboard: Space presses it; Esc twice is handled by the stage. Not while
+        // latched: Space then holds the focused Re-enable Motors instead (P0-13).
+        .keyboardShortcut(safety.stopped ? nil : KeyboardShortcut(.space, modifiers: []))
         #endif
         .help(safety.connected ? "Torque off on every motor (Space, Esc twice)"
                                : "No robot connected. Pressing it still blocks every motion verb (Space, Esc twice)")

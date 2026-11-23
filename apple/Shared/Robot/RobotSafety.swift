@@ -167,6 +167,16 @@ final class RobotSafety {
         at = Date()
     }
 
+    /// Space in the Robot stage: stops, unless the stop is already latched. Then Space belongs
+    /// to the focused control (Re-enable Motors is held with Space), so it is not taken and never
+    /// re-latches the stop. True when the key was taken.
+    @discardableResult
+    func spaceKey() -> Bool {
+        guard !stopped else { return false }
+        stop(source: StopSource.space.rawValue)
+        return true
+    }
+
     /// One Esc: the second within 0.6 s stops. True when the key was taken.
     @discardableResult
     func escape(now: Date = Date()) -> Bool {
@@ -461,6 +471,12 @@ enum RobotSafetySelfTest {
         // The gate with the simulated link.
         for (name, ok) in RobotGateChecks.run(defaults: d) { check(name, ok) }
 
+        let k = RobotSafety(defaults: d)
+        check("Space stops when running", k.spaceKey() && k.stopped && k.source == "Space")
+        let latchedAt = k.at
+        check("Space while latched is left to the focused control (Re-enable)", !k.spaceKey() && k.at == latchedAt)
+        k.reenable()
+
         print(failures == 0 ? "robot selftest: all passed" : "robot selftest: \(failures) failed")
         exit(failures == 0 ? 0 : 1)
     }
@@ -558,6 +574,9 @@ enum RobotGateChecks {
         check("Esc twice cuts motion", g.stopped && !g.moving && !link.state.torqueOn)
         g.reenable()
 
+        let ik = RobotSafety.poseTargets([10, 20], for: link)
+        check("IK pose maps in joint order, the rest keep their target",
+              ik.count == link.joints.count && ik[0] == 10 && ik[1] == 20 && Array(ik.dropFirst(2)) == Array(link.state.targets.dropFirst(2)))
         g.disconnect()
         check("disconnect: no robot, session cleared", !g.connected && !g.sessionConfirmed && g.linkState == nil)
         check("disconnect: motion refused", g.submit(.jog(joint: 0, delta: 5)) == (.noRobot))
@@ -603,6 +622,7 @@ struct RobotStoppedBanner: View {
                 Text("E-stop: motors off").font(VFFont.rowEmphasis).foregroundStyle(theme.ink)
                 Text(String(localized: "\(safety.stopSentence) Motion verbs are blocked."))
                     .font(VFFont.small).foregroundStyle(theme.inkSecondary)
+                    .lineLimit(3)
                     .fixedSize(horizontal: false, vertical: true)
             }
         }

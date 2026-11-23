@@ -103,7 +103,7 @@ struct ProjectWindow: View {
         }
         .focusedSceneValue(\.vfDesk, DeskFocus(workspace: workspace, open: { showStart = false; workspace = $0 }, search: {},
                                                 start: { showStart = false }, design: model))
-        .projectFilesContext(design: model, pcb: pcb, bom: bom, flow: flow)
+        .projectFilesContext(design: model, pcb: pcb, bom: bom, flow: flow, generate: generate, assemble: assemble)
         .background(WindowSizer())
     }
 
@@ -119,7 +119,7 @@ struct ProjectWindow: View {
     }
 
     private func applyTemplate(_ t: StartTemplate) {
-        let ctx = ProjectFiles.Context(design: model, pcb: pcb, bom: bom, flow: flow)
+        let ctx = ProjectFiles.Context(design: model, pcb: pcb, bom: bom, flow: flow, generate: generate, assemble: assemble)
         switch t.preset {
         case "drone":
             if pcb.project?.components.isEmpty ?? true { pcb.loadSample() }
@@ -145,6 +145,8 @@ struct ProjectWindow: View {
             if t.kind == .board { pcb.newProject() }
         }
         if t.preset != "arm" && t.preset != "hand" { assemble.close() }
+        // A template just started has nothing of the reader's to save yet (P0-2).
+        ProjectFiles.markSaved(ctx)
         workspace = t.stage
         showStart = false
     }
@@ -303,7 +305,7 @@ struct ProjectWindow: View {
         }
         .focusedSceneValue(\.vfDesk, focus(screen, actions))
         .reportsToFlow(flow, design: model, pcb: pcb, generate: generate, sim: sim)
-        .projectFilesContext(design: model, pcb: pcb, bom: bom, flow: flow)
+        .projectFilesContext(design: model, pcb: pcb, bom: bom, flow: flow, generate: generate, assemble: assemble)
         .background(WindowSizer())
         .onAppear(perform: launchHooks)
     }
@@ -311,7 +313,7 @@ struct ProjectWindow: View {
     private func closePalette() { showPalette = false }
 
     private var projectContext: ProjectFiles.Context {
-        ProjectFiles.Context(design: model, pcb: pcb, bom: bom, flow: flow)
+        ProjectFiles.Context(design: model, pcb: pcb, bom: bom, flow: flow, generate: generate, assemble: assemble)
     }
 
     /// What this window lends the menu bar: every File, Edit, View and Workspace item acts here.
@@ -355,10 +357,12 @@ struct ProjectWindow: View {
             return UndoTarget(canUndo: generate.canUndo, canRedo: generate.canRedo, undoName: generate.undoName,
                               redoName: generate.redoName, undo: { generate.undo() }, redo: { generate.redo() })
         case .electronics:
-            return UndoTarget(canUndo: pcb.undoCount > 0, canRedo: pcb.redoCount > 0,
+            let n = pcb.engine.undoNames(undo: pcb.undoCount, redo: pcb.redoCount)
+            return UndoTarget(canUndo: pcb.undoCount > 0, canRedo: pcb.redoCount > 0, undoName: n.undo, redoName: n.redo,
                               undo: { pcb.undo() }, redo: { pcb.redo() })
         case .design, .assemble, .render, .make:
-            return UndoTarget(canUndo: model.snapshot.undo > 0, canRedo: model.snapshot.redo > 0,
+            let n = model.engine.undoNames(undo: model.snapshot.undo, redo: model.snapshot.redo)
+            return UndoTarget(canUndo: model.snapshot.undo > 0, canRedo: model.snapshot.redo > 0, undoName: n.undo, redoName: n.redo,
                               undo: { model.undo() }, redo: { model.redo() })
         case .simulation, .train, .robot:
             return .none
@@ -410,7 +414,8 @@ struct ProjectWindow: View {
         if ch == "?" && mods.isSubset(of: [.shift]) { showShortcuts = true; return true }
         // Robot stage: Space, or Esc twice within 0.6 s, is the e-stop (VIAFORM-SPEC 6.4).
         if workspace == .robot, mods.isEmpty {
-            if e.keyCode == 49 { safety.stop(source: RobotSafety.StopSource.space.rawValue); return true }
+            // Not taken while latched, so Space holds the focused Re-enable Motors (P0-13).
+            if e.keyCode == 49 { return safety.spaceKey() }
             // Esc twice is handled by `urgentKey`, before this, even from a field.
             if e.keyCode == 53 { return false }
         }
@@ -772,7 +777,7 @@ struct ProjectWindow: View {
             let url = URL(fileURLWithPath: String(arg.dropFirst("--project-roundtrip=".count)))
             Task { @MainActor in
                 try? await Task.sleep(for: .seconds(2))
-                let c = ProjectFiles.Context(design: model, pcb: pcb, bom: bom, flow: flow)
+                let c = ProjectFiles.Context(design: model, pcb: pcb, bom: bom, flow: flow, generate: generate, assemble: assemble)
                 let before = flow.nodes.map { "\($0.id)=\($0.revision)" }.joined(separator: " ")
                 let saved = await ProjectFiles.save(url, in: c)
                 ProjectFiles.newDesign(model, in: c)

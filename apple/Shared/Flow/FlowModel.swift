@@ -313,6 +313,11 @@ final class FlowModel {
     /// Moves when the pipeline starts over for another document (New, Open, a sample), so the
     /// reporting reports the workspaces again into the fresh pipeline.
     private(set) var documentEpoch = 0
+    /// Moves on every change the reader made to the pipeline itself (product, graph, a
+    /// promoted or activated revision, eyes and locks, a run that ended, a result built outside
+    /// the design edits); the reporting of the design, board and assembly does not move it, the
+    /// window counts those through their own revisions. The "edited" mark compares it (P0-2).
+    private(set) var editRevision = 0
     var designJoints = 0
     var designMotors = 0
     private(set) var stages: [Stage] = []
@@ -663,10 +668,23 @@ final class FlowModel {
     @discardableResult
     private func send(_ command: [String: Any?], save: Bool = true) -> [String: Any]? {
         let r = call(command)
+        if Self.edits(command, r) { editRevision += 1 }
         refresh()
         version += 1
         if save { scheduleAutosave() }
         return r
+    }
+
+    private static func edits(_ command: [String: Any?], _ reply: [String: Any]?) -> Bool {
+        guard reply?["error"] == nil, let op = command["op"] as? String else { return false }
+        switch op {
+        case "set_product", "set_graph", "promote", "activate", "tree_set": return true
+        case "job_end": return reply?["ignored"] == nil && (command["error"] as? String) == nil
+        case "produce":
+            let source = command["source"] as? String
+            return source != "edit" && source != "assembly" && (reply?["result"] as? String) != "unchanged"
+        default: return false
+        }
     }
 
     private func encode(_ command: [String: Any?]) -> String? {

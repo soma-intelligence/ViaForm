@@ -42,6 +42,7 @@ struct TouchRobotStage: View {
                             .font(VFFont.heading).foregroundStyle(theme.ink)
                         Text("On iPad the robot connects through the ViaForm bridge over Wi-Fi. The twin, the camera and the telemetry show here once it does.")
                             .font(VFFont.row).foregroundStyle(theme.inkSecondary).multilineTextAlignment(.center)
+                            .lineLimit(4)
                             .fixedSize(horizontal: false, vertical: true)
                             .frame(maxWidth: 460)
                         Spacer(minLength: 0)

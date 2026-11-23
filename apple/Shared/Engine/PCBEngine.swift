@@ -53,8 +53,36 @@ final class PCBEngine: @unchecked Sendable {
         let reply = try JSONSerialization.jsonObject(with: withSession { Self.take(pcb_execute($0, id, body)) }, options: [.fragmentsAllowed])
         guard let obj = reply as? [String: Any] else { throw EngineError(message: "no reply from the PCB engine") }
         if let e = obj["error"] as? String { throw EngineError(message: e) }
+        switch id {
+        case "undo": undoLabels.undid(nil)
+        case "redo": undoLabels.redid(nil)
+        case "file.open": undoLabels.reset()
+        default: if let l = Self.stepNames[id] { undoLabels.ran(l) } else if !Self.reads(id) { undoLabels.ran("") }
+        }
         return obj["ok"] ?? NSNull()
     }
+
+    /// The names of the undo and redo steps: "Undo Move Footprint" in the Edit menu.
+    let undoLabels = UndoLabels(limit: 200)
+
+    /// The top undo and redo step names for the depths `inspect` reports.
+    func undoNames(undo: Int, redo: Int) -> (undo: String?, redo: String?) { undoLabels.labels(undo: undo, redo: redo) }
+
+    private static func reads(_ id: String) -> Bool {
+        id.hasPrefix("file.") || id.hasSuffix(".list") || id.contains("inspect") || id.contains("check")
+    }
+
+    private static let stepNames: [String: String] = [
+        "component.add": String(localized: "Add Component"),
+        "component.move": String(localized: "Move Component"),
+        "component.rotate": String(localized: "Rotate Component"),
+        "footprint.move": String(localized: "Move Footprint"),
+        "footprint.rotate": String(localized: "Rotate Footprint"),
+        "object.delete": String(localized: "Delete"),
+        "wire.connect": String(localized: "Connect Wire"),
+        "track.route": String(localized: "Route Track"),
+        "board.sync": String(localized: "Update Board"),
+    ]
 
     func inspect() -> PCBInspect? {
         try? JSONDecoder().decode(PCBInspect.self, from: withSession { Self.take(pcb_inspect($0)) })

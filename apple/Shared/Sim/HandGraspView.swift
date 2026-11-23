@@ -7,8 +7,9 @@ import SwiftUI
 /// not simulated (sim/ models the drone only), and the stage says so. Without a hand assembly it
 /// shows an empty state that says what is missing.
 ///
-/// Opening the hand here reads its assembly and joints only: the Generate study the user set up
-/// is never replaced.
+/// Opening the hand here reads its project into a model of its own (assembly, joints, summary):
+/// the Generate stage keeps its project, studies and setup as the user left them. When the
+/// Generate stage already has the hand open, the grasp test uses that one.
 struct HandGraspView: View {
     @Environment(\.viaFormTheme) private var palette
     @Bindable var generate: GenerateModel
@@ -21,26 +22,31 @@ struct HandGraspView: View {
     @State private var cycles = 0
     @State private var startedAt: Date?
     @State private var elapsed = 0.0
+    /// The hand project read for the grasp test alone, when Generate has another project open.
+    @State private var own: GenerateModel?
 
     /// One close-and-open cycle, seconds.
     static let cycle = 4.0
 
-    private var hand: GenerateProject? { generate.project?.name == "hand" ? generate.project : nil }
+    /// Generate's model when it has the hand open, else the grasp test's own.
+    private var model: GenerateModel { generate.project?.name == "hand" ? generate : (own ?? generate) }
+
+    private var hand: GenerateProject? { model.project?.name == "hand" ? model.project : nil }
 
     var body: some View {
         Group {
             if let p = hand, p.assembly != nil {
-                if generate.assemblyLoaded { scenario } else { insert(p) }
+                if model.assemblyLoaded { scenario } else { insert(p) }
             } else {
                 empty
             }
         }
         .onAppear {
-            if generate.project?.name != "hand", !generate.running { generate.openProjectOnly("hand") }
+            if generate.project?.name != "hand", own == nil { own = GenerateModel(reading: "hand") }
         }
         .onDisappear {
             stop()
-            generate.flushDrives(design: design)
+            model.flushDrives(design: design)
         }
     }
 
@@ -52,16 +58,16 @@ struct HandGraspView: View {
     }
 
     private func insert(_ p: GenerateProject) -> some View {
-        let s = generate.assemblySummary
-        let joints = generate.joints.filter(\.movable).count
+        let s = model.assemblySummary
+        let joints = model.joints.filter(\.movable).count
         return EmptyState(String(localized: "Grasp test"), systemImage: "hand.raised",
                           message: s.map { String(localized: "Drives every finger of the generated hand from open to a fist and back, by its joints. Insert the hand's assembly first: \($0.parts) parts, \(joints) movable joints.") }
                               ?? String(localized: "Drives every finger of the generated hand from open to a fist and back, by its joints. Insert the hand's assembly first."),
-                          actionTitle: String(localized: "Insert the Hand Assembly")) { generate.loadAssembly(into: design) }
-            .vfDisabled(EngineGate.shared.shut || generate.loadingAssembly,
+                          actionTitle: String(localized: "Insert the Hand Assembly")) { model.loadAssembly(into: design) }
+            .vfDisabled(EngineGate.shared.shut || model.loadingAssembly,
                         reason: EngineGate.shared.shut ? EngineGate.reason : String(localized: "Inserting the assembly now."))
             .overlay(alignment: .bottom) {
-                if generate.loadingAssembly {
+                if model.loadingAssembly {
                     DelayedProgress(label: String(localized: "Inserting the assembly"))
                         .padding(.bottom, VFSpace.xxl)
                 }
@@ -95,7 +101,7 @@ struct HandGraspView: View {
 
     // MARK: Cards
 
-    private var movable: [AssemblyJoint] { generate.joints.filter(\.movable) }
+    private var movable: [AssemblyJoint] { model.joints.filter(\.movable) }
 
     /// How far the joints are from rest toward the fist, as driven (not as asked).
     private var reached: Double {
@@ -129,7 +135,7 @@ struct HandGraspView: View {
             row(String(localized: "Driven"), String(localized: "\(movable.count) joints"))
             row(String(localized: "Cycles"), "\(cycles)")
             row(String(localized: "Time"), String(format: "%.1f s", elapsed))
-            if let s = generate.assemblySummary, let m = s.massG { row(String(localized: "Hand mass"), VFFormat.mass(m)) }
+            if let s = model.assemblySummary, let m = s.massG { row(String(localized: "Hand mass"), VFFormat.mass(m)) }
         }
         .font(VFFont.small)
         .monospacedDigit()
@@ -177,7 +183,7 @@ struct HandGraspView: View {
             ForEach(groups.keys.sorted(), id: \.self) { g in
                 Section(g.capitalized) {
                     ForEach(groups[g] ?? []) { j in
-                        JointSlider(joint: j) { stop(); generate.drive(j.name, to: $0, design: design) }
+                        JointSlider(joint: j) { stop(); model.drive(j.name, to: $0, design: design) }
                     }
                 }
             }
@@ -189,7 +195,7 @@ struct HandGraspView: View {
 
     private func set(_ c: Double) {
         closure = c
-        generate.grasp(c, design: design)
+        model.grasp(c, design: design)
     }
 
     /// The cycle advances at the display rate; the model sends the drives to the engine at most

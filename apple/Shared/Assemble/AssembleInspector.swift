@@ -208,6 +208,8 @@ struct AssembleInspector: View {
         Button { model.savePose() } label: { Text("Save Pose").frame(maxWidth: .infinity) }
             .buttonStyle(.vfPrimary)
             .help("Adds this pose to the assembly; Robot and paths use it")
+        // The IK drag committed to the robot, through RobotSafety (UI-UX-AUDIT P0-14).
+        RobotSendPoseButton { model.joints.map { model.q[$0.id] ?? 0 } }
     }
 
     // MARK: Grasp

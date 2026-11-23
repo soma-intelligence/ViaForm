@@ -394,10 +394,11 @@ struct DesignOutline: View {
         model.selection = []
         model.selectedBodies = names
         model.deleteSelection()
+        let step = DesignStep(model)
         let text = names.count == 1
             ? String(localized: "Deleted \(names.first ?? "")")
             : WorkspaceMenu.inflected("Deleted ^[\(names.count) body](inflect: true)")
-        toasts?.show(text, systemImage: "trash", actionTitle: String(localized: "Undo")) { model.undo() }
+        toasts?.show(text, systemImage: "trash", actionTitle: String(localized: "Undo")) { step.undo() }
     }
 
     // MARK: Rows

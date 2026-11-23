@@ -9,9 +9,11 @@
 /* Begin PBXBuildFile section */
 		0015181F02F6FAB988132525 /* AssembleModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5193B22542D7E3A58A4F9758 /* AssembleModel.swift */; };
 		02CBAA42D91DAF234B5F3CFF /* WorkspaceDropdown.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8CF96691C3875966F13A13B2 /* WorkspaceDropdown.swift */; };
+		037CF46B1A6EB82A78DB176D /* ProjectSelfTest.swift in Sources */ = {isa = PBXBuildFile; fileRef = C1AC526442B11BE55678CC58 /* ProjectSelfTest.swift */; };
 		049CA90E23489C8966F04948 /* ToolIcons in Resources */ = {isa = PBXBuildFile; fileRef = 812579DC75498AA5D6AB6F9A /* ToolIcons */; };
 		04AC02723FEAD9064EA4CD4A /* PhysService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55521679B4C4AE4DA2FA5599 /* PhysService.swift */; };
 		0543BE7177CBE3FC85E571D6 /* RobotSafety.swift in Sources */ = {isa = PBXBuildFile; fileRef = 65085BBD229CB770B45F114C /* RobotSafety.swift */; };
+		0701DDEE908A4C3F43A6D3DF /* UndoLabels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 30EE56056B8FDA448065CAE6 /* UndoLabels.swift */; };
 		0796659B2AAA50F8D11A2F38 /* AssembleHand.swift in Sources */ = {isa = PBXBuildFile; fileRef = C35ABFFBB4159AA7329E6AEC /* AssembleHand.swift */; };
 		0830A61B80419B43FE637086 /* AssembleCanvas.swift in Sources */ = {isa = PBXBuildFile; fileRef = D54D03BA238A53AEC7C1B5BB /* AssembleCanvas.swift */; };
 		0883DB09BC2AB9C7DF969B78 /* ViaFormApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = BCCC7ECED1451E6038404754 /* ViaFormApp.swift */; };
@@ -39,6 +41,7 @@
 		21D725B334E33BB8D050B188 /* NumberField.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6A1FBD829EC6856397787B86 /* NumberField.swift */; };
 		237F60565A0E5766D3FAEAD4 /* DeskKeys.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6BFFF50C2C5A3DA39AC1B52D /* DeskKeys.swift */; };
 		23C2705E1908BAD803EC8D64 /* Controls.swift in Sources */ = {isa = PBXBuildFile; fileRef = CF8E0AB058DD54C9C4F95ED4 /* Controls.swift */; };
+		2486103EAA2565E92EA0171D /* StepUndo.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6DE57527FDB6E3599963E1E6 /* StepUndo.swift */; };
 		248F08F3776E38C4DEF796E2 /* AssembleScene.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6521408DCC9EB4E95F5402BD /* AssembleScene.swift */; };
 		276B9F58652CD6E29B45FEF5 /* LibraryEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = F6F39F931A750D8FB4424A5A /* LibraryEngine.swift */; };
 		2A3F5D455070A65A1C6AFFD7 /* Localizable.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = 745D83EC2D8B367AF2C4D43E /* Localizable.xcstrings */; };
@@ -124,6 +127,7 @@
 		88AA1B027D873DF12C8C849E /* BomSelfTest.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6FCD678DF2B15800B741BEB1 /* BomSelfTest.swift */; };
 		894268853E1C683D84B0CCAC /* ToolIcons in Resources */ = {isa = PBXBuildFile; fileRef = 812579DC75498AA5D6AB6F9A /* ToolIcons */; };
 		89B3159D830DE25DADF25FA4 /* DesignOverlays.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE05A3B1F7FF42A5FBB5397F /* DesignOverlays.swift */; };
+		89BC4D13DAD859B2C3725183 /* ProjectSelfTest.swift in Sources */ = {isa = PBXBuildFile; fileRef = C1AC526442B11BE55678CC58 /* ProjectSelfTest.swift */; };
 		8A9FD46674AE39C280D95ACF /* ThemeSwiftUI.swift in Sources */ = {isa = PBXBuildFile; fileRef = 11EF93C933E6DDAE430B1887 /* ThemeSwiftUI.swift */; };
 		8B2DC20ABF9AB71E2C3A125E /* LoadsFromSimSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = A8D785FFB0E4EE5F6A3639B1 /* LoadsFromSimSheet.swift */; };
 		8B9AF8C706C97D9970BF2D55 /* BomSnapshot.swift in Sources */ = {isa = PBXBuildFile; fileRef = 17DA5977B196459CB15CA2C8 /* BomSnapshot.swift */; };
@@ -166,6 +170,7 @@
 		B5742B7C66065580FB5DF417 /* FlowReporting.swift in Sources */ = {isa = PBXBuildFile; fileRef = 81C44FC197697E742BFD9D38 /* FlowReporting.swift */; };
 		B64EDB7680AA12AC9BE7004D /* ArmSimModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 449F6407A04E701EC32C49EC /* ArmSimModel.swift */; };
 		B66C3DFEFCEC8F2C0D5BE9DF /* StageActions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 063ED932271FC5FC038C41B6 /* StageActions.swift */; };
+		B79943128D309A48BB325D8B /* UndoLabels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 30EE56056B8FDA448065CAE6 /* UndoLabels.swift */; };
 		BADBE7D1F3A6D69AC9DF4CB3 /* FlowService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 052C11AA1216987342D09563 /* FlowService.swift */; };
 		BB77E2C2BBA049AFC2C7058C /* TouchSampleHand.swift in Sources */ = {isa = PBXBuildFile; fileRef = C6391142B61A977BCE7E1C8F /* TouchSampleHand.swift */; };
 		BBEB7489283B0F45CEAFC75E /* AssembleEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 93C6434F2D02EE837A6FD50E /* AssembleEngine.swift */; };
@@ -207,6 +212,7 @@
 		E07A5D36F35B92ACD5588DEB /* DesignSnapshot.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6C8F56EE92D2D96DA8018CEB /* DesignSnapshot.swift */; };
 		E1736518CE2AED30D51FE174 /* ThemeIcons.swift in Sources */ = {isa = PBXBuildFile; fileRef = 09C1CC6ED285A89FDDD8D4BD /* ThemeIcons.swift */; };
 		E4107720390F96A31C4C0C70 /* RobotLink.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DC0B8AE960CD5E771B6E323 /* RobotLink.swift */; };
+		E5EE31BFCA65C244EE9A9939 /* StepUndo.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6DE57527FDB6E3599963E1E6 /* StepUndo.swift */; };
 		E752D1AE69D6B00D26043C74 /* PCBLink.swift in Sources */ = {isa = PBXBuildFile; fileRef = B937F795CB3634310244CC31 /* PCBLink.swift */; };
 		E7B21467520187C902468296 /* TouchTools.swift in Sources */ = {isa = PBXBuildFile; fileRef = D3348CCBF6EC8201DB8C834A /* TouchTools.swift */; };
 		EB90358ADA7188FD24C3AE48 /* SimEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 67E99099D00DED4DA1E6373D /* SimEngine.swift */; };
@@ -264,6 +270,7 @@
 		2F18CF1ADA30DC3F5AE17EC9 /* TouchRootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TouchRootView.swift; sourceTree = "<group>"; };
 		30A581FD8803976EB9B39F2B /* TouchRobotStage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TouchRobotStage.swift; sourceTree = "<group>"; };
 		30C8517A3E37CC7D5C50C5FA /* WorkspaceMenu.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkspaceMenu.swift; sourceTree = "<group>"; };
+		30EE56056B8FDA448065CAE6 /* UndoLabels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UndoLabels.swift; sourceTree = "<group>"; };
 		32072027D9206A643F2BFB1B /* ViaForm-macOS.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "ViaForm-macOS.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		3221D3949448C54E17400A3B /* BrowserSidebar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrowserSidebar.swift; sourceTree = "<group>"; };
 		340F971B7B7DB71EFE71A3AC /* Engine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Engine.swift; sourceTree = "<group>"; };
@@ -302,6 +309,7 @@
 		6C8F56EE92D2D96DA8018CEB /* DesignSnapshot.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DesignSnapshot.swift; sourceTree = "<group>"; };
 		6CD8D4940B52AE54BF44CF8B /* GenerateSelfTest.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GenerateSelfTest.swift; sourceTree = "<group>"; };
 		6CEDFFDD0B0AD9CE8D7E2D74 /* DeskPanels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeskPanels.swift; sourceTree = "<group>"; };
+		6DE57527FDB6E3599963E1E6 /* StepUndo.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StepUndo.swift; sourceTree = "<group>"; };
 		6EEE6EBA2A05CA8304BE1099 /* Feedback.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Feedback.swift; sourceTree = "<group>"; };
 		6FCD678DF2B15800B741BEB1 /* BomSelfTest.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BomSelfTest.swift; sourceTree = "<group>"; };
 		70F287175383DC60FE643E34 /* LibraryModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LibraryModel.swift; sourceTree = "<group>"; };
@@ -344,6 +352,7 @@
 		BCCC7ECED1451E6038404754 /* ViaFormApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ViaFormApp.swift; sourceTree = "<group>"; };
 		BF6F7F2C2210DB9F6EA962AC /* GenerateView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GenerateView.swift; sourceTree = "<group>"; };
 		C01E5584047833E806519E42 /* ActionTiming.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActionTiming.swift; sourceTree = "<group>"; };
+		C1AC526442B11BE55678CC58 /* ProjectSelfTest.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProjectSelfTest.swift; sourceTree = "<group>"; };
 		C35ABFFBB4159AA7329E6AEC /* AssembleHand.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AssembleHand.swift; sourceTree = "<group>"; };
 		C41AA0C5BFAF525D50C1171A /* DesignHandleView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DesignHandleView.swift; sourceTree = "<group>"; };
 		C56835A90545A792F505BDF9 /* FileActions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FileActions.swift; sourceTree = "<group>"; };
@@ -454,6 +463,7 @@
 				91C036D6015EFE2DDF1E3A0F /* PCBEngine.swift */,
 				843278380E916BA0AC9A02F4 /* Perf.swift */,
 				9D5B9200588F1683B899BA62 /* Picking.swift */,
+				30EE56056B8FDA448065CAE6 /* UndoLabels.swift */,
 			);
 			path = Engine;
 			sourceTree = "<group>";
@@ -629,7 +639,9 @@
 				53C5402D0D3498EFB386796E /* FlowSelfTest.swift */,
 				052C11AA1216987342D09563 /* FlowService.swift */,
 				78DB719F7DDC7037F40641A3 /* ProjectFiles.swift */,
+				C1AC526442B11BE55678CC58 /* ProjectSelfTest.swift */,
 				82C736CF5517A6097BC26B67 /* StageScreen.swift */,
+				6DE57527FDB6E3599963E1E6 /* StepUndo.swift */,
 				8B77851FE80D93BC4A977096 /* Workspace.swift */,
 				30C8517A3E37CC7D5C50C5FA /* WorkspaceMenu.swift */,
 			);
@@ -880,6 +892,7 @@
 				7795ECB74DEFAF895DA3AB93 /* PhysService.swift in Sources */,
 				AD976AE3DFB40817F035D4D5 /* Picking.swift in Sources */,
 				1216BB38EE3DD4D764E3391E /* ProjectFiles.swift in Sources */,
+				89BC4D13DAD859B2C3725183 /* ProjectSelfTest.swift in Sources */,
 				62A9140FC49EC507611B0744 /* Renderer.swift in Sources */,
 				43A870CB4B800FCA1890D433 /* RobotControls.swift in Sources */,
 				E4107720390F96A31C4C0C70 /* RobotLink.swift in Sources */,
@@ -895,6 +908,7 @@
 				F5C04A61C650AF7F2FFCCBC9 /* SketchInfo.swift in Sources */,
 				9BADB811D33E900DCE560D54 /* StageLeaves.swift in Sources */,
 				FEB29680EA676AFB8813BC97 /* StageScreen.swift in Sources */,
+				2486103EAA2565E92EA0171D /* StepUndo.swift in Sources */,
 				88484E3D33F36FF509846E0E /* ThemeBridges.swift in Sources */,
 				E1736518CE2AED30D51FE174 /* ThemeIcons.swift in Sources */,
 				8A9FD46674AE39C280D95ACF /* ThemeSwiftUI.swift in Sources */,
@@ -910,6 +924,7 @@
 				0E2D89CAEC17653086292D2E /* TouchSimulation.swift in Sources */,
 				91EC83FDE79ED32819ADDF5B /* TouchStages.swift in Sources */,
 				E7B21467520187C902468296 /* TouchTools.swift in Sources */,
+				B79943128D309A48BB325D8B /* UndoLabels.swift in Sources */,
 				F0BDD223164E33D60E65EBD8 /* VFFormat.swift in Sources */,
 				D9B584A797FBC65953D2A225 /* ViaFormApp.swift in Sources */,
 				5947F5D76B9869CBCD3DCBBE /* ViewCube.swift in Sources */,
@@ -1017,6 +1032,7 @@
 				8E286D5B9193A00CC9E023B9 /* Picking.swift in Sources */,
 				7A48C2AE297A6F18F5DE4019 /* PipelineBar.swift in Sources */,
 				ABB33B6E4704EABC8013EA36 /* ProjectFiles.swift in Sources */,
+				037CF46B1A6EB82A78DB176D /* ProjectSelfTest.swift in Sources */,
 				7A0CE3B249B415CE959A23A4 /* ProjectWindow.swift in Sources */,
 				6A0908119113F7C48838249C /* Renderer.swift in Sources */,
 				CF65BDCC1795CCA8C3E92E09 /* RobotControls.swift in Sources */,
@@ -1038,11 +1054,13 @@
 				560381D584487BF1199B68CA /* StageRibbon.swift in Sources */,
 				B528E1EB9750966F89CA877E /* StageScreen.swift in Sources */,
 				C494C9850D8737558072DAEE /* StartWindow.swift in Sources */,
+				E5EE31BFCA65C244EE9A9939 /* StepUndo.swift in Sources */,
 				37D237F08DB12422FEA0F432 /* ThemeBridges.swift in Sources */,
 				CAAB038B4DF0E0656E698D23 /* ThemeIcons.swift in Sources */,
 				2A71EFAE8D6A065F8254FF84 /* ThemeSwiftUI.swift in Sources */,
 				5E702E91D6071985364AEBDE /* ThemeTokens.swift in Sources */,
 				A933E41AFFFC1D1C1849FDCE /* Tools.swift in Sources */,
+				0701DDEE908A4C3F43A6D3DF /* UndoLabels.swift in Sources */,
 				D288DE625B05360C4D90FAD0 /* VFFormat.swift in Sources */,
 				0883DB09BC2AB9C7DF969B78 /* ViaFormApp.swift in Sources */,
 				AE2C5F4944F396DEC00D73CB /* ViewCube.swift in Sources */,

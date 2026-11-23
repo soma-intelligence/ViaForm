@@ -60,6 +60,7 @@ struct RobotStage: View {
                 .accessibilityHidden(true)
             Text(title).font(VFFont.title).foregroundStyle(theme.ink)
             Text(line).font(VFFont.row).foregroundStyle(theme.inkSecondary).multilineTextAlignment(.center)
+                .lineLimit(4)
                 .fixedSize(horizontal: false, vertical: true)
                 .frame(maxWidth: 320)
             Spacer(minLength: 0)
@@ -110,9 +111,11 @@ struct RobotTelemetryPanel: View {
                             Text(reading(k))
                                 .font(VFFont.micro)
                                 .monospacedDigit()
+                                .lineLimit(2)
+                                .multilineTextAlignment(.center)
                                 .foregroundStyle(safety.linkState == nil ? theme.inkTertiary : theme.ink)
                                 .padding(VFSpace.s)
-                                .frame(minWidth: 96, maxWidth: 200, minHeight: 54)
+                                .frame(minWidth: 64, maxWidth: 200, minHeight: 54)
                                 .background(RoundedRectangle(cornerRadius: VFRadius.control, style: .continuous).fill(theme.well))
                         }
                         .accessibilityElement(children: .ignore)
@@ -121,16 +124,16 @@ struct RobotTelemetryPanel: View {
                 }
             }
             .layoutPriority(1)
-            Spacer(minLength: VFSpace.l)
+            Spacer(minLength: VFSpace.m)
             VStack(alignment: .leading, spacing: VFSpace.s) {
                 VFCaption("Record")
-                HStack(spacing: VFSpace.s) {
-                    Button { } label: { Label("Record Demo", systemImage: "record.circle") }
-                        .buttonStyle(.vfSecondary)
-                        .vfDisabled(true, reason: safety.lockReason ?? String(localized: "Recording comes with the robot link"))
-                    Text("No demos yet").font(VFFont.small).foregroundStyle(theme.inkSecondary)
-                }
+                // Stacked so a narrow window never pushes the panel wider than the canvas.
+                Button { } label: { Label("Record Demo", systemImage: "record.circle").lineLimit(1) }
+                    .buttonStyle(.vfSecondary)
+                    .vfDisabled(true, reason: safety.lockReason ?? String(localized: "Recording comes with the robot link"))
+                Text("No demos yet").font(VFFont.small).foregroundStyle(theme.inkSecondary).lineLimit(1)
             }
+            .fixedSize(horizontal: true, vertical: false)
         }
         .padding(VFSpace.l)
         .frame(maxWidth: .infinity, minHeight: 120, alignment: .topLeading)

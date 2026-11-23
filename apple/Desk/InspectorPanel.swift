@@ -341,6 +341,7 @@ struct InspectorPanel: View {
                 if !safety.connected {
                     Text("Not applied, no robot. These limits apply once a robot is connected.")
                         .font(VFFont.small).foregroundStyle(theme.inkSecondary)
+                        .lineLimit(4)
                         .fixedSize(horizontal: false, vertical: true)
                 }
             }

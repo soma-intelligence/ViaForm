@@ -36,7 +36,10 @@ struct StageActions {
         case "train.stop": sim.training.running
         case "train.fly_policy": sim.training.brainJSON != nil
         case "electronics.send_to_3d", "make.kicad": pcb.project != nil
-        // No hardware link before phase 7 (robot-protocol, task P7-2).
+        // Connect offers the simulated robot until the hardware link (robot-protocol, task P7-2);
+        // the e-stop is always live. Motion verbs run from the Robot stage, through RobotSafety.
+        case "robot.connect": !RobotSafety.shared.connected
+        case "robot.estop": true
         case _ where id.hasPrefix("robot."): false
         case _ where id.hasPrefix("simulate.") && flow.isHandProduct: false
         case "simulate.rerun": sim.generatedFrame != nil || flow.node("generate.frame")?.revision ?? 0 > 0
@@ -59,7 +62,10 @@ struct StageActions {
         case "train.stop": return String(localized: "No training is running.")
         case "train.fly_policy": return String(localized: "Train a policy first.")
         case "electronics.send_to_3d", "make.kicad": return String(localized: "Open or create a board first.")
-        case _ where id.hasPrefix("robot."): return String(localized: "Connect a robot first.")
+        case "robot.connect": return String(localized: "A robot is already connected.")
+        case _ where id.hasPrefix("robot."):
+            return RobotSafety.shared.connected ? String(localized: "Use the controls in the Robot stage.")
+                                                : String(localized: "Connect a robot first.")
         case _ where id.hasPrefix("simulate.") && flow.isHandProduct: return String(localized: "The hand is tested by grasping, not by flying.")
         case "simulate.rerun": return String(localized: "Generate a frame first.")
         default: return String(localized: "Not available now.")
@@ -102,6 +108,11 @@ struct StageActions {
             open(.render)
             openTab(.render, "RENDER")
             if let c = model.commands.first(where: { $0.id == "render.start" }) { CommandRouter.run(c, model) }
+        case "robot.connect":
+            // The only link today: the simulated robot (the Robot stage card shows the choice).
+            open(.robot)
+            if !RobotSafety.shared.connected { RobotSafety.shared.connect(SimulatedRobotLink()) }
+        case "robot.estop": RobotSafety.shared.stop(source: RobotSafety.StopSource.button.rawValue)
         case "make.export": FileActions.export(model)
         case "make.bom": showBom()
         case "make.kicad": exportKiCad()

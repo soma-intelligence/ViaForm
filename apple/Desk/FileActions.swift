@@ -38,20 +38,34 @@ enum FileActions {
         defer { ActionTiming.click("file.save", since: t0) }
         let c = ProjectFiles.context(for: model)
         if let c, c.flow.isProjectFile, let key = c.flow.documentKey {
-            let url = URL(fileURLWithPath: key)
-            Task { report(await ProjectFiles.save(url, in: c), c: c, url: url, then: done) }
+            write(URL(fileURLWithPath: key), model, command: nil, then: done)
             return
         }
         if let path = model.snapshot.path {
-            Task {
-                let revisions = c.map { (design: $0.design.snapshot.revision, board: $0.pcb.revision) }
-                let ok = await saveDesign(model, "file.save", path: path)
-                if ok, let c { ProjectFiles.markSaved(c, design: revisions?.design, board: revisions?.board) }
-                report(ok, c: c, url: URL(fileURLWithPath: path), design: model, then: done)
-            }
+            write(URL(fileURLWithPath: path), model, command: "file.save", then: done)
             return
         }
         saveAs(model, then: done)
+    }
+
+    /// Writes `url` off the main actor: the project (`command` nil), else the design file with
+    /// `command`. A failure says why and offers Try Again, Save As or Cancel (P0-4).
+    private static func write(_ url: URL, _ model: DesignModel, command: String?, then done: ((Bool) -> Void)?) {
+        let c = ProjectFiles.context(for: model)
+        Task {
+            let ok: Bool
+            if command == nil, let c {
+                ok = await ProjectFiles.save(url, in: c)
+            } else {
+                let marks = c.flatMap(ProjectFiles.marks)
+                ok = await saveDesign(model, command ?? "file.save", path: url.path)
+                if ok, let c {
+                    if command == "file.save_as" { c.flow.adoptDocument(url.path) }
+                    ProjectFiles.markSaved(c, at: marks)
+                }
+            }
+            report(ok, c: c, url: url, design: model, again: { write(url, model, command: command, then: done) }, then: done)
+        }
     }
 
     static func saveAs(_ model: DesignModel, then done: ((Bool) -> Void)? = nil) {
@@ -64,19 +78,7 @@ enum FileActions {
         guard p.runModal() == .OK, let url = p.url else { done?(false); return }
         let t0 = ActionTiming.now()
         defer { ActionTiming.click("file.save", since: t0) }
-        if ProjectFiles.isProject(url), let c {
-            Task { report(await ProjectFiles.save(url, in: c), c: c, url: url, then: done) }
-            return
-        }
-        Task {
-            let revisions = c.map { (design: $0.design.snapshot.revision, board: $0.pcb.revision) }
-            let ok = await saveDesign(model, "file.save_as", path: url.path)
-            if ok, let c {
-                c.flow.adoptDocument(url.path)
-                ProjectFiles.markSaved(c, design: revisions?.design, board: revisions?.board)
-            }
-            report(ok, c: c, url: url, design: model, then: done)
-        }
+        write(url, model, command: ProjectFiles.isProject(url) && c != nil ? nil : "file.save_as", then: done)
     }
 
     /// Writes the design file (`.sc`) on a worker: the design engine holds its own lock, so the
@@ -119,25 +121,34 @@ enum FileActions {
         }
     }
 
-    /// Shows why a save failed and offers Save As; tells `done` whether the file was written.
-    private static func report(_ ok: Bool, c: ProjectFiles.Context?, url: URL, design: DesignModel? = nil, then done: ((Bool) -> Void)?) {
+    /// Shows why a save failed and offers Try Again (the default), Save As or Cancel; tells
+    /// `done` whether the file was written in the end.
+    private static func report(_ ok: Bool, c: ProjectFiles.Context?, url: URL, design: DesignModel? = nil,
+                               again: @escaping () -> Void, then done: ((Bool) -> Void)?) {
         guard !ok else {
             (c?.design ?? design)?.flash(String(localized: "Saved \(url.lastPathComponent)"))
             done?(true)
             return
         }
-        let reason = c?.bom.message ?? design?.message ?? c?.design.message
+        let a = failureAlert(url: url, reason: c?.bom.message ?? design?.message ?? c?.design.message)
+        switch a.runModal() {
+        case .alertFirstButtonReturn: again()
+        case .alertSecondButtonReturn:
+            if let model = c?.design ?? design { saveAs(model, then: done) } else { done?(false) }
+        default: done?(false)
+        }
+    }
+
+    /// The failed-save alert: the reason, then Try Again (default, Return), Save As, Cancel (Esc).
+    static func failureAlert(url: URL, reason: String?) -> NSAlert {
         let a = NSAlert()
         a.alertStyle = .warning
         a.messageText = String(localized: "“\(url.lastPathComponent)” could not be saved.")
         a.informativeText = (reason.map { $0 + "\n\n" } ?? "") + String(localized: "Your work is still open. Try again, or save a copy somewhere else.")
+        a.addButton(withTitle: String(localized: "Try Again"))
         a.addButton(withTitle: String(localized: "Save As…"))
         a.addButton(withTitle: String(localized: "Cancel"))
-        if a.runModal() == .alertFirstButtonReturn, let model = c?.design ?? design {
-            saveAs(model, then: done)
-            return
-        }
-        done?(false)
+        return a
     }
 
     private static func alert(_ text: String, detail: String) {

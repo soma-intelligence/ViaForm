@@ -128,6 +128,16 @@ enum SelfTest {
 
         // UI-UX-AUDIT P0-11: project save and open, BOM part import and the joint list off the main actor.
         for (ok, what) in MainActor.assumeIsolated({ BomSelfTest.checks() }) { check(ok, what) }
+        // P0-1, P0-2, P0-10 follow-ups: undo names, the edited mark, exact-step toasts.
+        for (ok, what) in MainActor.assumeIsolated({ ProjectSelfTest.checks() }) { check(ok, what) }
+        #if os(macOS)
+        let alertOK = MainActor.assumeIsolated { () -> Bool in
+            let a = FileActions.failureAlert(url: URL(fileURLWithPath: "/tmp/x.viaform"), reason: "Disk full")
+            return a.buttons.map { $0.title } == [String(localized: "Try Again"), String(localized: "Save As…"), String(localized: "Cancel")]
+                && a.informativeText.hasPrefix("Disk full")
+        }
+        check(alertOK, "P0-4 a failed save offers Try Again (default), Save As, Cancel and says why")
+        #endif
 
         // Simulation: the Rust flight model (sim/), through the bridge.
         for (ok, what) in MainActor.assumeIsolated({ simulationChecks() }) { check(ok, what) }

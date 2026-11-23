@@ -57,8 +57,32 @@ extension FocusedValues {
 
 /// A text field is being edited in the key window: Edit menu items go to it, not the model.
 @MainActor
-private var textFieldEditing: Bool {
-    NSApp.keyWindow?.firstResponder is NSText
+private var textFieldEditing: Bool { TextEditingWatch.shared.editing }
+
+/// Follows the key window's first responder, so the Edit menu, whose body SwiftUI evaluates
+/// again only when what it reads changes, enables Undo and Redo for a field that is editing
+/// even when the stage has nothing to undo (P0-1: Command-Z never greyed out or swallowed).
+@MainActor
+@Observable
+final class TextEditingWatch {
+    static let shared = TextEditingWatch()
+    private(set) var editing = false
+    @ObservationIgnored private var observer: NSObjectProtocol?
+
+    private init() {
+        // After every event the windows update: the first responder is read then, cheaply.
+        observer = NotificationCenter.default.addObserver(forName: NSWindow.didUpdateNotification, object: nil, queue: .main) { _ in
+            MainActor.assumeIsolated { TextEditingWatch.shared.update() }
+        }
+    }
+
+    func update() {
+        let now = NSApp.keyWindow?.firstResponder is NSText
+        if now != editing { editing = now }
+    }
+
+    /// The field that is editing, read at the moment of the click (never a stale value).
+    static var live: Bool { NSApp.keyWindow?.firstResponder is NSText }
 }
 
 /// File, Edit (undo), View, Workspace and Help commands of the project window. Every item acts on
@@ -91,12 +115,12 @@ struct DeskFileCommands: Commands {
         }
         CommandGroup(replacing: .undoRedo) {
             Button(undoTitle) {
-                if textFieldEditing { NSApp.sendAction(Selector(("undo:")), to: nil, from: nil) } else { desk?.undo.undo() }
+                if TextEditingWatch.live { NSApp.sendAction(Selector(("undo:")), to: nil, from: nil) } else { desk?.undo.undo() }
             }
             .keyboardShortcut("z")
             .disabled(!textFieldEditing && (!(desk?.undo.canUndo ?? false) || EngineGate.shared.shut))
             Button(redoTitle) {
-                if textFieldEditing { NSApp.sendAction(Selector(("redo:")), to: nil, from: nil) } else { desk?.undo.redo() }
+                if TextEditingWatch.live { NSApp.sendAction(Selector(("redo:")), to: nil, from: nil) } else { desk?.undo.redo() }
             }
             .keyboardShortcut("z", modifiers: [.command, .shift])
             .disabled(!textFieldEditing && (!(desk?.undo.canRedo ?? false) || EngineGate.shared.shut))

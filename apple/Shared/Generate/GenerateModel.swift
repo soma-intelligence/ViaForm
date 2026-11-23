@@ -237,6 +237,15 @@ final class GenerateModel {
         }
     }
 
+    /// A model that only reads project `name` (assembly, joints, summary) for a side view such as
+    /// the grasp test: no launch arguments, no study loaded, and the Generate stage's own model
+    /// is left alone.
+    init(reading name: String) {
+        openSample(name, replaceStudy: false)
+        undoStack = []
+        redoStack = []
+    }
+
     /// The setup changed since the candidates were made.
     var stale: Bool { outcome != nil && studied != study && pickedVariant == nil }
 
@@ -688,8 +697,8 @@ final class GenerateModel {
         }
     }
 
-    /// Opens the project's assembly and joints only, leaving the setup as it is (the grasp test
-    /// in Simulate reads the hand this way).
+    /// Opens the project's assembly and joints only, leaving the setup as it is. The grasp test
+    /// no longer calls this (it reads the hand into a model of its own, `init(reading:)`).
     func openProjectOnly(_ name: String) {
         guard project?.name != name else { return }
         let keep = pane

@@ -167,16 +167,26 @@ pub unsafe extern "C" fn vf_train_cancel(job: *const VfTrain) {
     }
 }
 
-/// Cancels the job if it still runs, waits for it and frees it.
+/// Cancels the job if it still runs and frees it without waiting: a running job ends its current
+/// iteration and is joined on a thread of its own, so freeing from the main thread never blocks.
 ///
 /// # Safety
 /// `job` is null or came from `vf_train_start`, and is not used afterwards.
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn vf_train_free(job: *mut VfTrain) {
-    if !job.is_null() {
-        // SAFETY: `job` came from `Box::into_raw` in `vf_train_start`.
-        drop(unsafe { Box::from_raw(job) });
+    if job.is_null() {
+        return;
     }
+    // SAFETY: `job` came from `Box::into_raw` in `vf_train_start`.
+    let job = unsafe { Box::from_raw(job) };
+    job.job.cancel();
+    if !job.job.running() {
+        drop(job);
+        return;
+    }
+    // Dropping joins the training thread: do it off the caller's thread. Should no thread
+    // start (out of threads), the job is dropped where it is, which waits for its iteration.
+    let _ = std::thread::Builder::new().name("viaform-train-free".into()).spawn(move || drop(job));
 }
 
 /// What the sourced components build: `request` is `{"components": text, "assembly"?, "frame"?}`;
@@ -189,4 +199,43 @@ pub unsafe extern "C" fn vf_sim_vehicle(request: *const c_char) -> *mut c_char {
     // SAFETY: NUL-terminated string, per the contract above.
     let r = unsafe { text(request) }.unwrap_or("").to_owned();
     raw(guard(panicked(), || api::vehicle(&r)))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::ffi::CString;
+    use std::time::{Duration, Instant};
+
+    /// Freeing a training mid-iteration returns at once (the wait moves to its own thread),
+    /// and freeing a finished one or null is fine too.
+    #[test]
+    fn freeing_a_running_training_never_blocks() {
+        // Large enough that one iteration takes far longer than the bound below.
+        let o = CString::new(r#"{"iterations": 500, "population": 256, "episodes": 64}"#).unwrap();
+        // SAFETY: NUL-terminated options.
+        let job = unsafe { vf_train_start(o.as_ptr()) };
+        assert!(!job.is_null());
+        std::thread::sleep(Duration::from_millis(50));
+        // SAFETY: a live handle.
+        assert!(unsafe { job.as_ref() }.is_some_and(|j| j.job.running()), "the training should still run");
+        let t = Instant::now();
+        // SAFETY: a live handle, not used afterwards.
+        unsafe { vf_train_free(job) };
+        assert!(t.elapsed() < Duration::from_millis(100), "free blocked for {:?}", t.elapsed());
+
+        let o = CString::new(r#"{"iterations": 1, "population": 2, "episodes": 1}"#).unwrap();
+        // SAFETY: NUL-terminated options.
+        let small = unsafe { vf_train_start(o.as_ptr()) };
+        assert!(!small.is_null());
+        // SAFETY: live handle.
+        while unsafe { small.as_ref() }.is_some_and(|j| j.job.running()) {
+            std::thread::sleep(Duration::from_millis(5));
+        }
+        // SAFETY: a live handle, then null.
+        unsafe {
+            vf_train_free(small);
+            vf_train_free(std::ptr::null_mut());
+        }
+    }
 }

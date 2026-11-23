@@ -12,35 +12,61 @@ import SwiftUI
 /// (`ProjectActivity`) and an Open that fails offers Try Again.
 @MainActor
 enum ProjectFiles {
-    /// The models of a project window.
+    /// The models of a project window. The Generate study and the assembly are optional (the
+    /// iPad and the legacy window have no assembly screen).
     struct Context {
         let design: DesignModel
         let pcb: PCBModel
         let bom: BomModel
         let flow: FlowModel
+        var generate: GenerateModel? = nil
+        var assemble: AssembleModel? = nil
     }
 
-    /// One window's models, held weakly so a closed window frees them, and the revisions last
-    /// written or read (the "edited" mark).
+    /// What "edited" compares (P0-2): the design and board revisions, the BOM's and the
+    /// pipeline's own edit counts, the Generate study's setup and the assembly's document.
+    struct Marks: Equatable {
+        var design: Int
+        var board: Int
+        var bom: Int
+        var flow: Int
+        var study: Study?
+        var assembly: Int?
+
+        @MainActor
+        init(_ c: Context) {
+            design = c.design.snapshot.revision
+            board = c.pcb.revision
+            bom = c.bom.editRevision
+            flow = c.flow.editRevision
+            study = c.generate?.study
+            assembly = c.assemble?.documentRevision
+        }
+    }
+
+    /// One window's models, held weakly so a closed window frees them, and what was last
+    /// written or read (the "edited" mark; observable, so the close button's dot follows it).
     @MainActor
-    private final class Entry {
-        weak var design: DesignModel?
-        weak var pcb: PCBModel?
-        weak var bom: BomModel?
-        weak var flow: FlowModel?
-        var savedDesign: Int
-        var savedBoard: Int
-        let activity = ProjectActivity()
+    @Observable
+    final class Entry {
+        @ObservationIgnored weak var design: DesignModel?
+        @ObservationIgnored weak var pcb: PCBModel?
+        @ObservationIgnored weak var bom: BomModel?
+        @ObservationIgnored weak var flow: FlowModel?
+        @ObservationIgnored weak var generate: GenerateModel?
+        @ObservationIgnored weak var assemble: AssembleModel?
+        var saved: Marks
+        @ObservationIgnored let activity = ProjectActivity()
 
         init(_ c: Context) {
             design = c.design; pcb = c.pcb; bom = c.bom; flow = c.flow
-            savedDesign = c.design.snapshot.revision
-            savedBoard = c.pcb.revision
+            generate = c.generate; assemble = c.assemble
+            saved = Marks(c)
         }
 
         var context: Context? {
             guard let design, let pcb, let bom, let flow else { return nil }
-            return Context(design: design, pcb: pcb, bom: bom, flow: flow)
+            return Context(design: design, pcb: pcb, bom: bom, flow: flow, generate: generate, assemble: assemble)
         }
     }
 
@@ -50,7 +76,10 @@ enum ProjectFiles {
     /// checks and the BOM panel find them by the window's design model.
     static func register(_ c: Context) {
         entries = entries.filter { $0.value.design != nil }
-        if entries[ObjectIdentifier(c.design)]?.context == nil {
+        if let e = entries[ObjectIdentifier(c.design)], e.context != nil {
+            if e.generate == nil, let g = c.generate { e.generate = g; e.saved.study = g.study }
+            if e.assemble == nil, let a = c.assemble { e.assemble = a; e.saved.assembly = a.documentRevision }
+        } else {
             entries[ObjectIdentifier(c.design)] = Entry(c)
         }
     }
@@ -66,19 +95,26 @@ enum ProjectFiles {
     /// The window that last came forward. Kept for code paths that have no model at hand.
     static var current: Context?
 
-    /// The design or the board changed since the last save, open or new.
+    /// The design, the board, the BOM, the pipeline, the Generate study or the assembly changed
+    /// since the last save, open or new.
     static func isEdited(_ c: Context) -> Bool {
         guard let e = entries[ObjectIdentifier(c.design)] else { return c.design.snapshot.dirty }
-        return c.design.snapshot.revision != e.savedDesign || c.pcb.revision != e.savedBoard
+        var now = Marks(c)
+        // A window registered without the study or the assembly does not count them.
+        if e.generate == nil { now.study = e.saved.study }
+        if e.assemble == nil { now.assembly = e.saved.assembly }
+        return now != e.saved
     }
 
-    /// Marks the window's models as matching what is on disk: their revisions now, or the ones
-    /// a save started from (an edit made while it ran stays edited).
-    static func markSaved(_ c: Context, design: Int? = nil, board: Int? = nil) {
-        guard let e = entries[ObjectIdentifier(c.design)] else { return }
-        e.savedDesign = design ?? c.design.snapshot.revision
-        e.savedBoard = board ?? c.pcb.revision
+    /// Marks the window's models as matching what is on disk: as they are now, or as a save
+    /// found them when it started (an edit made while it ran stays edited).
+    static func markSaved(_ c: Context, at marks: Marks? = nil) {
+        guard let e = entries[ObjectIdentifier(c.design)], let full = e.context else { return }
+        e.saved = marks ?? Marks(full)
     }
+
+    /// What a save starting now writes, for `markSaved(_:at:)` once it is written.
+    static func marks(_ c: Context) -> Marks? { entries[ObjectIdentifier(c.design)]?.context.map(Marks.init) }
 
     static let projectExtension = "viaform"
 
@@ -89,7 +125,7 @@ enum ProjectFiles {
     @discardableResult
     static func save(_ url: URL, in c: Context) async -> Bool {
         let activity = activity(for: c.design)
-        let revisions = (design: c.design.snapshot.revision, board: c.pcb.revision)
+        let marks = marks(c)
         // The pipeline as it is now, in memory; written into the file on a worker.
         let flowDoc = c.flow.exportDocument()
         let ok = await ActionTiming.measure("project.save", {
@@ -105,7 +141,7 @@ enum ProjectFiles {
         activity?.end()
         guard ok else { return false }
         c.flow.adoptSavedProject(url)
-        markSaved(c, design: revisions.design, board: revisions.board)
+        markSaved(c, at: marks)
         return true
     }
 
@@ -170,8 +206,9 @@ enum ProjectFiles {
 
 extension View {
     /// Makes this window's models the ones the File menu acts on while it is frontmost.
-    func projectFilesContext(design: DesignModel, pcb: PCBModel, bom: BomModel, flow: FlowModel) -> some View {
-        modifier(ProjectFilesContext(context: .init(design: design, pcb: pcb, bom: bom, flow: flow)))
+    func projectFilesContext(design: DesignModel, pcb: PCBModel, bom: BomModel, flow: FlowModel,
+                             generate: GenerateModel? = nil, assemble: AssembleModel? = nil) -> some View {
+        modifier(ProjectFilesContext(context: .init(design: design, pcb: pcb, bom: bom, flow: flow, generate: generate, assemble: assemble)))
     }
 }
 

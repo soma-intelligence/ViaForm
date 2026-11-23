@@ -56,16 +56,17 @@ struct GenerateView: View {
     }
 
     /// Stopping a run that has solved for a while asks first (FRONTEND-SPEC 6.4): keep the best
-    /// design so far (the default), discard the run, or keep it running (Cancel).
+    /// design so far (the default), discard the run, or keep it running.
     private var stopRequest: ConfirmRequest {
         ConfirmRequest(
             title: String(localized: "Stop the study?"),
-            message: String(localized: "It has been solving for \(readableDuration(model.runAge)). Keep its best design so far as a candidate (not converged), or discard the run. Cancel keeps it running."),
+            message: String(localized: "It has been solving for \(readableDuration(model.runAge)). Keep its best design so far as a candidate (not converged), discard the run, or keep it running."),
             verb: String(localized: "Keep Best So Far"),
             destructive: false,
             perform: { model.cancel() },
             alternate: (title: String(localized: "Discard"), perform: { model.discard() }),
-            cancel: { model.stopRequested = false })
+            cancel: { model.stopRequested = false },
+            cancelTitle: String(localized: "Keep Running"))
     }
 
     private func wide(_ scene: GenerateScene) -> some View {

@@ -114,7 +114,7 @@ struct TouchShell: View {
             .onChange(of: telemetryOpen) { _, v in storedTelemetry = v }
             .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { width = $0 }
             .reportsToFlow(flow, design: model, pcb: pcb, generate: generate, sim: sim)
-            .projectFilesContext(design: model, pcb: pcb, bom: bom, flow: flow)
+            .projectFilesContext(design: model, pcb: pcb, bom: bom, flow: flow, generate: generate)
             .overlay(alignment: .bottom) {
                 StageIntro(workspace: stage)
                     .padding(.horizontal, VFSpace.l)
@@ -464,9 +464,11 @@ struct TouchShell: View {
         switch stage {
         case .design, .assemble, .render, .make:
             TouchUndoTarget(canUndo: model.snapshot.undo > 0, canRedo: model.snapshot.redo > 0,
+                            undoName: model.engine.undoNames(undo: model.snapshot.undo, redo: model.snapshot.redo).undo,
                             undo: { model.undo() }, redo: { model.redo() })
         case .electronics:
             TouchUndoTarget(canUndo: pcb.undoCount > 0, canRedo: pcb.redoCount > 0,
+                            undoName: pcb.engine.undoNames(undo: pcb.undoCount, redo: pcb.redoCount).undo,
                             undo: { pcb.undo() }, redo: { pcb.redo() })
         case .generate:
             TouchUndoTarget(canUndo: generate.canUndo, canRedo: generate.canRedo, undoName: generate.undoName,
@@ -671,8 +673,9 @@ struct TimelineStepActions: View {
     }
 
     @MainActor static func delete(_ f: DesignSnapshot.Feature, model: DesignModel, toasts: ToastCenter?) {
-        model.run("timeline.delete", ["feature": f.id])
-        toasts?.show(String(localized: "Deleted \(f.name)"), systemImage: "trash", actionTitle: String(localized: "Undo")) { model.undo() }
+        guard model.run("timeline.delete", ["feature": f.id]) != nil else { return }
+        let step = DesignStep(model)
+        toasts?.show(String(localized: "Deleted \(f.name)"), systemImage: "trash", actionTitle: String(localized: "Undo")) { step.undo() }
     }
 }
 
