@@ -9,3 +9,5 @@ publish = false
 [dependencies]
 serde.workspace = true
 serde_json.workspace = true
+nalgebra = "0.34"
+rand_chacha = "0.9"
