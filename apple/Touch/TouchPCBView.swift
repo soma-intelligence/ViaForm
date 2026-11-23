@@ -4,21 +4,25 @@ import SwiftUI
 /// The touch electronics space: the sheet fills the screen, the top bar switches schematic and
 /// board, a tool column sits at the left edge and the parts and checks open as sidebars.
 struct TouchPCBView: View {
+    @Environment(\.viaFormTheme) private var theme
     @Bindable var model: PCBModel
     let design: DesignModel
     @Binding var showProject: Bool
     let openDesign: () -> Void
     @State private var side: Side?
-    @State private var exportURL: URL?
+    @State private var exporting = false
+    @State private var width: CGFloat = 1024
     @Environment(\.horizontalSizeClass) private var hSize
 
     enum Side { case parts, checks }
 
-    private var compact: Bool { hSize == .compact }
+    /// The phone layout, also in a narrow iPad window (Split View, Stage Manager).
+    private var compact: Bool { hSize == .compact || width < 820 }
 
     @State private var hiddenLayers: Set<String> = []
     @State private var transform: PCBCanvasTransform?
     @State private var cardFrame: CGRect?
+    @Environment(\.vfToasts) private var toasts
 
     var body: some View {
         let info = BoardLinkInfo.read(design: design, pcb: model)
@@ -56,12 +60,18 @@ struct TouchPCBView: View {
                                         .onChange(of: g.frame(in: .global)) { _, f in cardFrame = f }
                                 })
                         }
-                        if !compact, let side { sidebar(side).frame(width: 290, height: 380) }
+                        if !compact, let side { sidebar(side).frame(width: 300).frame(maxHeight: 420) }
                     }
                 }
                 Spacer(minLength: 0)
-                if let hint = model.toolHint { pill(hint, color: .secondary) }
-                if let m = model.message { pill(m, color: model.messageIsError ? .red : .primary) }
+                if let hint = model.toolHint { pill(hint) }
+                if let m = model.message {
+                    if model.messageIsError {
+                        ErrorBanner(message: m) { model.message = nil }
+                    } else {
+                        pill(m)
+                    }
+                }
                 HStack(alignment: .bottom, spacing: 10) {
                     DRCCapsule(pcb: model) { model.refresh() }
                     Spacer(minLength: 0)
@@ -71,7 +81,7 @@ struct TouchPCBView: View {
                                 .padding(.horizontal, 10).frame(minHeight: VFSize.touchTarget)
                         }
                         .fixedSize(horizontal: true, vertical: false)
-                        .vfSurface(.floating, radius: 22)
+                        .vfSurface(.control, radius: VFRadius.touchCapsule)
                     }
                 }
                 if compact { tools }
@@ -79,22 +89,16 @@ struct TouchPCBView: View {
             .padding(.horizontal, 12)
             .padding(.vertical, 8)
         }
-        .animation(.snappy(duration: VFMotion.standard), value: side)
+        .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { width = $0 }
+        .vfAnimation(.snappy(duration: VFMotion.standard), value: side)
         .sheet(isPresented: Binding(get: { compact && side != nil }, set: { if !$0 { side = nil } })) {
-            if let side { sidebar(side).presentationDetents([.medium, .large]) }
+            if let side { sidebar(side).presentationDetents([.medium, .large]).viaFormTheme() }
         }
-        .sheet(item: Binding(get: { exportURL.map(ExportedFile.init) }, set: { exportURL = $0?.url })) { f in
-            VStack(spacing: 16) {
-                Image(systemName: "checkmark.circle.fill").font(.largeTitle).foregroundStyle(.green)
-                Text(f.url.lastPathComponent).font(.headline)
-                ShareLink(item: f.url) { Label("Share", systemImage: "square.and.arrow.up") }.buttonStyle(.borderedProminent)
-            }
-            .padding(30)
-            .presentationDetents([.height(220)])
+        .sheet(isPresented: $exporting) {
+            // The same export flow as the design's: progress, overwrite check, share or retry.
+            ExportFlow(model: design, kind: .kicad, pcb: model).viaFormTheme()
         }
     }
-
-    private struct ExportedFile: Identifiable { let url: URL; var id: String { url.path } }
 
     /// The sheet switch and the board's actions in the right column's header card (no second
     /// capsule under the window's own).
@@ -107,43 +111,65 @@ struct TouchPCBView: View {
             .frame(width: compact ? 150 : 170)
             Spacer(minLength: 4)
             // Browser, undo and redo are in the window's top capsule.
-            bar("list.bullet.rectangle", "Parts", on: side == .parts) { side = side == .parts ? nil : .parts }
+            bar("list.bullet.rectangle", String(localized: "Parts"), on: side == .parts) { side = side == .parts ? nil : .parts }
             ZStack(alignment: .topTrailing) {
-                bar(PCBSymbol.checks, "Checks", on: side == .checks) { side = side == .checks ? nil : .checks }
+                bar(PCBSymbol.checks, model.findings.isEmpty ? String(localized: "Checks") : String(localized: "Checks, \(model.findings.count) findings"),
+                    on: side == .checks) { side = side == .checks ? nil : .checks }
                 if !model.findings.isEmpty {
-                    Text("\(model.findings.count)").font(.system(size: 9, weight: .bold)).foregroundStyle(.white)
-                        .padding(3).background(Color.orange, in: Circle()).offset(x: -2, y: 2)
+                    Text("\(model.findings.count)").font(VFFont.micro.weight(.bold)).foregroundStyle(theme.onAccent)
+                        .padding(3).frame(minWidth: 18).background(theme.warning, in: Capsule()).offset(x: -2, y: 2)
+                        .allowsHitTesting(false)
+                        .accessibilityHidden(true)
                 }
             }
             Menu {
-                Button(model.linkedRevision == nil ? "Send to 3D Design" : "Update 3D Board", systemImage: "cube.transparent") { model.sendTo3D(design) }
+                if model.boardOutOfDate {
+                    Section(String(localized: "The 3D board is out of date")) {}
+                }
+                Button(model.linkedRevision == nil ? String(localized: "Send to 3D Design") : String(localized: "Update 3D Board"), systemImage: "cube.transparent") { model.sendTo3D(design) }
                 Button("Mount on a Part", systemImage: "square.stack.3d.down.forward") { model.startMount(design, show: openDesign) }
             } label: {
-                Image(systemName: "cube.transparent").font(.system(size: 17, weight: .medium)).frame(width: 40, height: 40)
-                    .overlay(alignment: .topTrailing) { if model.boardOutOfDate { Circle().fill(.orange).frame(width: 8, height: 8) } }
+                Image(systemName: "cube.transparent").font(VFFont.glyph(17, weight: .medium))
+                    .foregroundStyle(theme.ink)
+                    .frame(width: VFSize.touchTarget, height: VFSize.touchTarget)
+                    .overlay(alignment: .topTrailing) {
+                        // Out of date: a triangle, not only a colour.
+                        if model.boardOutOfDate {
+                            Image(systemName: "exclamationmark.triangle.fill").font(VFFont.glyph(9, weight: .bold))
+                                .foregroundStyle(theme.warning).offset(x: -2, y: 4)
+                        }
+                    }
+                    .contentShape(Rectangle())
             }
-            bar(PCBSymbol.export, "Export KiCad") { export() }
+            .hoverEffect(.highlight)
+            .accessibilityLabel(model.boardOutOfDate ? String(localized: "3D board, out of date") : String(localized: "3D board"))
+            bar(PCBSymbol.export, String(localized: "Export KiCad Board")) { exporting = true }
         }
-        .padding(.horizontal, 6)
+        .padding(.horizontal, VFSpace.s)
         .frame(minHeight: 52)
-        .vfSurface(.floating, radius: 18)
+        .vfSurface(.control, radius: VFRadius.touchFloating)
     }
 
     @ViewBuilder private var tools: some View {
         let items: [(String, String, Bool, () -> Void)] = {
-            var list: [(String, String, Bool, () -> Void)] = [("cursorarrow", "Select", model.tool == .select, { model.tool = .select })]
+            var list: [(String, String, Bool, () -> Void)] = [("cursorarrow", String(localized: "Select"), model.tool == .select, { model.tool = .select })]
             if model.sheet == .schematic {
                 for k in PCBModel.partKinds { list.append((PCBSymbol.part(k), k.capitalized, model.tool == .place(k), { model.tool = .place(k) })) }
-                list.append((PCBSymbol.wire, "Wire", model.tool == .wire, { model.tool = .wire }))
-                list.append((PCBSymbol.update, "To Board", false, { model.updateBoard() }))
+                list.append((PCBSymbol.wire, String(localized: "Wire"), model.tool == .wire, { model.tool = .wire }))
+                list.append((PCBSymbol.update, String(localized: "To Board"), false, { model.updateBoard() }))
             } else {
-                list.append((PCBSymbol.route, "Route", model.tool == .route, { model.tool = .route }))
-                list.append((PCBSymbol.routeAll, "Route All", false, { model.routeAll() }))
-                list.append(("square.2.layers.3d", model.layer, false, { model.layer = model.layer == "F.Cu" ? "B.Cu" : "F.Cu" }))
-                list.append((PCBSymbol.update, "Update", false, { model.updateBoard() }))
+                list.append((PCBSymbol.route, String(localized: "Route"), model.tool == .route, { model.tool = .route }))
+                list.append((PCBSymbol.routeAll, String(localized: "Route All"), false, { model.routeAll() }))
+                list.append(("square.2.layers.3d", model.layer == "F.Cu" ? String(localized: "Top Copper") : String(localized: "Bottom Copper"), false,
+                             { model.layer = model.layer == "F.Cu" ? "B.Cu" : "F.Cu" }))
+                list.append((PCBSymbol.update, String(localized: "Update"), false, { model.updateBoard() }))
             }
-            list.append(("rotate.right", "Rotate", false, { model.rotateSelection() }))
-            list.append(("trash", "Delete", false, { model.deleteSelection() }))
+            list.append(("rotate.right", String(localized: "Rotate"), false, { model.rotateSelection() }))
+            list.append(("trash", String(localized: "Delete"), false, {
+                // Undoable: the board's own stack, offered in the toast.
+                model.deleteSelection()
+                toasts?.show(String(localized: "Deleted"), systemImage: "trash", actionTitle: String(localized: "Undo")) { model.undo() }
+            }))
             return list
         }()
         let layout = compact ? AnyLayout(HStackLayout(spacing: 2)) : AnyLayout(VStackLayout(spacing: 4))
@@ -152,57 +178,41 @@ struct TouchPCBView: View {
                 ForEach(Array(items.enumerated()), id: \.offset) { _, item in
                     Button(action: item.3) {
                         VStack(spacing: 2) {
-                            Image(systemName: item.0).font(.system(size: 19)).frame(height: 24)
-                            if !compact { Text(item.1).font(.system(size: 8.5, weight: .medium)).lineLimit(1).minimumScaleFactor(0.7) }
+                            Image(systemName: item.0).font(VFFont.glyph(19)).frame(height: 24)
+                            if !compact { Text(item.1).font(VFFont.micro).lineLimit(1).minimumScaleFactor(0.6) }
                         }
-                        .frame(width: compact ? 44 : 56, height: compact ? 40 : 48)
-                        .foregroundStyle(item.2 ? Color.white : Color.primary)
-                        .background(item.2 ? Color.accentColor : .clear, in: RoundedRectangle(cornerRadius: 10))
+                        .frame(width: compact ? VFSize.touchTarget : 60, height: compact ? VFSize.touchTarget : 52)
+                        .foregroundStyle(item.2 ? theme.onAccent : theme.ink)
+                        .background(item.2 ? theme.accent : .clear, in: RoundedRectangle(cornerRadius: VFRadius.card, style: .continuous))
                         .contentShape(Rectangle())
                     }
-                    .buttonStyle(.plain)
+                    .buttonStyle(.vfTouch)
                     .accessibilityLabel(item.1)
+                    .accessibilityAddTraits(item.2 ? .isSelected : [])
                 }
             }
-            .padding(compact ? 4 : 6)
+            .padding(compact ? VFSpace.xs : VFSpace.s)
         }
         .fixedSize(horizontal: !compact, vertical: true)
-        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: compact ? 24 : 18))
-        .shadow(color: .black.opacity(0.08), radius: 10, y: 3)
+        .vfSurface(.control, radius: compact ? VFRadius.touchCapsule : VFRadius.touchFloating)
     }
 
     @ViewBuilder private func sidebar(_ side: Side) -> some View {
         Group {
             if side == .parts { PCBBrowser(model: model).scrollContentBackground(.hidden) }
-            else { ScrollView { PCBChecksPanel(model: model).padding(16) } }
+            else { ScrollView { PCBChecksPanel(model: model).padding(VFSpace.xl) } }
         }
-        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 18))
-        .shadow(color: .black.opacity(0.08), radius: 10, y: 3)
+        .vfSurface(.floating, radius: VFRadius.touchFloating)
     }
 
     private func bar(_ symbol: String, _ label: String, on: Bool = false, action: @escaping () -> Void) -> some View {
-        Button(action: action) {
-            Image(systemName: symbol)
-                .font(.system(size: 17, weight: .medium))
-                .frame(width: 40, height: 40)
-                .foregroundStyle(on ? Color.accentColor : Color.primary)
-                .background(on ? Color.accentColor.opacity(0.14) : .clear, in: Circle())
-        }
-        .buttonStyle(.plain)
-        .accessibilityLabel(label)
+        TouchBarButton(symbol: symbol, label: label, on: on, action: action)
     }
 
-    private func pill(_ text: String, color: Color) -> some View {
-        Text(text).font(.callout).foregroundStyle(color)
-            .padding(.horizontal, 14).padding(.vertical, 8)
-            .background(.regularMaterial, in: Capsule())
-    }
-
-    private func export() {
-        let dir = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
-        let url = dir.appendingPathComponent((model.project?.name ?? "board").replacingOccurrences(of: "/", with: "-") + ".kicad_pcb")
-        model.exportKiCad(to: url)
-        if FileManager.default.fileExists(atPath: url.path), !model.messageIsError { exportURL = url }
+    private func pill(_ text: String) -> some View {
+        Text(text).font(VFFont.row).foregroundStyle(theme.ink)
+            .padding(.horizontal, VFSpace.l).padding(.vertical, VFSpace.m)
+            .vfSurface(.floating, radius: VFRadius.touchCapsule)
     }
 }
 #endif

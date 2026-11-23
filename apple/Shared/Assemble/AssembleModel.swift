@@ -9,14 +9,26 @@ import simd
 /// The document lives in the Rust assembly engine (`vf_asm_*`); the kinematic model is built
 /// from it once per document change (`kin_model`) and loaded into `vf_kin_*`. Joint values are
 /// degrees (mm for sliders) here and in the document, radians inside kin.
+///
+/// Used on the main thread only (the views, the canvas and the drag); `@unchecked Sendable` so
+/// the playback timer and the study task can hold it.
 @Observable
-final class AssembleModel {
+final class AssembleModel: @unchecked Sendable {
     enum Product: String { case none, arm, hand }
 
     /// The ribbon tabs of the Assemble stage.
     enum Tab: String, CaseIterable, Identifiable {
         case assembly = "ASSEMBLY", joints = "JOINTS", motion = "MOTION", check = "CHECK"
         var id: String { rawValue }
+        /// The tab's name (the ribbon shows it in capitals).
+        var title: String {
+            switch self {
+            case .assembly: String(localized: "Assembly")
+            case .joints: String(localized: "Joints")
+            case .motion: String(localized: "Motion")
+            case .check: String(localized: "Check")
+            }
+        }
     }
 
     /// What a drag on the canvas does.
@@ -25,6 +37,12 @@ final class AssembleModel {
     enum Posture: String, CaseIterable, Identifiable {
         case current = "Nearest", midRange = "Mid range"
         var id: String { rawValue }
+        var title: String {
+            switch self {
+            case .current: String(localized: "Nearest")
+            case .midRange: String(localized: "Mid range")
+            }
+        }
     }
 
     struct IKState: Equatable {
@@ -76,6 +94,8 @@ final class AssembleModel {
     var selectedJoint: String?
     var tab = Tab.joints
     var tool = Tool.select { didSet { if tool != oldValue { toolChanged() } } }
+    /// Folders closed in the browser outline (kept across stage switches).
+    var outlineClosed: Set<String> = []
     private(set) var mass: AsmMassProps?
     /// nil until the check ran on this pose.
     private(set) var interference: [AsmInterference]?
@@ -89,6 +109,17 @@ final class AssembleModel {
     private(set) var error: String?
     private(set) var canUndo = false
     private(set) var canRedo = false
+    /// Names of the steps the engine can undo and redo, newest last ("Save Pose"). Only steps
+    /// made from this screen are named; older ones (the template) read as a plain "Undo".
+    private var undoNames: [String] = []
+    private var redoNames: [String] = []
+    /// "Save Pose": the menu reads "Undo Save Pose". nil when the step has no name.
+    var undoName: String? { canUndo ? undoNames.last : nil }
+    var redoName: String? { canRedo ? redoNames.last : nil }
+    /// Fraction of the motion study sampled so far; nil when no study is being sampled.
+    private(set) var studyProgress: Double?
+    /// The last failed action that can be tried again (the error banner's Try Again).
+    @ObservationIgnored private(set) var retry: (() -> Void)?
     /// The flow revision the last commit recorded ("Assembly v2").
     private(set) var committed: String?
     /// Bumped when the document (components, joints) changes: the canvas rebuilds its nodes.
@@ -117,12 +148,21 @@ final class AssembleModel {
     @ObservationIgnored private var flow: FlowModel?
     /// The saved pose each motion study starts from (the other joints stay there).
     @ObservationIgnored private var studyPose: [String: String] = [:]
+    @ObservationIgnored private var studyTask: Task<Void, Never>?
+    /// A scrub or a play asked for while the study was still being sampled.
+    @ObservationIgnored private var pendingScrub: Double?
+    @ObservationIgnored private var playWhenReady = false
 
     var isActive: Bool { product != .none && doc != nil }
     var joints: [AsmJoint] { doc?.joints ?? [] }
     var components: [AsmComponent] { doc?.components ?? [] }
     var selected: AsmJoint? { joints.first { $0.id == selectedJoint } }
     var dof: Int { joints.filter { $0.kind != "fixed" }.count }
+    /// Work the stage is doing that Stop (Command-.) can end: sampling a motion study.
+    var isBusy: Bool { studyProgress != nil }
+
+    /// Stops the running work (Command-., the Stop button). Never bound to Esc.
+    func stopWork() { cancelStudy() }
 
     // MARK: Open
 
@@ -130,6 +170,7 @@ final class AssembleModel {
     func openArm(flow: FlowModel?) {
         self.flow = flow
         do {
+            cancelStudy()
             try engine.call("template", ["name": "arm"])
             // A stowed pose and a second study from it: the wrist folds the gripper back onto
             // the shoulder near the top of its range.
@@ -138,6 +179,8 @@ final class AssembleModel {
             try engine.call("add_study", ["study": ["id": "wrist_sweep", "joint": "wrist_pitch", "steps": 40,
                                                     "pose": "tuck", "duration_s": 3.0]])
             product = .arm
+            undoNames = []
+            redoNames = []
             try reloadDocument()
             if let ready = doc?.poses?.first(where: { $0.id == "ready" }) { try drive(ready.q_deg) }
             selectedJoint = "elbow"
@@ -153,6 +196,7 @@ final class AssembleModel {
     /// an assembly of bones, for the grasp editor.
     func openHand(flow: FlowModel?) {
         self.flow = flow
+        cancelStudy()
         do {
             try engine.kinCall("model.load", ["builtin": "hand5"])
             let built = try HandAssembly.build(engine)
@@ -161,6 +205,8 @@ final class AssembleModel {
             kinJoints = built.joints
             boneTips = built.tips
             product = .hand
+            undoNames = []
+            redoNames = []
             try reloadDocument(kinBuiltin: true)
             tab = .motion
             tool = .grasp
@@ -173,6 +219,9 @@ final class AssembleModel {
 
     func close() {
         stop()
+        cancelStudy()
+        undoNames = []
+        redoNames = []
         product = .none
         doc = nil
         q = [:]
@@ -188,10 +237,12 @@ final class AssembleModel {
         studies = ((r["assembly"] as? [String: Any])?["motion_studies"] as? [[String: Any]] ?? []).compactMap { s in
             guard let id = s["id"] as? String, let j = s["joint"] as? String else { return nil }
             studyPose[id] = s["pose"] as? String ?? "home"
-            let from = studyPose[id] == "home" ? "" : " from \(studyPose[id] ?? "")"
-            return (id, "Sweep " + j.replacingOccurrences(of: "_", with: " ") + from)
+            let joint = j.replacingOccurrences(of: "_", with: " ")
+            let pose = studyPose[id] ?? "home"
+            return (id, pose == "home" ? String(localized: "Sweep \(joint)")
+                                       : String(localized: "Sweep \(joint) from \(pose.replacingOccurrences(of: "_", with: " "))"))
         }
-        if product == .arm, !studies.contains(where: { $0.id == Self.poseStudy }) { studies.append((Self.poseStudy, "Home to ready")) }
+        if product == .arm, !studies.contains(where: { $0.id == Self.poseStudy }) { studies.append((Self.poseStudy, String(localized: "Home to ready"))) }
         if !kinBuiltin {
             let k = try engine.call("kin_model")
             try engine.kinCall("model.load", ["model": k["model"] ?? [:]])
@@ -249,9 +300,16 @@ final class AssembleModel {
     func editJoint(_ id: String, _ patch: [String: Any]) {
         var p = patch
         p["id"] = id
+        let name: String = if patch["limits"] != nil { String(localized: "Change Limits") }
+            else if patch["motor"] != nil { String(localized: "Edit Motor") }
+            else if patch["damping"] != nil { String(localized: "Change Damping") }
+            else if patch["friction"] != nil { String(localized: "Change Friction") }
+            else { String(localized: "Edit Joint") }
+        let before = doc
         do {
             try engine.call("set_joint", p)
             try reloadDocument()
+            recordStep(name, changed: doc != before)
             computeMass()
             commit()
         } catch {
@@ -280,9 +338,11 @@ final class AssembleModel {
     func savePose(_ name: String? = nil) -> String? {
         let n = (doc?.poses?.count ?? 0) + 1
         let id = name ?? "pose_\(n)"
+        let before = doc
         do {
             try engine.call("save_pose", ["id": id])
             try reloadDocument()
+            recordStep(String(localized: "Save Pose"), changed: doc != before)
             commit()
             return id
         } catch {
@@ -294,9 +354,22 @@ final class AssembleModel {
     func undo() { step("undo") }
     func redo() { step("redo") }
 
+    /// A named step went into the engine's undo stack (only when the document changed).
+    private func recordStep(_ name: String, changed: Bool) {
+        guard changed else { return }
+        undoNames.append(name)
+        redoNames = []
+        refreshUndo()
+    }
+
     private func step(_ op: String) {
         do {
             try engine.call(op)
+            if op == "undo" {
+                if let n = undoNames.popLast() { redoNames.append(n) }
+            } else if let n = redoNames.popLast() {
+                undoNames.append(n)
+            }
             try reloadDocument()
             computeMass()
             commit()
@@ -329,7 +402,7 @@ final class AssembleModel {
             interference = (r["pairs"] as? [[String: Any]] ?? []).map(Self.pair)
             poseRevision += 1
         } catch {
-            self.error = error.localizedDescription
+            fail(error, retry: { [weak self] in self?.checkInterference() })
         }
     }
 
@@ -344,17 +417,60 @@ final class AssembleModel {
 
     static let poseStudy = "home_to_ready"
 
-    func runStudy() {
+    /// Samples the selected study. A sweep is one engine call; the pose-to-pose study samples
+    /// step by step off the event path, with progress and Stop (`stopWork`).
+    func runStudy(thenPlay: Bool = false) {
         stop()
+        cancelStudy()
         guard isActive, !studyID.isEmpty else { study = nil; return }
-        do {
-            study = studyID == Self.poseStudy ? try poseToPose(from: "home", to: "ready", steps: 40, duration: 4)
-                                               : try sweep(studyID)
-            playhead = 0
-        } catch {
-            self.error = error.localizedDescription
-            study = nil
+        playWhenReady = thenPlay
+        let id = studyID
+        guard id == Self.poseStudy else {
+            do {
+                study = try sweep(id)
+                playhead = 0
+                studyReady()
+            } catch {
+                study = nil
+                fail(error, retry: { [weak self] in self?.runStudy(thenPlay: thenPlay) })
+            }
+            return
         }
+        study = nil
+        studyProgress = 0
+        studyTask = Task { @MainActor [weak self] in
+            guard let self else { return }
+            do {
+                let s = try await self.poseToPose(from: "home", to: "ready", steps: 40, duration: 4)
+                guard !Task.isCancelled, self.studyID == id else { return }
+                self.study = s
+                self.playhead = 0
+                self.studyProgress = nil
+                self.studyTask = nil
+                self.studyReady()
+            } catch is CancellationError {
+                return
+            } catch {
+                self.studyProgress = nil
+                self.studyTask = nil
+                self.study = nil
+                self.fail(error, retry: { [weak self] in self?.runStudy(thenPlay: thenPlay) })
+            }
+        }
+    }
+
+    /// Stops sampling the study (the study stays empty until it runs again).
+    func cancelStudy() {
+        studyTask?.cancel()
+        studyTask = nil
+        if studyProgress != nil { studyProgress = nil }
+        pendingScrub = nil
+        playWhenReady = false
+    }
+
+    private func studyReady() {
+        if let t = pendingScrub { pendingScrub = nil; scrub(to: t) }
+        if playWhenReady { playWhenReady = false; play() }
     }
 
     private func sweep(_ id: String) throws -> AsmMotionStudy {
@@ -381,8 +497,10 @@ final class AssembleModel {
         return AsmMotionStudy(id: id, title: studies.first { $0.id == id }?.title ?? id, steps: steps, firstContacts: contacts)
     }
 
-    /// Every joint from one saved pose to another, eased, with interference at each step.
-    private func poseToPose(from a: String, to b: String, steps n: Int, duration: Double) throws -> AsmMotionStudy {
+    /// Every joint from one saved pose to another, eased, with interference at each step. Gives
+    /// the main thread back between steps so the window stays live; throws when cancelled.
+    @MainActor
+    private func poseToPose(from a: String, to b: String, steps n: Int, duration: Double) async throws -> AsmMotionStudy {
         let pa = doc?.poses?.first { $0.id == a }?.q_deg ?? [:]
         let pb = doc?.poses?.first { $0.id == b }?.q_deg ?? [:]
         var steps: [AsmMotionStudy.Step] = []
@@ -400,12 +518,15 @@ final class AssembleModel {
             }
             steps.append(.init(time: s * duration, q: qs, poses: Dictionary(poses.map { ($0.component, $0.simd) }, uniquingKeysWith: { a, _ in a }),
                                collisions: hits.map { "\($0.a) / \($0.b)" }))
+            studyProgress = Double(i + 1) / Double(n + 1)
+            try await Task.sleep(for: .milliseconds(1))
         }
-        return AsmMotionStudy(id: Self.poseStudy, title: "Home to ready", steps: steps, firstContacts: contacts)
+        return AsmMotionStudy(id: Self.poseStudy, title: String(localized: "Home to ready"), steps: steps, firstContacts: contacts)
     }
 
     /// Scrubs the study: the canvas shows the sampled pose at time t.
     func scrub(to t: Double) {
+        if studyProgress != nil { pendingScrub = t; return }
         guard let s = study, !s.steps.isEmpty else { return }
         playhead = min(max(t, 0), s.duration)
         let i = s.steps.lastIndex { $0.time <= playhead + 1e-9 } ?? 0
@@ -418,6 +539,7 @@ final class AssembleModel {
     func togglePlay() { playing ? stop() : play() }
 
     func play() {
+        if studyProgress != nil { playWhenReady = true; return }
         guard let s = study, s.duration > 0 else { return }
         if playhead >= s.duration { playhead = 0 }
         playing = true
@@ -465,7 +587,16 @@ final class AssembleModel {
         }
     }
 
-    func clearError() { error = nil }
+    func clearError() {
+        error = nil
+        retry = nil
+    }
+
+    /// Shows the error; `retry` backs the banner's Try Again.
+    private func fail(_ e: Error, retry: (() -> Void)? = nil) {
+        error = e.localizedDescription
+        self.retry = retry
+    }
 
     // MARK: IK drag (7.10.4)
 
@@ -680,8 +811,10 @@ final class AssembleModel {
             "actuators": Dictionary(grasp.actuators.map { ($0.name, $0.tendon ? $0.value / 1000 : $0.value) }, uniquingKeysWith: { a, _ in a }),
         ]
         do {
+            let before = doc
             try engine.call("save_grasp", ["grasp": g])
             try reloadDocument(kinBuiltin: product == .hand)
+            recordStep(String(localized: "Save Grasp"), changed: doc != before)
             grasp.savedID = id
             commit()
             return id

@@ -14,8 +14,6 @@ struct StartWindow: View {
     /// Opens a recent project, or the open panel when nil.
     let open: (URL?) -> Void
     @State private var filter: StartTemplate.Kind?
-    @State private var prompt = ""
-    @State private var promptNote: String?
     @State private var hovered: String?
     @State private var templates: [StartTemplate] = StartTemplate.available()
     @State private var recents: [URL] = StartWindow.recentURLs()
@@ -67,13 +65,13 @@ struct StartWindow: View {
     private func newButton(_ title: String, symbol: String, action: @escaping () -> Void) -> some View {
         Button(action: action) {
             HStack(spacing: VFSpace.l) {
-                Image(systemName: symbol).font(.system(size: 20)).foregroundStyle(theme.accentText).frame(width: 28)
+                Image(systemName: symbol).font(VFFont.glyph(20)).foregroundStyle(theme.accentText).frame(width: 28).accessibilityHidden(true)
                 Text(title).font(VFFont.rowEmphasis).foregroundStyle(theme.ink)
                 Spacer()
-                Image(systemName: "chevron.right").font(.system(size: 11, weight: .semibold)).foregroundStyle(theme.inkTertiary)
+                Image(systemName: "chevron.right").font(VFFont.glyph(11, weight: .semibold)).foregroundStyle(theme.inkTertiary).accessibilityHidden(true)
             }
             .padding(.horizontal, VFSpace.l)
-            .frame(height: 48)
+            .frame(minHeight: 48)
             .background(RoundedRectangle(cornerRadius: VFRadius.card).fill(hovered == title ? theme.well : theme.panel))
             .overlay(RoundedRectangle(cornerRadius: VFRadius.card).strokeBorder(theme.hairline))
             .contentShape(Rectangle())
@@ -91,14 +89,15 @@ struct StartWindow: View {
                     .resizable().frame(width: 36, height: 36)
                 VStack(alignment: .leading, spacing: 2) {
                     Text(name).font(VFFont.row).foregroundStyle(theme.ink).lineLimit(1)
-                    Text(Self.kind(url) + (date.map { " \u{00B7} " + Self.relative($0) } ?? ""))
+                    Text(date.map { "\(Self.kind(url)) \u{00B7} \(Self.relative($0))" } ?? Self.kind(url))
                         .font(VFFont.small).foregroundStyle(theme.inkSecondary).lineLimit(1)
+                        .help(date.map { $0.formatted(date: .long, time: .shortened) } ?? "")
                 }
                 Spacer()
-                Image(systemName: "chevron.right").font(.system(size: 11, weight: .semibold)).foregroundStyle(theme.inkTertiary)
+                Image(systemName: "chevron.right").font(VFFont.glyph(11, weight: .semibold)).foregroundStyle(theme.inkTertiary).accessibilityHidden(true)
             }
             .padding(.horizontal, VFSpace.m)
-            .frame(height: 56)
+            .frame(minHeight: 56)
             .background(RoundedRectangle(cornerRadius: VFRadius.card).fill(hovered == url.path ? theme.well : theme.panel))
             .overlay(RoundedRectangle(cornerRadius: VFRadius.card).strokeBorder(theme.hairline))
             .contentShape(Rectangle())
@@ -110,41 +109,37 @@ struct StartWindow: View {
 
     // MARK: Prompt
 
+    /// The design agent (VIAFORM-SPEC 8.3, phase 8) is not in this build: the field shows what is
+    /// coming, disabled, so it never takes text it cannot answer.
     private var promptRow: some View {
-        VStack(alignment: .leading, spacing: VFSpace.s) {
-            HStack(spacing: VFSpace.l) {
-                Image(systemName: "sparkles").font(.system(size: 20)).foregroundStyle(theme.accentText)
-                TextField("Describe what you want to build", text: $prompt)
-                    .textFieldStyle(.plain)
-                    .font(.system(size: 15))
-                    .onSubmit(submitPrompt)
-                if !prompt.isEmpty {
-                    Button("Plan", action: submitPrompt).buttonStyle(.vfPrimary)
-                }
-            }
-            .padding(.horizontal, VFSpace.xl)
-            .frame(height: 56)
-            .background(RoundedRectangle(cornerRadius: VFRadius.floating).fill(theme.chrome))
-            .overlay(RoundedRectangle(cornerRadius: VFRadius.floating).strokeBorder(theme.hairline))
-            if let promptNote {
-                Text(promptNote).font(VFFont.small).foregroundStyle(theme.inkSecondary)
-            }
+        HStack(spacing: VFSpace.l) {
+            Image(systemName: "sparkles").font(VFFont.glyph(20)).foregroundStyle(theme.inkTertiary).accessibilityHidden(true)
+            Text("Describe what you want to build").font(VFFont.title.weight(.regular)).foregroundStyle(theme.inkTertiary)
+            Spacer()
+            Text("Coming soon")
+                .font(VFFont.caps)
+                .foregroundStyle(theme.inkSecondary)
+                .padding(.horizontal, VFSpace.m).padding(.vertical, VFSpace.xxs + 1)
+                .background(Capsule().fill(theme.well))
+                .overlay(Capsule().strokeBorder(theme.hairline))
         }
-    }
-
-    private func submitPrompt() {
-        guard !prompt.trimmingCharacters(in: .whitespaces).isEmpty else { return }
-        // The design agent (VIAFORM-SPEC 8.3, phase 8) is not in this build: say so, start
-        // nothing.
-        promptNote = "The design agent is not in this build yet. Start from a template or a blank design."
+        .padding(.horizontal, VFSpace.xl)
+        .frame(minHeight: 56)
+        .background(RoundedRectangle(cornerRadius: VFRadius.floating).fill(theme.chrome.opacity(0.6)))
+        .overlay(RoundedRectangle(cornerRadius: VFRadius.floating).strokeBorder(theme.hairline, style: StrokeStyle(lineWidth: 1, dash: [4, 3])))
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("Describe what you want to build. Coming soon: the design agent is not in this version.")
+        .help("Coming soon: the design agent is not in this version. Start from a template or a blank design.")
     }
 
     // MARK: Templates
 
+    /// "All" and one chip per kind that has templates: a chip never opens an empty grid.
     private var chips: some View {
-        HStack(spacing: VFSpace.s) {
-            chip(nil, "All")
-            ForEach(StartTemplate.Kind.allCases, id: \.self) { k in chip(k, k.title) }
+        let kinds = StartTemplate.Kind.allCases.filter { k in templates.contains { $0.kind == k } }
+        return HStack(spacing: VFSpace.s) {
+            chip(nil, String(localized: "All"))
+            ForEach(kinds, id: \.self) { k in chip(k, k.title) }
         }
     }
 
@@ -165,8 +160,16 @@ struct StartWindow: View {
 
     private var grid: some View {
         let shown = templates.filter { filter == nil || $0.kind == filter }
-        return LazyVGrid(columns: [GridItem(.adaptive(minimum: 220, maximum: 320), spacing: VFSpace.l)], alignment: .leading, spacing: VFSpace.l) {
-            ForEach(shown) { t in card(t) }
+        return Group {
+            if shown.isEmpty {
+                EmptyState(String(localized: "No templates of this kind yet"), systemImage: "square.grid.2x2",
+                           message: String(localized: "Start from a blank design or board."),
+                           actionTitle: String(localized: "Show All")) { filter = nil }
+            } else {
+                LazyVGrid(columns: [GridItem(.adaptive(minimum: 220, maximum: 320), spacing: VFSpace.l)], alignment: .leading, spacing: VFSpace.l) {
+                    ForEach(shown) { t in card(t) }
+                }
+            }
         }
     }
 
@@ -177,7 +180,8 @@ struct StartWindow: View {
                     LinearGradient(colors: [Color(vf: theme.palette.viewportTop), Color(vf: theme.palette.viewportBottom)],
                                    startPoint: .top, endPoint: .bottom)
                     Image(systemName: t.symbol)
-                        .font(.system(size: 54, weight: .light))
+                        .font(VFFont.glyph(54, weight: .light))
+                        .accessibilityHidden(true)
                         .foregroundStyle(theme.stageFill(t.tone))
                 }
                 .frame(height: 140)
@@ -199,7 +203,8 @@ struct StartWindow: View {
         }
         .buttonStyle(.plain)
         .onHover { hovered = $0 ? t.id : (hovered == t.id ? nil : hovered) }
-        .accessibilityLabel("\(t.title), \(t.kind.title) template")
+        .accessibilityLabel(Text("\(t.title), \(t.kind.title) template"))
+        .accessibilityHint(Text(t.detail))
     }
 
     // MARK: Recents
@@ -212,9 +217,9 @@ struct StartWindow: View {
 
     private static func kind(_ url: URL) -> String {
         switch url.pathExtension.lowercased() {
-        case "viaform": "Project"
-        case "sc", "solidcraft": "Design"
-        case "kicad_pcb", "vfpcb": "Board"
+        case "viaform": String(localized: "Project")
+        case "sc", "solidcraft": String(localized: "Design")
+        case "kicad_pcb", "vfpcb": String(localized: "Board")
         default: url.pathExtension.uppercased()
         }
     }
@@ -232,11 +237,11 @@ struct StartTemplate: Identifiable, Equatable {
         case part, board, product, robot, importFile
         var title: String {
             switch self {
-            case .part: "Part"
-            case .board: "Board"
-            case .product: "Product"
-            case .robot: "Robot"
-            case .importFile: "Import"
+            case .part: String(localized: "Part")
+            case .board: String(localized: "Board")
+            case .product: String(localized: "Product")
+            case .robot: String(localized: "Robot")
+            case .importFile: String(localized: "Import")
             }
         }
     }

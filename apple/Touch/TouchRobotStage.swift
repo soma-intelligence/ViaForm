@@ -3,60 +3,47 @@ import SwiftUI
 
 /// The Robot stage on the iPad and the iPhone (VIAFORM-SPEC 7.9). The iPad has no USB serial: it
 /// reaches a robot only through the ViaForm bridge over Wi-Fi (task P7-7). Until then the stage
-/// shows where the twin and the camera go, with the safety bar always in view.
+/// shows where the twin and the camera go, with the shared safety bar always in view.
 struct TouchRobotStage: View {
     @Environment(\.viaFormTheme) private var theme
     let flow: FlowModel
-    @State private var safety = RobotSafety.shared
+    private var safety: RobotSafety { RobotSafety.shared }
 
     var body: some View {
-        VStack(spacing: 16) {
-            HStack(spacing: 16) {
-                Button { safety.stop(source: "Button") } label: {
-                    Label("E-STOP", systemImage: "stop.circle.fill")
-                        .font(.system(size: 15, weight: .bold))
-                        .foregroundStyle(.white)
-                        .frame(minWidth: 150, minHeight: VFSize.touchTarget)
-                        .background(RoundedRectangle(cornerRadius: VFRadius.card).fill(theme.danger))
-                }
-                .buttonStyle(.plain)
-                // A hardware keyboard: Space presses it, Esc twice within 0.6 s too.
-                .keyboardShortcut(.space, modifiers: [])
-                .accessibilityLabel("Emergency stop")
-                .accessibilityHint("Turns torque off on every motor")
-                VStack(alignment: .leading, spacing: 2) {
-                    VFCaption("Torque limit")
-                    Text("60 %").foregroundStyle(theme.ink)
-                }
-                VStack(alignment: .leading, spacing: 2) {
-                    VFCaption("Speed cap")
-                    Text("30 %").foregroundStyle(theme.ink)
-                }
-                Spacer(minLength: 0)
-                Text("Not connected").font(.footnote).foregroundStyle(theme.inkSecondary)
+        VStack(spacing: VFSpace.xl) {
+            // The real e-stop button (44 pt, Space on a hardware keyboard) with the limits.
+            SafetyBar()
+            if safety.stopped {
+                RobotStoppedBanner().vfTransition(.move(edge: .top).combined(with: .opacity))
             }
-            .padding(12)
-            .vfSurface(.floating, radius: VFRadius.floating)
-            if safety.stopped { RobotStoppedBanner() }
-            Spacer(minLength: 0)
-            Image(systemName: "figure.arms.open").font(.system(size: 48, weight: .light)).foregroundStyle(theme.inkTertiary)
-            Text("No robot connected").font(.title3.weight(.semibold)).foregroundStyle(theme.ink)
-            Text("On iPad the robot connects through the ViaForm bridge over Wi-Fi. The twin, the camera and the telemetry show here once it does.")
-                .font(.callout).foregroundStyle(theme.inkSecondary).multilineTextAlignment(.center)
-                .frame(maxWidth: 460)
-            Spacer(minLength: 0)
+            VStack(spacing: VFSpace.m) {
+                Spacer(minLength: 0)
+                Image(systemName: "figure.arms.open")
+                    .font(VFFont.glyph(48, weight: .light))
+                    .imageScale(.large)
+                    .foregroundStyle(theme.inkTertiary)
+                    .accessibilityHidden(true)
+                Text(safety.connected ? "Robot connected" : "No robot connected")
+                    .font(VFFont.heading).foregroundStyle(theme.ink)
+                Text("On iPad the robot connects through the ViaForm bridge over Wi-Fi. The twin, the camera and the telemetry show here once it does.")
+                    .font(VFFont.row).foregroundStyle(theme.inkSecondary).multilineTextAlignment(.center)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .frame(maxWidth: 460)
+                Spacer(minLength: 0)
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .accessibilityElement(children: .combine)
+            .motionFrame()
         }
-        .padding(.horizontal, 20)
-        .padding(.top, 76)
-        .padding(.bottom, 24)
+        .vfAnimation(.easeOut(duration: VFMotion.fast), value: safety.stopped)
+        .padding(.horizontal, VFSpace.xl)
+        .padding(.top, VFSpace.paletteTop)   // clears the floating top chrome
+        .padding(.bottom, VFSpace.xxl)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .focusable()
+        // Esc twice within 0.6 s stops (a hardware keyboard); Space is the e-stop's shortcut.
         .onKeyPress(.escape) { safety.escape() ? .handled : .ignored }
-        .background(
-            LinearGradient(colors: [Color(vf: theme.palette.viewportTop), Color(vf: theme.palette.viewportBottom)],
-                           startPoint: .top, endPoint: .bottom)
-            .ignoresSafeArea()
-        )
+        .background(theme.viewportGradient.ignoresSafeArea())
     }
 }
 #endif

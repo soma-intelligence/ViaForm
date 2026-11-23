@@ -102,8 +102,8 @@ final class ThemeContrastTests: XCTestCase {
             let p = variant.palette
             XCTAssertGreaterThan(p.viewportTop.luminance, p.viewportBottom.luminance, "\(variant): top lighter")
         }
-        // Light by default, grey gradient.
-        XCTAssertEqual(ThemeMode.default, .light)
+        // Follows the system by default (D-20); the light variant keeps its grey gradient.
+        XCTAssertEqual(ThemeMode.default, .system)
         XCTAssertGreaterThan(VFPalette.light.viewportBottom.luminance, 0.4)
         XCTAssertEqual(VFPalette.dark.chrome, VFColor(hex: 0x1C1E22))
     }
@@ -126,5 +126,40 @@ final class ThemeContrastTests: XCTestCase {
             XCTAssertEqual(s.truncatingRemainder(dividingBy: 2), 0, "spacing on the 2 pt grid")
         }
         XCTAssertLessThan(VFSize.sidebarMin, VFSize.sidebarMax)
+    }
+
+    /// The e-stop and destructive buttons: white on the danger fill in both variants.
+    func testDangerFillLabel() {
+        for variant in ThemeVariant.allCases {
+            let p = variant.palette
+            check(p.onDanger, on: p.dangerFill, min: textAA, "\(variant) onDanger on dangerFill")
+            check(p.dangerFill, on: p.chrome, min: nonTextAA, "\(variant) dangerFill on chrome")
+            check(p.dangerFill, on: p.panel, min: nonTextAA, "\(variant) dangerFill on panel")
+        }
+    }
+
+    /// Increase Contrast never lowers a text ratio and lifts hairlines to a visible 3:1-ish mark.
+    func testIncreasedContrastVariant() {
+        for variant in ThemeVariant.allCases {
+            let p = variant.palette, hc = variant.highContrastPalette
+            for (name, a, b) in [("ink", p.ink, hc.ink), ("inkSecondary", p.inkSecondary, hc.inkSecondary),
+                                 ("inkTertiary", p.inkTertiary, hc.inkTertiary), ("accentText", p.accentText, hc.accentText)] {
+                XCTAssertGreaterThanOrEqual(b.contrast(on: hc.panel), a.contrast(on: p.panel) - 0.01, "\(variant) \(name) not lower")
+                check(b, on: hc.panel, min: textAA, "\(variant) high contrast \(name) on panel")
+            }
+            XCTAssertGreaterThan(hc.hairline.contrast(on: hc.panel), p.hairline.contrast(on: p.panel), "\(variant) hairline stronger")
+            XCTAssertEqual(hc.floating.alpha, 1, "\(variant) opaque floating fill")
+        }
+    }
+
+    /// Badges on status fills (workspace dropdown): the label colour picked by `bestLabel` passes.
+    func testStatusBadgeLabels() {
+        for variant in ThemeVariant.allCases {
+            let p = variant.palette
+            for fill in [p.warning, p.danger, p.accent] {
+                let label = fill.bestLabel(light: VFColor(hex: 0xFFFFFF), dark: VFColor(hex: 0x111215))
+                check(label, on: fill, min: textAA - 0.5, "\(variant) badge label")
+            }
+        }
     }
 }

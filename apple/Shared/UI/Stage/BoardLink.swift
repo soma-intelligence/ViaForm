@@ -96,26 +96,28 @@ struct LinkCard: View {
             if info.linked {
                 SceneThumbnail(scene: design.scene, highlight: info.boardBodies, focus: info.boardBodies)
                     .frame(height: 128)
-                    .background(RoundedRectangle(cornerRadius: VFRadius.well).fill(theme.isDark ? Color.black.opacity(0.25) : Color(white: 0.93)))
-                    .clipShape(RoundedRectangle(cornerRadius: VFRadius.well))
+                    .background(RoundedRectangle(cornerRadius: VFRadius.well, style: .continuous).fill(theme.well))
+                    .clipShape(RoundedRectangle(cornerRadius: VFRadius.well, style: .continuous))
                     .onTapGesture(perform: showIn3D)
-                row("Mounted on", info.host ?? "Not mounted", accent: info.host != nil)
+                    .accessibilityAddTraits(.isButton)
+                    .accessibilityAction(named: Text("Show in 3D"), showIn3D)
+                row(String(localized: "Mounted on"), info.host ?? String(localized: "Not mounted"), accent: info.host != nil)
                 if let c = info.clearance {
-                    row("Clearance", String(format: "%.2f mm", c), warn: c < 0)
+                    row(String(localized: "Clearance"), VFFormat.length(c), warn: c < 0)
                 }
-                row("Board", String(format: "%.1f x %.1f mm", info.size3D.x, info.size3D.y))
+                row(String(localized: "Board"), String(localized: "\(VFFormat.value(info.size3D.x, .length, withUnit: false)) x \(VFFormat.length(info.size3D.y))"))
             } else {
                 Text("The board is not in the 3D design yet. Send it to place it on a part of the assembly.")
                     .font(VFFont.small).foregroundStyle(theme.inkSecondary)
                     .fixedSize(horizontal: false, vertical: true)
             }
             HStack(spacing: VFSpace.s) {
-                Button(info.linked ? (info.outOfDate ? "Update 3D" : "Push to 3D") : "Send to 3D") { pcb.sendTo3D(design) }
+                Button(info.linked ? (info.outOfDate ? String(localized: "Update 3D") : String(localized: "Push to 3D")) : String(localized: "Send to 3D")) { pcb.sendTo3D(design) }
                     .buttonStyle(.vfPrimary)
                     #if os(iOS)
                     .frame(minHeight: VFSize.touchTarget)
                     #endif
-                Button(info.host == nil ? "Mount…" : "Remount…") { pcb.startMount(design, show: showIn3D) }
+                Button(info.host == nil ? String(localized: "Mount…") : String(localized: "Remount…")) { pcb.startMount(design, show: showIn3D) }
                     #if os(iOS)
                     .frame(minHeight: VFSize.touchTarget)
                     #else
@@ -126,19 +128,21 @@ struct LinkCard: View {
         .padding(VFSpace.l)
         .frame(width: 264)
         .vfSurface(.floating, radius: VFRadius.floating)
-        .overlay(RoundedRectangle(cornerRadius: VFRadius.floating).strokeBorder(theme.accent.opacity(info.linked ? 0.55 : 0), lineWidth: 1))
+        .overlay(RoundedRectangle(cornerRadius: VFRadius.floating, style: .continuous).strokeBorder(theme.accent.opacity(info.linked ? 0.55 : 0), lineWidth: 1))
     }
 
     @ViewBuilder private var badge: some View {
         if info.linked {
             let behind = info.outOfDate
-            HStack(spacing: 4) {
-                Circle().fill(behind ? theme.warning : theme.success).frame(width: 6, height: 6)
-                Text(behind ? "Board rev \(info.revision.map(String.init) ?? "?") in 3D" : "Live")
-                    .font(.system(size: VFTypeScale.micro, weight: .semibold))
+            HStack(spacing: VFSpace.xs) {
+                VFStatusDot(status: behind ? .stale : .current).accessibilityHidden(true)
+                Group {
+                    if behind, let r = info.revision { Text("Board rev \(r) in 3D") } else if behind { Text("Behind in 3D") } else { Text("Live") }
+                }
+                .font(VFFont.micro.weight(.semibold))
             }
             .foregroundStyle(behind ? theme.warning : theme.success)
-            .padding(.horizontal, 7).frame(height: 18)
+            .padding(.horizontal, VFSpace.s).frame(height: 18)
             .background(Capsule().fill((behind ? theme.warning : theme.success).opacity(0.14)))
             .help(behind ? "The board changed since it was sent to 3D" : "The 3D board is the board you are editing")
         }
@@ -187,7 +191,7 @@ struct BoardLinkAnnotations: View {
                 ctx.stroke(Path(keep), with: .color(info.fits ? accent : theme.danger), style: StrokeStyle(lineWidth: 1.3, dash: [6, 4]))
                 let host = info.host ?? ""
                 ctx.draw(Text(String(format: "Keep-in %.0f x %.0f from %@", board.width + info.left + info.right, board.height + info.top + info.bottom, host))
-                            .font(.system(size: 11, weight: .medium)).foregroundStyle(accent),
+                            .font(VFFont.small.weight(.medium)).foregroundStyle(accent),
                          at: CGPoint(x: keep.minX, y: keep.maxY + 6), anchor: .topLeading)
                 // Clearance on the tightest side.
                 var c = Path()
@@ -232,10 +236,10 @@ struct BoardLinkAnnotations: View {
     }
 
     private func label(_ ctx: inout GraphicsContext, _ s: String, _ p: CGPoint, _ color: Color) {
-        let text = ctx.resolve(Text(s).font(.system(size: 11, weight: .semibold)).monospacedDigit().foregroundStyle(color))
+        let text = ctx.resolve(Text(s).font(VFFont.small.weight(.semibold)).monospacedDigit().foregroundStyle(color))
         let sz = text.measure(in: CGSize(width: 300, height: 30))
         let r = CGRect(x: p.x - sz.width / 2 - 5, y: p.y - sz.height / 2 - 2, width: sz.width + 10, height: sz.height + 4)
-        ctx.fill(Path(roundedRect: r, cornerRadius: 4), with: .color(theme.isDark ? Color.black.opacity(0.55) : Color.white.opacity(0.85)))
+        ctx.fill(Path(roundedRect: r, cornerRadius: VFRadius.mark), with: .color(theme.floating))
         ctx.draw(text, at: p)
     }
 }
@@ -253,11 +257,12 @@ struct DRCCapsule: View {
         let ok = n == 0
         Button(action: run) {
             HStack(spacing: VFSpace.s) {
-                Image(systemName: ok ? "checkmark" : "exclamationmark.triangle.fill").font(.system(size: 10, weight: .bold))
+                Image(systemName: ok ? "checkmark" : "exclamationmark.triangle.fill").font(VFFont.glyph(10, weight: .bold))
                     .foregroundStyle(ok ? theme.success : theme.warning)
-                Text(ok ? "DRC passed" : "\(n) finding\(n == 1 ? "" : "s")").fontWeight(.semibold)
+                    .accessibilityHidden(true)
+                (ok ? Text("DRC passed") : Text("^[\(n) finding](inflect: true)")).fontWeight(.semibold)
                 ForEach(facts(unrouted: unrouted), id: \.self) { f in
-                    Text("·").foregroundStyle(theme.inkTertiary)
+                    Text("·").foregroundStyle(theme.inkTertiary).accessibilityHidden(true)
                     Text(f)
                 }
             }
@@ -266,7 +271,7 @@ struct DRCCapsule: View {
             .foregroundStyle(theme.ink)
             .padding(.horizontal, VFSpace.l)
             .frame(height: 28)
-            .vfSurface(.floating, radius: 14)
+            .vfSurface(.control, radius: 28 / 2)
         }
         .buttonStyle(.plain)
         .help("Run the electrical and design rule checks")
@@ -275,8 +280,10 @@ struct DRCCapsule: View {
     private func facts(unrouted: Int) -> [String] {
         guard let p = pcb.project else { return [] }
         let layers = max(2, Set(p.board.tracks.map(\.layer)).count)
-        var out = ["\(layers) layers", String(format: "%.0f x %.0f mm", p.board.width, p.board.height), "\(p.nets.count) nets"]
-        if unrouted > 0 { out.append("\(unrouted) unrouted") }
+        var out = [WorkspaceMenu.inflected("^[\(layers) layer](inflect: true)"),
+                   String(localized: "\(VFFormat.value(p.board.width, .length, withUnit: false)) x \(VFFormat.length(p.board.height))"),
+                   WorkspaceMenu.inflected("^[\(p.nets.count) net](inflect: true)")]
+        if unrouted > 0 { out.append(String(localized: "\(unrouted) unrouted")) }
         return out
     }
 }
@@ -288,29 +295,35 @@ struct PCBLayerBar: View {
     let active: String
     let pick: (String) -> Void
 
-    static let layers: [(String, Color)] = [("F.Cu", PCBDense.front), ("B.Cu", PCBDense.back), ("Silk", PCBDense.silk),
-                                             ("Edge", PCBDense.edge), ("Airwires", Color(white: 0.6))]
+    /// The layers and their colours; airwires take the theme's tertiary ink.
+    static let layers: [(String, Color?)] = [("F.Cu", PCBDense.front), ("B.Cu", PCBDense.back), ("Silk", PCBDense.silk),
+                                              ("Edge", PCBDense.edge), ("Airwires", nil)]
 
     var body: some View {
         HStack(spacing: VFSpace.s) {
             VFCaption("Layers")
-            ForEach(Self.layers, id: \.0) { name, color in
+            ForEach(Self.layers, id: \.0) { name, tint in
+                let color = tint ?? theme.inkTertiary
                 let on = !hidden.contains(name)
                 Button {
                     if on { hidden.insert(name) } else { hidden.remove(name) }
                 } label: {
-                    HStack(spacing: 6) {
-                        RoundedRectangle(cornerRadius: 3).fill(on ? color : color.opacity(0.22)).frame(width: 11, height: 11)
-                            .overlay(RoundedRectangle(cornerRadius: 3).strokeBorder(Color.black.opacity(0.15)))
+                    HStack(spacing: VFSpace.s) {
+                        RoundedRectangle(cornerRadius: VFRadius.mark).fill(on ? color : color.opacity(0.22)).frame(width: 11, height: 11)
+                            .overlay(RoundedRectangle(cornerRadius: VFRadius.mark).strokeBorder(theme.hairline))
+                            .accessibilityHidden(true)
                         Text(name).font(VFFont.small).foregroundStyle(on ? theme.ink : theme.inkTertiary)
-                        if name == active { Circle().fill(theme.accent).frame(width: 4, height: 4) }
+                        if !on { Image(systemName: "eye.slash").font(VFFont.glyph(9)).foregroundStyle(theme.inkTertiary).accessibilityHidden(true) }
+                        if name == active { Circle().fill(theme.accent).frame(width: 4, height: 4).accessibilityHidden(true) }
                     }
-                    .padding(.horizontal, 8).frame(height: 24)
+                    .padding(.horizontal, VFSpace.m).frame(minHeight: VFSize.minTarget)
                     .background(RoundedRectangle(cornerRadius: VFRadius.control).fill(on ? theme.panel : .clear))
                     .overlay(RoundedRectangle(cornerRadius: VFRadius.control).strokeBorder(theme.hairline))
                 }
                 .buttonStyle(.plain)
-                .help(on ? "Hide \(name)" : "Show \(name)")
+                .help(on ? String(localized: "Hide \(name)") : String(localized: "Show \(name)"))
+                .accessibilityLabel(name)
+                .accessibilityValue(on ? (name == active ? Text("Shown, active layer") : Text("Shown")) : Text("Hidden"))
                 .contextMenu {
                     if name.hasSuffix(".Cu") { Button("Route on \(name)") { pick(name) } }
                 }
@@ -363,11 +376,11 @@ struct DotRailTimeline: View {
                     ForEach(steps) { s in
                         Button(action: s.run) {
                             VStack(spacing: 2) {
-                                HStack(spacing: 5) {
-                                    Image(systemName: s.symbol).font(.system(size: 11, weight: .semibold))
+                                HStack(spacing: VFSpace.s) {
+                                    Image(systemName: s.symbol).font(VFFont.glyph(11, weight: .semibold))
                                         .foregroundStyle(s.done ? s.tint : theme.inkTertiary)
                                         .frame(width: 20, height: 20)
-                                        .background(RoundedRectangle(cornerRadius: 5).fill((s.done ? s.tint : theme.inkTertiary).opacity(0.14)))
+                                        .background(RoundedRectangle(cornerRadius: VFRadius.chip).fill((s.done ? s.tint : theme.inkTertiary).opacity(0.14)))
                                     Text(s.label).font(VFFont.small).foregroundStyle(s.done ? theme.ink : theme.inkSecondary).lineLimit(1)
                                 }
                                 Text(s.detail).font(VFFont.micro).foregroundStyle(theme.inkTertiary).lineLimit(1).monospacedDigit()
@@ -376,7 +389,8 @@ struct DotRailTimeline: View {
                             .contentShape(Rectangle())
                         }
                         .buttonStyle(.plain)
-                        .help(s.done ? "\(s.label): done" : "\(s.label): to do")
+                        .help(s.done ? String(localized: "\(s.label): done") : String(localized: "\(s.label): to do"))
+                        .accessibilityValue(s.done ? Text("Done") : Text("To do"))
                     }
                 }
                 // The playhead on the first step still to do.
@@ -384,7 +398,7 @@ struct DotRailTimeline: View {
                     let x = CGFloat(next) * pitch + pitch / 2
                     VStack(spacing: 0) {
                         Circle().fill(theme.accent).frame(width: 12, height: 12)
-                            .overlay(Circle().strokeBorder(.white, lineWidth: 2))
+                            .overlay(Circle().strokeBorder(theme.onAccent, lineWidth: 2))
                     }
                     .position(x: x, y: 42)
                     .allowsHitTesting(false)

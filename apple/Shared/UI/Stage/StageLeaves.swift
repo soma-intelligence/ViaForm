@@ -110,15 +110,16 @@ struct OutputRow: View {
     var onAction: ((FlowModel.Action) -> Void)?
     /// What the action button says: "Update" when it rebuilds, "Open" when it can only take
     /// you to the stage that needs a person.
-    var actionTitle: (FlowModel.Action) -> String = { _ in "Update" }
+    var actionTitle: (FlowModel.Action) -> String = { _ in String(localized: "Update") }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 2) {
             HStack(spacing: VFSpace.s) {
                 Image(systemName: Workspace(stage: output.stage)?.symbol ?? "shippingbox")
-                    .font(.system(size: 11))
+                    .font(VFFont.glyph(11))
                     .foregroundStyle(theme.inkSecondary)
                     .frame(width: 16)
+                    .accessibilityHidden(true)
                 Button(action: onOpen) {
                     // "Frame v12" already names the artifact; before a first build, its label.
                     Text(output.revision_name ?? (output.label.isEmpty ? output.name : output.label))
@@ -128,7 +129,8 @@ struct OutputRow: View {
                 }
                 .buttonStyle(.plain)
                 Spacer(minLength: VFSpace.xs)
-                VFStatusDot(status: output.status.vfStatus)
+                VFStatusDot(status: output.status.vfStatus, reason: output.reason.isEmpty ? nil : output.reason)
+                    .accessibilityHidden(true)
                 Text(output.status.vfStatus.word)
                     .font(VFFont.micro)
                     .foregroundStyle(theme.color(output.status))
@@ -156,21 +158,23 @@ struct OutputRow: View {
                 .padding(.leading, 22)
             }
         }
-        .padding(.vertical, 3)
+        .padding(.vertical, VFSpace.xxs)
         .accessibilityElement(children: .combine)
     }
 }
 
-/// The running job of a stage over its viewport: verb, count, time left, pause and cancel.
+/// The running job of a stage over its viewport: verb, count, time left, pause when the job can
+/// pause, and Stop. Liquid Glass: it is a control floating on the viewport.
 struct JobCapsule: View {
     @Environment(\.viaFormTheme) private var theme
     let job: FlowModel.RunningJob
     var pause: (() -> Void)?
     var resume: (() -> Void)?
     var cancel: (() -> Void)?
+    private static let height: CGFloat = 32
 
     var body: some View {
-        HStack(spacing: VFSpace.m) {
+        HStack(spacing: VFSpace.s) {
             if job.determinate {
                 ProgressView(value: job.progress).progressViewStyle(.circular).controlSize(.small)
             } else {
@@ -180,23 +184,22 @@ struct JobCapsule: View {
                 .font(VFFont.small.weight(.medium))
                 .foregroundStyle(theme.ink)
                 .lineLimit(1)
-            if job.pausable {
-                Button { job.paused ? resume?() : pause?() } label: {
-                    Image(systemName: job.paused ? "play.fill" : "pause.fill")
+            if job.pausable, (job.paused ? resume : pause) != nil {
+                VFIconButton(job.paused ? "play.fill" : "pause.fill",
+                             label: job.paused ? String(localized: "Resume \(job.label)") : String(localized: "Pause \(job.label)"),
+                             size: 11) {
+                    job.paused ? resume?() : pause?()
                 }
-                .buttonStyle(.borderless)
-                .help(job.paused ? "Resume" : "Pause")
             }
             if let cancel {
-                Button(action: cancel) { Image(systemName: "xmark.circle.fill") }
-                    .buttonStyle(.borderless)
-                    .foregroundStyle(theme.inkSecondary)
-                    .help("Cancel")
+                VFIconButton("stop.fill", label: String(localized: "Stop \(job.label)"), size: 11, action: cancel)
             }
         }
-        .padding(.horizontal, VFSpace.l)
-        .frame(height: 30)
-        .vfSurface(.floating, radius: 15)
+        .padding(.leading, VFSpace.l)
+        .padding(.trailing, VFSpace.xs)
+        .frame(height: Self.height)
+        .vfSurface(.control, radius: Self.height / 2)
+        .accessibilityElement(children: .contain)
     }
 }
 
@@ -222,7 +225,7 @@ struct AxisTriad: View {
                 p.addLine(to: CGPoint(x: o.x + d.x, y: o.y + d.y))
                 ctx.stroke(p, with: .color(color), style: StrokeStyle(lineWidth: 1.6, lineCap: .round))
                 let tip = CGPoint(x: o.x + d.x * 1.32, y: o.y + d.y * 1.32)
-                ctx.draw(Text(name).font(.system(size: 10, weight: .semibold)).foregroundColor(color), at: tip)
+                ctx.draw(Text(name).font(VFFont.micro.weight(.semibold)).foregroundStyle(color), at: tip)
             }
         }
         .frame(width: length * 3, height: length * 3)
@@ -232,33 +235,32 @@ struct AxisTriad: View {
 }
 
 /// The bottom line of the window: what is selected, the stage's state, and the core's health.
+/// Every status mark is a shape plus a word, never a colour alone.
 struct StageStatusBar: View {
     @Environment(\.viaFormTheme) private var theme
     let leading: String
     var items: [String] = []
     var coreOK = true
     var trailing: AnyView?
-    /// The open stage's artifact status, which colours the leading dot.
+    /// The open stage's artifact status, shown by the leading mark.
     var status: FlowModel.Status = .current
 
     var body: some View {
         HStack(spacing: VFSpace.l) {
-            Group {
-                if status == .empty {
-                    Circle().strokeBorder(theme.inkTertiary, lineWidth: 1.25)
-                } else {
-                    Circle().fill(theme.color(status))
-                }
-            }
-            .frame(width: 7, height: 7)
-            .accessibilityHidden(true)
-            Text(leading).lineLimit(1)
+            VFStatusDot(status: status.vfStatus)
+            Text(leading).lineLimit(1).truncationMode(.middle)
             Spacer(minLength: VFSpace.m)
-            ForEach(items, id: \.self) { Text($0).monospacedDigit().lineLimit(1) }
-            HStack(spacing: VFSpace.xs) {
-                Circle().fill(coreOK ? theme.success : theme.danger).frame(width: 6, height: 6)
-                Text(coreOK ? "ViaForm core" : "Core stopped")
+            ForEach(Array(items.enumerated()), id: \.offset) { _, item in
+                Text(item).monospacedDigit().lineLimit(1)
             }
+            HStack(spacing: VFSpace.xs) {
+                VFStatusDot(status: coreOK ? .current : .failed,
+                            reason: coreOK ? nil : String(localized: "Restart ViaForm to bring the core back."))
+                    .accessibilityHidden(true)
+                Text(coreOK ? "Core running" : "Core stopped")
+            }
+            .accessibilityElement(children: .combine)
+            .help(coreOK ? String(localized: "The ViaForm core is running.") : String(localized: "The ViaForm core stopped. Restart ViaForm to bring it back."))
             if let trailing { trailing }
         }
         .font(VFFont.small)

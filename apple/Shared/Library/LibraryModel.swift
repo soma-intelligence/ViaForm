@@ -188,14 +188,24 @@ final class LibraryModel {
     var query = ""
     var hits: [LibraryHits] = []
     var searching = false
+    /// The query the shown hits answer; nil before the first search.
+    private(set) var searchedQuery: String?
+    /// Sources searched again on their own (Retry), by id.
+    private(set) var retrying: Set<String> = []
+    /// True once the first `load()` answered.
+    private(set) var loaded = false
     var message: String?
     var messageIsError = false
+    /// The last confirmation, shown once as a toast.
+    var notice: BomNotice?
     /// A part being entered by hand or from a pasted link, shown in the editor sheet.
     var draft: LibraryItem?
+    /// The keys saved in the Keychain, by source id: read in `load()`, never while drawing.
+    private(set) var savedKeys: [String: Set<String>] = [:]
 
     init() {
         engine = LibraryEngine()
-        if engine == nil { say("The library folder could not be opened: \(LibraryEngine.folder.path)", error: true) }
+        if engine == nil { say(String(localized: "The parts library could not be opened. Check that ViaForm can write to \(LibraryEngine.folder.path)."), error: true) }
     }
 
     func say(_ text: String?, error: Bool = false) {
@@ -203,7 +213,14 @@ final class LibraryModel {
         messageIsError = error
     }
 
+    func notify(_ text: String, undo: Bool = false) {
+        notice = BomNotice(text: text, undo: undo)
+    }
+
     func source(_ id: String) -> LibrarySource? { sources.first { $0.id == id } }
+
+    /// Whether `key` of `source` is in the Keychain (as of the last load).
+    func hasKey(_ source: LibrarySource, _ key: String) -> Bool { savedKeys[source.id]?.contains(key) ?? false }
 
     private struct Params: Encodable, Sendable {
         var keyed: [String]?
@@ -221,44 +238,87 @@ final class LibraryModel {
     }
 
     private func call<T: Decodable & Sendable>(_ method: String, _ p: Params, as: T.Type = T.self) async throws -> T {
-        guard let engine else { throw EngineError(message: "The library is not open") }
+        guard let engine else { throw EngineError(message: String(localized: "The parts library is not open")) }
         return try await engine.call(method, p, as: T.self)
     }
 
+    /// The saved key ids of each API source, read off the main actor.
+    private static func readKeys(_ sources: [LibrarySource]) async -> [String: Set<String>] {
+        await Task.detached {
+            var out: [String: Set<String>] = [:]
+            for s in sources where s.access == "api" { out[s.id] = Set(LibraryKeychain.keys(s).keys) }
+            return out
+        }.value
+    }
+
+    /// The keys of the enabled API sources that have every required one, read off the main actor.
+    private static func searchKeys(_ sources: [LibrarySource]) async -> [String: [String: String]] {
+        await Task.detached {
+            var keys: [String: [String: String]] = [:]
+            for s in sources where s.access == "api" && s.enabled && LibraryKeychain.ready(s) { keys[s.id] = LibraryKeychain.keys(s) }
+            return keys
+        }.value
+    }
+
+    private static func ready(_ s: LibrarySource, _ saved: Set<String>) -> Bool {
+        (s.keys ?? []).allSatisfy { $0.optional || saved.contains($0.id) }
+    }
+
     func load() async {
-        // The API sources whose required keys are in the Keychain.
-        let keyed = sources.filter { $0.access == "api" && LibraryKeychain.ready($0) }.map(\.id)
         do {
-            let s = try await call("state", Params(keyed: keyed), as: LibraryState.self)
+            // The first load does not know the sources yet: read them, then the Keychain, then
+            // ask again with the keyed ones so their status is right from the start.
+            var s = try await call("state", Params(keyed: keyedIDs()), as: LibraryState.self)
+            let saved = await Self.readKeys(s.sources)
+            let keyed = s.sources.filter { $0.access == "api" && Self.ready($0, saved[$0.id] ?? []) }.map(\.id)
+            if Set(keyed) != Set(keyedIDs()) { s = try await call("state", Params(keyed: keyed), as: LibraryState.self) }
+            savedKeys = saved
             sources = s.sources.map { src in
                 guard src.access == "api" else { return src }
                 var src = src
-                src.ready = LibraryKeychain.ready(src)
-                src.detail = src.ready ? "Keys in the Keychain" : "No keys yet"
+                src.ready = Self.ready(src, saved[src.id] ?? [])
+                src.detail = src.ready ? String(localized: "Keys in the Keychain") : String(localized: "No keys yet")
                 return src
             }
             items = s.items
             kicadRoots = s.kicadRoots
+            loaded = true
         } catch {
             say(error.localizedDescription, error: true)
         }
     }
 
+    private func keyedIDs() -> [String] {
+        sources.filter { $0.access == "api" && Self.ready($0, savedKeys[$0.id] ?? []) }.map(\.id)
+    }
+
     func search() async {
         let q = query.trimmingCharacters(in: .whitespaces)
-        guard !q.isEmpty else { hits = []; return }
+        guard !q.isEmpty else { hits = []; searchedQuery = nil; return }
         if sources.isEmpty { await load() }
-        var keys: [String: [String: String]] = [:]
-        for s in sources where s.access == "api" && s.enabled && LibraryKeychain.ready(s) {
-            keys[s.id] = LibraryKeychain.keys(s)
-        }
+        let keys = await Self.searchKeys(sources)
         searching = true
         defer { searching = false }
         do {
             hits = try await call("search", Params(query: q, keys: keys), as: [LibraryHits].self)
-            say(nil)
+            searchedQuery = q
+            if messageIsError { say(nil) }
         } catch {
             say(error.localizedDescription, error: true)
+        }
+    }
+
+    /// Searches one source again (its Retry), keeping the other sources' hits.
+    func retry(source id: String) async {
+        guard let q = searchedQuery else { return }
+        let keys = await Self.searchKeys(sources)
+        retrying.insert(id)
+        defer { retrying.remove(id) }
+        do {
+            let again = try await call("search", Params(query: q, only: [id], keys: keys), as: [LibraryHits].self)
+            if let h = again.first(where: { $0.source == id }), let i = hits.firstIndex(where: { $0.source == id }) { hits[i] = h }
+        } catch {
+            if let i = hits.firstIndex(where: { $0.source == id }) { hits[i].error = error.localizedDescription }
         }
     }
 
@@ -269,7 +329,7 @@ final class LibraryModel {
         do {
             let saved = try await call("save", Params(item: item), as: LibraryItem.self)
             await load()
-            say("Saved \(saved.name.isEmpty ? saved.partNumber : saved.name)")
+            notify(String(localized: "Saved \(saved.name.isEmpty ? saved.partNumber : saved.name)"))
             return saved
         } catch {
             say(error.localizedDescription, error: true)
@@ -277,10 +337,13 @@ final class LibraryModel {
         }
     }
 
+    /// Deletes a saved part and its CAD files from the library folder (the view confirms first:
+    /// it cannot be undone).
     func remove(_ item: LibraryItem) async {
         do {
             _ = try await call("remove", Params(key: item.key), as: LibraryNothing?.self)
             await load()
+            notify(String(localized: "Deleted \(item.name.isEmpty ? item.partNumber : item.name)"))
         } catch {
             say(error.localizedDescription, error: true)
         }
@@ -293,7 +356,7 @@ final class LibraryModel {
         do {
             _ = try await call("attach", Params(key: item.key, path: file.path), as: LibraryItem.self)
             await load()
-            say("Attached \(file.lastPathComponent)")
+            notify(String(localized: "Attached \(file.lastPathComponent)"))
         } catch {
             say(error.localizedDescription, error: true)
         }
@@ -308,26 +371,34 @@ final class LibraryModel {
         }
     }
 
-    /// Writes the typed keys to the Keychain. A blank field keeps its saved value.
+    /// Writes the typed keys to the Keychain (off the main actor). A blank field keeps its saved value.
     func setKeys(_ source: LibrarySource, _ values: [String: String]) async {
         do {
-            for k in source.keys ?? [] {
-                let v = values[k.id]?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
-                if !v.isEmpty { try LibraryKeychain.set(source.id, k.id, v) }
-            }
+            try await Task.detached {
+                for k in source.keys ?? [] {
+                    let v = values[k.id]?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+                    if !v.isEmpty { try LibraryKeychain.set(source.id, k.id, v) }
+                }
+            }.value
             _ = try await call("forget_tokens", Params(), as: LibraryNothing?.self)
-            say(LibraryKeychain.ready(source) ? "\(source.name) keys saved in the Keychain" : "\(source.name): some required keys are still missing", error: !LibraryKeychain.ready(source))
         } catch {
             say(error.localizedDescription, error: true)
         }
         await load()
+        if self.source(source.id)?.ready == true {
+            notify(String(localized: "\(source.name) keys saved in the Keychain"))
+        } else {
+            say(String(localized: "\(source.name): some required keys are still missing. Fill every field not marked optional."), error: true)
+        }
     }
 
+    /// Removes the source's keys from the Keychain (the view confirms first: they cannot be
+    /// brought back from ViaForm).
     func forgetKeys(_ source: LibrarySource) async {
-        for k in source.keys ?? [] { LibraryKeychain.remove(source.id, k.id) }
+        await Task.detached { for k in source.keys ?? [] { LibraryKeychain.remove(source.id, k.id) } }.value
         _ = try? await call("forget_tokens", Params(), as: LibraryNothing?.self)
-        say("\(source.name) keys removed from the Keychain")
         await load()
+        notify(String(localized: "\(source.name) keys removed from the Keychain"))
     }
 
     func setKicadRoots(_ roots: [String]) async {
@@ -339,13 +410,30 @@ final class LibraryModel {
         }
     }
 
+    /// Takes a KiCad folder off the list (the folder stays on disk); the toast's Undo puts it back.
+    func removeKicadRoot(_ root: String) async {
+        let before = kicadRoots
+        await setKicadRoots(kicadRoots.filter { $0 != root })
+        lastRoots = before
+        notify(String(localized: "Removed \(URL(fileURLWithPath: root).lastPathComponent) from the KiCad folders"), undo: true)
+    }
+
+    /// The KiCad folders before the last removal, for Undo.
+    private var lastRoots: [String]?
+
+    func undoRemoveRoot() async {
+        guard let r = lastRoots else { return }
+        lastRoots = nil
+        await setKicadRoots(r)
+    }
+
     /// Reads a pasted product link (nothing is fetched) and opens the editor on it.
     func paste(link: String) async {
         do {
             if let it = try await call("from_link", Params(url: link), as: LibraryItem?.self) {
                 draft = it
             } else {
-                say("Paste a link that starts with http:// or https://", error: true)
+                say(String(localized: "Paste a link that starts with http:// or https://"), error: true)
             }
         } catch {
             say(error.localizedDescription, error: true)
@@ -373,28 +461,28 @@ final class LibraryModel {
         case let .hardware(family, size, length):
             var p: [String: Any] = ["family": family, "size": size]
             if let length { p["length"] = length }
-            if design.run("parts.insert", p) != nil { design.zoomToFit(); say("Inserted \(item.name)") }
-            else { say(design.message ?? "The part was not inserted", error: true) }
+            if design.run("parts.insert", p) != nil { design.zoomToFit(); notify(String(localized: "Inserted \(item.name)")) }
+            else { say(design.message ?? String(localized: "The part was not inserted"), error: true) }
         case let .step(path):
-            if design.run("file.insert_step", ["path": path]) != nil { design.zoomToFit(); say("Inserted \(item.name)") }
-            else { say(design.message ?? "The model was not inserted", error: true) }
+            if design.run("file.insert_step", ["path": path]) != nil { design.zoomToFit(); notify(String(localized: "Inserted \(item.name)")) }
+            else { say(design.message ?? String(localized: "The model was not inserted"), error: true) }
         case let .kicadSymbol(path, symbol, footprint):
             let r = pcb.run("component.place_library", ["path": path, "symbol": symbol, "position": nextPosition(pcb)])
-            guard r != nil else { return say(pcb.message ?? "The symbol was not placed", error: true) }
+            guard r != nil else { return say(pcb.message ?? String(localized: "The symbol was not placed"), error: true) }
             let id = ((r as? [String: Any])?["result"] as? [String: Any])?["id"] as? Int
             if let id, let footprint, pcb.run("footprint.assign", ["id": id, "path": footprint]) == nil {
-                return say("Placed, but the footprint was refused: \(pcb.message ?? "")", error: true)
+                return say(String(localized: "Placed, but the footprint was refused: \(pcb.message ?? "")"), error: true)
             }
-            say("Placed \(symbol) in the schematic")
+            notify(String(localized: "Placed \(symbol) in the schematic"))
         case let .schematic(part, value):
-            if pcb.run("component.add", ["kind": part, "position": nextPosition(pcb), "value": value]) != nil { say("Placed \(value)") }
-            else { say(pcb.message ?? "The part was not placed", error: true) }
+            if pcb.run("component.add", ["kind": part, "position": nextPosition(pcb), "value": value]) != nil { notify(String(localized: "Placed \(value)")) }
+            else { say(pcb.message ?? String(localized: "The part was not placed"), error: true) }
         case let .kicadFootprint(path):
             // On the board the selection is a footprint: its component takes the new footprint.
             let component = pcb.selection.flatMap { sel in pcb.sheet == .board ? pcb.footprint(sel)?.component : sel }
-            guard let component else { return say("Select a part first, then assign the footprint to it", error: true) }
-            if pcb.run("footprint.assign", ["id": component, "path": path]) != nil { say("Footprint assigned") }
-            else { say(pcb.message ?? "The footprint was refused", error: true) }
+            guard let component else { return say(String(localized: "Select a part first, then assign the footprint to it"), error: true) }
+            if pcb.run("footprint.assign", ["id": component, "path": path]) != nil { notify(String(localized: "Footprint assigned")) }
+            else { say(pcb.message ?? String(localized: "The footprint was refused"), error: true) }
         }
     }
 

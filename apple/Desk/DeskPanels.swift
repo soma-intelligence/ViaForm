@@ -7,6 +7,7 @@ import SwiftUI
 /// The right-click wheel: eight commands around the cursor and an overflow list under it.
 /// Drag or click toward a slice to run it; Escape or a click outside closes it.
 struct MarkingMenu: View {
+    @Environment(\.viaFormTheme) private var theme
     let model: DesignModel
     let at: CGPoint
 
@@ -72,11 +73,13 @@ struct MarkingMenu: View {
     var body: some View {
         ZStack {
             let _ = Self.hookOpened
-            Color.black.opacity(0.001)
+            Color.clear
+                .contentShape(Rectangle())
                 .onTapGesture { if !Self.pinned { model.markingMenu = nil } }
-            Circle().fill(.ultraThinMaterial).frame(width: 30, height: 30)
-                .overlay(Circle().stroke(Color.black.opacity(0.2)))
+            Circle().fill(theme.floating).frame(width: 30, height: 30)
+                .overlay(Circle().stroke(theme.floatingStroke))
                 .position(at)
+                .accessibilityHidden(true)
             // Order: top, top right, right, bottom right, bottom, bottom left, left, top left.
             ForEach(Array(wheel.enumerated()), id: \.element.id) { i, slot in
                 let a = -Double.pi / 2 + Double(i) * .pi / 4
@@ -86,33 +89,33 @@ struct MarkingMenu: View {
             VStack(alignment: .leading, spacing: 0) {
                 ForEach(overflow) { slot in
                     Button { fire(slot) } label: {
-                        Label { Text(slot.id) } icon: { CommandIcon(art: slot.art, symbol: slot.symbol, size: 12) }
+                        Label { Text(LocalizedStringKey(slot.id)) } icon: { CommandIcon(art: slot.art, symbol: slot.symbol, size: 12) }
                             .frame(maxWidth: .infinity, alignment: .leading)
-                            .padding(.horizontal, 10).frame(height: 24).contentShape(Rectangle())
+                            .padding(.horizontal, VFSpace.m).frame(minHeight: VFSize.macRow - 3).contentShape(Rectangle())
                     }
                     .buttonStyle(.plain)
                 }
             }
-            .font(.system(size: 12))
+            .font(VFFont.row)
+            .foregroundStyle(theme.ink)
             .frame(width: 170)
-            .padding(.vertical, 4)
-            .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 6))
-            .overlay(RoundedRectangle(cornerRadius: 6).stroke(Color.black.opacity(0.15)))
+            .padding(.vertical, VFSpace.xs)
+            .vfSurface(.floating, radius: VFRadius.card)
             .position(x: at.x, y: at.y + radius + 74)
         }
     }
 
     private func pill(_ slot: Slot) -> some View {
         Button { fire(slot) } label: {
-            HStack(spacing: 6) {
+            HStack(spacing: VFSpace.s) {
                 CommandIcon(art: slot.art, symbol: slot.symbol, size: 12).frame(width: 20)
-                Text(slot.id)
+                Text(LocalizedStringKey(slot.id))
             }
-            .font(.system(size: 12))
-            .padding(.horizontal, 10).frame(height: 26)
-            .background(.regularMaterial, in: Capsule())
-            .overlay(Capsule().stroke(Color.black.opacity(0.15)))
-            .shadow(color: .black.opacity(0.12), radius: 4, y: 1)
+            .font(VFFont.row)
+            .foregroundStyle(theme.ink)
+            .padding(.horizontal, VFSpace.m).frame(minHeight: VFSize.macRow - 3)
+            .vfSurface(.floating, radius: VFRadius.touchCapsule)
+            .contentShape(Capsule())
         }
         .buttonStyle(.plain)
         .fixedSize()
@@ -128,6 +131,7 @@ struct MarkingMenu: View {
 
 /// S opens a search over every registry command; Return runs the first match.
 struct ToolboxSearch: View {
+    @Environment(\.viaFormTheme) private var theme
     @Bindable var model: DesignModel
     @State private var query = ""
     @FocusState private var focused: Bool
@@ -142,30 +146,35 @@ struct ToolboxSearch: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            HStack(spacing: 8) {
-                Image(systemName: "magnifyingglass").foregroundStyle(.secondary)
+            HStack(spacing: VFSpace.m) {
+                Image(systemName: "magnifyingglass").foregroundStyle(theme.inkSecondary).accessibilityHidden(true)
                 TextField("Search commands", text: $query)
                     .textFieldStyle(.plain)
-                    .font(.system(size: 15))
+                    .font(VFFont.title.weight(.regular))
                     .focused($focused)
                     .onSubmit { if let c = matches.first { run(c) } }
                     .onExitCommand { close() }
             }
-            .padding(.horizontal, 12).frame(height: 40)
+            .padding(.horizontal, VFSpace.l).frame(height: 40)
             Divider()
             ScrollView {
                 VStack(spacing: 0) {
+                    if matches.isEmpty {
+                        Text("No command matches “\(query)”").font(VFFont.row).foregroundStyle(theme.inkSecondary)
+                            .frame(maxWidth: .infinity).padding(VFSpace.l)
+                    }
                     ForEach(matches) { c in
                         Button { run(c) } label: {
-                            HStack(spacing: 8) {
+                            HStack(spacing: VFSpace.m) {
                                 CommandIcon(icon: c.icon, id: c.id, size: 13).frame(width: 22)
                                 Text(StageLabels.command(c.label))
                                 Spacer()
-                                Text(c.tab.capitalized + " · " + c.panel.capitalized).foregroundStyle(.secondary).font(.system(size: 11))
-                                if let k = c.key { Text(k).font(.system(size: 11, design: .monospaced)).foregroundStyle(.secondary) }
+                                Text("\(c.tab.capitalized) · \(c.panel.capitalized)").foregroundStyle(theme.inkSecondary).font(VFFont.small)
+                                if let k = c.key { Text(k).font(VFFont.mono).foregroundStyle(theme.inkSecondary) }
                             }
-                            .font(.system(size: 13))
-                            .padding(.horizontal, 12).frame(height: 28).contentShape(Rectangle())
+                            .font(VFFont.row)
+                            .foregroundStyle(theme.ink)
+                            .padding(.horizontal, VFSpace.l).frame(minHeight: VFSize.macRow).contentShape(Rectangle())
                         }
                         .buttonStyle(.plain)
                     }
@@ -174,9 +183,7 @@ struct ToolboxSearch: View {
             .frame(maxHeight: 360)
         }
         .frame(width: 520)
-        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 10))
-        .overlay(RoundedRectangle(cornerRadius: 10).stroke(Color.black.opacity(0.15)))
-        .shadow(color: .black.opacity(0.25), radius: 20, y: 8)
+        .vfSurface(.floating, radius: VFRadius.floating)
         .onAppear { focused = true }
     }
 
@@ -195,50 +202,60 @@ struct ToolboxSearch: View {
 
 /// The slide-in file panel: new design, the sample and the recent files.
 struct DataPanel: View {
+    @Environment(\.viaFormTheme) private var theme
     let model: DesignModel
     @Binding var shown: Bool
 
     var body: some View {
+        let recents = NSDocumentController.shared.recentDocumentURLs
         VStack(alignment: .leading, spacing: 0) {
             HStack {
-                Text("Data").font(.system(size: 13, weight: .semibold))
+                Text("Data").font(VFFont.title).foregroundStyle(theme.ink)
                 Spacer()
-                Button { shown = false } label: { Image(systemName: "xmark") }.buttonStyle(.plain)
+                VFIconButton("xmark", label: String(localized: "Close the Data panel")) { shown = false }
             }
-            .padding(12)
+            .padding(VFSpace.l)
             Divider()
-            HStack(spacing: 8) {
+            HStack(spacing: VFSpace.m) {
                 Button("New Design") { FileActions.newDesign(model); shown = false }
                 Button("Open…") { FileActions.open(model); shown = false }
             }
-            .padding(12)
-            Text("SAMPLES").font(.system(size: 10, weight: .bold)).foregroundStyle(.secondary).padding(.horizontal, 12)
-            tile("Bracket", "cube.fill") { model.loadSample(); shown = false }
-            Text("RECENT").font(.system(size: 10, weight: .bold)).foregroundStyle(.secondary).padding(.horizontal, 12).padding(.top, 10)
+            .buttonStyle(.vfSecondary)
+            .padding(VFSpace.l)
+            VFCaption(String(localized: "Samples")).padding(.horizontal, VFSpace.l)
+            tile(String(localized: "Bracket"), "cube.fill") { model.loadSample(); shown = false }
+            VFCaption(String(localized: "Recent")).padding(.horizontal, VFSpace.l).padding(.top, VFSpace.m)
+            if recents.isEmpty {
+                Text("Designs you open or save show here.")
+                    .font(VFFont.small).foregroundStyle(theme.inkSecondary)
+                    .padding(.horizontal, VFSpace.l).padding(.top, VFSpace.xs)
+            }
             ScrollView {
                 VStack(alignment: .leading, spacing: 0) {
-                    ForEach(NSDocumentController.shared.recentDocumentURLs, id: \.self) { url in
+                    ForEach(recents, id: \.self) { url in
                         tile(url.deletingPathExtension().lastPathComponent, "doc") { FileActions.open(url, model); shown = false }
+                            .help(url.path)
                     }
                 }
             }
             Spacer()
         }
         .frame(width: 260)
-        .background(Color(nsColor: .controlBackgroundColor))
+        .background(theme.panel)
     }
 
     private func tile(_ name: String, _ symbol: String, action: @escaping () -> Void) -> some View {
         Button(action: action) {
-            HStack(spacing: 10) {
+            HStack(spacing: VFSpace.m) {
                 Image(systemName: symbol)
-                    .font(.system(size: 18))
+                    .font(VFFont.glyph(18))
+                    .foregroundStyle(theme.inkSecondary)
                     .frame(width: 44, height: 34)
-                    .background(Color(nsColor: .windowBackgroundColor), in: RoundedRectangle(cornerRadius: 4))
-                Text(name).font(.system(size: 12)).lineLimit(1)
+                    .background(theme.well, in: RoundedRectangle(cornerRadius: VFRadius.control, style: .continuous))
+                Text(name).font(VFFont.row).foregroundStyle(theme.ink).lineLimit(1)
                 Spacer()
             }
-            .padding(.horizontal, 12).padding(.vertical, 4).contentShape(Rectangle())
+            .padding(.horizontal, VFSpace.l).padding(.vertical, VFSpace.xs).contentShape(Rectangle())
         }
         .buttonStyle(.plain)
     }

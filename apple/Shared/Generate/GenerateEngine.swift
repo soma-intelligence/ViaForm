@@ -89,6 +89,12 @@ final class EngineGate {
     /// What holds the session, for the busy banner; nil when open.
     var holder: String?
     var shut: Bool { holder != nil }
+
+    /// Why controls are disabled, for tooltips and VoiceOver.
+    static var reason: String {
+        if let h = shared.holder { return String(localized: "Busy: \(h). Available again when it finishes.") }
+        return String(localized: "The ViaForm core is busy.")
+    }
 }
 
 /// A 3D study running in the engine on its own thread (`vf_generate_*`): progress to poll,

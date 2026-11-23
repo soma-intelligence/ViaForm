@@ -41,37 +41,43 @@ struct TouchScenarioCard: View {
     var body: some View {
         let _ = flow.version
         let node = flow.node("simulate.flight")
-        TouchInspectorCard(title: node?.name ?? "Flight", symbol: "wind", subtitle: node?.revisionName ?? "Not flown yet") {
-            VFCaption("Scenario").padding(.top, 8)
+        TouchInspectorCard(title: node?.name ?? String(localized: "Flight"), symbol: "wind",
+                           subtitle: node?.revisionName ?? String(localized: "Not flown yet")) {
+            VFCaption("Scenario").padding(.top, VFSpace.m)
             ForEach(node?.consumes ?? [], id: \.id) { i in
                 let input = flow.node(i.id)
                 Button { if let w = input.flatMap({ Workspace(stage: $0.stage) }) { open(w) } } label: {
                     HStack(spacing: 8) {
                         VFStatusDot(status: (i.current ? (input?.status ?? .empty) : .stale).vfStatus, size: 7)
+                            .accessibilityHidden(true)
                         Text(input?.label.isEmpty == false ? input!.label : (input?.name ?? i.id)).foregroundStyle(theme.inkSecondary)
                         Spacer()
-                        Text(i.now > 0 ? (i.now_name ?? "") : "Not built").foregroundStyle(i.current ? theme.ink : theme.warning)
-                        Image(systemName: "chevron.right").font(.footnote).foregroundStyle(theme.inkTertiary)
+                        Text(i.now > 0 ? (i.now_name ?? "") : String(localized: "Not built")).foregroundStyle(theme.ink)
+                        // A moved input says so in words, not only in colour.
+                        if !i.current { Text("Stale").font(VFFont.micro).foregroundStyle(theme.warning) }
+                        Image(systemName: "chevron.right").font(VFFont.small).foregroundStyle(theme.inkTertiary).accessibilityHidden(true)
                     }
-                    .font(.system(size: 15))
+                    .font(VFFont.row)
                     .frame(minHeight: VFSize.touchTarget)
                     .contentShape(Rectangle())
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(.vfTouch)
+                .accessibilityElement(children: .combine)
             }
             if let policy = flow.node("train.policy") {
-                TouchKVRow(label: policy.label.isEmpty ? "Policy" : policy.label, value: policy.revisionName ?? "Not trained")
+                TouchKVRow(label: policy.label.isEmpty ? String(localized: "Policy") : policy.label, value: policy.revisionName ?? String(localized: "Not trained"))
             }
-            TouchKVRow(label: "Mission", value: sim.catalog?.missions.first { $0.id == sim.options.mission }?.name ?? sim.options.mission)
+            TouchKVRow(label: String(localized: "Mission"), value: sim.catalog?.missions.first { $0.id == sim.options.mission }?.name ?? sim.options.mission)
             if let a = node?.action, node?.status == .stale || node?.status == .failed {
                 if let r = node?.reason, !r.isEmpty {
-                    Text(r).font(.footnote).foregroundStyle(theme.inkSecondary).padding(.top, 6)
+                    Text(r).font(VFFont.small).foregroundStyle(theme.inkSecondary).padding(.top, VFSpace.s)
+                        .fixedSize(horizontal: false, vertical: true)
                 }
                 Button(action: rerun) {
-                    Text(a.label).font(.system(size: 16, weight: .semibold)).frame(maxWidth: .infinity, minHeight: VFSize.touchTarget - 8)
+                    Text(a.label).frame(maxWidth: .infinity, minHeight: VFSize.touchTarget)
                 }
                 .buttonStyle(.vfPrimary)
-                .padding(.vertical, 8)
+                .padding(.vertical, VFSpace.m)
             }
         }
     }
@@ -88,37 +94,43 @@ struct TouchTelemetryPanel: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
             Button { expanded.toggle() } label: {
-                HStack(spacing: 8) {
+                HStack(spacing: VFSpace.m) {
                     VFCaption("Telemetry")
                     if let s = shown {
-                        Text(String(format: "t %.1f s · roll %.0f° · pitch %.0f° · %.1f m/s · battery %.0f%%", s.t, s.roll, s.pitch, s.speed, s.battery))
-                            .font(.system(size: 12)).monospacedDigit().foregroundStyle(theme.inkSecondary).lineLimit(1)
+                        Text(Self.readout(s)).font(VFFont.small).foregroundStyle(theme.inkSecondary).lineLimit(1)
                     }
                     Spacer()
-                    Image(systemName: expanded ? "chevron.down" : "chevron.up").font(.footnote.weight(.semibold)).foregroundStyle(theme.inkSecondary)
+                    Image(systemName: expanded ? "chevron.down" : "chevron.up").font(VFFont.small.weight(.semibold))
+                        .foregroundStyle(theme.inkSecondary).accessibilityHidden(true)
                 }
-                .frame(minHeight: VFSize.touchTarget - 8)
+                .frame(minHeight: VFSize.touchTarget)
                 .contentShape(Rectangle())
             }
-            .buttonStyle(.plain)
-            .accessibilityLabel(expanded ? "Hide telemetry" : "Show telemetry")
+            .buttonStyle(.vfTouch)
+            .accessibilityLabel(expanded ? String(localized: "Hide telemetry") : String(localized: "Show telemetry"))
+            .accessibilityValue(shown.map(Self.readout) ?? "")
             if expanded {
                 if samples.count < 2 {
-                    Text("Fly to see the attitude, speed and battery here.").font(.footnote).foregroundStyle(theme.inkSecondary)
+                    Text("Fly to see the attitude, speed and battery here.").font(VFFont.small).foregroundStyle(theme.inkSecondary)
                         .frame(maxWidth: .infinity, minHeight: 60)
                 } else {
-                    HStack(spacing: 12) {
-                        chart("Roll, pitch, yaw (deg)", series: [("Roll", \.roll, theme.accent), ("Pitch", \.pitch, Color.orange), ("Yaw", \.yaw, Color.purple)])
-                        chart("Speed (m/s)", series: [("Speed", \.speed, Color.teal)])
-                        chart("Battery (%)", series: [("Battery", \.battery, theme.success)])
+                    // Each series has its own dash as well as its colour, and a legend.
+                    HStack(spacing: VFSpace.l) {
+                        chart(String(localized: "Roll, pitch, yaw (°)"), series: [
+                            (String(localized: "Roll"), \.roll, theme.accent, []),
+                            (String(localized: "Pitch"), \.pitch, theme.warning, [5, 3]),
+                            (String(localized: "Yaw"), \.yaw, theme.inkSecondary, [1.5, 2.5]),
+                        ])
+                        chart(String(localized: "Speed (m/s)"), series: [(String(localized: "Speed"), \.speed, theme.accent, [])])
+                        chart(String(localized: "Battery (%)"), series: [(String(localized: "Battery"), \.battery, theme.success, [])])
                     }
-                    .frame(height: 110)
+                    .frame(height: 130)
                 }
             }
         }
-        .padding(.horizontal, 14)
-        .padding(.vertical, 8)
-        .vfSurface(.floating, radius: 18)
+        .padding(.horizontal, VFSpace.l)
+        .padding(.vertical, VFSpace.m)
+        .vfSurface(.floating, radius: VFRadius.touchFloating)
         .onChange(of: sim.tick) { _, _ in record() }
         .onChange(of: sim.worldVersion) { _, _ in samples = []; playhead = nil }
     }
@@ -135,22 +147,29 @@ struct TouchTelemetryPanel: View {
         if samples.count > 900 { samples.removeFirst(samples.count - 900) }
     }
 
-    private func chart(_ title: String, series: [(String, KeyPath<TelemetrySample, Double>, Color)]) -> some View {
+    static func readout(_ s: TelemetrySample) -> String {
+        let n = { (v: Double, d: Int) in VFFormat.number(v, digits: d) }
+        return String(localized: "t \(n(s.t, 1)) s · roll \(n(s.roll, 0))° · pitch \(n(s.pitch, 0))° · \(n(s.speed, 1)) m/s · battery \(n(s.battery, 0)) %")
+    }
+
+    private func chart(_ title: String, series: [(String, KeyPath<TelemetrySample, Double>, Color, [CGFloat])]) -> some View {
         VStack(alignment: .leading, spacing: 2) {
-            Text(title).font(.caption2.weight(.semibold)).foregroundStyle(theme.inkSecondary)
+            Text(title).font(VFFont.micro).foregroundStyle(theme.inkSecondary)
             Chart {
-                ForEach(series, id: \.0) { name, key, color in
+                ForEach(series, id: \.0) { name, key, _, dash in
                     ForEach(samples) { s in
                         LineMark(x: .value("Time", s.t), y: .value(name, s[keyPath: key]), series: .value("Series", name))
-                            .foregroundStyle(color)
-                            .lineStyle(StrokeStyle(lineWidth: 1.4))
+                            .foregroundStyle(by: .value("Series", name))
+                            .lineStyle(StrokeStyle(lineWidth: 1.4, dash: dash))
                     }
                 }
                 if let s = shown {
                     RuleMark(x: .value("Playhead", s.t)).foregroundStyle(theme.ink.opacity(0.6)).lineStyle(StrokeStyle(lineWidth: 1))
                 }
             }
-            .chartLegend(.hidden)
+            .chartForegroundStyleScale(domain: series.map(\.0), range: series.map(\.2))
+            .chartLegend(position: .bottom, spacing: VFSpace.xs)
+            .chartLegend(series.count > 1 ? .visible : .hidden)
             .chartXAxis(.hidden)
             .chartOverlay { proxy in
                 GeometryReader { g in
@@ -168,6 +187,7 @@ struct TouchTelemetryPanel: View {
         .frame(maxWidth: .infinity)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(title)
+        .accessibilityValue(shown.map { s in series.map { "\($0.0) \(VFFormat.number(s[keyPath: $0.1], digits: 1))" }.joined(separator: ", ") } ?? "")
     }
 }
 #endif

@@ -1,6 +1,7 @@
 #if os(iOS)
 import SwiftUI
 import UIKit
+import MetalKit
 
 // Floating pieces of the iPad stage: the two labelled tool groups, the context pill placed
 // under the selection, the value bubble, the inspector card and the summary capsule.
@@ -25,7 +26,7 @@ struct PadToolGroup<Content: View>: View {
         .frame(width: 76)
         .frame(maxHeight: maxHeight)
         .fixedSize(horizontal: false, vertical: true)
-        .vfSurface(.floating, radius: 18)
+        .vfSurface(.control, radius: VFRadius.touchFloating)
     }
 }
 
@@ -49,14 +50,14 @@ struct PadToolButton: View {
                     else { ToolChipIcon(art: art, symbol: symbol, size: 20) }
                 }
                 .frame(height: 26)
-                Text(label).font(.system(size: 10, weight: .medium)).lineLimit(1).minimumScaleFactor(0.7)
+                Text(label).font(VFFont.micro).lineLimit(1).minimumScaleFactor(0.7)
             }
             .frame(maxWidth: .infinity, minHeight: 52)
             .foregroundStyle(active ? theme.onAccent : theme.ink)
-            .background(active ? theme.accent : .clear, in: RoundedRectangle(cornerRadius: 11, style: .continuous))
+            .background(active ? theme.accent : .clear, in: RoundedRectangle(cornerRadius: VFRadius.card, style: .continuous))
             .contentShape(Rectangle())
         }
-        .buttonStyle(.plain)
+        .buttonStyle(.vfTouch)
         .accessibilityLabel(label)
         .accessibilityAddTraits(active ? .isSelected : [])
     }
@@ -97,7 +98,8 @@ struct DesignToolGroups: View {
                                       active: [Tool.chamfer, .shell, .move, .mirror].contains(model.tool)) {}
                             .allowsHitTesting(false)
                     }
-                    .accessibilityLabel("More tools")
+                    .hoverEffect(.highlight)
+                    .accessibilityLabel(Text("More tools"))
                 }
             }
         }
@@ -115,6 +117,7 @@ struct DesignToolGroups: View {
             PadToolButton(label: label, symbol: symbol, active: tools.contains(model.tool)) {}
                 .allowsHitTesting(false)
         }
+        .hoverEffect(.highlight)
         .accessibilityLabel(label)
     }
 
@@ -216,33 +219,35 @@ struct ContextPill: View {
                 Button(action: a.run) {
                     VStack(spacing: 4) {
                         Group {
-                            if let t = a.tool { ToolChipIcon(tool: t, size: 20) } else { Image(systemName: a.symbol).font(.system(size: 18, weight: .medium)) }
+                            if let t = a.tool { ToolChipIcon(tool: t, size: 20) } else { Image(systemName: a.symbol).font(VFFont.glyph(18, weight: .medium)) }
                         }
                         .frame(height: 24)
-                        Text(a.title).font(.system(size: 12, weight: .medium)).lineLimit(1).fixedSize()
+                        Text(a.title).font(VFFont.micro).lineLimit(1).fixedSize()
                     }
                     .foregroundStyle(a.on ? theme.accentText : theme.ink)
                     .padding(.horizontal, 8)
                     .frame(minWidth: 62, minHeight: height.points)
-                    .background(RoundedRectangle(cornerRadius: 11, style: .continuous).fill(a.on ? theme.accent.opacity(0.16) : .clear))
-                    .overlay(RoundedRectangle(cornerRadius: 11, style: .continuous).strokeBorder(a.on ? theme.accent : .clear, lineWidth: 1.5))
+                    .background(RoundedRectangle(cornerRadius: VFRadius.card, style: .continuous).fill(a.on ? theme.accent.opacity(0.16) : .clear))
+                    .overlay(RoundedRectangle(cornerRadius: VFRadius.card, style: .continuous).strokeBorder(a.on ? theme.accent : .clear, lineWidth: 1.5))
                     .contentShape(Rectangle())
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(.vfTouch)
                 .accessibilityLabel(a.title)
+                .accessibilityAddTraits(a.on ? .isSelected : [])
             }
             if let dismiss {
                 VFHairline(vertical: true).frame(height: 32)
                 Button(action: dismiss) {
-                    Image(systemName: "xmark").font(.system(size: 14, weight: .semibold)).foregroundStyle(theme.inkSecondary)
+                    Image(systemName: "xmark").font(VFFont.glyph(14, weight: .semibold)).foregroundStyle(theme.inkSecondary)
                         .frame(width: VFSize.touchTarget, height: height.points).contentShape(Rectangle())
                 }
-                .buttonStyle(.plain)
-                .accessibilityLabel("Clear selection")
+                .buttonStyle(.vfTouch)
+                .help(String(localized: "Clear selection"))
+                .accessibilityLabel(Text("Clear selection"))
             }
         }
-        .padding(6)
-        .vfSurface(.floating, radius: 18)
+        .padding(VFSpace.s)
+        .vfSurface(.control, radius: VFRadius.touchFloating)
     }
 }
 
@@ -252,11 +257,11 @@ struct ValueBubble: View {
     let text: String
 
     var body: some View {
-        Text(text).font(.system(size: 14, weight: .semibold)).monospacedDigit()
+        Text(text).font(VFFont.rowEmphasis)
             .foregroundStyle(theme.onAccent)
-            .padding(.horizontal, 12).frame(height: 30)
+            .padding(.horizontal, VFSpace.l).frame(minHeight: 30)
             .background(Capsule().fill(theme.accent))
-            .overlay(Capsule().strokeBorder(Color.white.opacity(0.3)))
+            .overlay(Capsule().strokeBorder(theme.onAccent.opacity(0.3)))
             .shadow(color: theme.accent.opacity(0.4), radius: 6)
     }
 }
@@ -276,6 +281,7 @@ struct DottedArc: Shape {
 /// The selection's context pill, value bubble and arc, placed over the viewport from the
 /// selection's projected anchor (`AnchorLayout` of the spec, on the orbit camera).
 struct DesignAnchorLayer: View {
+    @Environment(\.viaFormTheme) private var theme
     let model: DesignModel
     let stage: Workspace
     /// Rectangles of the floating cards, in the same space, to keep clear of.
@@ -302,10 +308,10 @@ struct DesignAnchorLayer: View {
                 if let anchor, let v = model.tool.value, model.tool != .select {
                     let bubble = CGPoint(x: anchor.x + 120, y: anchor.y - 70)
                     DottedArc(from: anchor, to: bubble)
-                        .stroke(Color.accentColor, style: StrokeStyle(lineWidth: 1.5, dash: [4, 4]))
+                        .stroke(theme.accent, style: StrokeStyle(lineWidth: 1.5, dash: [4, 4]))
                         .allowsHitTesting(false)
-                    Circle().fill(Color.accentColor).frame(width: 12, height: 12)
-                        .overlay(Circle().strokeBorder(.white, lineWidth: 2))
+                    Circle().fill(theme.accent).frame(width: 12, height: 12)
+                        .overlay(Circle().strokeBorder(theme.onAccent, lineWidth: 2))
                         .position(anchor).allowsHitTesting(false)
                     ValueBubble(text: Self.format(model.toolValue, v.unit)).position(bubble)
                 }
@@ -330,7 +336,7 @@ struct DesignAnchorLayer: View {
     }
 
     static func format(_ v: Double, _ unit: String) -> String {
-        unit == "deg" ? String(format: "%.0f deg", v) : unit.isEmpty ? String(format: "%.0f", v) : String(format: "%.1f %@", v, unit)
+        VFFormat.value(v, VFUnit(symbol: unit))
     }
 }
 
@@ -347,20 +353,22 @@ struct TouchInspectorCard<Content: View>: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             HStack(spacing: 12) {
-                Image(systemName: symbol).font(.system(size: 19)).foregroundStyle(theme.ink)
+                Image(systemName: symbol).font(VFFont.glyph(19)).foregroundStyle(theme.ink).accessibilityHidden(true)
                 VStack(alignment: .leading, spacing: 1) {
-                    Text(title).font(.system(size: 18, weight: .semibold)).foregroundStyle(theme.ink).lineLimit(1)
-                    if let subtitle { Text(subtitle).font(.system(size: 13)).foregroundStyle(theme.inkSecondary).lineLimit(2) }
+                    Text(title).font(VFFont.title).foregroundStyle(theme.ink).lineLimit(1)
+                    if let subtitle { Text(subtitle).font(VFFont.small).foregroundStyle(theme.inkSecondary).lineLimit(2) }
                 }
+                .accessibilityElement(children: .combine)
+                .accessibilityAddTraits(.isHeader)
                 Spacer(minLength: 0)
             }
             .frame(minHeight: 52)
             VFHairline()
             content
         }
-        .padding(.horizontal, 18).padding(.vertical, 8)
+        .padding(.horizontal, VFSpace.xl).padding(.vertical, VFSpace.m)
         .frame(width: VFSize.touchInspector)
-        .vfSurface(.floating, radius: 18)
+        .vfSurface(.floating, radius: VFRadius.touchFloating)
     }
 }
 
@@ -376,10 +384,11 @@ struct TouchKVRow: View {
             HStack {
                 Text(label).foregroundStyle(theme.inkSecondary)
                 Spacer()
-                Text(value).monospacedDigit().foregroundStyle(theme.ink).lineLimit(1)
+                Text(value).monospacedDigit().foregroundStyle(theme.ink).lineLimit(2).multilineTextAlignment(.trailing)
             }
-            .font(.system(size: 16))
+            .font(VFFont.row)
             .frame(minHeight: 46)
+            .accessibilityElement(children: .combine)
             if divider { VFHairline().opacity(0.7) }
         }
     }
@@ -400,20 +409,27 @@ struct TouchFlowRows: View {
             ForEach(nodes) { n in
                 HStack(spacing: 8) {
                     VFStatusDot(status: n.status.vfStatus, size: 7)
-                    Text(n.revisionName ?? n.label).font(.system(size: 15, weight: .semibold)).foregroundStyle(theme.ink)
+                    Text(n.revisionName ?? n.label).font(VFFont.rowEmphasis).foregroundStyle(theme.ink)
                     Spacer()
-                    Text(n.summary).font(.system(size: 13)).foregroundStyle(theme.inkSecondary).lineLimit(1)
+                    Text(n.summary).font(VFFont.small).foregroundStyle(theme.inkSecondary).lineLimit(1)
                 }
                 .frame(minHeight: 28)
+                .accessibilityElement(children: .combine)
+                .accessibilityValue(n.status.vfStatus.word)
                 ForEach(n.consumes, id: \.id) { i in
-                    HStack(spacing: 6) {
-                        Image(systemName: "arrow.down.right").font(.system(size: 11)).foregroundStyle(theme.inkTertiary)
-                        Text(i.now_name ?? i.id).font(.system(size: 13)).foregroundStyle(i.current ? theme.inkSecondary : theme.warning)
+                    HStack(spacing: VFSpace.s) {
+                        // A moved input reads "Stale" with a triangle, never colour alone.
+                        Image(systemName: i.current ? "arrow.down.right" : "exclamationmark.triangle.fill")
+                            .font(VFFont.glyph(11)).foregroundStyle(i.current ? theme.inkTertiary : theme.warning)
+                            .accessibilityHidden(true)
+                        Text(i.now_name ?? i.id).font(VFFont.small).foregroundStyle(i.current ? theme.inkSecondary : theme.ink)
+                        if !i.current { Text("Stale").font(VFFont.micro).foregroundStyle(theme.warning) }
                         Spacer()
                     }
+                    .accessibilityElement(children: .combine)
                 }
                 if !n.reason.isEmpty, n.status == .stale || n.status == .failed {
-                    Text(n.reason).font(.system(size: 13)).foregroundStyle(theme.inkSecondary).fixedSize(horizontal: false, vertical: true)
+                    Text(n.reason).font(VFFont.small).foregroundStyle(theme.inkSecondary).fixedSize(horizontal: false, vertical: true)
                 }
                 if let a = n.action, n.status == .stale {
                     Button(a.label) {
@@ -424,7 +440,7 @@ struct TouchFlowRows: View {
                 }
             }
             if nodes.isEmpty {
-                Text("This stage builds nothing yet.").font(.system(size: 13)).foregroundStyle(theme.inkSecondary)
+                Text("This stage builds nothing yet.").font(VFFont.small).foregroundStyle(theme.inkSecondary)
             }
         }
         .padding(.bottom, 8)
@@ -439,23 +455,25 @@ struct SummaryCapsule: View {
     let items: [(symbol: String, text: String)]
 
     var body: some View {
-        HStack(spacing: 14) {
+        HStack(spacing: VFSpace.l) {
             ForEach(Array(items.enumerated()), id: \.offset) { i, it in
                 if i > 0 { VFHairline(vertical: true).frame(height: 20) }
-                Label(it.text, systemImage: it.symbol).font(.system(size: 14, weight: .medium)).monospacedDigit()
+                Label(it.text, systemImage: it.symbol).font(VFFont.row.weight(.medium))
                     .foregroundStyle(theme.ink).lineLimit(1)
             }
         }
-        .padding(.horizontal, 18)
+        .padding(.horizontal, VFSpace.xl)
         .frame(minHeight: VFSize.touchTarget)
-        .vfSurface(.floating, radius: 22)
+        .vfSurface(.floating, radius: VFRadius.touchCapsule)
+        .accessibilityElement(children: .combine)
     }
 }
 
 // MARK: - Gestures
 
-/// A two-finger tap anywhere undoes, as in other drawing apps on iPad. Installed on the window
-/// so it does not take touches from the viewport's own gestures.
+/// A two-finger tap on the 3D view undoes, as in other drawing apps on iPad. The recognizer sits
+/// on the window so it never takes touches from the viewport's own gestures, but it only begins
+/// when both fingers land on the 3D view (not a card, a bar or a sheet) and nothing is presented.
 struct TwoFingerTapUndo: UIViewRepresentable {
     let action: () -> Void
 
@@ -473,6 +491,18 @@ struct TwoFingerTapUndo: UIViewRepresentable {
         init(action: @escaping () -> Void) { self.action = action }
         @objc func fire(_ g: UITapGestureRecognizer) { if g.state == .ended { action() } }
         func gestureRecognizer(_ g: UIGestureRecognizer, shouldRecognizeSimultaneouslyWith other: UIGestureRecognizer) -> Bool { true }
+
+        /// Only touches on the 3D view count.
+        func gestureRecognizer(_ g: UIGestureRecognizer, shouldReceive touch: UITouch) -> Bool {
+            guard let view = touch.view else { return false }
+            return view is MTKView
+        }
+
+        /// Never under a sheet, popover or alert.
+        func gestureRecognizerShouldBegin(_ g: UIGestureRecognizer) -> Bool {
+            guard let window = g.view as? UIWindow else { return false }
+            return !TouchResponder.isPresenting(in: window)
+        }
     }
 
     final class Probe: UIView {

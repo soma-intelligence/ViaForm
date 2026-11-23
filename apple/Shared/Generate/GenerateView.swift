@@ -3,15 +3,17 @@ import SwiftUI
 /// The Generate workspace: set up a 3D study (design space, material, goal, limits, and the
 /// regions that hold, load, keep out and keep in, placed by number or by dragging them in the
 /// preview), run it, compare its candidates coloured by stress, read their analysis, and build
-/// the one picked into the design. The Mac and a regular-width iPad keep the setup in an
-/// inspector on the right; iPhone opens it in a sheet over the preview, as Simulation does.
+/// the one picked into the design. The Mac and a regular-width iPad keep the setup in a side
+/// panel on the right; iPhone opens it in a sheet over the preview, as Simulation does.
+///
+/// The gallery stills and the camera live in the model, so a return to the stage finds them.
 struct GenerateView: View {
+    @Environment(\.viaFormTheme) private var palette
     @Bindable var model: GenerateModel
     let design: DesignModel
     let theme: ViewportTheme
     var compact = false
     @State private var scene: GenerateScene?
-    @State private var thumbnails: [Int: GenerateImage] = [:]
     @State private var showSheet = false
     #if os(iOS)
     @Environment(\.horizontalSizeClass) private var hSize
@@ -31,9 +33,14 @@ struct GenerateView: View {
             if let scene {
                 if sideBySide { wide(scene) } else { narrow(scene) }
             } else {
-                Color.clear.onAppear { scene = GenerateScene(theme: theme) }
+                Color.clear.onAppear {
+                    let s = GenerateScene(theme: theme)
+                    if let camera = model.camera { s.cameraState = camera }
+                    scene = s
+                }
             }
         }
+        .onDisappear { if let scene { model.camera = scene.cameraState } }
         .onChange(of: model.study) { _, _ in scene?.update(model) }
         .onChange(of: model.selection) { _, _ in scene?.update(model) }
         .onChange(of: model.activeCase) { _, _ in scene?.update(model) }
@@ -41,11 +48,22 @@ struct GenerateView: View {
         .onChange(of: model.selected) { _, _ in scene?.update(model) }
         .onChange(of: model.liveVersion) { _, _ in scene?.update(model) }
         .onChange(of: model.running) { _, _ in scene?.update(model) }
-        .onChange(of: model.outcomeVersion) { _, _ in
-            scene?.update(model)
-            renderThumbnails()
-        }
+        .onChange(of: model.previewsVersion) { _, _ in scene?.update(model) }
         .onChange(of: scene == nil) { _, _ in scene?.update(model) }
+        .task(id: model.previewsVersion) { model.renderThumbnails(theme: theme) }
+        .confirmSheet(Binding(get: { model.stopRequested ? stopRequest : nil },
+                              set: { if $0 == nil { model.stopRequested = false } }))
+    }
+
+    /// Stopping a run that has solved for a while asks first (FRONTEND-SPEC 6.4).
+    private var stopRequest: ConfirmRequest {
+        ConfirmRequest(
+            title: String(localized: "Stop the study?"),
+            message: String(localized: "It has been solving for \(readableDuration(model.runAge)). Its candidates are not kept; the last results stay."),
+            verb: String(localized: "Stop"),
+            destructive: true,
+            perform: { model.cancel() },
+            cancel: { model.stopRequested = false })
     }
 
     private func wide(_ scene: GenerateScene) -> some View {
@@ -54,14 +72,14 @@ struct GenerateView: View {
                 stage(scene)
                 if model.outcome != nil {
                     Divider()
-                    CandidateStrip(model: model, thumbnails: thumbnails)
-                        .padding(.vertical, 12)
-                        .background(.background)
+                    CandidateStrip(model: model)
+                        .padding(.vertical, VFSpace.l)
+                        .background(palette.panel)
                 }
             }
             Divider()
             GenerateInspector(model: model, design: design)
-                .frame(width: 340)
+                .frame(width: VFSize.sidePanel)
         }
     }
 
@@ -70,11 +88,13 @@ struct GenerateView: View {
             .sheet(isPresented: $showSheet) {
                 NavigationStack {
                     GenerateInspector(model: model, design: design)
-                        .navigationTitle(model.pane.rawValue)
+                        .navigationTitle(model.pane.title)
                         #if os(iOS)
                         .navigationBarTitleDisplayMode(.inline)
                         #endif
-                        .toolbar { Button("Done") { showSheet = false } }
+                        .toolbar {
+                            ToolbarItem(placement: .confirmationAction) { Button("Done") { showSheet = false } }
+                        }
                 }
                 .presentationDetents([.fraction(0.45), .large])
                 .presentationBackgroundInteraction(.enabled(upThrough: .fraction(0.45)))
@@ -93,128 +113,168 @@ struct GenerateView: View {
                 }
             }
             .ignoresSafeArea(edges: sideBySide ? [] : .all)
-            VStack(spacing: 8) {
-                HStack(alignment: .top, spacing: 8) {
+            VStack(spacing: VFSpace.m) {
+                HStack(alignment: .top, spacing: VFSpace.m) {
                     if model.running && model.display != .assembly {
                         LiveRunPanel(model: model, compact: !sideBySide)
+                            .vfTransition(.opacity)
                     }
                     Spacer(minLength: 0)
-                    VStack(alignment: .trailing, spacing: 8) {
-                        HStack(spacing: 8) {
+                    VStack(alignment: .trailing, spacing: VFSpace.m) {
+                        HStack(spacing: VFSpace.m) {
                             Picker("Display", selection: $model.display) {
-                                ForEach(GenerateModel.Display.allCases.filter { $0 != .assembly || model.assemblyLoaded }, id: \.self) { Text($0.rawValue).tag($0) }
+                                ForEach(GenerateModel.Display.allCases.filter { $0 != .assembly || model.assemblyLoaded }, id: \.self) { Text($0.title).tag($0) }
                             }
                             .pickerStyle(.segmented)
                             .labelsHidden()
                             .fixedSize()
-                            .disabled(model.outcome == nil && !model.assemblyLoaded)
-                            Button {
+                            .vfDisabled(model.outcome == nil && !model.assemblyLoaded,
+                                        reason: String(localized: "Run the study to see a result."))
+                            VFIconButton("scope", label: String(localized: "Frame the design space")) {
                                 if model.display == .assembly { design.zoomToFit() } else { scene.home(model.study) }
-                            } label: { Image(systemName: "scope") }
-                                .buttonStyle(.bordered)
-                                .help("Frame the design space")
-                                .accessibilityLabel("Frame the design space")
+                            }
+                            .vfSurface(.control, radius: VFRadius.control)
                         }
                         if model.display == .assembly, let p = model.project {
                             AssemblyBadge(model: model, project: p)
                         }
                         if model.display == .result, let i = model.selected, let p = model.previews[safe: i], let s = model.studied {
-                            StressLegend(preview: p, study: s)
+                            StressLegend(preview: p, study: s, scale: $model.stressScale)
                         }
                     }
                 }
                 Spacer(minLength: 0)
                 if let holder = EngineGate.shared.holder {
-                    Label { Text(holder + "…") } icon: { ProgressView().controlSize(.small) }
-                        .font(.callout)
-                        .padding(.horizontal, 12).padding(.vertical, 8)
-                        .background(.regularMaterial, in: Capsule())
+                    Label { Text("\(holder)…") } icon: { ProgressView().controlSize(.small) }
+                        .font(VFFont.row)
+                        .foregroundStyle(palette.ink)
+                        .padding(.horizontal, VFSpace.l).padding(.vertical, VFSpace.m)
+                        .vfSurface(.floating, radius: VFRadius.touchCapsule)
                 }
                 MessageBanner(model: design)
+                if let error = model.error, !model.running {
+                    ErrorBanner(message: error, retry: model.readiness == nil ? { model.run() } : nil) { model.clearError() }
+                }
                 if !sideBySide, model.outcome != nil, model.display == .result {
-                    CandidateStrip(model: model, thumbnails: thumbnails, compact: true)
-                        .padding(.vertical, 8)
-                        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 12))
+                    CandidateStrip(model: model, compact: true)
+                        .padding(.vertical, VFSpace.m)
+                        .vfSurface(.floating)
                 }
                 GenerateRunBar(model: model, design: design, showSetup: sideBySide ? nil : $showSheet)
             }
-            .padding(12)
+            .padding(VFSpace.panelPadding)
         }
     }
+}
 
-    /// Stills of every candidate for the gallery, one per turn of the run loop.
-    private func renderThumbnails() {
-        thumbnails = [:]
-        let previews = model.previews, version = model.outcomeVersion
-        Task {
-            for (i, p) in previews.enumerated() {
-                await Task.yield()
-                guard version == model.outcomeVersion else { return }
-                thumbnails[i] = GenerateScene.thumbnail(p, size: CGSize(width: 320, height: 220), theme: theme)
-            }
+extension GenerateModel.Display {
+    var title: String {
+        switch self {
+        case .setup: String(localized: "Setup")
+        case .result: String(localized: "Result")
+        case .assembly: String(localized: "Assembly")
+        }
+    }
+}
+
+extension GenerateModel.Pane {
+    var title: String {
+        switch self {
+        case .project: String(localized: "Project")
+        case .study: String(localized: "Study")
+        case .regions: String(localized: "Regions")
+        case .results: String(localized: "Results")
+        case .variants: String(localized: "Variants")
         }
     }
 }
 
 // MARK: Run bar
 
-/// Run or cancel, how far the run is, the setup sheet on iPhone, and Build.
+/// Run or Stop, how far the run is, the setup sheet on iPhone, and Build. Esc never stops a run
+/// (it clears the selection); Stop asks first when the run has solved for a while.
 struct GenerateRunBar: View {
+    @Environment(\.viaFormTheme) private var theme
     @Bindable var model: GenerateModel
     let design: DesignModel
     var showSetup: Binding<Bool>?
 
     var body: some View {
-        HStack(spacing: 12) {
-            if model.running {
-                Button(role: .cancel) { model.cancel() } label: { Label("Cancel", systemImage: "stop.fill") }
-                    .fixedSize()
-                    .keyboardShortcut(.cancelAction)
-                    .help("Stop waiting for this run")
-            } else {
-                Button { model.run() } label: { Label("Run", systemImage: model.outcome == nil ? "play.fill" : "arrow.clockwise") }
-                    .fixedSize()
-                    .keyboardShortcut("r", modifiers: .command)
-                    .help("Run the study")
+        HStack(spacing: VFSpace.l) {
+            VStack(alignment: .leading, spacing: VFSpace.xxs) {
+                if model.running {
+                    Button(role: .destructive) { model.requestStop() } label: { Label("Stop", systemImage: "stop.fill") }
+                        .buttonStyle(.vfSecondary)
+                        .fixedSize()
+                        .help("Stop the study. Its candidates are not kept.")
+                } else {
+                    Button { model.run() } label: { Label("Run", systemImage: model.outcome == nil ? "play.fill" : "arrow.clockwise") }
+                        .buttonStyle(.vfPrimary)
+                        .fixedSize()
+                        .keyboardShortcut("r", modifiers: .command)
+                        .vfDisabled(model.readiness != nil, reason: model.readiness ?? "")
+                        .help(model.readiness ?? String(localized: "Run the study"))
+                }
+                if !model.running, model.outcome == nil || model.readiness != nil {
+                    Label {
+                        Text(model.readinessLine).lineLimit(2)
+                    } icon: {
+                        Image(systemName: model.readiness == nil ? "checkmark.circle.fill" : "exclamationmark.circle.fill")
+                            .foregroundStyle(model.readiness == nil ? theme.success : theme.warning)
+                    }
+                    .font(VFFont.micro)
+                    .foregroundStyle(theme.inkSecondary)
+                    .frame(maxWidth: VFSize.inspector, alignment: .leading)
+                }
             }
             if let showSetup {
-                Button { showSetup.wrappedValue = true } label: { Image(systemName: "slider.horizontal.3") }
-                    .accessibilityLabel("Study setup")
+                VFIconButton("slider.horizontal.3", label: String(localized: "Study setup"), size: 15) { showSetup.wrappedValue = true }
             }
-            Divider().frame(height: 20)
+            Divider().frame(height: VFSize.chip)
             status.frame(minWidth: 60, maxWidth: 360, alignment: .leading)
-            Divider().frame(height: 20)
-            Button { model.build(into: design) } label: {
-                if model.building { ProgressView().controlSize(.small) } else { Label("Build", systemImage: "hammer.fill") }
-            }
-            .fixedSize()
-            .disabled(model.selected == nil || model.building || model.running || EngineGate.shared.shut)
-            .help("Build the picked candidate into the design")
+            Divider().frame(height: VFSize.chip)
+            Button { model.build(into: design) } label: { Label("Build", systemImage: "hammer.fill") }
+                .buttonStyle(.vfSecondary(loading: model.building))
+                .fixedSize()
+                .vfDisabled(buildBlocked != nil, reason: buildBlocked ?? "")
+                .help(buildBlocked ?? String(localized: "Build the picked candidate into the design"))
         }
         .labelStyle(.titleAndIcon)
-        .buttonStyle(.borderless)
-        .font(.body.weight(.semibold))
         .lineLimit(1)
-        .padding(.horizontal, 16).padding(.vertical, 8)
-        .background(.regularMaterial, in: Capsule())
+        .padding(.horizontal, VFSpace.xl).padding(.vertical, VFSpace.m)
+        .vfSurface(.control)
+    }
+
+    /// Why Build is off, or nil.
+    private var buildBlocked: String? {
+        if EngineGate.shared.shut { return EngineGate.reason }
+        if model.running { return String(localized: "Wait for the study to finish, or stop it.") }
+        if model.building { return String(localized: "Building the candidate now.") }
+        if model.selected == nil { return String(localized: "Run the study, then pick a candidate.") }
+        return nil
     }
 
     /// "About 40 s left" while the run is inside its estimate; past it, the time so far and
     /// the estimate it ran over, so the text never reads "24 s of about 2 s".
     static func timing(elapsed: Double, expected: Double, lower: Bool = false) -> String {
-        let text = elapsed < expected
-            ? "About \(readableDuration(max(expected - elapsed, 1))) left"
-            : "\(readableDuration(elapsed)) so far, past the \(readableDuration(expected)) estimate"
-        return lower ? text.prefix(1).lowercased() + text.dropFirst() : text
+        if elapsed < expected {
+            let left = readableDuration(max(expected - elapsed, 1))
+            return lower ? String(localized: "about \(left) left") : String(localized: "About \(left) left")
+        }
+        let so = readableDuration(elapsed), est = readableDuration(expected)
+        return String(localized: "\(so) so far, past the \(est) estimate")
     }
 
     static func describe(_ p: GenerateJob.Progress) -> String {
-        let variant = p.variants > 1 ? "Variant \(p.variant + 1) of \(p.variants), " : ""
+        let v = p.variant + 1, n = p.variants
         switch p.stage {
-        case "analysing": return variant + "analysing"
-        case "done": return "Surfacing"
-        case "starting": return "Starting"
-        default: return variant + "iteration \(p.iteration) of \(p.iterations)"
+        case "analysing":
+            return n > 1 ? String(localized: "Variant \(v) of \(n), checking the shape") : String(localized: "Checking the shape")
+        case "done": return String(localized: "Making the surfaces")
+        case "starting": return String(localized: "Starting")
+        default:
+            return n > 1 ? String(localized: "Variant \(v) of \(n), iteration \(p.iteration) of \(p.iterations)")
+                : String(localized: "Iteration \(p.iteration) of \(p.iterations)")
         }
     }
 
@@ -223,35 +283,42 @@ struct GenerateRunBar: View {
             if model.running, let started = model.startedAt {
                 TimelineView(.periodic(from: started, by: 0.5)) { ctx in
                     let elapsed = ctx.date.timeIntervalSince(started)
-                    VStack(alignment: .leading, spacing: 4) {
+                    VStack(alignment: .leading, spacing: VFSpace.xs) {
                         if let p = model.progress, p.iteration > 0 || p.stage != "optimising" {
                             // The engine's own count: iterations, variants, then the analysis.
-                            Text(Self.describe(p) + ", " + Self.timing(elapsed: elapsed, expected: model.expected, lower: true))
-                                .foregroundStyle(.secondary)
+                            Text("\(Self.describe(p)), \(Self.timing(elapsed: elapsed, expected: model.expected, lower: true))")
+                                .foregroundStyle(theme.inkSecondary)
                                 .monospacedDigit()
                             ProgressView(value: min(max(p.fraction, 0), 1))
                                 .frame(minWidth: 120)
+                                .accessibilityLabel("Study progress")
                         } else {
                             Text(Self.timing(elapsed: elapsed, expected: model.expected))
-                                .foregroundStyle(.secondary)
+                                .foregroundStyle(theme.inkSecondary)
                                 .monospacedDigit()
                             ProgressView(value: min(elapsed / max(model.expected, 0.1), 0.97))
                                 .frame(minWidth: 120)
+                                .accessibilityLabel("Study progress")
                         }
                     }
                 }
-            } else if let error = model.error {
-                Label(error, systemImage: "exclamationmark.triangle.fill").foregroundStyle(.orange).lineLimit(2)
+            } else if model.error != nil {
+                Label("The run did not finish", systemImage: "xmark.octagon.fill").foregroundStyle(theme.danger)
             } else if let o = model.outcome {
-                Text("\(o.candidates.count) candidates in \(readableDuration(o.seconds))")
-                    + Text(model.stale ? ", setup changed" : "").foregroundStyle(.orange)
+                if model.stale {
+                    Text("\(o.candidates.count) candidates in \(readableDuration(o.seconds)), setup changed since")
+                        .foregroundStyle(theme.warning)
+                } else {
+                    Text("\(o.candidates.count) candidates in \(readableDuration(o.seconds))")
+                        .foregroundStyle(theme.ink)
+                }
             } else if let notice = model.notice {
-                Text(notice).foregroundStyle(.secondary)
+                Text(notice).foregroundStyle(theme.inkSecondary)
             } else {
-                Text("Set up the study, then run").foregroundStyle(.secondary)
+                Text("Set up the study, then run").foregroundStyle(theme.inkSecondary)
             }
         }
-        .font(.callout)
+        .font(VFFont.row)
         .lineLimit(2)
     }
 }
@@ -261,82 +328,111 @@ struct GenerateRunBar: View {
 /// The study's candidates side by side; a tap picks one to show, analyse and build.
 struct CandidateStrip: View {
     @Bindable var model: GenerateModel
-    let thumbnails: [Int: GenerateImage]
     var compact = false
 
     var body: some View {
         if let o = model.outcome, let s = model.studied {
             ScrollView(.horizontal) {
-                HStack(spacing: 12) {
+                HStack(spacing: VFSpace.l) {
                     ForEach(Array(o.candidates.enumerated()), id: \.offset) { i, c in
                         Button {
                             model.selected = i
                             model.display = .result
                         } label: {
-                            CandidateCard(candidate: c, study: s, image: thumbnails[i], best: i == o.best,
-                                          selected: model.selected == i, compact: compact)
+                            CandidateCard(candidate: c, study: s, image: model.thumbnails[i], rendered: model.thumbnailsDone.contains(i),
+                                          best: i == o.best, selected: model.selected == i, compact: compact)
                         }
                         .buttonStyle(.plain)
-                        .accessibilityLabel("Candidate \(i + 1)\(i == o.best ? ", best" : "")")
+                        .accessibilityLabel(Self.label(c, index: i, best: i == o.best))
+                        .accessibilityAddTraits(model.selected == i ? .isSelected : [])
                     }
                 }
-                .padding(.horizontal, 12)
+                .padding(.horizontal, VFSpace.l)
             }
             .scrollIndicators(.hidden)
         }
+    }
+
+    /// The card's key numbers, for VoiceOver.
+    static func label(_ c: StudyCandidate, index i: Int, best: Bool) -> String {
+        let mass = VFFormat.mass(c.massG), sf = formatFactor(c.analysis.safetyFactor)
+        let fit = c.feasible ? String(localized: "within the limits") : String(localized: "over a limit")
+        return best
+            ? String(localized: "Candidate \(i + 1), best, \(mass), safety factor \(sf), \(fit)")
+            : String(localized: "Candidate \(i + 1), \(mass), safety factor \(sf), \(fit)")
     }
 }
 
 /// One candidate: its still, whether it keeps the limits, its mass and safety factor.
 struct CandidateCard: View {
+    @Environment(\.viaFormTheme) private var theme
     let candidate: StudyCandidate
     let study: Study
-    let image: GenerateImage?
+    let image: CGImage?
+    /// The still was attempted (no image then means the surface gave none).
+    var rendered = false
     let best: Bool
     let selected: Bool
     var compact = false
 
+    private var width: CGFloat { compact ? 112 : 160 }
+
     var body: some View {
-        VStack(alignment: .leading, spacing: 4) {
+        VStack(alignment: .leading, spacing: VFSpace.xs) {
             ZStack {
-                RoundedRectangle(cornerRadius: 8).fill(.quaternary)
                 if let image {
-                    Image(generate: image).resizable().scaledToFill()
+                    Image(decorative: image, scale: 2).resizable().scaledToFill()
+                } else if rendered {
+                    RoundedRectangle(cornerRadius: VFRadius.well, style: .continuous).fill(theme.well)
+                    Image(systemName: "cube.transparent").font(VFFont.glyph(20)).foregroundStyle(theme.inkTertiary)
                 } else {
-                    ProgressView().controlSize(.small)
+                    SkeletonBlock()
                 }
             }
-            .frame(width: compact ? 112 : 160, height: compact ? 76 : 110)
-            .clipShape(RoundedRectangle(cornerRadius: 8))
-            HStack(spacing: 4) {
-                Text("#\(candidate.id + 1)").font(.footnote.weight(.semibold))
-                if best { Image(systemName: "star.fill").font(.caption2).foregroundStyle(.yellow).accessibilityLabel("Best") }
-                Spacer(minLength: 4)
-                FeasibleBadge(feasible: candidate.feasible)
+            .frame(width: width, height: width * 0.6875)
+            .clipShape(RoundedRectangle(cornerRadius: VFRadius.well, style: .continuous))
+            HStack(spacing: VFSpace.xs) {
+                Text("#\(candidate.id + 1)").font(VFFont.rowEmphasis).foregroundStyle(theme.ink)
+                if best {
+                    Label("Best", systemImage: "star.fill")
+                        .labelStyle(.iconOnly)
+                        .font(VFFont.micro)
+                        .foregroundStyle(theme.accentText)
+                        .help("Best candidate")
+                }
+                Spacer(minLength: VFSpace.xs)
+                FeasibleBadge(feasible: candidate.feasible, compact: compact)
             }
-            Text(String(format: "%.1f g  ·  SF %@", candidate.massG, formatFactor(candidate.analysis.safetyFactor)))
-                .font(.caption)
-                .monospacedDigit()
-                .foregroundStyle(.secondary)
+            Text("\(VFFormat.mass(candidate.massG)), safety \(formatFactor(candidate.analysis.safetyFactor))")
+                .font(VFFont.small)
+                .foregroundStyle(theme.inkSecondary)
+                .lineLimit(1)
         }
-        .frame(width: compact ? 112 : 160)
-        .padding(8)
-        .background(RoundedRectangle(cornerRadius: 10).fill(selected ? Color.accentColor.opacity(0.18) : .clear))
-        .overlay(RoundedRectangle(cornerRadius: 10).stroke(selected ? Color.accentColor : .clear, lineWidth: 2))
-        .contentShape(RoundedRectangle(cornerRadius: 10))
+        .frame(width: width)
+        .padding(VFSpace.m)
+        .background(RoundedRectangle(cornerRadius: VFRadius.card, style: .continuous).fill(selected ? theme.selection : .clear))
+        .overlay(RoundedRectangle(cornerRadius: VFRadius.card, style: .continuous).strokeBorder(selected ? theme.accent : .clear, lineWidth: 2))
+        .contentShape(RoundedRectangle(cornerRadius: VFRadius.card, style: .continuous))
     }
 }
 
+/// Within the limits, or over one: words and a shape, never the colour alone.
 struct FeasibleBadge: View {
+    @Environment(\.viaFormTheme) private var theme
     let feasible: Bool
+    var compact = false
 
     var body: some View {
-        Label(feasible ? "Feasible" : "Over a limit", systemImage: feasible ? "checkmark.seal.fill" : "exclamationmark.triangle.fill")
+        let tint = feasible ? theme.success : theme.warning
+        Label(feasible ? String(localized: "Feasible") : String(localized: "Over limit"),
+              systemImage: feasible ? "checkmark.seal.fill" : "exclamationmark.triangle.fill")
             .labelStyle(.titleAndIcon)
-            .font(.caption2.weight(.semibold))
-            .padding(.horizontal, 6).padding(.vertical, 2)
-            .foregroundStyle(feasible ? .green : .orange)
-            .background((feasible ? Color.green : Color.orange).opacity(0.15), in: Capsule())
+            .font(VFFont.micro)
+            .lineLimit(1)
+            .padding(.horizontal, VFSpace.s).padding(.vertical, VFSpace.xxs)
+            .foregroundStyle(tint)
+            .background(tint.opacity(0.15), in: Capsule())
+            .accessibilityElement(children: .combine)
     }
 }
 
@@ -348,26 +444,45 @@ func formatFactor(_ f: Double) -> String {
 
 // MARK: Legend
 
-/// The stress colours against the material: blue at nothing, red at the allowable, with the
-/// limit the study holds marked.
+/// The stress colours against the material: the bottom of the scale at nothing, the top at the
+/// allowable, with the limit the study holds marked; the scale can be switched.
 struct StressLegend: View {
+    @Environment(\.viaFormTheme) private var theme
     let preview: PreviewMesh
     let study: Study
+    @Binding var scale: StressColors.Scale
+
+    private let barWidth: CGFloat = 200
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 4) {
+        VStack(alignment: .leading, spacing: VFSpace.xs) {
             if preview.coloredByStress {
-                Text("Von Mises stress, MPa").font(.caption.weight(.semibold))
+                HStack {
+                    Text("Von Mises stress, MPa").font(VFFont.rowEmphasis).foregroundStyle(theme.ink)
+                    Spacer(minLength: VFSpace.m)
+                    Menu {
+                        Picker("Colours", selection: $scale) {
+                            ForEach(StressColors.Scale.allCases) { Text($0.title).tag($0) }
+                        }
+                    } label: {
+                        Image(systemName: "paintpalette").font(VFFont.glyph(12))
+                    }
+                    .menuStyle(.borderlessButton)
+                    .fixedSize()
+                    .help("Heat map colours")
+                    .accessibilityLabel("Heat map colours")
+                }
                 GeometryReader { g in
                     let allowable = max(study.material.allowable, 1e-9)
                     let x = min(max(study.stressLimit / allowable, 0), 1) * g.size.width
                     ZStack(alignment: .leading) {
-                        RoundedRectangle(cornerRadius: 3)
-                            .fill(LinearGradient(gradient: StressColors.gradient, startPoint: .leading, endPoint: .trailing))
-                        Rectangle().fill(.primary).frame(width: 2, height: g.size.height + 6).offset(x: x - 1)
+                        RoundedRectangle(cornerRadius: VFRadius.mark)
+                            .fill(LinearGradient(gradient: StressColors.gradient(scale), startPoint: .leading, endPoint: .trailing))
+                        Rectangle().fill(theme.ink).frame(width: 2, height: g.size.height + 6).offset(x: x - 1)
                     }
                 }
-                .frame(width: 200, height: 10)
+                .frame(width: barWidth, height: 10)
+                .accessibilityHidden(true)
                 HStack {
                     Text("0")
                     Spacer()
@@ -375,44 +490,52 @@ struct StressLegend: View {
                     Spacer()
                     Text("\(Int(study.material.allowable.rounded()))")
                 }
-                .font(.caption2)
-                .monospacedDigit()
-                .foregroundStyle(.secondary)
-                .frame(width: 200)
-                Text("Peak \(Int(Double(preview.peakStress).rounded())) MPa")
-                    .font(.caption.weight(.semibold))
-                    .monospacedDigit()
-                    .foregroundStyle(Double(preview.peakStress) > study.stressLimit ? .orange : .primary)
+                .font(VFFont.micro)
+                .foregroundStyle(theme.inkSecondary)
+                .frame(width: barWidth)
+                .accessibilityHidden(true)
+                let peak = Double(preview.peakStress)
+                if peak > study.stressLimit {
+                    Label("Peak \(Int(peak.rounded())) MPa, over the limit", systemImage: "exclamationmark.triangle.fill")
+                        .font(VFFont.rowEmphasis)
+                        .foregroundStyle(theme.warning)
+                } else {
+                    Text("Peak \(Int(peak.rounded())) MPa").font(VFFont.rowEmphasis).foregroundStyle(theme.ink)
+                }
             } else {
-                Text(preview.voxels ? "Voxels (no surface from the engine)" : "No stress on this surface")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+                Text(preview.voxels ? "Voxels (no surface from the solver)" : "No stress on this surface")
+                    .font(VFFont.small)
+                    .foregroundStyle(theme.inkSecondary)
             }
         }
-        .padding(12)
-        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 10))
+        .monospacedDigit()
+        .padding(VFSpace.panelPadding)
+        .vfSurface(.floating)
+        .accessibilityElement(children: .contain)
+        .accessibilityLabel(Text("Stress legend, 0 to \(Int(study.material.allowable.rounded())) MPa, limit \(Int(study.stressLimit.rounded())) MPa, peak \(Int(Double(preview.peakStress).rounded())) MPa"))
     }
 }
 
 /// What the inserted assembly is made of, over its view.
 struct AssemblyBadge: View {
+    @Environment(\.viaFormTheme) private var theme
     let model: GenerateModel
     let project: GenerateProject
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            Text("\(project.name.capitalized) assembly").font(.caption.weight(.semibold))
+        VStack(alignment: .leading, spacing: VFSpace.xs) {
+            Text("\(project.name.capitalized) assembly").font(VFFont.rowEmphasis).foregroundStyle(theme.ink)
             if let s = model.assemblySummary {
-                Text("\(s.generated) generated parts · \(s.components) real components")
-                    .font(.caption2).foregroundStyle(.secondary)
-                if let m = s.massG { Text(String(format: "%.0f g all up", m)).font(.caption2).monospacedDigit().foregroundStyle(.secondary) }
+                Text("\(s.generated) generated parts, \(s.components) real components")
+                    .font(VFFont.small).foregroundStyle(theme.inkSecondary)
+                if let m = s.massG { Text("\(VFFormat.mass(m)) all up").font(VFFont.small).foregroundStyle(theme.inkSecondary) }
             }
             let moving = model.joints.filter(\.movable)
             if !moving.isEmpty {
-                Text("\(moving.count) joints, Project pane to drive them").font(.caption2).foregroundStyle(.secondary)
+                Text("\(moving.count) joints. Drive them in the Project pane.").font(VFFont.small).foregroundStyle(theme.inkSecondary)
             }
         }
-        .padding(10)
-        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 10))
+        .padding(VFSpace.panelPadding)
+        .vfSurface(.floating)
     }
 }

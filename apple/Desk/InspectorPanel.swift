@@ -19,6 +19,8 @@ struct InspectorPanel: View {
     var testInSimulation: (() -> Void)?
     @State private var linkedOpen = false
     @State private var revisionsOf: String?
+    @State private var confirm: ConfirmRequest?
+    @Bindable private var safety = RobotSafety.shared
 
     var body: some View {
         ScrollView {
@@ -31,6 +33,7 @@ struct InspectorPanel: View {
             .padding(VFSpace.l)
         }
         .background(theme.panel)
+        .confirmSheet($confirm)
     }
 
     // MARK: Selection
@@ -81,24 +84,33 @@ struct InspectorPanel: View {
             HStack {
                 VFCaption("Selection")
                 Spacer()
+                // Neutral: the stage accent lives only on the workspace dropdown icon (spec 6.4).
                 Text(workspace.title).font(VFFont.micro.weight(.semibold))
-                    .foregroundStyle(theme.stageLabel(workspace.vfStage))
-                    .padding(.horizontal, 6).frame(height: 16)
-                    .background(Capsule().fill(theme.stageFill(workspace.vfStage)))
+                    .foregroundStyle(theme.inkSecondary)
+                    .padding(.horizontal, VFSpace.s).padding(.vertical, VFSpace.xxs)
+                    .background(Capsule().fill(theme.well))
+                    .overlay(Capsule().strokeBorder(theme.hairline))
+                    .accessibilityLabel(Text("Stage \(workspace.title)"))
             }
             if let t = selectionTitle {
                 HStack(spacing: VFSpace.m) {
                     Image(systemName: workspace.symbol).foregroundStyle(theme.inkSecondary).frame(width: 18)
-                    VStack(alignment: .leading, spacing: 1) {
-                        Text(t.0).font(VFFont.rowEmphasis).foregroundStyle(theme.ink).lineLimit(1)
+                        .accessibilityHidden(true)
+                    VStack(alignment: .leading, spacing: VFSpace.xxs) {
+                        Text(t.0).font(VFFont.rowEmphasis).foregroundStyle(theme.ink).lineLimit(2)
                         Text(t.1).font(VFFont.small).foregroundStyle(theme.inkSecondary).lineLimit(2)
                     }
+                    .help("\(t.0)\n\(t.1)")
                     Spacer(minLength: 0)
                 }
                 .padding(VFSpace.m)
                 .vfSurface(.well)
+                .accessibilityElement(children: .combine)
             } else {
-                Text(hint).font(VFFont.small).foregroundStyle(theme.inkTertiary).lineLimit(1)
+                Text(hint).font(VFFont.small).foregroundStyle(theme.inkSecondary)
+                    .lineLimit(3)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .help(hint)
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -106,10 +118,10 @@ struct InspectorPanel: View {
 
     private var hint: String {
         switch workspace {
-        case .design, .assemble: "Nothing selected. Click a body, a face or an edge"
-        case .electronics: "Nothing selected. Click a part or a net"
-        case .generate: "Nothing selected. Pick a candidate"
-        default: "Nothing selected"
+        case .design, .assemble: String(localized: "Nothing selected. Click a body, a face or an edge.")
+        case .electronics: String(localized: "Nothing selected. Click a part or a net.")
+        case .generate: String(localized: "Nothing selected. Pick a candidate.")
+        default: String(localized: "Nothing selected")
         }
     }
 
@@ -134,17 +146,25 @@ struct InspectorPanel: View {
                         revisionsOf = revisionsOf == n.id ? nil : n.id
                     }
                     if let why = n.job?.caption ?? (n.reason.isEmpty ? nil : n.reason) {
-                        Text(why).font(VFFont.small).foregroundStyle(theme.inkSecondary).lineLimit(2)
+                        Text(why).font(VFFont.small).foregroundStyle(theme.inkSecondary).lineLimit(3)
+                            .fixedSize(horizontal: false, vertical: true)
+                            .help(why)
                             .padding(.leading, 15)
                     }
                     if let a = n.action, n.status == .stale || n.status == .failed {
-                        Button { actions.update(a.plan) } label: { Text(a.label).lineLimit(1).frame(maxWidth: .infinity) }
-                            .buttonStyle(.vfPrimary).controlSize(.small)
+                        // Bordered: the canvas banner carries the primary for this action (P1-17).
+                        Button { actions.update(a.plan) } label: { Text(a.label).lineLimit(2).frame(maxWidth: .infinity) }
+                            .buttonStyle(.vfSecondary).controlSize(.small)
+                            .help(a.label)
+                            .vfEngineGate()
                     }
                     if revisionsOf == n.id { RevisionList(flow: flow, artifact: n.id) }
                 }
             }
-            if nodes.isEmpty { Text("This stage builds nothing yet.").font(VFFont.small).foregroundStyle(theme.inkSecondary) }
+            if nodes.isEmpty {
+                EmptyState(String(localized: "Nothing to build here"), systemImage: "square.dashed",
+                           message: String(localized: "This stage builds nothing yet."))
+            }
         }
     }
 
@@ -156,7 +176,8 @@ struct InspectorPanel: View {
                 HStack(spacing: VFSpace.s) {
                     VFCaption("Linked")
                     Text(model.selectedBodies.isEmpty && model.selection.isEmpty ? "Select a body to see its other stages" : "Only in this design")
-                        .font(VFFont.small).foregroundStyle(theme.inkTertiary).lineLimit(1)
+                        .font(VFFont.small).foregroundStyle(theme.inkSecondary).lineLimit(2)
+                        .fixedSize(horizontal: false, vertical: true)
                 }
             } else if !linked.isEmpty {
                 DisclosureGroup(isExpanded: $linkedOpen) {
@@ -168,6 +189,7 @@ struct InspectorPanel: View {
                                 Text(flow.stage(p.stage)?.name ?? p.stage)
                                 Spacer()
                                 Text(p.names.prefix(2).joined(separator: ", ")).foregroundStyle(theme.inkSecondary).lineLimit(1)
+                                    .help(p.names.joined(separator: ", "))
                             }
                             .font(VFFont.small)
                         }
@@ -207,7 +229,7 @@ struct InspectorPanel: View {
                     kv("Material", info.material ?? "Not set")
                     if let v = info.volume_mm3 {
                         kv("Volume", String(format: "%.1f cm³", v / 1000))
-                        if let rho = Self.density(info.material) { kv("Mass", String(format: "%.1f g", v / 1000 * rho)) }
+                        if let rho = Self.density(info.material) { kv("Mass", VFFormat.mass(v / 1000 * rho)) }
                     }
                     if let f = info.faces { kv("Faces", "\(f)") }
                     if let e = info.edges { kv("Edges", "\(e)") }
@@ -231,7 +253,7 @@ struct InspectorPanel: View {
                 kv("Parts", "\(pcb.project?.components.count ?? 0)")
                 kv("Nets", "\(pcb.project?.nets.count ?? 0)")
                 kv("Rule findings", "\(pcb.findings.count)", warn: !pcb.findings.isEmpty)
-                if let b = pcb.project?.board { kv("Outline", String(format: "%.1f x %.1f mm", b.width, b.height)) }
+                if let b = pcb.project?.board { kv("Outline", "\(VFFormat.length(b.width)) x \(VFFormat.length(b.height))") }
             }
             let link = BoardLinkInfo.read(design: model, pcb: pcb)
             section("3D link") {
@@ -291,22 +313,62 @@ struct InspectorPanel: View {
             }
         case .robot:
             section("Device") {
-                kv("Robot", "Not connected")
-                kv("Link", "USB bus adapter or ViaForm bridge")
-                kv("Latency", "n/a")
+                HStack(spacing: VFSpace.s) {
+                    VFStatusDot(status: safety.connected ? .current : .empty,
+                                reason: safety.connected ? String(localized: "Robot connected") : String(localized: "No robot connected"))
+                    kv(String(localized: "Robot"), safety.connected ? String(localized: "Connected") : String(localized: "Not connected"))
+                }
+                kv(String(localized: "Link"), String(localized: "USB bus adapter or ViaForm bridge"))
+                kv(String(localized: "Latency"), safety.connected ? String(localized: "Measuring") : String(localized: "Not measured, no robot"))
             }
             section("Safety") {
-                RobotEStopButton(enabled: true) { RobotSafety.shared.stop(source: "Button") }
-                kv("Torque limit", "60 %")
-                kv("Workspace fence", "From Assemble joint limits")
-                kv("Teleop speed cap", "30 %")
+                EStopButton()
+                NumberRow(String(localized: "Teleop speed cap"), value: $safety.speedCap, unit: "%",
+                          range: RobotSafety.speedCapRange, step: 5)
+                    .font(VFFont.row)
+                    .vfDisabled(safety.moving, reason: String(localized: "Stop the robot to change its limits"))
+                NumberRow(String(localized: "Torque limit"), value: $safety.torqueLimit, unit: "%",
+                          range: RobotSafety.torqueLimitRange, step: 5)
+                    .font(VFFont.row)
+                    .vfDisabled(safety.moving, reason: String(localized: "Stop the robot to change its limits"))
+                Toggle(String(localized: "Workspace fence from Assemble joint limits"), isOn: $safety.fenceEnabled)
+                    .font(VFFont.row)
+                    .toggleStyle(.checkbox)
+                    .vfDisabled(safety.moving, reason: String(localized: "Stop the robot to change its limits"))
+                if !safety.connected {
+                    Text("Not applied, no robot. These limits apply once a robot is connected.")
+                        .font(VFFont.small).foregroundStyle(theme.inkSecondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
             }
             section("Policy") {
-                kv("Policy", flow.revisionName(of: "train") ?? "not trained")
-                Button {} label: { Label("Run on Robot", systemImage: "lock.fill").frame(maxWidth: .infinity) }
-                    .disabled(true)
-                    .help("Locked until a robot is connected and the run is confirmed")
+                let policy = flow.revisionName(of: "train")
+                if let policy {
+                    kv(String(localized: "Policy"), policy)
+                } else {
+                    EmptyState(String(localized: "No policy yet"), systemImage: "brain",
+                               message: String(localized: "Train a policy, then run it on the robot here."),
+                               actionTitle: String(localized: "Open Train")) { actions.open(.train) }
+                }
+                Button {
+                    runOnRobot(policy: policy)
+                } label: {
+                    Label("Run on Robot", systemImage: safety.canMove ? "play.fill" : "lock.fill").frame(maxWidth: .infinity)
+                }
+                .buttonStyle(.vfSecondary)
+                .vfDisabled(!safety.canMove || policy == nil,
+                            reason: safety.lockReason ?? String(localized: "Train a policy first"))
             }
+        }
+    }
+
+    /// The first motion of a session asks "Run on Robot?" with the limits and the revision.
+    private func runOnRobot(policy: String?) {
+        let start = { _ = RobotSafety.shared.beginMotion() }
+        if let c = safety.requireConfirm(target: String(localized: "The trained policy"), revision: policy, perform: start) {
+            confirm = c
+        } else {
+            start()
         }
     }
 
@@ -323,6 +385,7 @@ struct InspectorPanel: View {
                 }
                 .controlSize(.small)
                 .disabled(!actions.canRun(c.id))
+                .vfEngineGate()
             }
         }
     }
@@ -353,26 +416,20 @@ struct InspectorPanel: View {
     private func flowRow(role: String, artifact: String, revision: String?, status: FlowModel.Status, help: String?, action: @escaping () -> Void) -> some View {
         Button(action: action) {
             HStack(spacing: VFSpace.s) {
-                Group {
-                    if status == .empty {
-                        Circle().strokeBorder(theme.inkTertiary, lineWidth: 1.25)
-                    } else {
-                        Circle().fill(theme.color(status))
-                    }
-                }
-                .frame(width: 7, height: 7)
-                VStack(alignment: .leading, spacing: 1) {
-                    Text(revision ?? "Not built yet").font(VFFont.rowEmphasis)
+                VFStatusDot(status: status.vfStatus, reason: help)
+                VStack(alignment: .leading, spacing: VFSpace.xxs) {
+                    Text(revision ?? String(localized: "Not built yet")).font(VFFont.rowEmphasis)
                         .foregroundStyle(status == .stale ? theme.warning : theme.ink).lineLimit(1)
-                    Text("\(role) · \(artifact)").font(VFFont.small).foregroundStyle(theme.inkSecondary).lineLimit(1)
+                    Text("\(role) · \(artifact)").font(VFFont.small).foregroundStyle(theme.inkSecondary).lineLimit(2)
                 }
                 Spacer(minLength: 0)
-                Image(systemName: "chevron.right").font(.system(size: 8, weight: .bold)).foregroundStyle(theme.inkTertiary)
+                Image(systemName: "chevron.right").font(VFFont.glyph(8, weight: .bold)).foregroundStyle(theme.inkTertiary)
+                    .accessibilityHidden(true)
             }
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
-        .help(help ?? "")
+        .help([revision ?? String(localized: "Not built yet"), "\(role) · \(artifact)", help].compactMap { $0 }.joined(separator: "\n"))
         .accessibilityLabel("\(role) \(artifact), \(revision ?? "not built yet"), \(PipelineWords.describe(status))")
     }
 
@@ -386,25 +443,44 @@ struct InspectorPanel: View {
         .frame(maxWidth: .infinity, alignment: .leading)
     }
 
+    /// A label and a value; the value wraps to two lines with the full text in the tooltip.
+    /// A warning carries a triangle, never colour alone; a tappable value carries a chevron.
+    @ViewBuilder
     private func kv(_ k: String, _ v: String, warn: Bool = false, action: (() -> Void)? = nil) -> some View {
-        HStack(alignment: .firstTextBaseline) {
-            Text(k).foregroundStyle(theme.inkSecondary).lineLimit(1)
-            Spacer(minLength: VFSpace.m)
-            if let action {
+        if let action {
+            HStack(alignment: .firstTextBaseline) {
+                Text(k).foregroundStyle(theme.inkSecondary).lineLimit(1).layoutPriority(1)
+                Spacer(minLength: VFSpace.m)
                 Button(action: action) {
-                    HStack(spacing: 3) {
-                        Text(v).lineLimit(1)
-                        Image(systemName: "chevron.right").font(.system(size: 8, weight: .bold))
+                    HStack(spacing: VFSpace.xxs) {
+                        Text(v).lineLimit(2).multilineTextAlignment(.trailing)
+                        Image(systemName: "chevron.right").font(VFFont.glyph(8, weight: .bold)).accessibilityHidden(true)
                     }
                     .foregroundStyle(warn ? theme.warning : theme.accentText)
                 }
                 .buttonStyle(.plain)
-            } else {
-                Text(v).foregroundStyle(warn ? theme.warning : theme.ink).lineLimit(1).multilineTextAlignment(.trailing)
+                .help(v)
             }
+            .font(VFFont.row)
+            .frame(minHeight: VFSize.macRow - 8)
+        } else if warn {
+            HStack(alignment: .firstTextBaseline, spacing: VFSpace.m) {
+                Text(k).foregroundStyle(theme.inkSecondary).lineLimit(1).layoutPriority(1)
+                Spacer(minLength: VFSpace.m)
+                HStack(spacing: VFSpace.xxs) {
+                    Image(systemName: "exclamationmark.triangle.fill").font(VFFont.glyph(9, weight: .semibold))
+                        .accessibilityLabel(Text("Warning"))
+                    Text(v).lineLimit(2).multilineTextAlignment(.trailing).monospacedDigit()
+                }
+                .foregroundStyle(theme.warning)
+                .help(v)
+            }
+            .font(VFFont.row)
+            .frame(minHeight: VFSize.macRow - 8)
+            .accessibilityElement(children: .combine)
+        } else {
+            KVRow(k, v)
         }
-        .font(VFFont.row)
-        .frame(minHeight: 22)
     }
 }
 #endif

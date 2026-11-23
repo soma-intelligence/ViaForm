@@ -1,6 +1,26 @@
 import Foundation
+import Network
+import Observation
 import Security
 import ViaFormFFI
+
+/// Whether the Mac or iPad can reach the network now (`NWPathMonitor`), so the library search and
+/// the BOM price check say "Offline" instead of failing source by source.
+@MainActor
+@Observable
+final class VFNetwork {
+    static let shared = VFNetwork()
+    private(set) var online = true
+    private let monitor = NWPathMonitor()
+
+    private init() {
+        monitor.pathUpdateHandler = { path in
+            let ok = path.status == .satisfied
+            Task { @MainActor in VFNetwork.shared.online = ok }
+        }
+        monitor.start(queue: DispatchQueue(label: "me.somalabs.viaform.network"))
+    }
+}
 
 /// The side libraries through the C bridge (`vf_library_*`, crate `viaform-library`): one handle
 /// on the user's library folder and one JSON call answering `{"ok": value}` or `{"error": message}`.

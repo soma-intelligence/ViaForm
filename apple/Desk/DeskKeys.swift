@@ -91,17 +91,25 @@ enum DeskKeymap {
 /// took the key (the event then stops there).
 struct DeskKeyMonitor: NSViewRepresentable {
     var handle: (NSEvent) -> Bool
+    /// Keys that must work even while a field is being edited (the robot e-stop, Esc twice).
+    /// Called before the text field check; true takes the key.
+    var urgent: (NSEvent) -> Bool = { _ in false }
 
     func makeNSView(context: Context) -> MonitorView {
         let v = MonitorView()
         v.handle = handle
+        v.urgent = urgent
         return v
     }
 
-    func updateNSView(_ v: MonitorView, context: Context) { v.handle = handle }
+    func updateNSView(_ v: MonitorView, context: Context) {
+        v.handle = handle
+        v.urgent = urgent
+    }
 
     final class MonitorView: NSView {
         var handle: (NSEvent) -> Bool = { _ in false }
+        var urgent: (NSEvent) -> Bool = { _ in false }
         private var monitor: Any?
 
         override func viewDidMoveToWindow() {
@@ -110,7 +118,10 @@ struct DeskKeyMonitor: NSViewRepresentable {
             monitor = nil
             guard window != nil else { return }
             monitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self] e in
-                guard let self, let w = self.window, e.window === w, w.isKeyWindow, w.attachedSheet == nil else { return e }
+                guard let self, let w = self.window, e.window === w, w.isKeyWindow else { return e }
+                // The e-stop first: Esc twice stops the robot even from a field or a sheet.
+                if self.urgent(e) { return nil }
+                guard w.attachedSheet == nil else { return e }
                 // Typing in a field (the palette, a parameter, a rename) keeps every key.
                 if w.firstResponder is NSText { return e }
                 return self.handle(e) ? nil : e
@@ -131,15 +142,15 @@ struct ShortcutSheet: View {
     private typealias Row = (keys: String, title: String)
 
     private var window: [Row] {
-        [("⌘K", "Search commands"), ("⌘1 … ⌘8", "Open a stage"), ("⌘] ⌘[", "Next, previous stage"),
-         ("⌘↩", "Run the stage's main action"), ("⇧⌘U", "Update stale stages"), ("⌘Z ⇧⌘Z", "Undo, redo"),
+        [("⌘K", "Search commands"), ("⌘1 … ⌘9", "Open a stage"), ("⌘] ⌘[", "Next, previous stage"),
+         ("⌘↩", "Run the stage's main action"), ("⌘.", "Stop the running job"), ("⇧⌘U", "Update stale stages"), ("⌘Z ⇧⌘Z", "Undo, redo"),
          ("⌥⌘I", "Inspector"), ("⌃⌘S", "Sidebar"), ("⌥⌘B", "Bottom panel"), ("⇧⌘B", "Bill of materials"),
-         ("⇧⌘L", "Libraries"), ("⌘S ⇧⌘S", "Save, save as"), ("? ⌘/", "This sheet")]
+         ("⇧⌘L", "Libraries"), ("⌘S ⇧⌘S", "Save, save as"), ("? ⌘/", "This sheet"), ("Space, Esc Esc", "Robot e-stop")]
     }
 
     private var view3D: [Row] {
         [("⌃1 … ⌃7", "Front, back, left, right, top, bottom, iso"), ("6", "Isometric"), ("F6", "Zoom to fit"),
-         ("S", "Search commands"), ("K", "Sketch"), ("↩", "Finish the command"), ("Esc", "Cancel, then clear the selection"),
+         ("S", "Search commands"), ("K", "Sketch"), ("↩", "Finish the command"), ("Esc", "Cancel, then clear the selection (never stops a job)"),
          ("⌫", "Delete the selection")]
     }
 
@@ -168,12 +179,10 @@ struct ShortcutSheet: View {
                 Text("Keyboard Shortcuts").font(VFFont.title).foregroundStyle(theme.ink)
                 Spacer()
                 Text("Esc closes").font(VFFont.micro).foregroundStyle(theme.inkTertiary)
-                Button(action: close) { Image(systemName: "xmark").font(.system(size: 10, weight: .bold)) }
-                    .buttonStyle(.plain).foregroundStyle(theme.inkSecondary)
+                VFIconButton("xmark", label: String(localized: "Close"), size: 10, action: close)
                     .keyboardShortcut(.cancelAction)
-                    .accessibilityLabel("Close")
             }
-            .padding(.horizontal, VFSpace.l).frame(height: 40)
+            .padding(.horizontal, VFSpace.l).frame(minHeight: 40)
             VFHairline()
             ScrollView {
                 LazyVGrid(columns: [GridItem(.flexible(), spacing: VFSpace.xl, alignment: .top),
@@ -185,11 +194,13 @@ struct ShortcutSheet: View {
                             VFCaption(g.0).padding(.bottom, VFSpace.xs)
                             ForEach(Array(g.1.enumerated()), id: \.offset) { _, r in
                                 HStack(spacing: VFSpace.m) {
-                                    Text(r.title).font(VFFont.small).foregroundStyle(theme.ink).lineLimit(1)
+                                    Text(LocalizedStringKey(r.title)).font(VFFont.small).foregroundStyle(theme.ink)
+                                        .lineLimit(2).fixedSize(horizontal: false, vertical: true)
                                     Spacer(minLength: VFSpace.s)
                                     KeyCap(r.keys)
                                 }
-                                .frame(height: 20)
+                                .frame(minHeight: 20)
+                                .accessibilityElement(children: .combine)
                             }
                         }
                     }
@@ -198,8 +209,9 @@ struct ShortcutSheet: View {
             }
             .frame(maxHeight: 520)
         }
-        .frame(width: 820)
+        .frame(maxWidth: 820)
         .vfSurface(.floating)
+        .accessibilityAddTraits(.isModal)
     }
 }
 
@@ -210,10 +222,10 @@ struct KeyCap: View {
     init(_ text: String) { self.text = text }
 
     var body: some View {
-        Text(text).font(.system(size: 11, design: .monospaced)).foregroundStyle(theme.inkSecondary)
+        Text(text).font(VFFont.mono).foregroundStyle(theme.inkSecondary)
             .lineLimit(1).fixedSize()
-            .padding(.horizontal, 5).frame(minWidth: 18, minHeight: 16)
-            .background(RoundedRectangle(cornerRadius: 4).strokeBorder(theme.hairline))
+            .padding(.horizontal, VFSpace.xs).frame(minWidth: 18, minHeight: 16)
+            .background(RoundedRectangle(cornerRadius: VFRadius.mark).strokeBorder(theme.hairline))
     }
 }
 #endif

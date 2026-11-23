@@ -63,8 +63,8 @@ enum ThemeMode: String, CaseIterable, Identifiable, Sendable {
     case light, dark, system
 
     static let storageKey = "viaform.theme.mode"
-    /// Light is the house default (grey gradient viewport, light chrome).
-    static let `default`: ThemeMode = .light
+    /// Follows the Mac's or iPad's appearance (decision D-20). Screenshots pin a mode with `--theme`.
+    static let `default`: ThemeMode = .system
 
     var id: String { rawValue }
     var title: String {
@@ -88,6 +88,8 @@ enum ThemeMode: String, CaseIterable, Identifiable, Sendable {
 enum ThemeVariant: String, CaseIterable, Sendable {
     case light, dark
     var palette: VFPalette { self == .light ? .light : .dark }
+    /// The palette under Increase Contrast.
+    var highContrastPalette: VFPalette { palette.increasedContrast() }
 }
 
 // MARK: - Stages
@@ -158,6 +160,11 @@ struct VFPalette: Sendable {
     let success: VFColor
     let warning: VFColor
     let danger: VFColor
+    /// Fill of the e-stop and other destructive buttons: saturated in both variants so its white
+    /// label passes 4.5:1 (the `danger` text colour is too light to carry a label in dark).
+    let dangerFill: VFColor
+    /// Label on `dangerFill`.
+    let onDanger: VFColor
 
     // Tool icons
     /// Light chip behind the satin-black jet icons in the dark variant. Clear in light.
@@ -190,6 +197,31 @@ struct VFPalette: Sendable {
          ("floating/viewportBottom", floating.over(viewportBottom))]
     }
 
+    /// The Increase Contrast variant: darker hairlines and strokes, tertiary ink pulled to the
+    /// secondary ink, opaque floating fills and a stronger selection. Same accent and stages.
+    func increasedContrast() -> VFPalette {
+        let dark = ink.luminance > 0.5
+        func mix(_ a: VFColor, _ b: VFColor, _ t: Double) -> VFColor {
+            VFColor(red: a.red + (b.red - a.red) * t, green: a.green + (b.green - a.green) * t,
+                    blue: a.blue + (b.blue - a.blue) * t, alpha: a.alpha + (b.alpha - a.alpha) * t)
+        }
+        return VFPalette(
+            chrome: chrome, chromeDeep: chromeDeep, panel: panel, well: well,
+            floating: VFColor(red: floating.red, green: floating.green, blue: floating.blue, alpha: 1),
+            floatingStroke: dark ? VFColor(hex: 0xFFFFFF, alpha: 0.45) : VFColor(hex: 0x000000, alpha: 0.45),
+            hairline: dark ? VFColor(hex: 0x6A6F78) : VFColor(hex: 0x8A8A8F),
+            selection: selection.opacity(2),
+            viewportTop: viewportTop, viewportBottom: viewportBottom, gridOpacity: min(1, gridOpacity * 1.4),
+            ink: dark ? VFColor(hex: 0xFFFFFF) : VFColor(hex: 0x000000),
+            inkSecondary: mix(inkSecondary, ink, 0.45),
+            inkTertiary: mix(inkSecondary, ink, 0.25),
+            accent: accent, onAccent: onAccent, accentText: mix(accentText, ink, dark ? 0.2 : 0.25),
+            success: mix(success, ink, 0.2), warning: mix(warning, ink, 0.2), danger: mix(danger, ink, 0.2),
+            dangerFill: dangerFill, onDanger: onDanger,
+            toolChip: toolChip, toolChipStroke: toolChipStroke, jetInk: jetInk, toolChipSymbol: toolChipSymbol,
+            stageTones: stageTones)
+    }
+
     // MARK: Light (default)
 
     static let light: VFPalette = {
@@ -219,6 +251,8 @@ struct VFPalette: Sendable {
             success: VFColor(hex: 0x15703A),
             warning: VFColor(hex: 0x9A5200),
             danger: VFColor(hex: 0xC4261D),
+            dangerFill: VFColor(hex: 0xC4261D),
+            onDanger: lightLabel,
             toolChip: VFColor(hex: 0xFFFFFF, alpha: 0),
             toolChipStroke: VFColor(hex: 0x000000, alpha: 0),
             jetInk: VFColor(hex: 0x1A1B1E),
@@ -265,6 +299,8 @@ struct VFPalette: Sendable {
             success: VFColor(hex: 0x3DD068),
             warning: VFColor(hex: 0xFFB020),
             danger: VFColor(hex: 0xFF7B70),
+            dangerFill: VFColor(hex: 0xD93025),
+            onDanger: lightLabel,
             toolChip: VFColor(hex: 0xE6E8EC),
             toolChipStroke: VFColor(hex: 0xFFFFFF, alpha: 0.55),
             jetInk: VFColor(hex: 0x1A1B1E),
@@ -323,15 +359,27 @@ enum VFSpace {
     static let overlayInset: CGFloat = 16
     /// Inner padding of panels and cards.
     static let panelPadding: CGFloat = 12
+    /// Gap between the top of the canvas and a floating palette or banner.
+    static let paletteTop: CGFloat = 90
+    /// Side inset of the stale banner on the canvas.
+    static let bannerInset: CGFloat = 80
+    /// Lift of a toast above the bottom edge (clears the nav pill).
+    static let toastLift: CGFloat = 72
 }
 
 enum VFRadius {
     static let chip: CGFloat = 5
+    /// Small marks inside rows (badges, swatches).
+    static let mark: CGFloat = 3
     static let control: CGFloat = 6
     static let well: CGFloat = 8
     static let card: CGFloat = 10
     static let floating: CGFloat = 12
     static let sheet: CGFloat = 16
+    /// iPad floating cards and tool groups (touch chrome is rounder than Mac chrome).
+    static let touchFloating: CGFloat = 20
+    /// iPad top capsule and pills: half of a 44 pt control plus its padding.
+    static let touchCapsule: CGFloat = 28
 }
 
 enum VFSize {
@@ -358,6 +406,30 @@ enum VFSize {
     static let touchRail: CGFloat = 44
     /// Hairline width.
     static let hairline: CGFloat = 1
+    /// Smallest hit target on the Mac for icon buttons in dense rows.
+    static let macTarget: CGFloat = 22
+    /// Smallest hit target on this platform.
+    static var minTarget: CGFloat {
+        #if os(iOS)
+        touchTarget
+        #else
+        macTarget
+        #endif
+    }
+    /// Height of a primary or secondary text button.
+    static var buttonHeight: CGFloat {
+        #if os(iOS)
+        touchTarget
+        #else
+        24
+        #endif
+    }
+    /// Toast and floating banner height on Mac.
+    static let toast: CGFloat = 30
+    /// Inspector min width (Mac).
+    static let inspectorMin: CGFloat = 260
+    /// Generate and Simulate side panels.
+    static let sidePanel: CGFloat = 320
 }
 
 /// Motion: every transition in the app is short or absent, so a click never waits on a fade.

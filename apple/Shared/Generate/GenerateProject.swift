@@ -65,7 +65,7 @@ struct GenerateProject: Sendable, Equatable {
 
     /// Reads `docs/generative/<name>`; nil when it is not there.
     static func open(_ name: String) throws -> GenerateProject {
-        guard let root = docsRoot else { throw EngineError(message: "No docs/generative folder (set VIAFORM_REPO)") }
+        guard let root = docsRoot else { throw EngineError(message: String(localized: "The sample projects are not available in this copy of ViaForm.")) }
         return try open(dir: root.appendingPathComponent(name, isDirectory: true))
     }
 

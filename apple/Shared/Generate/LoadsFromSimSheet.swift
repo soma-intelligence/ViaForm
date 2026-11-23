@@ -70,7 +70,7 @@ struct LoadsFromSimSheet: View {
             HStack {
                 Text("Loads from simulation").font(VFFont.heading).foregroundStyle(theme.ink)
                 Spacer()
-                Button { cancel() } label: { Image(systemName: "xmark") }.buttonStyle(.plain).keyboardShortcut(.cancelAction)
+                VFIconButton("xmark", label: String(localized: "Close")) { cancel() }.keyboardShortcut(.cancelAction)
             }
             .padding(VFSpace.xl)
             VFHairline()
@@ -89,7 +89,7 @@ struct LoadsFromSimSheet: View {
                 Button("Cancel") { cancel() }
                 Button("Add \(selectedCases.count) load case\(selectedCases.count == 1 ? "" : "s")") { handOff() }
                     .buttonStyle(.vfPrimary)
-                    .disabled(selectedCases.isEmpty)
+                    .vfDisabled(selectedCases.isEmpty, reason: String(localized: "Pick at least one instant."))
                     .keyboardShortcut(.defaultAction)
             }
             .padding(VFSpace.l)
@@ -115,14 +115,14 @@ struct LoadsFromSimSheet: View {
         VStack(alignment: .leading, spacing: VFSpace.s) {
             VFCaption("Simulation runs")
             if episodes.isEmpty {
-                Text("No run with wrench records on \(revision). Run a scenario in Simulate first.")
-                    .font(VFFont.small).foregroundStyle(theme.inkSecondary)
+                EmptyState(String(localized: "No runs yet"), systemImage: "play.circle",
+                           message: String(localized: "No run with force records on \(revision). Run a scenario in Simulate first."))
             }
             ForEach(episodes.reversed()) { e in
                 Button { runID = e.id } label: {
                     HStack(spacing: VFSpace.s) {
-                        Image(systemName: "play.circle").font(.system(size: 18)).foregroundStyle(theme.accentText)
-                        VStack(alignment: .leading, spacing: 1) {
+                        Image(systemName: "play.circle").font(VFFont.glyph(18)).foregroundStyle(theme.accentText)
+                        VStack(alignment: .leading, spacing: VFSpace.xxs / 2) {
                             Text(e.title).font(VFFont.rowEmphasis).foregroundStyle(theme.ink)
                             Text(e.date.formatted(date: .abbreviated, time: .shortened)).font(VFFont.small).foregroundStyle(theme.inkSecondary)
                             if e.revision != revision {
@@ -148,7 +148,7 @@ struct LoadsFromSimSheet: View {
     private var centre: some View {
         VStack(alignment: .leading, spacing: VFSpace.m) {
             HStack {
-                Text("\((wrench?.body ?? body_).replacingOccurrences(of: "_", with: " ").capitalized) wrench").font(VFFont.title).foregroundStyle(theme.ink)
+                Text("\((wrench?.body ?? body_).replacingOccurrences(of: "_", with: " ").capitalized) forces").font(VFFont.title).foregroundStyle(theme.ink)
                 Spacer()
                 Picker("Body", selection: $body_) {
                     ForEach(run?.wrenches.map(\.body) ?? [], id: \.self) { Text($0.replacingOccurrences(of: "_", with: " ").capitalized).tag($0) }
@@ -185,7 +185,8 @@ struct LoadsFromSimSheet: View {
                     Text(String(format: "%.2f s", at)).font(VFFont.row).foregroundStyle(theme.inkSecondary).frame(width: 60)
                 }
             } else {
-                Text("This run recorded no wrench for the part.").font(VFFont.small).foregroundStyle(theme.inkSecondary)
+                EmptyState(String(localized: "No forces recorded"), systemImage: "waveform.path.ecg",
+                           message: String(localized: "This run recorded no forces on the part."))
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
         }
@@ -200,10 +201,8 @@ struct LoadsFromSimSheet: View {
             }
             .pickerStyle(.segmented).labelsHidden()
             if mode != "At time" {
-                Stepper(value: $count, in: 1...12) {
-                    HStack { Text("Count").foregroundStyle(theme.inkSecondary); Spacer(); Text("\(count)").foregroundStyle(theme.ink) }
-                }
-                .font(VFFont.row)
+                IntRow(String(localized: "Instants"), value: $count, range: 1...12)
+                    .font(VFFont.row)
             }
             VFCaption("Load cases")
             HStack {
@@ -214,7 +213,7 @@ struct LoadsFromSimSheet: View {
             }
             .font(VFFont.small).foregroundStyle(theme.inkSecondary)
             ScrollView {
-                VStack(spacing: 2) {
+                VStack(spacing: VFSpace.xxs) {
                     ForEach(cases) { c in
                         Toggle(isOn: Binding(get: { checked.contains(c.t) }, set: { on in if on { checked.insert(c.t) } else { checked.remove(c.t) } })) {
                             HStack {
@@ -291,6 +290,10 @@ extension GenerateModel {
     /// Adds the picked instants as load cases of the open study: one case per instant with the
     /// wrench as a force (N) and a moment (N·mm) on the study's load region.
     func addSimulatedCases(_ h: LoadsHandOff) {
+        asOneStep(String(localized: "Add Loads from Simulation")) { addCases(h) }
+    }
+
+    private func addCases(_ h: LoadsHandOff) {
         if study.cases.count == 1 && study.cases[0].loads.isEmpty { study.cases = [] }
         for c in h.cases {
             addCase()

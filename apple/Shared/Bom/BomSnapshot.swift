@@ -18,8 +18,7 @@ enum BomSnapshot {
         }
         let view = BomPanel(model: model, design: design, pcb: pcb) {}
             .frame(width: size.width, height: size.height)
-            .environment(\.colorScheme, .dark)
-            .tint(Color(red: 0.24, green: 0.55, blue: 1.0))
+            .viaFormTheme(.dark)
         let host = NSHostingView(rootView: view)
         host.frame = CGRect(origin: .zero, size: size)
         let win = NSWindow(contentRect: host.frame, styleMask: [.titled], backing: .buffered, defer: false)

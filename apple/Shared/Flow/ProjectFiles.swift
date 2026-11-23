@@ -15,40 +15,95 @@ enum ProjectFiles {
         let flow: FlowModel
     }
 
-    /// The window that last came forward (the menu commands act on it).
+    /// One window's models, held weakly so a closed window frees them, and the revisions last
+    /// written or read (the "edited" mark).
+    private final class Entry {
+        weak var design: DesignModel?
+        weak var pcb: PCBModel?
+        weak var bom: BomModel?
+        weak var flow: FlowModel?
+        var savedDesign: Int
+        var savedBoard: Int
+
+        init(_ c: Context) {
+            design = c.design; pcb = c.pcb; bom = c.bom; flow = c.flow
+            savedDesign = c.design.snapshot.revision
+            savedBoard = c.pcb.revision
+        }
+
+        var context: Context? {
+            guard let design, let pcb, let bom, let flow else { return nil }
+            return Context(design: design, pcb: pcb, bom: bom, flow: flow)
+        }
+    }
+
+    private static var entries: [ObjectIdentifier: Entry] = [:]
+
+    /// Every window registers its models when it appears; the File menu, the close and quit
+    /// checks and the BOM panel find them by the window's design model.
+    static func register(_ c: Context) {
+        entries = entries.filter { $0.value.design != nil }
+        if entries[ObjectIdentifier(c.design)]?.context == nil {
+            entries[ObjectIdentifier(c.design)] = Entry(c)
+        }
+    }
+
+    static func context(for design: DesignModel) -> Context? { entries[ObjectIdentifier(design)]?.context }
+
+    /// Every open window's context (quit asks each edited one).
+    static var all: [Context] { entries.values.compactMap(\.context) }
+
+    /// The window that last came forward. Kept for code paths that have no model at hand.
     static var current: Context?
+
+    /// The design or the board changed since the last save, open or new.
+    static func isEdited(_ c: Context) -> Bool {
+        guard let e = entries[ObjectIdentifier(c.design)] else { return c.design.snapshot.dirty }
+        return c.design.snapshot.revision != e.savedDesign || c.pcb.revision != e.savedBoard
+    }
+
+    /// Marks the window's models as matching what is on disk.
+    static func markSaved(_ c: Context) {
+        guard let e = entries[ObjectIdentifier(c.design)] else { return }
+        e.savedDesign = c.design.snapshot.revision
+        e.savedBoard = c.pcb.revision
+    }
 
     static let projectExtension = "viaform"
 
     static func isProject(_ url: URL) -> Bool { url.pathExtension.lowercased() == projectExtension }
 
-    /// Writes the project at `url`, then the pipeline into it.
+    /// Writes the project at `url`, then the pipeline into it. False when the file was not written
+    /// (the BOM model holds the engine's reason in its message).
     @discardableResult
     static func save(_ url: URL, in c: Context) -> Bool {
-        let before = (try? FileManager.default.attributesOfItem(atPath: url.path)[.modificationDate]) as? Date
-        c.bom.saveProject(url, design: c.design, pcb: c.pcb)
-        let after = (try? FileManager.default.attributesOfItem(atPath: url.path)[.modificationDate]) as? Date
-        guard let after, after != before else { return false }
+        guard c.bom.saveProject(url, design: c.design, pcb: c.pcb) else { return false }
         c.flow.saveProject(url)
+        markSaved(c)
         return true
     }
 
     /// Opens the project at `url`: design, board and BOM, then its pipeline.
-    static func open(_ url: URL, in c: Context) {
-        c.bom.openProject(url, design: c.design, pcb: c.pcb)
+    @discardableResult
+    static func open(_ url: URL, in c: Context) -> Bool {
+        guard c.bom.openProject(url, design: c.design, pcb: c.pcb) else { return false }
         let scoped = url.startAccessingSecurityScopedResource()
         defer { if scoped { url.stopAccessingSecurityScopedResource() } }
         c.flow.openProject(url)
+        markSaved(c)
+        return true
     }
 
     /// Opens any file the app reads: a project, a design (its own pipeline comes back with it)
     /// or a file inserted into the open design (the pipeline stays).
     static func open(_ url: URL, design: DesignModel, in c: Context?) {
+        let c = c ?? context(for: design)
         if isProject(url), let c { open(url, in: c); return }
         design.open(url)
         let ext = url.pathExtension.lowercased()
         if ["sc", "solidcraft"].contains(ext) || !knownInserts.contains(ext) {
             c?.flow.openDocument(url.path)
+            if let c { markSaved(c) }
         }
     }
 
@@ -57,8 +112,10 @@ enum ProjectFiles {
 
     /// A new, untitled document: a fresh pipeline too.
     static func newDesign(_ design: DesignModel, in c: Context?) {
+        let c = c ?? context(for: design)
         design.newDesign()
         c?.flow.newDocument()
+        if let c { markSaved(c) }
     }
 }
 
@@ -75,7 +132,7 @@ private struct ProjectFilesContext: ViewModifier {
 
     func body(content: Content) -> some View {
         content
-            .onAppear { ProjectFiles.current = context }
+            .onAppear { ProjectFiles.register(context); ProjectFiles.current = context }
             .onChange(of: phase) { _, p in if p == .active { ProjectFiles.current = context } }
     }
 }

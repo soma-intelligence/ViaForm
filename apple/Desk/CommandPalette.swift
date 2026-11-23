@@ -4,7 +4,8 @@ import SwiftUI
 /// Command-K: one search over the commands of all eight stages (the flow catalog: design
 /// registry, board commands, stage verbs, "Go to stage"). The open stage's commands rank first,
 /// a single letter that is a shortcut (E, F, M, J) goes straight to its command, the arrows
-/// move, Return runs, Escape closes. It replaces the old toolbox search, so S still opens it.
+/// move, Return runs (or says why a command cannot run now), Escape closes. Rows are buttons;
+/// the pointer and the arrows share one highlight. It replaces the old toolbox search, so S still opens it.
 ///
 /// It also reaches the window itself (`extras`: inspector, BOM, libraries, panels, views, the
 /// keyboard sheet, the theme), and with an empty query the last commands run come first.
@@ -19,6 +20,10 @@ struct CommandPalette: View {
     var close: () -> Void
     @State private var query = ""
     @State private var cursor = 0
+    /// Why the last command picked could not run.
+    @State private var blocked: String?
+    /// The pointer's last position, so a hover only counts when the pointer itself moved.
+    @State private var lastPointer: CGPoint?
     @FocusState private var focused: Bool
     @AppStorage("viaform.palette.recent") private var recentIDs = ""
 
@@ -56,16 +61,16 @@ struct CommandPalette: View {
         let list = matches
         VStack(spacing: 0) {
             HStack(spacing: VFSpace.m) {
-                Image(systemName: "magnifyingglass").foregroundStyle(theme.inkSecondary)
+                Image(systemName: "magnifyingglass").foregroundStyle(theme.inkSecondary).accessibilityHidden(true)
                 TextField("Search commands, stages and panels", text: $query)
                     .textFieldStyle(.plain)
-                    .font(.system(size: 15))
+                    .font(.title3)
                     .focused($focused)
                     .onSubmit { if list.indices.contains(cursor) { run(list[cursor]) } }
                     .onExitCommand(perform: close)
-                    .onKeyPress(.downArrow) { cursor = min(cursor + 1, max(list.count - 1, 0)); return .handled }
-                    .onKeyPress(.upArrow) { cursor = max(cursor - 1, 0); return .handled }
-                Text("⌘K").font(VFFont.micro).foregroundStyle(theme.inkTertiary)
+                    .onKeyPress(.downArrow) { move(+1, count: list.count); return .handled }
+                    .onKeyPress(.upArrow) { move(-1, count: list.count); return .handled }
+                KeyCap("\u{2318}K").accessibilityHidden(true)
             }
             .padding(.horizontal, VFSpace.l)
             .frame(height: 44)
@@ -73,16 +78,22 @@ struct CommandPalette: View {
             ScrollViewReader { proxy in
                 ScrollView {
                     LazyVStack(spacing: 0) {
+                        if query.trimmingCharacters(in: .whitespaces).isEmpty, !recents.isEmpty {
+                            VFCaption("Recent").frame(maxWidth: .infinity, alignment: .leading)
+                                .padding(.horizontal, VFSpace.l).padding(.top, VFSpace.s).padding(.bottom, VFSpace.xxs)
+                        }
                         ForEach(Array(list.enumerated()), id: \.element.id) { i, c in
-                            row(c, on: i == cursor)
+                            row(c, index: i, on: i == cursor)
                                 .id(c.id)
-                                .onTapGesture { run(c) }
-                                .onHover { if $0 { cursor = i } }
                         }
                         if list.isEmpty {
-                            Text("No command matches \u{201C}\(query)\u{201D}")
-                                .font(VFFont.small).foregroundStyle(theme.inkSecondary)
-                                .frame(maxWidth: .infinity).padding(VFSpace.l)
+                            VStack(spacing: VFSpace.xs) {
+                                Text("No commands match \u{201C}\(query)\u{201D}")
+                                    .font(VFFont.row).foregroundStyle(theme.ink)
+                                Text("Try another word, or a stage name such as Generate.")
+                                    .font(VFFont.small).foregroundStyle(theme.inkSecondary)
+                            }
+                            .frame(maxWidth: .infinity).padding(VFSpace.xl)
                         }
                     }
                     .padding(.vertical, VFSpace.xs)
@@ -90,51 +101,88 @@ struct CommandPalette: View {
                 .frame(maxHeight: 380)
                 .onChange(of: cursor) { _, c in if list.indices.contains(c) { proxy.scrollTo(list[c].id) } }
             }
+            if let blocked {
+                VFHairline()
+                Label(blocked, systemImage: "info.circle")
+                    .font(VFFont.small).foregroundStyle(theme.inkSecondary)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.horizontal, VFSpace.l).padding(.vertical, VFSpace.s)
+                    .accessibilityAddTraits(.updatesFrequently)
+            }
         }
         .frame(width: 560)
         .vfSurface(.floating)
         .onAppear { focused = true }
-        .onChange(of: query) { _, _ in cursor = 0 }
+        .onChange(of: query) { _, _ in cursor = 0; blocked = nil }
     }
 
-    private func row(_ c: FlowModel.Command, on: Bool) -> some View {
+    /// Arrow keys move the one highlight; the pointer then has to move again to take it.
+    private func move(_ step: Int, count: Int) {
+        cursor = min(max(cursor + step, 0), max(count - 1, 0))
+        blocked = nil
+    }
+
+    private func row(_ c: FlowModel.Command, index: Int, on: Bool) -> some View {
         let w = Workspace(stage: c.stage)
-        let runnable = c.source == "window" || actions.canRun(c.id)
+        let reason = c.source == "window" ? nil : actions.unavailableReason(c.id)
         let recent = query.isEmpty && recentIDs.split(separator: ",").contains(Substring(c.id))
-        return HStack(spacing: VFSpace.m) {
-            Group {
-                if c.source == "window" {
-                    Image(systemName: c.icon).font(.system(size: 13))
-                } else if c.source == "design" {
-                    ToolChipIcon(icon: c.icon, id: c.id, size: 15, style: .never)
-                } else {
-                    Image(systemName: StageLabels.symbol(forVerb: c.icon)).font(.system(size: 13))
+        let title = StageLabels.command(c.label)
+        return Button { run(c) } label: {
+            HStack(spacing: VFSpace.m) {
+                Group {
+                    if c.source == "window" {
+                        Image(systemName: c.icon).font(VFFont.glyph(13))
+                    } else if c.source == "design" {
+                        ToolChipIcon(icon: c.icon, id: c.id, size: 15, style: .never)
+                    } else {
+                        Image(systemName: StageLabels.symbol(forVerb: c.icon)).font(VFFont.glyph(13))
+                    }
                 }
+                .foregroundStyle(reason == nil ? theme.ink : theme.inkTertiary)
+                .frame(width: 22)
+                .accessibilityHidden(true)
+                VStack(alignment: .leading, spacing: 0) {
+                    Text(title).font(VFFont.row).foregroundStyle(reason == nil ? theme.ink : theme.inkSecondary)
+                    if let reason {
+                        Text(reason).font(VFFont.micro).foregroundStyle(theme.inkSecondary).lineLimit(1)
+                    }
+                }
+                if recent {
+                    Image(systemName: "clock.arrow.circlepath").font(VFFont.glyph(10)).foregroundStyle(theme.inkTertiary)
+                        .accessibilityHidden(true)
+                }
+                Spacer(minLength: VFSpace.m)
+                if !c.group.isEmpty && c.group != "WORKSPACE" {
+                    Text(StageLabels.group(c.group).capitalized).font(VFFont.micro).foregroundStyle(theme.inkTertiary).lineLimit(1)
+                }
+                if let w {
+                    Text(w.title)
+                        .font(VFFont.micro.weight(.semibold))
+                        .foregroundStyle(theme.stageLabel(w.vfStage))
+                        .padding(.horizontal, VFSpace.s).frame(height: 16)
+                        .background(Capsule().fill(theme.stageFill(w.vfStage)))
+                }
+                if let k = c.key { KeyCap(DeskKeymap.glyph(k)) }
             }
-            .frame(width: 22)
-            Text(StageLabels.command(c.label)).font(VFFont.row).foregroundStyle(theme.ink)
-            if recent {
-                Image(systemName: "clock.arrow.circlepath").font(.system(size: 10)).foregroundStyle(theme.inkTertiary)
-                    .accessibilityLabel("Recent")
-            }
-            Spacer(minLength: VFSpace.m)
-            if !c.group.isEmpty && c.group != "WORKSPACE" {
-                Text(StageLabels.group(c.group).capitalized).font(VFFont.micro).foregroundStyle(theme.inkTertiary).lineLimit(1)
-            }
-            if let w {
-                Text(w.title)
-                    .font(VFFont.micro.weight(.semibold))
-                    .foregroundStyle(theme.stageLabel(w.vfStage))
-                    .padding(.horizontal, 6).frame(height: 16)
-                    .background(Capsule().fill(theme.stageFill(w.vfStage)))
-            }
-            if let k = c.key { KeyCap(DeskKeymap.glyph(k)) }
+            .padding(.horizontal, VFSpace.l)
+            .padding(.vertical, VFSpace.xxs)
+            .frame(minHeight: VFSize.macRow)
+            .background(on ? theme.selection : .clear)
+            .contentShape(Rectangle())
         }
-        .opacity(runnable ? 1 : 0.45)
-        .padding(.horizontal, VFSpace.l)
-        .frame(height: 30)
-        .background(on ? theme.selection : .clear)
-        .contentShape(Rectangle())
+        .buttonStyle(.plain)
+        // Only a real pointer move takes the highlight: rows sliding under a still pointer while
+        // typing never move it.
+        .onContinuousHover(coordinateSpace: .global) { phase in
+            if case let .active(p) = phase, p != lastPointer {
+                lastPointer = p
+                if cursor != index { cursor = index }
+            }
+        }
+        .help(reason ?? (c.detail.isEmpty ? title : c.detail))
+        .accessibilityLabel(recent ? String(localized: "\(title), recent") : title)
+        .accessibilityHint(reason ?? "")
+        .accessibilityValue(w?.title ?? "")
     }
 
     private func run(_ c: FlowModel.Command) {
@@ -144,7 +192,11 @@ struct CommandPalette: View {
             runExtra(c.id)
             return
         }
-        guard actions.canRun(c.id) else { return }
+        if let reason = actions.unavailableReason(c.id) {
+            // Say why instead of doing nothing.
+            blocked = String(localized: "\(StageLabels.command(c.label)) is not available. \(reason)")
+            return
+        }
         remember(c.id)
         close()
         actions.run(c.id)

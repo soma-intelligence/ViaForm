@@ -12,7 +12,7 @@ struct FlowGraphView: View {
     /// Rebuilds a stale chain; shown when anything is stale.
     var updateAll: (() -> Void)?
 
-    private let cardSize = CGSize(width: 148, height: 46)
+    private let cardSize = CGSize(width: 156, height: 58)
     private let gap = CGSize(width: 16, height: 30)
 
     /// Depth of each artifact: 0 for a source, else one more than its deepest input.
@@ -50,9 +50,11 @@ struct FlowGraphView: View {
                 }
             }
             if flow.nodes.isEmpty {
-                Text("Nothing built yet. Each stage adds its outputs here as it builds.")
-                    .font(VFFont.row).foregroundStyle(theme.inkSecondary)
+                EmptyState(String(localized: "Nothing built yet"), systemImage: "point.3.connected.trianglepath.dotted",
+                           message: String(localized: "Each stage adds its outputs here as it builds."))
             } else {
+                // Scrolls both ways when the graph is wider or taller than the popover.
+                ScrollView([.horizontal, .vertical]) {
                 ZStack(alignment: .topLeading) {
                     Canvas { ctx, _ in
                         for n in flow.nodes {
@@ -76,6 +78,10 @@ struct FlowGraphView: View {
                     }
                 }
                 .frame(width: width, height: height, alignment: .topLeading)
+                .padding(VFSpace.xs)
+                }
+                .scrollIndicators(.automatic)
+                .frame(maxWidth: width + VFSpace.m, maxHeight: min(height + VFSpace.m, 560))
                 legend
             }
         }
@@ -102,11 +108,13 @@ struct FlowGraphView: View {
         let warn = n.status == .stale || n.status == .failed
         return Button { if let w { open(w) } } label: {
             HStack(spacing: VFSpace.s) {
-                Image(systemName: w?.symbol ?? "circle").font(.system(size: 14)).frame(width: 18)
+                Image(systemName: w?.symbol ?? "circle").font(VFFont.glyph(14)).frame(width: 18)
                     .foregroundStyle(theme.inkSecondary)
-                VStack(alignment: .leading, spacing: 1) {
-                    Text(n.revisionName ?? n.label).font(VFFont.rowEmphasis).foregroundStyle(theme.ink).lineLimit(1)
-                    Text(w?.title ?? n.stage).font(.system(size: 10)).foregroundStyle(theme.inkSecondary).lineLimit(1)
+                    .accessibilityHidden(true)
+                VStack(alignment: .leading, spacing: VFSpace.xxs / 2) {
+                    Text(n.revisionName ?? n.label).font(VFFont.rowEmphasis).foregroundStyle(theme.ink)
+                        .lineLimit(2).minimumScaleFactor(0.85).fixedSize(horizontal: false, vertical: true)
+                    Text(w?.title ?? n.stage).font(VFFont.micro).foregroundStyle(theme.inkSecondary).lineLimit(1)
                 }
                 Spacer(minLength: 0)
                 WorkspaceStatusDot(status: n.status, size: 7)
@@ -122,7 +130,8 @@ struct FlowGraphView: View {
         }
         .buttonStyle(.plain)
         .help(n.reason.isEmpty ? "\(n.name): \(PipelineWords.describe(n.status))" : n.reason)
-        .accessibilityLabel("\(n.name), \(n.revisionName ?? "not built"), \(PipelineWords.describe(n.status))")
+        .accessibilityLabel("\(n.name), \(n.revisionName ?? String(localized: "not built")), \(PipelineWords.describe(n.status))")
+        .accessibilityHint(n.reason.isEmpty ? Text("Opens its stage") : Text(n.reason))
     }
 
     private var legend: some View {
@@ -130,8 +139,8 @@ struct FlowGraphView: View {
             ForEach([FlowModel.Status.current, .stale, .failed, .running, .empty], id: \.self) { s in
                 HStack(spacing: VFSpace.xs) {
                     WorkspaceStatusDot(status: s, size: 7)
-                    Text(s == .empty ? "not built" : (s == .stale ? "stale" : PipelineWords.describe(s)))
-                        .font(.system(size: 10)).foregroundStyle(theme.inkSecondary)
+                    Text(s == .empty ? String(localized: "not built") : (s == .stale ? String(localized: "stale") : PipelineWords.describe(s)))
+                        .font(VFFont.micro).foregroundStyle(theme.inkSecondary)
                 }
             }
         }
@@ -139,7 +148,8 @@ struct FlowGraphView: View {
 }
 
 /// The canvas banner of a stale or failed stage: what is out of date, and the one action that
-/// fixes it ("Assembly v4 uses Frame v11", "Re-run on Frame v12"). Dismissed for the session.
+/// fixes it, naming the same input revision the text names ("Assembly v4 uses Frame v11",
+/// "Re-run on Frame v12"). Two lines at most; dismissed for the session.
 struct StaleBanner: View {
     @Environment(\.viaFormTheme) private var theme
     let flow: FlowModel
@@ -147,19 +157,25 @@ struct StaleBanner: View {
     var update: ([String]) -> Void
     var dismiss: () -> Void
 
-    /// The text and the action, or nil when the stage is fine.
+    /// The text, the action and its title (built from the input the text names), or nil when
+    /// the stage is fine.
     @MainActor
-    static func content(_ flow: FlowModel, _ w: Workspace) -> (text: String, action: FlowModel.Action?, failed: Bool)? {
+    static func content(_ flow: FlowModel, _ w: Workspace) -> (text: String, action: FlowModel.Action?, failed: Bool, actionTitle: String?)? {
         let nodes = flow.nodes(in: w.stage).filter { $0.status == .stale || $0.status == .failed }
         guard let n = nodes.first else { return nil }
         if n.status == .failed {
-            return ("\(n.name) failed" + (n.error.map { ": \($0)" } ?? ""), n.action, true)
+            let text = n.error.map { String(localized: "\(n.name) failed: \($0)") } ?? String(localized: "\(n.name) failed")
+            return (text, n.action, true, n.action.map { $0.label.isEmpty ? String(localized: "Retry") : $0.label })
         }
         let mine = n.revisionName ?? n.label
         if let old = n.consumes.first(where: { !$0.current }), let seen = old.seen_name {
-            return ("\(mine) uses \(seen)", n.action, false)
+            // The action names the newer revision of this same input, never another one.
+            let now = old.now_name
+            let text = now.map { String(localized: "\(mine) uses \(seen). \($0) is newer.") } ?? String(localized: "\(mine) uses \(seen)")
+            return (text, n.action, false, now.map { String(localized: "Re-run on \($0)") } ?? n.action?.label)
         }
-        return (n.reason.isEmpty ? "\(mine) is out of date" : n.reason, n.action, false)
+        let text = n.reason.isEmpty ? String(localized: "\(mine) is out of date") : n.reason
+        return (text, n.action, false, n.action.map { $0.label.isEmpty ? String(localized: "Update") : $0.label })
     }
 
     var body: some View {
@@ -167,28 +183,29 @@ struct StaleBanner: View {
             HStack(spacing: VFSpace.m) {
                 Image(systemName: c.failed ? "xmark.octagon.fill" : "exclamationmark.triangle.fill")
                     .foregroundStyle(theme.color(c.failed ? .failed : .stale))
-                Text(c.text).font(VFFont.row).foregroundStyle(theme.ink).lineLimit(1)
+                    .accessibilityHidden(true)
+                Text(c.text)
+                    .font(VFFont.row)
+                    .foregroundStyle(theme.ink)
+                    .lineLimit(2)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .help(c.text)
                 if let a = c.action {
-                    Button(a.label.isEmpty ? (c.failed ? "Retry" : "Update") : a.label) { update(a.plan) }
+                    Button(c.actionTitle ?? (c.failed ? String(localized: "Retry") : String(localized: "Update"))) { update(a.plan) }
                         .buttonStyle(.vfPrimary)
+                        .fixedSize()
                 }
-                Button(action: dismiss) {
-                    Image(systemName: "xmark").font(.system(size: 10, weight: .semibold)).foregroundStyle(theme.inkSecondary)
-                        .frame(width: 20, height: 20).contentShape(Rectangle())
-                }
-                .buttonStyle(.plain)
-                .help("Hide for this session")
-                .accessibilityLabel("Dismiss")
+                VFIconButton("xmark", label: String(localized: "Hide for this session"), size: 11) { dismiss() }
             }
             .padding(.leading, VFSpace.l)
-            .padding(.trailing, VFSpace.s)
+            .padding(.trailing, VFSpace.xs)
             .padding(.vertical, VFSpace.s)
             .vfSurface(.floating, radius: VFRadius.floating)
             .overlay(
                 RoundedRectangle(cornerRadius: VFRadius.floating)
                     .strokeBorder(theme.color(c.failed ? .failed : .stale).opacity(0.55), lineWidth: 1)
             )
-            .accessibilityElement(children: .combine)
+            .accessibilityElement(children: .contain)
         }
     }
 }

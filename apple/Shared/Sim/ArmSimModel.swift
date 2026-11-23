@@ -9,7 +9,7 @@ import simd
 /// "Stress here" and the loads sheet hand to Generate (P3-4).
 @Observable
 final class ArmSimModel: @unchecked Sendable {
-    struct Scenario: Identifiable, Equatable {
+    struct Scenario: Identifiable, Equatable, Sendable {
         var id: String
         var title: String
         var artifact: String
@@ -25,13 +25,13 @@ final class ArmSimModel: @unchecked Sendable {
         var seed = 7
     }
 
-    struct Sample: Equatable {
+    struct Sample: Equatable, Sendable {
         var t: Double
         var q: [Double]
         var effort: [Double]
     }
 
-    struct Wrench: Equatable {
+    struct Wrench: Equatable, Sendable {
         var body: String
         var t: [Double]
         var force: [SIMD3<Double>]
@@ -40,7 +40,7 @@ final class ArmSimModel: @unchecked Sendable {
         func magnitude(_ i: Int) -> Double { simd_length(force[i]) }
     }
 
-    struct Episode: Identifiable, Equatable {
+    struct Episode: Identifiable, Equatable, Sendable {
         var id: Int
         var title: String
         var scenario: String
@@ -57,13 +57,29 @@ final class ArmSimModel: @unchecked Sendable {
         static func == (a: Self, b: Self) -> Bool { a.id == b.id && a.samples.count == b.samples.count && a.result == b.result }
     }
 
+    /// What the telemetry chart plots.
+    enum Channel: String, CaseIterable, Identifiable {
+        case position, effort
+        var id: String { rawValue }
+        var title: String {
+            switch self {
+            case .position: String(localized: "Position")
+            case .effort: String(localized: "Effort")
+            }
+        }
+    }
+
     let scenarios = [
-        Scenario(id: "reach", title: "Reach", artifact: "simulate.reach", detail: "Home, ready, reach over the cube and back", duration: 7),
-        Scenario(id: "pick", title: "Pick cube", artifact: "simulate.pick", detail: "Down to the 30 mm cube, close the jaw, lift", duration: 8),
+        Scenario(id: "reach", title: String(localized: "Reach"), artifact: "simulate.reach",
+                 detail: String(localized: "Home, ready, reach over the cube and back"), duration: 7),
+        Scenario(id: "pick", title: String(localized: "Pick cube"), artifact: "simulate.pick",
+                 detail: String(localized: "Down to the 30 mm cube, close the jaw, lift"), duration: 8),
     ]
 
     var scenarioID = "reach"
     var randomise = Randomise()
+    /// The telemetry channel (kept here so it survives a stage switch).
+    var channel = Channel.position
     private(set) var running = false
     private(set) var progress = 0.0
     private(set) var episodes: [Episode] = []
@@ -81,12 +97,17 @@ final class ArmSimModel: @unchecked Sendable {
     @ObservationIgnored private(set) var poses: [String: simd_float4x4] = [:]
     @ObservationIgnored private let queue = DispatchQueue(label: "viaform.phys", qos: .userInitiated)
     @ObservationIgnored private var engine: PhysEngine?
-    @ObservationIgnored private var cancel = false
+    @ObservationIgnored private var runTask: Task<Void, Never>?
+    /// The flow job of the running scenario (progress in the job capsule, Command-. stops it).
+    @ObservationIgnored private var job: Int?
     @ObservationIgnored private var player: Timer?
     @ObservationIgnored private var nextID = 1
     @ObservationIgnored weak var flow: FlowModel?
 
     var available: Bool { PhysService.shared.available }
+    /// A run is going: Stop (Command-.) ends it. Esc never does.
+    var isBusy: Bool { running }
+    func stopWork() { cancelRun() }
     var scenario: Scenario { scenarios.first { $0.id == scenarioID } ?? scenarios[0] }
     var episode: Episode? { episodes.first { $0.id == selectedEpisode } ?? episodes.last }
 
@@ -136,116 +157,155 @@ final class ArmSimModel: @unchecked Sendable {
 
     // MARK: Run
 
-    /// Runs the scenario on the assembly as it is now ("Re-run on Assembly vN"), in real time.
-    func run(assembly: [String: Any], revision: String, demo: [Sample]? = nil, title: String? = nil) {
+    /// What the run task takes with it: the engine and the JSON objects, used on that task only.
+    private struct RunInputs: @unchecked Sendable {
+        let engine: PhysEngine
+        let assembly: [String: Any]
+        let file: [String: Any]
+    }
+
+    /// Runs the scenario on the assembly as it is now ("Re-run on Assembly vN"), in real time,
+    /// off the main thread. Stop (`cancelRun`) keeps what ran as a stopped episode.
+    @MainActor func run(assembly: [String: Any], revision: String, demo: [Sample]? = nil, title: String? = nil) {
         guard !running else { return }
         guard let engine = engine ?? PhysService.shared.make() else {
-            error = "The physics engine is not linked in this build."
+            error = String(localized: "The physics engine is not linked in this build.")
             return
         }
         self.engine = engine
         stop()
         running = true
-        cancel = false
         progress = 0
         live = []
         error = nil
         let s = scenario
-        let file = scenarioJSON(s, assembly: assembly, demo: demo)
+        let inputs = RunInputs(engine: engine, assembly: assembly, file: scenarioJSON(s, assembly: assembly, demo: demo))
         let id = nextID
         nextID += 1
         let name = title ?? "\(s.title) \(id)"
-        queue.async { [weak self] in
-            guard let self else { return }
-            do {
-                let info = try engine.call("world_new", ["assembly": assembly, "scenario": file])
-                let links = info["links"] as? [String] ?? []
-                let joints = (info["joints"] as? [[String: Any]] ?? []).filter { j in !["fixed", "floating"].contains(j["kind"] as? String ?? "") }.compactMap { $0["name"] as? String }
-                let acts = info["actuators"] as? [String] ?? []
-                let dt = info["dt"] as? Double ?? 0.001
-                let duration = (info["scenario"] as? [String: Any])?["duration_s"] as? Double ?? s.duration
-                _ = try engine.call("episode_record", ["every": 10])
-                var buf = Array(repeating: 0.0, count: links.count * 7)
-                _ = engine.poses(&buf)
-                let home = Self.matrices(buf, links)
-                let homeInv = home.mapValues { simd_inverse($0) }
+        // A demo replay compares and builds nothing: it gets no flow job (Stop still ends it).
+        job = demo == nil ? flow?.startJob(s.artifact, verb: String(localized: "Simulating"), label: name,
+                                           controls: .init(cancel: { [weak self] in self?.cancelRun() })) : nil
+        runTask = Task.detached(priority: .userInitiated) { [weak self] in
+            await self?.simulate(inputs, scenario: s, id: id, name: name, revision: revision, demo: demo)
+        }
+    }
+
+    /// The run loop: 60 Hz chunks of physics, never ahead of the wall clock.
+    private func simulate(_ inputs: RunInputs, scenario s: Scenario, id: Int, name: String, revision: String, demo: [Sample]?) async {
+        let engine = inputs.engine
+        do {
+            let info = try engine.call("world_new", ["assembly": inputs.assembly, "scenario": inputs.file])
+            let links = info["links"] as? [String] ?? []
+            let joints = (info["joints"] as? [[String: Any]] ?? []).filter { j in !["fixed", "floating"].contains(j["kind"] as? String ?? "") }.compactMap { $0["name"] as? String }
+            let acts = info["actuators"] as? [String] ?? []
+            let dt = info["dt"] as? Double ?? 0.001
+            let duration = (info["scenario"] as? [String: Any])?["duration_s"] as? Double ?? s.duration
+            _ = try engine.call("episode_record", ["every": 10])
+            var buf = Array(repeating: 0.0, count: links.count * 7)
+            _ = engine.poses(&buf)
+            let home = Self.matrices(buf, links)
+            let homeInv = home.mapValues { simd_inverse($0) }
+            DispatchQueue.main.async {
+                self.jointNames = joints
+                self.actuatorNames = acts
+            }
+            let chunk = max(1, Int((1.0 / 60) / dt))
+            let t0 = Date()
+            var t = 0.0
+            var frames: [(Double, [String: simd_float4x4])] = []
+            var lastLive = -1.0
+            var lastJobProgress = -1.0
+            while t < duration, !Task.isCancelled {
+                let r = engine.step(chunk, poses: &buf)
+                if r == -2 { throw AssembleError(String(localized: "The simulation diverged at \(VFFormat.value(t, .time)).")) }
+                t += Double(chunk) * dt
+                let mats = Self.matrices(buf, links)
+                var comp: [String: simd_float4x4] = [:]
+                for (k, m) in mats { comp[k] = m * (homeInv[k] ?? matrix_identity_float4x4) }
+                frames.append((t, comp))
+                var sample: Sample?
+                if t - lastLive >= 1.0 / 30 {
+                    lastLive = t
+                    let st = try engine.call("world_state", [:])
+                    let q = (st["q"] as? [Double] ?? []).map { $0 * 180 / .pi }
+                    sample = Sample(t: t, q: q, effort: st["efforts"] as? [Double] ?? [])
+                }
+                let wall = Date().timeIntervalSince(t0)
+                let (tNow, posesNow, sampleNow) = (t, comp, sample)
+                let reportJob = tNow / duration - lastJobProgress >= 0.02
+                if reportJob { lastJobProgress = tNow / duration }
                 DispatchQueue.main.async {
-                    self.jointNames = joints
-                    self.actuatorNames = acts
+                    self.poses = posesNow
+                    self.poseRevision += 1
+                    self.progress = tNow / duration
+                    self.realTimeFactor = wall > 0 ? tNow / wall : 0
+                    if let sampleNow { self.live.append(sampleNow) }
+                    if reportJob, let job = self.job { self.flow?.progress(job: job, fraction: min(tNow / duration, 1)) }
                 }
-                let chunk = max(1, Int((1.0 / 60) / dt))
-                let t0 = Date()
-                var t = 0.0
-                var frames: [(Double, [String: simd_float4x4])] = []
-                var lastLive = -1.0
-                while t < duration, !self.cancel {
-                    let r = engine.step(chunk, poses: &buf)
-                    if r == -2 { throw AssembleError("The simulation diverged at \(String(format: "%.2f", t)) s.") }
-                    t += Double(chunk) * dt
-                    let mats = Self.matrices(buf, links)
-                    var comp: [String: simd_float4x4] = [:]
-                    for (k, m) in mats { comp[k] = m * (homeInv[k] ?? matrix_identity_float4x4) }
-                    frames.append((t, comp))
-                    var sample: Sample?
-                    if t - lastLive >= 1.0 / 30 {
-                        lastLive = t
-                        let st = try engine.call("world_state", [:])
-                        let q = (st["q"] as? [Double] ?? []).map { $0 * 180 / .pi }
-                        sample = Sample(t: t, q: q, effort: st["efforts"] as? [Double] ?? [])
-                    }
-                    let wall = Date().timeIntervalSince(t0)
-                    let tNow = t
-                    DispatchQueue.main.async {
-                        self.poses = comp
-                        self.poseRevision += 1
-                        self.progress = tNow / duration
-                        self.realTimeFactor = wall > 0 ? tNow / wall : 0
-                        if let sample { self.live.append(sample) }
-                    }
-                    // Real time: never ahead of the wall clock.
-                    let ahead = t - Date().timeIntervalSince(t0)
-                    if ahead > 0 { Thread.sleep(forTimeInterval: ahead) }
+                // Real time: never ahead of the wall clock (a task sleep, not a thread sleep).
+                let ahead = t - Date().timeIntervalSince(t0)
+                if ahead > 0 { try? await Task.sleep(for: .seconds(ahead)) }
+            }
+            let stopped = Task.isCancelled && t < duration
+            let ep = try engine.call("episode_record", ["get": true])
+            let et = ep["t"] as? [Double] ?? []
+            let eq = ep["q"] as? [[Double]] ?? []
+            let ef = ep["effort"] as? [[Double]] ?? []
+            let samples = et.indices.map { i in
+                Sample(t: et[i], q: (i < eq.count ? eq[i] : []).map { $0 * 180 / .pi }, effort: i < ef.count ? ef[i] : [])
+            }
+            let raw = try engine.callRaw("wrench_history", ["pick": "envelope"]) as? [[String: Any]] ?? []
+            let wrenches = raw.map(Self.wrench)
+            let maxEffort = samples.flatMap { $0.effort.map(abs) }.max() ?? 0
+            var result = String(localized: "\(VFFormat.value(t, .time)), peak effort \(VFFormat.value(maxEffort, .custom("N·m")))")
+            var ok = true
+            if let demo {
+                let err = Self.tracking(demo, samples)
+                result = String(localized: "Tracks the demo within \(VFFormat.angle(err)) RMS")
+                ok = err < 5
+            }
+            if stopped {
+                result = String(localized: "Stopped at \(VFFormat.value(t, .time))")
+                ok = false
+            }
+            let episode = Episode(id: id, title: name, scenario: s.id, revision: revision, date: Date(), duration: t, samples: samples,
+                                  frames: frames.enumerated().filter { $0.offset % 2 == 0 }.map { (t: $0.element.0, poses: $0.element.1) },
+                                  wrenches: wrenches, demo: demo, result: result, ok: ok)
+            let summary = "\(s.title), \(result)"
+            DispatchQueue.main.async {
+                self.running = false
+                self.progress = 1
+                self.runTask = nil
+                self.episodes.append(episode)
+                self.selectedEpisode = episode.id
+                self.playhead = episode.duration
+                let job = self.job
+                self.job = nil
+                guard let flow = self.flow, demo == nil else { return }
+                if stopped {
+                    if let job { flow.cancel(job: job) }
+                } else if let job {
+                    // Ends the job and builds the artifact, as a run (same as `produce` below).
+                    flow.command(["op": "job_end", "job": job, "summary": summary, "source": "run"])
+                } else {
+                    flow.produce(s.artifact, summary: summary, source: "run")
                 }
-                let ep = try engine.call("episode_record", ["get": true])
-                let et = ep["t"] as? [Double] ?? []
-                let eq = ep["q"] as? [[Double]] ?? []
-                let ef = ep["effort"] as? [[Double]] ?? []
-                let samples = et.indices.map { i in
-                    Sample(t: et[i], q: (i < eq.count ? eq[i] : []).map { $0 * 180 / .pi }, effort: i < ef.count ? ef[i] : [])
-                }
-                let raw = try engine.callRaw("wrench_history", ["pick": "envelope"]) as? [[String: Any]] ?? []
-                let wrenches = raw.map(Self.wrench)
-                let maxEffort = samples.flatMap { $0.effort.map(abs) }.max() ?? 0
-                var result = String(format: "%.1f s, peak effort %.2f N·m", t, maxEffort)
-                var ok = true
-                if let demo {
-                    let err = Self.tracking(demo, samples)
-                    result = String(format: "Tracks the demo within %.1f° RMS", err)
-                    ok = err < 5
-                }
-                let episode = Episode(id: id, title: name, scenario: s.id, revision: revision, date: Date(), duration: t, samples: samples,
-                                      frames: frames.enumerated().filter { $0.offset % 2 == 0 }.map { (t: $0.element.0, poses: $0.element.1) },
-                                      wrenches: wrenches, demo: demo, result: result, ok: ok)
-                DispatchQueue.main.async {
-                    self.running = false
-                    self.progress = 1
-                    self.episodes.append(episode)
-                    self.selectedEpisode = episode.id
-                    self.playhead = episode.duration
-                    if demo == nil, let flow = self.flow {
-                        flow.produce(s.artifact, summary: "\(s.title), \(result)", source: "run")
-                    }
-                }
-            } catch {
-                DispatchQueue.main.async {
-                    self.running = false
-                    self.error = error.localizedDescription
-                }
+            }
+        } catch {
+            let message = error.localizedDescription
+            DispatchQueue.main.async {
+                self.running = false
+                self.runTask = nil
+                self.error = message
+                if let job = self.job { self.flow?.end(job: job, error: message) }
+                self.job = nil
             }
         }
     }
 
-    func cancelRun() { cancel = true }
+    /// Stops the run (the Stop button, Command-.). What ran stays as a stopped episode.
+    func cancelRun() { runTask?.cancel() }
 
     // MARK: Replay
 

@@ -8,9 +8,11 @@ import UniformTypeIdentifiers
 /// save pose) and CHECK (interference, mass). The commit to the flow sits on the trailing edge.
 struct AssembleRibbon: View {
     @Environment(\.viaFormTheme) private var theme
+    @Environment(\.vfToasts) private var toasts
     @Bindable var model: AssembleModel
     let flow: FlowModel
     var showBottom: () -> Void = {}
+    @State private var confirm: ConfirmRequest?
 
     var body: some View {
         VStack(spacing: 0) {
@@ -18,17 +20,18 @@ struct AssembleRibbon: View {
                 ForEach(AssembleModel.Tab.allCases) { t in
                     let on = model.tab == t
                     Button { select(t) } label: {
-                        Text(t.rawValue)
-                            .font(.system(size: 11, weight: .semibold))
+                        Text(t.title)
+                            .textCase(.uppercase)
+                            .font(VFFont.caps)
                             .tracking(VFTypeScale.capsTracking)
-                            .padding(.horizontal, 10)
+                            .padding(.horizontal, VFSpace.m)
                             .frame(height: 24)
                             .foregroundStyle(on ? theme.accentText : theme.inkSecondary)
                             .overlay(alignment: .bottom) { if on { Rectangle().fill(theme.accent).frame(height: 2) } }
                             .contentShape(Rectangle())
                     }
                     .buttonStyle(.plain)
-                    .accessibilityLabel(t.rawValue.capitalized)
+                    .accessibilityLabel(t.title)
                     .accessibilityAddTraits(on ? .isSelected : [])
                 }
                 Spacer()
@@ -46,6 +49,7 @@ struct AssembleRibbon: View {
             .frame(height: 60)
         }
         .vfSurface(.ribbon)
+        .confirmSheet($confirm)
     }
 
     private func select(_ t: AssembleModel.Tab) {
@@ -61,7 +65,11 @@ struct AssembleRibbon: View {
     @ViewBuilder private var tools: some View {
         switch model.tab {
         case .assembly:
-            tool("New Arm", "plus.square.on.square", help: "Replace with the six-joint arm template") { model.openArm(flow: flow) }
+            tool("New Arm", "plus.square.on.square", help: "Replace with the six-joint arm template") {
+                confirm = ConfirmRequest(title: String(localized: "Replace the assembly with the arm template?"),
+                                         message: String(localized: "The six-joint arm template replaces this assembly, with its joints, saved poses and grasps."),
+                                         verb: String(localized: "Replace with Arm"), destructive: true) { model.openArm(flow: flow) }
+            }
             tool("Commit", "checkmark.seal", help: "Record this assembly as a new revision in the flow") { model.commit() }
             divider
             tool("MJCF", "square.and.arrow.up", help: "Export the assembly as MJCF (MuJoCo XML)") { export("export_mjcf") }
@@ -74,21 +82,21 @@ struct AssembleRibbon: View {
             }
             divider
             Menu {
-                ForEach(model.doc?.poses ?? []) { p in Button(p.id.replacingOccurrences(of: "_", with: " ").capitalized) { model.pose(named: p.id) } }
+                if (model.doc?.poses ?? []).isEmpty { Text("No saved poses") }
+                ForEach(model.doc?.poses ?? []) { p in Button(AsmFormat.title(p.id)) { model.pose(named: p.id) } }
             } label: { label("Poses", "bookmark") }
                 .menuStyle(.borderlessButton).menuIndicator(.hidden).fixedSize()
                 .help("Move to a saved pose")
             tool("Save Pose", "bookmark.fill", help: "Save the current joint values as a pose") { model.savePose() }
         case .motion:
             tool("Drag Tip", "cursorarrow.motionlines", on: model.tool == .dragTip, key: "T", help: "Drag the end effector; the joints follow (T)") { model.tool = .dragTip }
-                .disabled(model.product != .arm)
-            tool("Grasp", "hand.raised", on: model.tool == .grasp, key: "G", help: model.product == .hand ? "Place fingertip targets on an object (G)" : "For hands: the arm's gripper has one joint") { model.tool = .grasp }
-                .disabled(model.product != .hand)
+                .vfDisabled(model.product != .arm, reason: String(localized: "For arms: a hand moves with the grasp editor"))
+            tool("Grasp", "hand.raised", on: model.tool == .grasp, key: "G", help: "Place fingertip targets on an object (G)") { model.tool = .grasp }
+                .vfDisabled(model.product != .hand, reason: String(localized: "For hands: the arm's gripper has one joint"))
             divider
             tool("Motion Study", "waveform.path.ecg", help: "Show the motion study in the bottom panel") {
                 showBottom()
-                if model.study == nil { model.runStudy() }
-                model.play()
+                if model.study == nil { model.runStudy(thenPlay: true) } else { model.play() }
             }
             tool("Save Pose", "bookmark.fill", help: "Save the current joint values as a pose") { model.savePose() }
             tool("Home", "house", help: "Back to the home pose") { model.pose(named: "home") }
@@ -106,13 +114,18 @@ struct AssembleRibbon: View {
 
     private var trailing: some View {
         HStack(spacing: VFSpace.s) {
+            if let p = model.studyProgress {
+                StudyProgressRow(progress: p) { model.stopWork() }
+                    .frame(width: 220)
+                VFHairline(vertical: true).frame(height: 28)
+            }
             if let c = flow.node("assemble.assembly")?.revisionName ?? model.committed {
                 Text(c).font(VFFont.small).foregroundStyle(theme.inkSecondary)
             }
             Button { model.commit() } label: {
-                HStack(spacing: 6) {
+                HStack(spacing: VFSpace.s) {
                     Text("Commit Assembly")
-                    Text("\u{2318}\u{21A9}").font(.system(size: 10, weight: .medium)).opacity(0.7)
+                    Text(verbatim: "\u{2318}\u{21A9}").font(VFFont.micro).opacity(0.7).accessibilityHidden(true)
                 }
             }
             .buttonStyle(.vfPrimary)
@@ -122,18 +135,19 @@ struct AssembleRibbon: View {
         .fixedSize()
     }
 
-    private func tool(_ title: String, _ symbol: String, on: Bool = false, key: String? = nil, help: String, action: @escaping () -> Void) -> some View {
-        Button(action: action) { label(title, symbol, on: on) }
+    private func tool(_ title: LocalizedStringResource, _ symbol: String, on: Bool = false, key: String? = nil, help: LocalizedStringResource,
+                      action: @escaping () -> Void) -> some View {
+        Button(action: action) { label(String(localized: title), symbol, on: on) }
             .buttonStyle(.plain)
-            .help(help)
-            .accessibilityLabel(title)
+            .help(Text(help))
+            .accessibilityLabel(Text(title))
             .accessibilityAddTraits(on ? .isSelected : [])
     }
 
     private func label(_ title: String, _ symbol: String, on: Bool = false) -> some View {
-        VStack(spacing: 3) {
-            Image(systemName: symbol).font(.system(size: 18, weight: .regular)).frame(height: 22)
-            Text(title.uppercased()).font(.system(size: 9.5, weight: .semibold)).tracking(0.4).lineLimit(1)
+        VStack(spacing: VFSpace.xs) {
+            Image(systemName: symbol).font(VFFont.glyph(18)).frame(height: 22).accessibilityHidden(true)
+            Text(title).textCase(.uppercase).font(VFFont.micro.weight(.semibold)).tracking(0.4).lineLimit(1)
         }
         .foregroundStyle(on ? theme.accentText : theme.ink)
         .padding(.horizontal, VFSpace.s)
@@ -146,12 +160,20 @@ struct AssembleRibbon: View {
     private func export(_ op: String) {
         do {
             let r = try model.engine.call(op)
-            guard let text = r["text"] as? String else { return }
+            guard let text = r["text"] as? String else {
+                toasts?.error(String(localized: "The export came back empty."))
+                return
+            }
             let panel = NSSavePanel()
             panel.nameFieldStringValue = r["filename"] as? String ?? (op == "export_mjcf" ? "assembly.xml" : "assembly.urdf")
-            if panel.runModal() == .OK, let url = panel.url { try text.write(to: url, atomically: true, encoding: .utf8) }
+            if panel.runModal() == .OK, let url = panel.url {
+                try text.write(to: url, atomically: true, encoding: .utf8)
+                toasts?.show(String(localized: "Exported \(url.lastPathComponent)"), actionTitle: String(localized: "Show in Finder")) {
+                    NSWorkspace.shared.activateFileViewerSelecting([url])
+                }
+            }
         } catch {
-            NSSound.beep()
+            toasts?.error(String(localized: "Could not export: \(error.localizedDescription)"), actionTitle: String(localized: "Try Again")) { export(op) }
         }
     }
 }

@@ -3,8 +3,7 @@ import SwiftUI
 @main
 struct ViaFormApp: App {
     #if os(macOS)
-    @State private var model = DesignModel()
-    @State private var pcb = PCBModel(sample: ProcessInfo.processInfo.arguments.contains("--sample"))
+    @NSApplicationDelegateAdaptor(ViaFormAppDelegate.self) private var appDelegate
     #endif
 
     init() {
@@ -15,36 +14,24 @@ struct ViaFormApp: App {
     var body: some Scene {
         #if os(macOS)
         WindowGroup {
-            // The project window (pipeline toolbar, sidebar, inspector); the old layout behind
-            // Settings > Legacy layout or --legacy-ui.
-            DeskRoot(model: model, pcb: pcb)
-                .frame(minWidth: 1000, minHeight: 640)
+            // Each window owns its project: design, board, BOM, pipeline, undo and dirty state.
+            DeskWindowRoot()
+                .frame(minWidth: 760, minHeight: 560)
         }
         .windowToolbarStyle(.unified)
         .commands {
+            DeskFileCommands()
             DeskWorkspaceCommands()
             SidebarCommands()
             InspectorCommands()
-            CommandGroup(replacing: .newItem) {
-                Button("New Design") { FileActions.newDesign(model) }.keyboardShortcut("n").disabled(EngineGate.shared.shut)
-                Button("Open…") { FileActions.open(model) }.keyboardShortcut("o").disabled(EngineGate.shared.shut)
-            }
-            CommandGroup(replacing: .saveItem) {
-                Button("Save") { FileActions.save(model) }.keyboardShortcut("s").disabled(EngineGate.shared.shut)
-                Button("Save As…") { FileActions.saveAs(model) }.keyboardShortcut("s", modifiers: [.command, .shift]).disabled(EngineGate.shared.shut)
-                Button("Export…") { FileActions.export(model) }.keyboardShortcut("e", modifiers: [.command, .shift]).disabled(EngineGate.shared.shut)
-            }
-            CommandGroup(replacing: .undoRedo) {
-                Button("Undo") { model.undo() }.keyboardShortcut("z").disabled(EngineGate.shared.shut)
-                Button("Redo") { model.redo() }.keyboardShortcut("z", modifiers: [.command, .shift]).disabled(EngineGate.shared.shut)
-            }
         }
         Settings { DeskSettingsView().viaFormTheme() }
         #else
         WindowGroup {
+            // TouchRootView applies the theme (System by default, D-20) and its accent tint.
             TouchRootView()
-                .tint(Color(red: 0.12, green: 0.47, blue: 0.98))
         }
+        .commands { TouchCommands() }
         #endif
     }
 }

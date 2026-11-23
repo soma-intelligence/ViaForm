@@ -473,6 +473,20 @@ final class FlowModel {
     /// The job running on `artifact`, if any.
     func job(on artifact: String) -> RunningJob? { jobs.first { $0.artifact == artifact } }
 
+    /// The job Command-. stops: the one on `stage` when there is one, else the most recent.
+    func stoppableJob(stage: String?) -> RunningJob? {
+        if let stage, let j = jobs.first(where: { $0.stage == stage && controls[$0.id]?.cancel != nil }) { return j }
+        return jobs.last { controls[$0.id]?.cancel != nil } ?? jobs.last
+    }
+
+    /// Stops the job Command-. targets; false when nothing runs.
+    @discardableResult
+    func stopJob(stage: String?) -> Bool {
+        guard let j = stoppableJob(stage: stage) else { return false }
+        cancel(job: j.id)
+        return true
+    }
+
     func jobStart(_ artifact: String, label: String) {
         startJob(artifact, verb: label, label: label)
     }

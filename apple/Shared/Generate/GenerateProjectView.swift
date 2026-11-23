@@ -3,30 +3,27 @@ import SwiftUI
 /// The Project pane: the open project's studies (a tap makes one the setup), its assembly of
 /// generated parts and real components, and, once inserted, its joints to drive.
 struct ProjectForm: View {
+    @Environment(\.viaFormTheme) private var theme
     @Bindable var model: GenerateModel
     let design: DesignModel
+    @State private var confirm: ConfirmRequest?
 
     var body: some View {
         Form {
             Section {
                 // The open project is the filled button; the other opens on a click. Only the
                 // other is ever disabled (while a study runs), so the open one never reads as off.
-                HStack(spacing: 8) {
+                HStack(spacing: VFSpace.m) {
                     ForEach(GenerateProject.samples, id: \.self) { name in
                         ProjectButton(name: name, open: model.project?.name == name, locked: model.running) {
-                            if name != model.project?.name { model.openSample(name) }
+                            if name != model.project?.name { open(name) }
                         }
-                    }
-                }
-                if let p = model.project {
-                    LabeledContent("Folder") {
-                        Text("docs/generative/\(p.name)").foregroundStyle(.secondary).lineLimit(1).truncationMode(.middle)
                     }
                 }
             } header: {
                 Text("Project")
             } footer: {
-                if model.project == nil { Text("Open a sample: its studies and its assembly come from docs/generative.") }
+                if model.project == nil { Text("Open a sample project: its studies and its assembly load here.") }
             }
             if let p = model.project {
                 studies(p)
@@ -35,37 +32,64 @@ struct ProjectForm: View {
             }
         }
         .formStyle(.grouped)
+        .confirmSheet($confirm)
+    }
+
+    /// Opens a sample; its first study replaces an edited setup only once confirmed (and the
+    /// replacement can be undone).
+    private func open(_ name: String) {
+        guard model.studyEdited else { model.openSample(name, replaceStudy: true); return }
+        confirm = ConfirmRequest(
+            title: String(localized: "Replace the current study setup?"),
+            message: String(localized: "Opening the \(name.capitalized) project loads its first study over your edits. You can undo this."),
+            verb: String(localized: "Replace"),
+            destructive: true,
+            perform: { model.openSample(name, replaceStudy: true) })
+    }
+
+    /// Makes a project study the setup, asking first over an edited one.
+    private func pick(_ e: GenerateProject.Entry) {
+        let go = {
+            model.load(e)
+            model.pane = .study
+        }
+        guard model.studyEdited, model.projectStudy != e.name else { go(); return }
+        confirm = ConfirmRequest(
+            title: String(localized: "Replace the current study setup?"),
+            message: String(localized: "\(e.name) replaces your regions, loads and limits. You can undo this."),
+            verb: String(localized: "Replace"),
+            destructive: true,
+            perform: go)
     }
 
     private func studies(_ p: GenerateProject) -> some View {
         Section {
             ForEach(p.studies) { e in
-                Button {
-                    model.load(e)
-                    model.pane = .study
-                } label: {
-                    HStack(spacing: 8) {
+                Button { pick(e) } label: {
+                    HStack(spacing: VFSpace.m) {
                         Image(systemName: model.projectStudy == e.name ? "largecircle.fill.circle" : "circle")
-                            .foregroundStyle(model.projectStudy == e.name ? Color.accentColor : .secondary)
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text(e.name).font(.callout.weight(.medium))
-                            Text("\(e.study.elementCount.formatted()) voxels at \(e.study.voxel.formatted(.number.precision(.fractionLength(0...2)))) mm · \(e.study.material.name)")
-                                .font(.caption).foregroundStyle(.secondary).lineLimit(1)
+                            .foregroundStyle(model.projectStudy == e.name ? theme.accentText : theme.inkSecondary)
+                            .accessibilityHidden(true)
+                        VStack(alignment: .leading, spacing: VFSpace.xxs) {
+                            Text(e.name).font(VFFont.rowEmphasis).foregroundStyle(theme.ink)
+                            Text("\(e.study.elementCount.formatted()) voxels at \(VFFormat.length(e.study.voxel)), \(e.study.material.name)")
+                                .font(VFFont.small).foregroundStyle(theme.inkSecondary).lineLimit(2)
                         }
-                        Spacer(minLength: 4)
+                        Spacer(minLength: VFSpace.xs)
                         if let m = e.result["mass_g"] {
-                            Text(String(format: "%.1f g", m)).font(.caption).monospacedDigit().foregroundStyle(.secondary)
+                            Text(VFFormat.mass(m)).font(VFFont.small).monospacedDigit().foregroundStyle(theme.inkSecondary)
                         }
                     }
                     .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
-                .disabled(model.running)
+                .accessibilityAddTraits(model.projectStudy == e.name ? .isSelected : [])
+                .vfDisabled(model.running, reason: String(localized: "Locked while the study runs. Stop to edit."))
             }
         } header: {
             Text("Studies (\(p.studies.count))")
         } footer: {
-            Text("Each part is grown around the real components it holds: screw holes, bearing seats and keep-outs come from docs/components.")
+            Text("Each part is grown around the real components it holds: screw holes, bearing seats and keep-outs come from the component library.")
         }
     }
 
@@ -74,30 +98,32 @@ struct ProjectForm: View {
             if let s = model.assemblySummary, p.assembly != nil {
                 LabeledContent("Parts", value: "\(s.parts)")
                 LabeledContent("Generated", value: "\(s.generated)")
-                LabeledContent("Real components", value: "\(s.components) placed, \(s.componentRefs.count) lines")
-                if let m = s.massG { LabeledContent("Mass", value: String(format: "%.1f g", m)) }
+                LabeledContent("Real components", value: String(localized: "\(s.components) placed, \(s.componentRefs.count) lines"))
+                if let m = s.massG { LabeledContent("Mass", value: VFFormat.mass(m)) }
                 if let q = s.quantitiesMatch {
-                    Label(q ? "Quantities match the component file" : "Quantities differ from the component file",
+                    Label(q ? "Quantities match the parts list" : "Quantities differ from the parts list",
                           systemImage: q ? "checkmark.seal.fill" : "exclamationmark.triangle.fill")
-                        .foregroundStyle(q ? .green : .orange)
-                        .font(.caption)
+                        .foregroundStyle(q ? theme.success : theme.warning)
+                        .font(VFFont.small)
                 }
                 LabeledContent("Movable joints", value: "\(model.joints.filter(\.movable).count)")
                 if model.assemblyLoaded {
-                    Button { model.display = .assembly } label: { Label("Show the assembly", systemImage: "cube.transparent") }
+                    Button { model.display = .assembly } label: { Label("Show the Assembly", systemImage: "cube.transparent") }
+                        .buttonStyle(.vfSecondary)
                 } else {
-                    Button { model.loadAssembly(into: design) } label: {
-                        if model.loadingAssembly { ProgressView().controlSize(.small) } else { Label("Insert the assembly", systemImage: "square.stack.3d.down.right") }
-                    }
-                    .disabled(model.loadingAssembly || EngineGate.shared.shut)
+                    Button { model.loadAssembly(into: design) } label: { Label("Insert the Assembly", systemImage: "square.stack.3d.down.right") }
+                        .buttonStyle(.vfPrimary(loading: model.loadingAssembly))
+                        .vfDisabled(EngineGate.shared.shut || model.loadingAssembly,
+                                    reason: EngineGate.shared.shut ? EngineGate.reason : String(localized: "Inserting the assembly now."))
                 }
             } else {
-                Text("No assembly.json yet: run the project's studies, then its assembly step.").foregroundStyle(.secondary)
+                EmptyState(String(localized: "No assembly yet"), systemImage: "square.stack.3d.down.right",
+                           message: String(localized: "Run the project's studies, then its assembly step."))
             }
         } header: {
             Text("Assembly")
         } footer: {
-            Text("One undo step: every part placed, every real component as its own part with its component_ref, the base grounded and the joints made.")
+            Text("One undo step: every part placed, every real component as its own part with its part reference, the base grounded and the joints made.")
         }
     }
 
@@ -106,11 +132,11 @@ struct ProjectForm: View {
         return Group {
             Section {
                 HStack {
-                    Button { model.closeFist(design: design) } label: { Label("Close fist", systemImage: "hand.raised.fingers.spread.fill") }
-                    Button { model.openHand(design: design) } label: { Label("Open", systemImage: "hand.raised") }
+                    Button { model.closeFist(design: design) } label: { Label("Close Fist", systemImage: "hand.raised.fingers.spread.fill") }
+                    Button { model.openHand(design: design) } label: { Label("Open Hand", systemImage: "hand.raised") }
                 }
-                .buttonStyle(.bordered)
-                .disabled(EngineGate.shared.shut)
+                .buttonStyle(.vfSecondary)
+                .vfEngineGate()
             } header: {
                 Text("Motion")
             }
@@ -128,6 +154,7 @@ struct ProjectForm: View {
 /// One sample project: filled with the accent when open, in every window state (a system
 /// prominent button goes grey in a window that is not key, and read as off).
 private struct ProjectButton: View {
+    @Environment(\.viaFormTheme) private var theme
     let name: String
     let open: Bool
     let locked: Bool
@@ -136,15 +163,15 @@ private struct ProjectButton: View {
     var body: some View {
         Button(action: action) {
             Label(name.capitalized, systemImage: name == "hand" ? "hand.raised" : "airplane")
-                .font(.body.weight(open ? .semibold : .regular))
-                .foregroundStyle(open ? Color.white : Color.primary)
-                .frame(maxWidth: .infinity, minHeight: 32)
-                .background(RoundedRectangle(cornerRadius: 8, style: .continuous)
-                    .fill(open ? Color.accentColor : Color.secondary.opacity(0.14)))
+                .font(open ? VFFont.rowEmphasis : VFFont.row)
+                .foregroundStyle(open ? theme.onAccent : theme.ink)
+                .frame(maxWidth: .infinity, minHeight: max(VFSize.buttonHeight, VFSize.minTarget))
+                .background(RoundedRectangle(cornerRadius: VFRadius.well, style: .continuous)
+                    .fill(open ? theme.accent : theme.ink.opacity(0.07)))
                 .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
-        .disabled(locked && !open)
+        .vfDisabled(locked && !open, reason: String(localized: "Locked while the study runs. Stop to edit."))
         .opacity(locked && !open ? 0.5 : 1)
         .accessibilityAddTraits(open ? .isSelected : [])
     }
@@ -156,13 +183,14 @@ struct JointSlider: View {
     let set: (Double) -> Void
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 2) {
+        VStack(alignment: .leading, spacing: VFSpace.xxs) {
             LabeledContent(joint.name) {
-                Text(String(format: "%.0f°", joint.value)).monospacedDigit()
+                Text(VFFormat.angle(joint.value)).monospacedDigit()
             }
-            .font(.caption)
-            Slider(value: Binding(get: { joint.value }, set: set), in: joint.limits)
+            .font(VFFont.small)
+            Slider(value: Binding(get: { joint.value }, set: { set($0) }), in: joint.limits)
                 .accessibilityLabel(joint.name)
+                .accessibilityValue(VFFormat.angle(joint.value))
         }
     }
 }

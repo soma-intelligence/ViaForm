@@ -312,7 +312,16 @@ final class DesignModel {
     private var wantsEdges: Bool { tool == .select || tool == .fillet || tool == .chamfer }
 
     /// A click or tap. `additive` keeps the selection (Shift on a Mac, the default on touch).
+    /// How a click changes the selection (FRONTEND-SPEC 7.3): click replaces, Shift adds,
+    /// Command toggles. Touch taps toggle.
+    enum SelectMode { case replace, add, toggle }
+
     func click(at p: CGPoint, additive: Bool) {
+        click(at: p, mode: additive ? .toggle : .replace)
+    }
+
+    func click(at p: CGPoint, mode: SelectMode) {
+        let additive = mode != .replace
         if tool.isSketchTool {
             guard let plane = sketchPlane, let q = ScenePicker.onPlane(plane, camera: camera, at: p, size: viewSize) else { return }
             sketchClick(snap(q).0, raw: q)
@@ -349,11 +358,13 @@ final class DesignModel {
             if !additive { selection = []; selectedBodies = [] }
             return
         }
-        if let i = selection.firstIndex(where: { $0.sameEntity(hit) }) {
-            selection.remove(at: i)
-        } else if additive {
-            selection.append(hit)
-        } else {
+        let present = selection.firstIndex(where: { $0.sameEntity(hit) })
+        switch mode {
+        case .toggle:
+            if let present { selection.remove(at: present) } else { selection.append(hit) }
+        case .add:
+            if present == nil { selection.append(hit) }
+        case .replace:
             selection = [hit]
             selectedBodies = []
         }

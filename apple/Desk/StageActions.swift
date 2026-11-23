@@ -44,6 +44,28 @@ struct StageActions {
         }
     }
 
+    /// Why `id` cannot run now, in a sentence the palette, the ribbon and VoiceOver show; nil
+    /// when it can.
+    func unavailableReason(_ id: String) -> String? {
+        if EngineGate.shared.shut { return EngineGate.reason }
+        guard !canRun(id) else { return nil }
+        switch id {
+        case "generate.run": return String(localized: "A study is already running.")
+        case "generate.cancel": return String(localized: "No study is running.")
+        case "generate.use_as_frame":
+            return generate.building ? String(localized: "The frame is being built.") : String(localized: "Pick a candidate in Generate first.")
+        case "generate.stress_here", "simulate.record": return String(localized: "Not available yet.")
+        case "train.start": return String(localized: "Training is already running.")
+        case "train.stop": return String(localized: "No training is running.")
+        case "train.fly_policy": return String(localized: "Train a policy first.")
+        case "electronics.send_to_3d", "make.kicad": return String(localized: "Open or create a board first.")
+        case _ where id.hasPrefix("robot."): return String(localized: "Connect a robot first.")
+        case _ where id.hasPrefix("simulate.") && flow.isHandProduct: return String(localized: "The hand is tested by grasping, not by flying.")
+        case "simulate.rerun": return String(localized: "Generate a frame first.")
+        default: return String(localized: "Not available now.")
+        }
+    }
+
     func run(_ id: String) {
         if id.hasPrefix("stage.") {
             if let w = Workspace(stage: String(id.dropFirst(6))) { open(w) }
@@ -56,7 +78,7 @@ struct StageActions {
         }
         switch id {
         case "generate.run": open(.generate); generate.run()
-        case "generate.cancel": generate.cancel()
+        case "generate.cancel": open(.generate); generate.requestStop()
         case "generate.use_as_frame":
             generate.build(into: model)
             open(.design)
@@ -87,7 +109,7 @@ struct StageActions {
             open(.electronics)
             pcb.refresh()
             let n = pcb.findings.count
-            pcb.message = n == 0 ? "Rule checks passed" : "\(n) rule check finding\(n == 1 ? "" : "s")"
+            pcb.message = n == 0 ? String(localized: "Rule checks passed") : WorkspaceMenu.inflected("^[\(n) rule check finding](inflect: true)")
             pcb.messageIsError = n > 0
         case "electronics.send_to_3d":
             pcb.sendTo3D(model)

@@ -3,13 +3,21 @@ import simd
 
 /// The orientation cube: it turns with the view. A click on a face gives that standard view, a
 /// click near an edge or a corner gives the view along that edge or corner, and a drag orbits.
+/// Colours come from the theme (light faces in light mode, panel grey in dark mode); a caller may
+/// still override them.
 struct ViewCube: View {
+    @Environment(\.viaFormTheme) private var theme
     let model: DesignModel
     var size: CGFloat = 96
-    var faceColor: Color = Color(white: 0.96)
-    var edgeColor: Color = Color(white: 0.55)
-    var textColor: Color = Color(white: 0.25)
-    var hoverColor: Color = .accentColor
+    var faceColor: Color? = nil
+    var edgeColor: Color? = nil
+    var textColor: Color? = nil
+    var hoverColor: Color? = nil
+
+    private var face: Color { faceColor ?? theme.panel }
+    private var edge: Color { edgeColor ?? theme.inkTertiary }
+    private var ink: Color { textColor ?? theme.inkSecondary }
+    private var hover: Color { hoverColor ?? theme.accent }
 
     @State private var hovered: StandardView?
     @State private var dragLast: CGPoint?
@@ -22,12 +30,12 @@ struct ViewCube: View {
     }
 
     private static let faces: [Face] = [
-        .init(view: .top, normal: [0, 0, 1], label: "TOP"),
-        .init(view: .bottom, normal: [0, 0, -1], label: "BOTTOM"),
-        .init(view: .front, normal: [0, -1, 0], label: "FRONT"),
-        .init(view: .back, normal: [0, 1, 0], label: "BACK"),
-        .init(view: .right, normal: [1, 0, 0], label: "RIGHT"),
-        .init(view: .left, normal: [-1, 0, 0], label: "LEFT"),
+        .init(view: .top, normal: [0, 0, 1], label: String(localized: "TOP")),
+        .init(view: .bottom, normal: [0, 0, -1], label: String(localized: "BOTTOM")),
+        .init(view: .front, normal: [0, -1, 0], label: String(localized: "FRONT")),
+        .init(view: .back, normal: [0, 1, 0], label: String(localized: "BACK")),
+        .init(view: .right, normal: [1, 0, 0], label: String(localized: "RIGHT")),
+        .init(view: .left, normal: [-1, 0, 0], label: String(localized: "LEFT")),
     ]
 
     private func corners(_ n: SIMD3<Double>) -> [SIMD3<Double>] {
@@ -60,27 +68,29 @@ struct ViewCube: View {
 
     var body: some View {
         let shown = visible()
+        let faceFill = face, edgeLine = edge, label = ink, hoverFill = hover
         Canvas { ctx, _ in
             let back = model.camera.basis.back
             for (f, pts) in shown {
                 let path = polygon(pts)
                 let shade = 0.82 + 0.18 * simd_dot(f.normal, back)
-                ctx.fill(path, with: .color(hovered == f.view ? hoverColor.opacity(0.35) : faceColor.opacity(shade)))
-                ctx.stroke(path, with: .color(edgeColor), lineWidth: 1)
+                ctx.fill(path, with: .color(hovered == f.view ? hoverFill.opacity(0.35) : faceFill.opacity(shade)))
+                ctx.stroke(path, with: .color(edgeLine), lineWidth: 1)
                 let centre = pts.reduce(CGPoint.zero) { CGPoint(x: $0.x + $1.x / 4, y: $0.y + $1.y / 4) }
                 let facing = simd_dot(f.normal, back)
                 if facing > 0.42 {
-                    ctx.draw(Text(f.label).font(.system(size: size * 0.082, weight: .semibold)).foregroundStyle(textColor), at: centre)
+                    ctx.draw(Text(f.label).font(VFFont.glyph(size * 0.082, weight: .semibold)).foregroundStyle(label), at: centre)
                 }
             }
         }
         .frame(width: size, height: size)
         .contentShape(Rectangle())
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel("View orientation")
+        .accessibilityLabel(Text("View orientation"))
+        .accessibilityHint(Text("Choose a standard view from the actions"))
         .accessibilityActions {
             ForEach(StandardView.allCases, id: \.self) { v in
-                Button(v == .iso ? "Home view" : "\(v.rawValue.capitalized) view") { model.setView(v) }
+                Button(v == .iso ? String(localized: "Home view") : String(localized: "\(v.rawValue.capitalized) view")) { model.setView(v) }
             }
         }
         .onContinuousHover { phase in
@@ -101,16 +111,13 @@ struct ViewCube: View {
                 dragged = false
                 dragLast = nil
             })
+        #if os(macOS)
+        // On the iPad a 44 pt home button would cover the cube: Home View is in the view menu.
         .overlay(alignment: .topTrailing) {
-            Button { model.setView(.iso) } label: {
-                Image(systemName: "arrow.counterclockwise").font(.system(size: 10, weight: .semibold))
-            }
-            .buttonStyle(.plain)
-            .accessibilityLabel("Home view")
-            .foregroundStyle(textColor)
-            .offset(x: 6, y: -4)
-            .help("Home view")
+            VFIconButton("arrow.counterclockwise", label: String(localized: "Home view"), size: 10, tint: ink) { model.setView(.iso) }
+                .offset(x: VFSpace.s, y: -VFSpace.xs)
         }
+        #endif
     }
 
     /// A click on the outer band of a face picks the neighbouring edge or corner too.

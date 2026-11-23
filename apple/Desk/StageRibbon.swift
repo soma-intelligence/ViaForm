@@ -57,29 +57,37 @@ struct StageRibbon: View {
     }
 
     @ViewBuilder private var trailing: some View {
+        let done = designLike && ((commandRunning && !dialogDocked) || model.sketchOpen)
         HStack(spacing: VFSpace.s) {
             ForEach(Array(primary.enumerated()), id: \.offset) { _, p in
-                let enabled = p.command == "flow.update" || actions.canRun(p.command)
-                if p.prominent {
+                let reason = p.command == "flow.update" ? nil : actions.unavailableReason(p.command)
+                // One accent per context (FRONTEND 7.1): the canvas stale banner carries the
+                // update, and Done owns the accent while a sketch or command is open.
+                if p.prominent && p.command != "flow.update" && !done {
                     // Command-Return runs it (the Workspace menu's Run item): shown on the button.
                     Button { perform(p) } label: {
-                        HStack(spacing: 6) {
+                        HStack(spacing: VFSpace.s) {
                             Text(p.label)
-                            Text("\u{2318}\u{21A9}").font(.system(size: 10, weight: .medium)).opacity(0.7)
+                            Text("\u{2318}\u{21A9}").font(VFFont.micro).opacity(0.75).accessibilityHidden(true)
                         }
                     }
-                        .buttonStyle(.vfPrimary)
-                        .disabled(!enabled)
-                        .help((p.command == "flow.update" ? "Rebuild in order: " + p.plan.map { flow.node($0)?.name ?? $0 }.joined(separator: ", ") : p.label) + " (\u{2318}\u{21A9})")
+                    .buttonStyle(.vfPrimary)
+                    .disabled(reason != nil)
+                    .accessibilityHint(reason ?? "")
+                    .help(reason ?? String(localized: "\(p.label) (Command-Return)"))
                 } else {
                     Button(p.label) { perform(p) }
-                        .controlSize(.regular)
-                        .disabled(!enabled)
+                        .buttonStyle(.vfSecondary)
+                        .disabled(reason != nil)
+                    .accessibilityHint(reason ?? "")
+                        .help(reason ?? (p.command == "flow.update"
+                            ? String(localized: "Rebuild in order: \(p.plan.map { flow.node($0)?.name ?? $0 }.joined(separator: ", "))")
+                            : p.label))
                 }
             }
             if designLike && commandRunning && !dialogDocked {
                 // A running command finishes from the ribbon too: accent, with Return.
-                DoneButton(help: "Finish \(StageLabels.command(model.genericCommand?.label ?? model.tool.label)) (Return)") { CommandDialog.finish(model) }
+                DoneButton(help: String(localized: "Finish \(StageLabels.command(model.genericCommand?.label ?? model.tool.label)) (Return)")) { CommandDialog.finish(model) }
             } else if designLike && model.sketchOpen {
                 DoneButton { model.finishSketch() }
                     .keyboardShortcut(model.tool == .select && model.genericCommand == nil ? KeyboardShortcut(.return, modifiers: []) : nil)
@@ -165,9 +173,9 @@ struct RibbonTabs: View {
                 let on = tab == t
                 Button { tab = t } label: {
                     Text(StageLabels.tab(t))
-                        .font(.system(size: 11, weight: .semibold))
+                        .font(VFFont.caps)
                         .tracking(VFTypeScale.capsTracking)
-                        .padding(.horizontal, 10)
+                        .padding(.horizontal, VFSpace.l)
                         .frame(height: 24)
                         .foregroundStyle(on ? theme.accentText : (t == "SKETCH" ? theme.accentText.opacity(0.8) : theme.inkSecondary))
                         .overlay(alignment: .bottom) { if on { Rectangle().fill(theme.accent).frame(height: 2) } }
@@ -193,12 +201,13 @@ struct RibbonPanelModel: Identifiable {
 
 /// The panels of a tab, folding the last ones into MORE until they fit.
 struct PanelStrip: View {
+    @Environment(\.viaFormTheme) private var theme
     let model: DesignModel
     let panels: [RibbonPanelModel]
 
     var body: some View {
         if panels.isEmpty {
-            Text("No commands in this tab").font(VFFont.small).foregroundStyle(.secondary)
+            Text("No commands in this tab").font(VFFont.small).foregroundStyle(theme.inkSecondary)
         } else {
             ViewThatFits(in: .horizontal) {
                 ForEach((1...panels.count).reversed(), id: \.self) { k in
@@ -230,19 +239,20 @@ struct RibbonPanelView: View {
 
     var body: some View {
         VStack(spacing: 1) {
-            HStack(spacing: 2) {
+            HStack(spacing: VFSpace.xxs) {
                 ForEach(main) { c in
                     let on = model.tool.commandID == c.id && model.tool != .select
                     Button { CommandRouter.run(c, model) } label: {
                         ToolChipIcon(icon: c.icon, id: c.id, size: 22)
                             .frame(width: 36, height: 32)
-                            .background(RoundedRectangle(cornerRadius: VFRadius.control).fill(on ? theme.accent.opacity(0.22) : .clear))
-                            .overlay(RoundedRectangle(cornerRadius: VFRadius.control).strokeBorder(on ? theme.accent.opacity(0.7) : .clear))
+                            .background(RoundedRectangle(cornerRadius: VFRadius.control, style: .continuous).fill(on ? theme.accent.opacity(0.22) : .clear))
+                            .overlay(RoundedRectangle(cornerRadius: VFRadius.control, style: .continuous).strokeBorder(on ? theme.accent.opacity(0.7) : .clear))
                             .contentShape(Rectangle())
                     }
                     .buttonStyle(.plain)
-                    .help(StageLabels.command(c.label) + (c.key.map { "  (\(DeskKeymap.glyph($0)))" } ?? ""))
+                    .help(c.key.map { String(localized: "\(StageLabels.command(c.label)) (\(DeskKeymap.glyph($0)))") } ?? StageLabels.command(c.label))
                     .accessibilityLabel(StageLabels.command(c.label))
+                    .accessibilityAddTraits(on ? .isSelected : [])
                 }
             }
             Menu {
@@ -289,8 +299,8 @@ struct MorePanel: View {
                 }
             }
         } label: {
-            VStack(spacing: 3) {
-                Image(systemName: "ellipsis.circle").font(.system(size: 18)).frame(width: 36, height: 32)
+            VStack(spacing: VFSpace.xxs) {
+                Image(systemName: "ellipsis.circle").font(VFFont.glyph(18)).frame(width: 36, height: 32)
                 VFCaption("More")
             }
         }
@@ -298,7 +308,7 @@ struct MorePanel: View {
         .menuIndicator(.hidden)
         .fixedSize()
         .help(panels.map { StageLabels.panel($0.name) }.joined(separator: ", "))
-        .accessibilityLabel("More commands")
+        .accessibilityLabel("More Commands")
     }
 }
 
@@ -312,7 +322,7 @@ struct VerbStrip: View {
     var body: some View {
         HStack(spacing: VFSpace.s) {
             ForEach(groups) { g in
-                HStack(spacing: 2) {
+                HStack(spacing: VFSpace.xxs) {
                     VFCaption(g.name).padding(.trailing, VFSpace.xs)
                     ForEach(g.commands) { c in
                         Button { actions.run(c.id) } label: {
@@ -325,7 +335,9 @@ struct VerbStrip: View {
                         }
                         .buttonStyle(.borderless)
                         .disabled(!actions.canRun(c.id))
-                        .help(c.detail.isEmpty ? c.label : c.detail)
+                        .help(actions.unavailableReason(c.id) ?? (c.detail.isEmpty ? c.label : c.detail))
+                        .accessibilityHint(actions.unavailableReason(c.id) ?? "")
+                        .accessibilityLabel(StageLabels.command(c.label))
                     }
                 }
                 .padding(.horizontal, VFSpace.s)
@@ -341,29 +353,32 @@ private struct VerbLabelStyle: LabelStyle {
     let labels: Bool
     func makeBody(configuration: Configuration) -> some View {
         if labels {
-            HStack(spacing: 5) { configuration.icon; configuration.title }
+            HStack(spacing: VFSpace.s) { configuration.icon; configuration.title }
         } else {
             configuration.icon
         }
     }
 }
 
-/// Closes a sketch or finishes the running command: the accent button with the Return glyph,
-/// never a green check.
+/// Closes a sketch or finishes the running command: the accent button, never a green check. The
+/// Return glyph is a visual hint only (VoiceOver reads "Done" and the tooltip names the key);
+/// the caller attaches the real `.keyboardShortcut`.
 struct DoneButton: View {
-    var help = "Finish the sketch (Return)"
+    var help = String(localized: "Finish the sketch (Return)")
     var action: () -> Void
 
     var body: some View {
         Button(action: action) {
-            HStack(spacing: 6) {
+            HStack(spacing: VFSpace.s) {
                 Text("Done")
-                Image(systemName: "return").font(.system(size: 10, weight: .semibold)).opacity(0.85)
+                Image(systemName: "return").font(VFFont.glyph(10, weight: .semibold)).opacity(0.85)
+                    .accessibilityHidden(true)
             }
         }
         .buttonStyle(.vfPrimary)
         .help(help)
         .accessibilityLabel("Done")
+        .accessibilityHint(help)
     }
 }
 #endif

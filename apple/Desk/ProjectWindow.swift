@@ -46,8 +46,20 @@ struct ProjectWindow: View {
     @State private var tabs: [Workspace: String] = [:]
     @State private var detailWidth: CGFloat = 900
     @State private var hiddenLayers: Set<String> = []
+    /// The window's toasts ("Deleted Frame", "Saved"), shown over the stage.
+    @State private var toasts = ToastCenter()
+    /// The BOM panel was edited last while open: Command-Z goes to it, not to the stage.
+    @State private var undoOwner = UndoOwner.stage
+    /// The design features before the last change, to name an undone or redone step.
+    @State private var lastFeatures: [String] = []
+    /// Layout kept with the window when it is restored (P2-9).
+    @SceneStorage("viaform.desk.stage") private var storedStage = ""
+    @SceneStorage("viaform.desk.inspector") private var storedInspector = true
+    @SceneStorage("viaform.desk.bottom") private var storedBottom = true
+    @SceneStorage("viaform.desk.bomHeight") private var bomHeight: Double = 360
 
     enum InspectorMode { case inspector, library }
+    enum UndoOwner { case stage, bom }
 
     private var actions: StageActions {
         var a = StageActions(model: model, pcb: pcb, flow: flow, sim: sim, generate: generate,
@@ -90,19 +102,24 @@ struct ProjectWindow: View {
             }
         }
         .focusedSceneValue(\.vfDesk, DeskFocus(workspace: workspace, open: { showStart = false; workspace = $0 }, search: {},
-                                                start: { showStart = false }))
+                                                start: { showStart = false }, design: model))
         .projectFilesContext(design: model, pcb: pcb, bom: bom, flow: flow)
         .background(WindowSizer())
     }
 
     /// Opens a template or a blank start: the product's design and its pipeline graph.
     private func start(_ t: StartTemplate) {
-        let ctx = ProjectFiles.Context(design: model, pcb: pcb, bom: bom, flow: flow)
         if t.kind == .importFile {
             FileActions.open(model)
             showStart = false
             return
         }
+        // A template replaces the open product: ask first when it has unsaved changes (P0-2).
+        ProjectGuard.confirmDiscard(model, verb: String(localized: "New Project")) { applyTemplate(t) }
+    }
+
+    private func applyTemplate(_ t: StartTemplate) {
+        let ctx = ProjectFiles.Context(design: model, pcb: pcb, bom: bom, flow: flow)
         switch t.preset {
         case "drone":
             if pcb.project?.components.isEmpty ?? true { pcb.loadSample() }
@@ -145,24 +162,27 @@ struct ProjectWindow: View {
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                     .overlay(alignment: .top) { staleBanner(actions) }
                     .overlay(alignment: .leading) {
-                        if showData { DataPanel(model: model, shown: $showData).transition(.move(edge: .leading)) }
+                        if showData { DataPanel(model: model, shown: $showData).vfTransition(.move(edge: .leading)) }
                     }
-                    .animation(.easeOut(duration: VFMotion.standard), value: showData)
+                    .vfAnimation(.easeOut(duration: VFMotion.standard), value: showData)
+                    .overlay(alignment: .bottomLeading) {
+                        StageIntro(workspace: workspace).padding(VFSpace.l)
+                    }
                     .overlay(alignment: .bottom) {
                         if let undoFlash {
                             Text(undoFlash).font(VFFont.small.weight(.medium)).foregroundStyle(theme.ink)
-                                .padding(.horizontal, VFSpace.l).frame(height: 26)
-                                .vfSurface(.floating, radius: 13)
-                                .padding(.bottom, 72)
+                                .padding(.horizontal, VFSpace.l).frame(minHeight: VFSize.toast)
+                                .vfSurface(.floating, radius: VFRadius.floating)
+                                .padding(.bottom, VFSpace.toastLift)
                                 .allowsHitTesting(false)
-                                .transition(.opacity)
+                                .vfTransition(.opacity)
                         }
                     }
-                    .animation(.easeOut(duration: VFMotion.fast), value: undoFlash)
+                    .vfAnimation(.easeOut(duration: VFMotion.fast), value: undoFlash)
                 if showBottom { bottom }
                 if showBom {
-                    VFHairline()
-                    BomPanel(model: bom, design: model, pcb: pcb) { showBom = false }.frame(height: 420)
+                    BomDivider(height: $bomHeight)
+                    BomPanel(model: bom, design: model, pcb: pcb) { showBom = false }.frame(height: bomHeight)
                 }
                 StageStatusBar(leading: statusLine(screen), items: statusItems, coreOK: !EngineGate.shared.shut,
                                trailing: AnyView(bottomToggle), status: screen.status)
@@ -176,7 +196,7 @@ struct ProjectWindow: View {
                         dropdown(actions)
                         VFHairline(vertical: true)
                         AssembleRibbon(model: assemble, flow: flow, showBottom: { showBottom = true })
-                            .disabled(EngineGate.shared.shut)
+                            .vfEngineGate()
                     }
                     .fixedSize(horizontal: false, vertical: true)
                     .vfSurface(.ribbon)
@@ -187,7 +207,7 @@ struct ProjectWindow: View {
                         VFHairline(vertical: true)
                         StageRibbon(workspace: workspace, model: model, flow: flow, tab: tabBinding, actions: actions, primary: screen.primary,
                                     dialogDocked: showInspector && inspectorMode == .inspector)
-                            .disabled(EngineGate.shared.shut)
+                            .vfEngineGate()
                     }
                     .fixedSize(horizontal: false, vertical: true)
                     .vfSurface(.ribbon)
@@ -222,32 +242,55 @@ struct ProjectWindow: View {
                     LibraryView(model: library, design: model, pcb: pcb) { inspectorMode = .inspector }
                 }
             }
-            .inspectorColumnWidth(min: 260, ideal: inspectorMode == .library ? 380 : VFSize.inspector, max: 560)
+            .inspectorColumnWidth(min: VFSize.inspectorMin, ideal: inspectorMode == .library ? 380 : VFSize.inspector, max: 560)
             }
         }
+        // While the palette or the shortcut sheet is up, VoiceOver and clicks stay on it (P1-16).
+        .accessibilityHidden(showPalette || showShortcuts)
+        .toastHost(toasts)
         .overlay(alignment: .top) {
             if showPalette {
                 ZStack(alignment: .top) {
-                    Color.black.opacity(0.001).onTapGesture { closePalette() }
+                    theme.ink.opacity(0.04).ignoresSafeArea().onTapGesture { closePalette() }
+                        .accessibilityHidden(true)
                     CommandPalette(flow: flow, workspace: workspace, actions: actions, extras: windowCommands,
                                    runExtra: runWindowCommand, close: closePalette)
-                        .padding(.top, 90)
+                        .accessibilityAddTraits(.isModal)
+                        .padding(.top, VFSpace.paletteTop)
                 }
             }
         }
         .overlay {
             if showShortcuts {
                 ZStack {
-                    Color.black.opacity(0.08).onTapGesture { showShortcuts = false }
+                    theme.ink.opacity(0.08).ignoresSafeArea().onTapGesture { showShortcuts = false }
+                        .accessibilityHidden(true)
                     ShortcutSheet(workspace: workspace, model: model) { showShortcuts = false }
+                        .padding(VFSpace.xxl)
                 }
             }
         }
-        .background(DeskKeyMonitor(handle: handleKey))
+        .background(DeskKeyMonitor(handle: handleKey, urgent: urgentKey))
+        .background(ProjectWindowGuard(context: projectContext, edited: ProjectFiles.isEdited(projectContext)))
         .onChange(of: UndoDepth(undo: model.snapshot.undo, redo: model.snapshot.redo)) { old, new in
-            if new.undo == old.undo - 1, new.redo == old.redo + 1 { flash("Undone \u{00B7} \u{21E7}\u{2318}Z redoes") }
-            else if new.undo == old.undo + 1, new.redo == old.redo - 1, old.redo > 0 { flash("Redone \u{00B7} \u{2318}Z undoes") }
+            let now = model.snapshot.timeline.filter { $0.rolled_back != true }.map(\.name)
+            if new.undo == old.undo - 1, new.redo == old.redo + 1 {
+                let gone = lastFeatures.last { !now.contains($0) }
+                flash(gone.map { String(localized: "Undid \($0)") } ?? String(localized: "Undone. Shift-Command-Z redoes."))
+            } else if new.undo == old.undo + 1, new.redo == old.redo - 1, old.redo > 0 {
+                let back = now.last { !lastFeatures.contains($0) }
+                flash(back.map { String(localized: "Redid \($0)") } ?? String(localized: "Redone. Command-Z undoes."))
+            }
+            lastFeatures = now
+            undoOwner = .stage
         }
+        .onChange(of: BomUndoState(canUndo: bom.canUndo, canRedo: bom.canRedo, name: bom.undoName)) { _, _ in
+            if showBom { undoOwner = .bom }
+        }
+        .onChange(of: showBom) { _, open in if !open { undoOwner = .stage } }
+        .onChange(of: pcb.revision) { _, _ in undoOwner = .stage }
+        .onChange(of: showInspector) { _, v in storedInspector = v }
+        .onChange(of: showBottom) { _, v in storedBottom = v }
         .onChange(of: model.toolboxOpen) { _, open in
             // S in the viewport asked for the old toolbox: the palette replaces it.
             if open { showPalette = true; model.toolboxOpen = false }
@@ -255,15 +298,10 @@ struct ProjectWindow: View {
         .onChange(of: workspace) { _, w in
             pcb.syncLink(model)
             if w == .render { tabs[.render] = "RENDER" }
+            storedStage = w.stage
+            undoOwner = .stage
         }
-        .focusedSceneValue(\.vfDesk, DeskFocus(workspace: workspace, open: { workspace = $0 }, search: { showPalette = true },
-                                                openWorkspaces: { showWorkspaces.toggle() },
-                                                start: { showStart = true },
-                                                toggleInspector: { inspectorMode = .inspector; showInspector.toggle() },
-                                                toggleBottom: { showBottom.toggle() },
-                                                shortcuts: { showShortcuts.toggle() },
-                                                primary: primaryAction(screen, actions),
-                                                updateStale: flow.outputs().contains { $0.status == .stale || $0.status == .failed } ? { actions.updateAll() } : nil))
+        .focusedSceneValue(\.vfDesk, focus(screen, actions))
         .reportsToFlow(flow, design: model, pcb: pcb, generate: generate, sim: sim)
         .projectFilesContext(design: model, pcb: pcb, bom: bom, flow: flow)
         .background(WindowSizer())
@@ -271,6 +309,83 @@ struct ProjectWindow: View {
     }
 
     private func closePalette() { showPalette = false }
+
+    private var projectContext: ProjectFiles.Context {
+        ProjectFiles.Context(design: model, pcb: pcb, bom: bom, flow: flow)
+    }
+
+    /// What this window lends the menu bar: every File, Edit, View and Workspace item acts here.
+    private func focus(_ screen: StageScreen, _ actions: StageActions) -> DeskFocus {
+        var f = DeskFocus(workspace: workspace, open: { workspace = $0 }, search: { showPalette = true },
+                          openWorkspaces: { showWorkspaces.toggle() },
+                          start: { showStart = true },
+                          toggleInspector: { inspectorMode = .inspector; showInspector.toggle() },
+                          toggleBottom: { showBottom.toggle() },
+                          shortcuts: { showShortcuts.toggle() },
+                          primary: primaryAction(screen, actions),
+                          updateStale: flow.outputs().contains { $0.status == .stale || $0.status == .failed } ? { actions.updateAll() } : nil)
+        f.design = model
+        f.undo = undoTarget
+        f.stopJob = stopJobAction
+        f.toggleSidebar = { columns = columns == .detailOnly ? .all : .detailOnly }
+        f.showBom = { showBom.toggle() }
+        f.showLibraries = {
+            if showInspector && inspectorMode == .library { showInspector = false } else { inspectorMode = .library; showInspector = true }
+        }
+        f.showFlowGraph = { showGraph.toggle() }
+        if StageActions.designLike.contains(workspace) && !(workspace == .assemble && assemble.isActive) {
+            f.setView = { model.setView($0) }
+            f.zoomToFit = { model.zoomToFit() }
+        }
+        return f
+    }
+
+    /// What Command-Z undoes in this window: the BOM when it was edited last while open, else the
+    /// open stage's own document. Stages with nothing to undo answer `.none` (disabled).
+    private var undoTarget: UndoTarget {
+        if showBom && undoOwner == .bom {
+            return UndoTarget(canUndo: bom.canUndo, canRedo: bom.canRedo, undoName: bom.undoName, redoName: bom.redoName,
+                              undo: { bom.undo() }, redo: { bom.redo() })
+        }
+        switch workspace {
+        case .assemble where assemble.isActive:
+            return UndoTarget(canUndo: assemble.canUndo, canRedo: assemble.canRedo, undoName: assemble.undoName,
+                              redoName: assemble.redoName, undo: { assemble.undo() }, redo: { assemble.redo() })
+        case .generate:
+            return UndoTarget(canUndo: generate.canUndo, canRedo: generate.canRedo, undoName: generate.undoName,
+                              redoName: generate.redoName, undo: { generate.undo() }, redo: { generate.redo() })
+        case .electronics:
+            return UndoTarget(canUndo: pcb.undoCount > 0, canRedo: pcb.redoCount > 0,
+                              undo: { pcb.undo() }, redo: { pcb.redo() })
+        case .design, .assemble, .render, .make:
+            return UndoTarget(canUndo: model.snapshot.undo > 0, canRedo: model.snapshot.redo > 0,
+                              undo: { model.undo() }, redo: { model.redo() })
+        case .simulation, .train, .robot:
+            return .none
+        }
+    }
+
+    /// Command-. and the Stop buttons: the open stage's own work first (study sampling, arm run,
+    /// generative study), else the running job of this stage, else the last job. Nil when idle.
+    private var stopJobAction: (() -> Void)? {
+        if workspace == .assemble && assemble.isBusy { return { assemble.stopWork() } }
+        if workspace == .simulation && armSim.isBusy { return { armSim.stopWork() } }
+        if generate.running { return { workspace = .generate; generate.requestStop() } }
+        if armSim.isBusy { return { armSim.stopWork() } }
+        if assemble.isBusy { return { assemble.stopWork() } }
+        guard flow.stoppableJob(stage: workspace.stage) != nil else { return nil }
+        return { flow.stopJob(stage: workspace.stage) }
+    }
+
+    /// A job or a long solve is running in this window.
+    private var jobRunning: Bool { stopJobAction != nil }
+
+    /// Keys taken even while a field is edited: in the Robot stage, Esc twice is the e-stop.
+    private func urgentKey(_ e: NSEvent) -> Bool {
+        guard workspace == .robot, e.keyCode == 53,
+              e.modifierFlags.intersection([.command, .control, .option, .shift]).isEmpty else { return false }
+        return safety.escape()
+    }
 
     // MARK: Keys
 
@@ -295,8 +410,9 @@ struct ProjectWindow: View {
         if ch == "?" && mods.isSubset(of: [.shift]) { showShortcuts = true; return true }
         // Robot stage: Space, or Esc twice within 0.6 s, is the e-stop (VIAFORM-SPEC 6.4).
         if workspace == .robot, mods.isEmpty {
-            if e.keyCode == 49 { safety.stop(source: "Space"); return true }
-            if e.keyCode == 53 { return safety.escape() }
+            if e.keyCode == 49 { safety.stop(source: RobotSafety.StopSource.space.rawValue); return true }
+            // Esc twice is handled by `urgentKey`, before this, even from a field.
+            if e.keyCode == 53 { return false }
         }
         if workspace == .assemble && assemble.isActive {
             if e.window?.firstResponder is NSTextView { return false }
@@ -308,6 +424,7 @@ struct ProjectWindow: View {
                 default: break
                 }
                 if e.keyCode == 53, !assemble.ik.dragging, assemble.tool != .select { assemble.tool = .select; return true }
+                if e.keyCode == 53, jobRunning { hintStop(); return true }
             }
             return false
         }
@@ -315,10 +432,12 @@ struct ProjectWindow: View {
         if mods == .control, let d = Int(ch), let v = DeskKeymap.view(d) { model.setView(v); return true }
         if e.keyCode == 97, mods.isEmpty { model.zoomToFit(); return true }
         let viewportFocused = e.window?.firstResponder is CADView
-        // Escape off the viewport: cancel the armed command, else clear the selection.
+        // Escape off the viewport: cancel the armed command, else clear the selection. It never
+        // stops a job: while one runs, Esc says how to stop it (Command-.) and keeps the selection.
         if e.keyCode == 53, mods.isEmpty, !viewportFocused {
             if model.markingMenu != nil { model.markingMenu = nil }
             else if model.tool != .select || model.genericCommand != nil { model.genericCommand = nil; model.cancelTool() }
+            else if jobRunning { hintStop() }
             else { model.selection = []; model.selectedBodies = [] }
             return true
         }
@@ -346,7 +465,17 @@ struct ProjectWindow: View {
         flashToken += 1
         let token = flashToken
         undoFlash = text
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1.4) { if flashToken == token { undoFlash = nil } }
+        AccessibilityNotification.Announcement(text).post()
+        Task { @MainActor in
+            try? await Task.sleep(for: .seconds(1.4))
+            if flashToken == token { undoFlash = nil }
+        }
+    }
+
+    /// Esc while a job runs: Esc keeps the selection and never stops work; say what does.
+    private func hintStop() {
+        toasts.show(String(localized: "A job is running. Stop it with Command-period."), systemImage: "stop.circle",
+                    actionTitle: String(localized: "Stop")) { stopJobAction?() }
     }
 
     // MARK: Window commands
@@ -365,10 +494,11 @@ struct ProjectWindow: View {
             c("shortcuts", "Keyboard Shortcuts", "keyboard", "Cmd+/", "keys help"),
             c("next", "Next Stage", "chevron.right", "Cmd+]"),
             c("previous", "Previous Stage", "chevron.left", "Cmd+["),
-            c("undo", "Undo", "arrow.uturn.backward", "Cmd+Z"),
-            c("redo", "Redo", "arrow.uturn.forward", "Shift+Cmd+Z"),
+            c("undo", undoTarget.undoName.map { String(localized: "Undo \($0)") } ?? String(localized: "Undo"), "arrow.uturn.backward", "Cmd+Z"),
+            c("redo", undoTarget.redoName.map { String(localized: "Redo \($0)") } ?? String(localized: "Redo"), "arrow.uturn.forward", "Shift+Cmd+Z"),
             c("theme", theme.isDark ? "Light Appearance" : "Dark Appearance", "circle.lefthalf.filled", nil, "theme dark light mode"),
         ]
+        if jobRunning { out.append(c("stop", String(localized: "Stop Job"), "stop.fill", "Cmd+.", "cancel stop job run")) }
         if StageActions.designLike.contains(workspace) {
             out.append(c("fit", "Zoom to Fit", "arrow.up.left.and.down.right.magnifyingglass", "F6", "view"))
             for (i, v) in [StandardView.front, .back, .left, .right, .top, .bottom, .iso].enumerated() {
@@ -388,8 +518,9 @@ struct ProjectWindow: View {
         case "shortcuts": showShortcuts = true
         case "next": workspace = Workspace.allCases[(workspace.index + 1) % Workspace.allCases.count]
         case "previous": workspace = Workspace.allCases[(workspace.index + Workspace.allCases.count - 1) % Workspace.allCases.count]
-        case "undo": model.undo()
-        case "redo": model.redo()
+        case "undo": if undoTarget.canUndo { undoTarget.undo() }
+        case "redo": if undoTarget.canRedo { undoTarget.redo() }
+        case "stop": stopJobAction?()
         case "theme": themeMode = theme.isDark ? "light" : "dark"
         case "fit": model.zoomToFit()
         case let v where v.hasPrefix("view."):
@@ -413,15 +544,22 @@ struct ProjectWindow: View {
         // The 3D stages name what is picked in the viewport itself ("Face of Middle Distal"),
         // the same words as the selection card, never a stale flow selection.
         if workspace == .assemble && assemble.isActive {
-            var parts = [flow.node("assemble.assembly")?.revisionName ?? "Assembly", "\(assemble.joints.count) joints"]
-            if let i = assemble.interference { parts.append(i.isEmpty ? "no interference" : "\(i.count) interfering pairs") }
-            if assemble.tool == .dragTip { parts.append(assemble.ik.reached ? "tip on target" : String(format: "%.0f mm out of reach", assemble.ik.shortBy)) }
+            var parts = [flow.node("assemble.assembly")?.revisionName ?? String(localized: "Assembly"),
+                         WorkspaceMenu.inflected("^[\(assemble.joints.count) joint](inflect: true)")]
+            if let i = assemble.interference {
+                parts.append(i.isEmpty ? String(localized: "No interference")
+                                       : WorkspaceMenu.inflected("^[\(i.count) interfering pair](inflect: true)"))
+            }
+            if assemble.tool == .dragTip {
+                parts.append(assemble.ik.reached ? String(localized: "Tip on target")
+                                                 : String(localized: "\(VFFormat.length(assemble.ik.shortBy)) out of reach"))
+            }
             return parts.joined(separator: " · ")
         }
         if StageActions.designLike.contains(workspace) {
             let size = CGSize(width: max(detailWidth, 1), height: 600)
             if let a = AnchorLayout.anchor(model, size: size) {
-                var line = "\(a.title) selected"
+                var line = String(localized: "\(a.title) selected")
                 if let job = screen.job { line += " · " + job.caption }
                 return line
             }
@@ -441,14 +579,15 @@ struct ProjectWindow: View {
 
     private var statusItems: [String] {
         switch workspace {
-        case .design, .assemble, .render: ["Units \(model.snapshot.units)", "\(model.snapshot.bodies.count) bodies"]
-        case .electronics: ["\(pcb.project?.components.count ?? 0) parts", "\(pcb.project?.nets.count ?? 0) nets"]
+        case .design, .assemble, .render:
+            [String(localized: "Units: \(model.snapshot.units)"),
+             WorkspaceMenu.inflected("^[\(model.snapshot.bodies.count) body](inflect: true)")]
+        case .electronics:
+            [WorkspaceMenu.inflected("^[\(pcb.project?.components.count ?? 0) part](inflect: true)"),
+             WorkspaceMenu.inflected("^[\(pcb.project?.nets.count ?? 0) net](inflect: true)")]
         default: []
         }
     }
-
-    /// Undo and redo go to the assembly document in Assemble.
-    private var asmUndo: Bool { workspace == .assemble && assemble.isActive }
 
     /// Simulate shows the articulated simulation for an arm assembly.
     private var armSimActive: Bool { assemble.isActive && assemble.product == .arm }
@@ -457,12 +596,15 @@ struct ProjectWindow: View {
 
     private var bottomToggle: some View {
         Button { showBottom.toggle() } label: {
-            Image(systemName: showBottom ? "rectangle.bottomthird.inset.filled" : "rectangle.bottomthird.inset.filled")
+            Image(systemName: showBottom ? "rectangle.bottomthird.inset.filled" : "rectangle.bottomhalf.inset.filled")
                 .foregroundStyle(showBottom && hasBottom ? theme.accentText : theme.inkSecondary)
+                .frame(minWidth: VFSize.minTarget, minHeight: VFSize.minTarget)
+                .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
-        .disabled(!hasBottom)
-        .help(showBottom ? "Hide the bottom panel" : "Show the bottom panel")
+        .vfDisabled(!hasBottom, reason: String(localized: "This stage has no bottom panel."))
+        .help(showBottom ? String(localized: "Hide the bottom panel") : String(localized: "Show the bottom panel"))
+        .accessibilityLabel(showBottom ? String(localized: "Hide the bottom panel") : String(localized: "Show the bottom panel"))
     }
 
     // MARK: Stage content
@@ -504,7 +646,7 @@ struct ProjectWindow: View {
                           updateAll: { actions.updateAll() })
             .padding(.leading, VFSpace.s)
             .padding(.trailing, VFSpace.xs)
-            .disabled(EngineGate.shared.shut)
+            .vfEngineGate()
     }
 
     /// The canvas banner of a stale or failed stage, until dismissed for the session.
@@ -513,8 +655,8 @@ struct ProjectWindow: View {
             StaleBanner(flow: flow, workspace: workspace, update: { actions.update($0) },
                         dismiss: { dismissedBanners.insert(workspace.stage + "|" + c.text) })
                 .padding(.top, VFSpace.l)
-                .padding(.horizontal, 80)
-                .transition(.move(edge: .top).combined(with: .opacity))
+                .padding(.horizontal, VFSpace.bannerInset)
+                .vfTransition(.move(edge: .top).combined(with: .opacity))
         }
     }
 
@@ -544,14 +686,17 @@ struct ProjectWindow: View {
 
     @ToolbarContentBuilder private func toolbar(_ actions: StageActions) -> some ToolbarContent {
         ToolbarItemGroup(placement: .navigation) {
-            Button { showData.toggle() } label: { Label("Data", systemImage: "square.grid.3x3") }
-                .help("Designs, samples and recent files")
-            Button { if asmUndo { assemble.undo() } else { model.undo() } } label: { Label("Undo", systemImage: "arrow.uturn.backward") }
-                .disabled((asmUndo ? !assemble.canUndo : model.snapshot.undo == 0) || EngineGate.shared.shut)
-                .help("Undo (\u{2318}Z), \(model.snapshot.undo) step\(model.snapshot.undo == 1 ? "" : "s") back")
-            Button { if asmUndo { assemble.redo() } else { model.redo() } } label: { Label("Redo", systemImage: "arrow.uturn.forward") }
-                .disabled((asmUndo ? !assemble.canRedo : model.snapshot.redo == 0) || EngineGate.shared.shut)
-                .help("Redo (\u{21E7}\u{2318}Z), \(model.snapshot.redo) step\(model.snapshot.redo == 1 ? "" : "s") ahead")
+            Button { showData.toggle() } label: { Label("Projects", systemImage: "folder") }
+                .help("Projects: designs, samples and recent files")
+            let u = undoTarget
+            Button { u.undo() } label: { Label("Undo", systemImage: "arrow.uturn.backward") }
+                .vfDisabled(!u.canUndo || EngineGate.shared.shut,
+                            reason: EngineGate.shared.shut ? EngineGate.reason : String(localized: "Nothing to undo in \(workspace.title)."))
+                .help(u.undoName.map { String(localized: "Undo \($0) (Command-Z)") } ?? String(localized: "Undo (Command-Z)"))
+            Button { u.redo() } label: { Label("Redo", systemImage: "arrow.uturn.forward") }
+                .vfDisabled(!u.canRedo || EngineGate.shared.shut,
+                            reason: EngineGate.shared.shut ? EngineGate.reason : String(localized: "Nothing to redo in \(workspace.title)."))
+                .help(u.redoName.map { String(localized: "Redo \($0) (Shift-Command-Z)") } ?? String(localized: "Redo (Shift-Command-Z)"))
         }
         // No stage chips in the toolbar (D-10): the principal slot holds the job capsule while a
         // job runs, and nothing otherwise.
@@ -583,6 +728,12 @@ struct ProjectWindow: View {
     private func launchHooks() {
         let args = ProcessInfo.processInfo.arguments
         PerfScript.openWorkspace = { workspace = $0 }
+        // Restore the window's layout, launch flags first (screenshots and tests set them).
+        if Workspace.fromLaunchArguments() == nil, !storedStage.isEmpty,
+           let w = Workspace.allCases.first(where: { $0.stage == storedStage }) { workspace = w }
+        if !args.contains("--no-inspector") && !args.contains("--library") { showInspector = storedInspector }
+        showBottom = storedBottom
+        lastFeatures = model.snapshot.timeline.filter { $0.rolled_back != true }.map(\.name)
         if showBom { bom.applyLaunchFlags(); BomSnapshot.runIfAsked(model: bom, design: model, pcb: pcb) }
         generate.launchHooks(design: model)
         if args.contains("--hand") {
@@ -678,10 +829,10 @@ struct CommandSearchField: View {
                 Spacer(minLength: VFSpace.s)
                 Text("⌘K").font(VFFont.micro).foregroundStyle(theme.inkTertiary)
             }
-            .font(.system(size: 12))
+            .font(VFFont.row)
             .foregroundStyle(theme.inkSecondary)
             .padding(.horizontal, VFSpace.m)
-            .frame(width: 180, height: 24)
+            .frame(width: 180, height: VFSize.buttonHeight)
             .background(RoundedRectangle(cornerRadius: VFRadius.control).fill(theme.well))
             .overlay(RoundedRectangle(cornerRadius: VFRadius.control).strokeBorder(theme.hairline))
             .contentShape(Rectangle())
@@ -695,6 +846,49 @@ struct CommandSearchField: View {
 struct UndoDepth: Equatable {
     var undo: Int
     var redo: Int
+}
+
+/// The BOM's undo state, watched to know the BOM was edited last.
+struct BomUndoState: Equatable {
+    var canUndo: Bool
+    var canRedo: Bool
+    var name: String?
+}
+
+/// The drag handle above the BOM panel: drag to resize between 200 pt and 720 pt, double-click
+/// for the default height. The height is kept with the window (P1-18).
+struct BomDivider: View {
+    @Environment(\.viaFormTheme) private var theme
+    @Binding var height: Double
+    @State private var start: Double?
+    @State private var hovered = false
+
+    var body: some View {
+        ZStack {
+            Rectangle().fill(hovered ? theme.accent.opacity(0.5) : theme.hairline).frame(height: hovered ? 2 : 1)
+        }
+        .frame(height: 7)
+        .frame(maxWidth: .infinity)
+        .contentShape(Rectangle())
+        .onHover { h in
+            hovered = h
+            if h { NSCursor.resizeUpDown.push() } else { NSCursor.pop() }
+        }
+        .gesture(DragGesture(minimumDistance: 1)
+            .onChanged { v in
+                let s = start ?? height
+                start = s
+                height = min(720, max(200, s - v.translation.height))
+            }
+            .onEnded { _ in start = nil })
+        .onTapGesture(count: 2) { height = 360 }
+        .accessibilityElement()
+        .accessibilityLabel("Bill of materials height")
+        .accessibilityValue(Text("\(Int(height)) points"))
+        .accessibilityAdjustableAction { d in
+            height = min(720, max(200, height + (d == .increment ? 40 : -40)))
+        }
+    }
 }
 
 /// `--window-size=1440x900` sizes the window in points at launch (screenshots, layout checks).

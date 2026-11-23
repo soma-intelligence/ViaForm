@@ -17,6 +17,10 @@ struct AssembleCanvas: View {
     var body: some View {
         ZStack(alignment: .topLeading) {
             AssembleSceneView(model: model, scene: scene, labels: labels, dark: theme.isDark)
+                .accessibilityElement()
+                .accessibilityLabel(Text("Assembly viewport"))
+                .accessibilityValue(Text(viewportSummary))
+                .accessibilityHint(Text("Set joint values and the tip target in the inspector"))
             overlay
                 .allowsHitTesting(false)
         }
@@ -29,30 +33,30 @@ struct AssembleCanvas: View {
     @ViewBuilder private var overlay: some View {
         GeometryReader { _ in
             if let p = labels.jointPoint, let j = model.selected, model.tool != .dragTip, model.tool != .grasp {
-                Text(String(format: "%.0f %@", labels.jointValue ?? model.q[j.id] ?? 0, j.unit))
-                    .font(.system(size: 13, weight: .semibold).monospacedDigit())
-                    .foregroundStyle(.white)
-                    .padding(.horizontal, 7).frame(height: 22)
-                    .background(RoundedRectangle(cornerRadius: 5).fill(theme.accent))
+                Text(AsmFormat.value(labels.jointValue ?? model.q[j.id] ?? 0, j))
+                    .font(VFFont.rowEmphasis)
+                    .foregroundStyle(theme.onAccent)
+                    .padding(.horizontal, VFSpace.s).frame(height: VFSize.chip)
+                    .background(RoundedRectangle(cornerRadius: VFRadius.chip).fill(theme.accent))
                     .position(x: p.x, y: p.y - 58)
             }
             if model.tool == .dragTip, labels.shortBy > 0.5, let p = labels.targetPoint {
-                Text(String(format: "%.0f mm out of reach", labels.shortBy))
+                Label(String(localized: "\(VFFormat.length(labels.shortBy.rounded())) out of reach"), systemImage: "exclamationmark.triangle.fill")
                     .font(VFFont.row.weight(.medium))
                     .foregroundStyle(theme.ink)
-                    .padding(.horizontal, 6).frame(height: 20)
-                    .background(RoundedRectangle(cornerRadius: 4).fill(theme.floating.opacity(0.85)))
+                    .padding(.horizontal, VFSpace.s).frame(height: VFSize.chip)
+                    .vfSurface(.floating, radius: VFRadius.chip)
                     .position(x: p.x - 20, y: p.y - 22)
             }
             if model.tool == .grasp {
                 ForEach(model.grasp.fingers) { f in
                     if let p = labels.tipPoints[f.frame] {
                         Text("\(f.priority)")
-                            .font(.system(size: 11, weight: .bold).monospacedDigit())
-                            .foregroundStyle(.white)
+                            .font(VFFont.micro.weight(.bold))
+                            .foregroundStyle(theme.onAccent)
                             .frame(width: 20, height: 20)
                             .background(Circle().fill(Color(platform: AssembleScene.fingerColour(f.priority))))
-                            .overlay(Circle().strokeBorder(.white, lineWidth: 1.5))
+                            .overlay(Circle().strokeBorder(theme.onAccent, lineWidth: 1.5))
                             .position(x: p.x + 16, y: p.y - 16)
                     }
                 }
@@ -63,7 +67,8 @@ struct AssembleCanvas: View {
     private var legend: some View {
         HStack(spacing: VFSpace.m) {
             if model.tool == .dragTip {
-                Label(model.ik.reached ? "Tip on target" : String(format: "%.0f mm short", model.ik.shortBy), systemImage: model.ik.reached ? "scope" : "exclamationmark.triangle")
+                Label(model.ik.reached ? String(localized: "Tip on target") : String(localized: "\(VFFormat.length(model.ik.shortBy.rounded())) short"),
+                      systemImage: model.ik.reached ? "scope" : "exclamationmark.triangle.fill")
                     .foregroundStyle(model.ik.reached ? theme.inkSecondary : theme.warning)
                 Text("Drag the arrows, rings or centre. Esc restores the pose.").foregroundStyle(theme.inkTertiary)
             } else if model.tool == .grasp {
@@ -73,21 +78,31 @@ struct AssembleCanvas: View {
             }
         }
         .font(VFFont.small)
-        .padding(.horizontal, VFSpace.m).frame(height: 24)
-        .background(Capsule().fill(theme.floating.opacity(0.8)))
+        .padding(.horizontal, VFSpace.m).frame(minHeight: VFSize.chip + 2)
+        .vfSurface(.floating, radius: VFRadius.floating)
         .opacity(model.tool == .select && model.selected == nil ? 0 : 1)
+        .accessibilityHidden(model.tool == .select && model.selected == nil)
+    }
+
+    /// What VoiceOver reads for the viewport: the tool and its state.
+    private var viewportSummary: String {
+        switch model.tool {
+        case .dragTip:
+            model.ik.reached ? String(localized: "Tip on target")
+                             : String(localized: "Tip \(VFFormat.length(model.ik.shortBy.rounded())) out of reach")
+        case .grasp:
+            String(localized: "\(model.grasp.fingers.filter(\.reached).count) of \(model.grasp.fingers.count) fingertips reached")
+        default:
+            model.selected.map { String(localized: "\($0.title) at \(AsmFormat.value(model.q[$0.id] ?? 0, $0))") }
+                ?? String(localized: "\(model.joints.count) joints")
+        }
     }
 
     @ViewBuilder private var errorBanner: some View {
         if let e = model.error {
-            HStack(spacing: VFSpace.s) {
-                Image(systemName: "exclamationmark.triangle.fill").foregroundStyle(theme.warning)
-                Text(e).font(VFFont.small).foregroundStyle(theme.ink).lineLimit(2)
-                Button { model.clearError() } label: { Image(systemName: "xmark") }.buttonStyle(.plain)
-            }
-            .padding(.horizontal, VFSpace.l).padding(.vertical, VFSpace.s)
-            .vfSurface(.floating, radius: VFRadius.card)
-            .padding(.top, VFSpace.l)
+            ErrorBanner(message: e, retry: model.retry.map { r in { model.clearError(); r() } }, dismiss: { model.clearError() })
+                .padding(.top, VFSpace.l)
+                .padding(.horizontal, VFSpace.bannerInset)
         }
     }
 }

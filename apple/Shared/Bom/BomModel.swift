@@ -201,9 +201,15 @@ struct BomRow: Identifiable, Hashable {
     var unit: Double { roll.unitPrice ?? -1 }
     var extended: Double { roll.extended ?? -1 }
     var mass: Double { roll.massG ?? -1 }
-    var kind: String { roll.excluded ? "Excluded" : (roll.made ? "Made" : "Bought") }
+    var kind: String { roll.excluded ? String(localized: "Excluded") : (roll.made ? String(localized: "Made") : String(localized: "Bought")) }
     var flagCount: Int { roll.flags.count }
     var checked: String { roll.checkedOn ?? "" }
+
+    /// The row as one tab-separated line (Copy Row, Command-C).
+    var tsv: String {
+        [ref, title, line.manufacturer ?? "", mpn, "\(qty)", supplier,
+         roll.unitPrice.map { VFFormat.money($0) } ?? "", roll.extended.map { VFFormat.money($0) } ?? ""].joined(separator: "\t")
+    }
 }
 
 /// Labels and symbols of the rollup's flags.
@@ -233,22 +239,97 @@ enum BomFlag {
 
     /// Severe flags turn the row red; the others amber; the quiet ones only grey.
     static func severity(_ flags: [String]) -> Int {
-        if flags.contains(where: { ["unsourced", "out_of_stock", "lifecycle", "no_price", "not_in_file"].contains($0) }) { return 2 }
+        if flags.contains(where: { severe.contains($0) }) { return 2 }
         if flags.contains(where: { !quiet.contains($0) }) { return 1 }
         return flags.isEmpty ? 0 : -1
+    }
+
+    static let severe: Set<String> = ["unsourced", "out_of_stock", "lifecycle", "no_price", "not_in_file"]
+
+    /// The status column's word for a severity: never the colour alone.
+    static func word(_ severity: Int) -> String {
+        switch severity {
+        case 2: String(localized: "Problem")
+        case 1: String(localized: "Check")
+        case -1: String(localized: "Note")
+        default: String(localized: "OK")
+        }
+    }
+
+    /// The status column's symbol for a severity: a shape per state.
+    static func symbol(_ severity: Int) -> String {
+        switch severity {
+        case 2: "xmark.octagon.fill"
+        case 1: "exclamationmark.triangle.fill"
+        case -1: "info.circle"
+        default: "checkmark.circle"
+        }
     }
 }
 
 // MARK: Model
 
+/// A short confirmation for the panel to show as a toast ("Removed 2 lines" with Undo, "Exported
+/// bom.csv" with Reveal). The model sets it; the panel shows it once.
+struct BomNotice: Identifiable, Equatable {
+    let id = UUID()
+    var text: String
+    var undo = false
+    var reveal: URL? = nil
+}
+
+/// One part number the price check could not read, and why.
+struct BomRefreshFailure: Identifiable, Hashable, Sendable {
+    var line: String
+    var query: String
+    var reason: String
+    var offline: Bool
+    var id: String { line }
+}
+
+/// What the last price check did: "38 checked, 2 failed (offline)".
+struct BomRefreshSummary: Equatable {
+    var checked: Int
+    var failed: [BomRefreshFailure]
+    var offers: Int
+    var cancelled: Bool
+    var sources: [String]
+
+    var text: String {
+        let offline = !failed.isEmpty && failed.allSatisfy(\.offline)
+        var s = String(localized: "\(checked) checked")
+        if !failed.isEmpty {
+            s += offline ? String(localized: ", \(failed.count) failed (offline)") : String(localized: ", \(failed.count) failed")
+        } else if offers > 0 {
+            s += String(localized: ", \(offers) offers")
+        }
+        if cancelled { s += String(localized: ", stopped") }
+        return s
+    }
+}
+
 /// The BOM workspace: one bill of materials for the open project, filled from the design, the
 /// board and the component files, priced for N builds, refreshed through the library's sources.
+///
+/// Engine work runs off the main actor in the order it was asked for (`busy` says what runs);
+/// every edit and removal can be undone (`undo()`, `redo()`), the engine saving the whole bill
+/// before each change.
 @MainActor
 @Observable
 final class BomModel {
     enum Grouping: String, CaseIterable, Identifiable {
         case kind = "Made or Bought", none = "None", category = "Category", subassembly = "Subassembly", supplier = "Supplier", origin = "Source"
         var id: String { rawValue }
+        var title: String {
+            switch self {
+            case .kind: String(localized: "Made or Bought")
+            case .none: String(localized: "None")
+            case .category: String(localized: "Category")
+            case .subassembly: String(localized: "Subassembly")
+            case .supplier: String(localized: "Supplier")
+            case .origin: String(localized: "Source")
+            }
+        }
     }
 
     private let engine = BomEngine()
@@ -256,13 +337,28 @@ final class BomModel {
     var rollup = BomRollup(builds: 1, currency: "USD", today: "", lines: [], totals: BomTotals(), carts: [])
     var rows: [BomRow] = []
     var grouping = Grouping.kind
-    var selection: BomRow.ID?
+    /// The selected lines (several on the Mac table, for batch actions).
+    var selection: Set<BomRow.ID> = []
     var sortOrder: [KeyPathComparator<BomRow>] = []
     var filter = ""
     var onlyFlagged = false
+    /// The last error, shown until dismissed (the project file's save reads it as its reason).
     var message: String?
     var messageIsError = false
-    var refreshing = false
+    /// The last confirmation, shown once as a toast.
+    var notice: BomNotice?
+    /// What the engine is doing now ("Importing hand"), nil when idle.
+    private(set) var busy: String?
+    private var pending = 0
+
+    // Price check
+    private(set) var refreshing = false
+    private(set) var refreshDone = 0
+    private(set) var refreshTotal = 0
+    private(set) var refreshSummary: BomRefreshSummary?
+    /// Lines whose last check failed, by id, with the reason.
+    private(set) var refreshFailures: [String: BomRefreshFailure] = [:]
+    private var refreshTask: Task<Void, Never>?
 
     init() { apply { try engine.call("state") } }
 
@@ -271,21 +367,67 @@ final class BomModel {
         messageIsError = error
     }
 
-    /// Runs a call that answers the state, and shows it.
+    /// A confirmation: a toast in the panel.
+    func notify(_ text: String, undo: Bool = false, reveal: URL? = nil) {
+        notice = BomNotice(text: text, undo: undo, reveal: reveal)
+    }
+
+    // MARK: State
+
+    /// Shows the state a call answered.
     @discardableResult
-    private func apply(_ f: () throws -> Data) -> Bool {
+    private func show(_ data: Data) -> Bool {
         do {
-            let r = try BomEngine.decoder.decode(BomReply.self, from: f())
+            let r = try BomEngine.decoder.decode(BomReply.self, from: data)
             doc = r.state.bom
             rollup = r.state.rollup
             let rolls = Dictionary(uniqueKeysWithValues: rollup.lines.map { ($0.id, $0) })
             rows = doc.lines.compactMap { l in rolls[l.id].map { BomRow(line: l, roll: $0) } }
+            selection = selection.filter { id in rows.contains { $0.id == id } }
             return true
         } catch {
             say(error.localizedDescription, error: true)
             return false
         }
     }
+
+    /// Runs a call that answers the state on this thread (the calls that read the design or the
+    /// board sessions), and shows it.
+    @discardableResult
+    private func apply(_ f: () throws -> Data) -> Bool {
+        do { return show(try f()) } catch {
+            say(error.localizedDescription, error: true)
+            return false
+        }
+    }
+
+    /// Runs a call off the main actor and shows the state it answers.
+    @discardableResult
+    private func applyAsync(_ method: String, _ params: [String: Any] = [:]) async -> Bool {
+        do { return show(try await engine.run(method, json: BomEngine.json(params))) } catch {
+            say(error.localizedDescription, error: true)
+            return false
+        }
+    }
+
+    /// The model's work queue: each job waits for the one before (an undo snapshot and its edit
+    /// stay together), `busy` names the running one.
+    private var chain: Task<Void, Never>?
+
+    private func enqueue(_ label: String?, _ work: @escaping @MainActor () async -> Void) {
+        let previous = chain
+        pending += 1
+        chain = Task { @MainActor in
+            await previous?.value
+            if let label { self.busy = label }
+            await work()
+            self.pending -= 1
+            if self.pending == 0 { self.busy = nil }
+        }
+    }
+
+    /// Waits for every job asked for so far.
+    func settle() async { await chain?.value }
 
     // MARK: What the table shows
 
@@ -306,22 +448,24 @@ final class BomModel {
         var id: String { name }
         var extended: Double { rows.compactMap(\.roll.extended).reduce(0, +) }
         var mass: Double { rows.compactMap(\.roll.massG).reduce(0, +) }
+        /// Lines counted in the group with no price yet.
+        var unpriced: Int { rows.filter { $0.roll.extended == nil && !$0.roll.excluded && $0.roll.perBuild > 0 }.count }
     }
 
     func key(_ r: BomRow) -> String {
         switch grouping {
         case .none: ""
-        case .kind: r.roll.excluded ? "Left out" : (r.roll.made ? "Made" : "Bought")
-        case .category: r.category.isEmpty ? "uncategorised" : r.category
+        case .kind: r.roll.excluded ? String(localized: "Left out") : (r.roll.made ? String(localized: "Made") : String(localized: "Bought"))
+        case .category: r.category.isEmpty ? String(localized: "Uncategorised") : r.category
         case .subassembly: r.subassembly
-        case .supplier: r.roll.made ? "Made in house" : (r.supplier.isEmpty ? "Unsourced" : r.supplier)
+        case .supplier: r.roll.made ? String(localized: "Made in house") : (r.supplier.isEmpty ? String(localized: "Unsourced") : r.supplier)
         case .origin: r.line.origin
         }
     }
 
     var groups: [Group] {
         let rows = visibleRows
-        guard grouping != .none else { return [Group(name: "All", rows: rows)] }
+        guard grouping != .none else { return [Group(name: String(localized: "All lines"), rows: rows)] }
         var order: [String] = []
         var by: [String: [BomRow]] = [:]
         for r in rows {
@@ -330,12 +474,17 @@ final class BomModel {
             by[k, default: []].append(r)
         }
         if grouping == .kind {
-            order.sort { (["Made", "Bought", "Left out"].firstIndex(of: $0) ?? 3) < (["Made", "Bought", "Left out"].firstIndex(of: $1) ?? 3) }
+            let rank = [String(localized: "Made"), String(localized: "Bought"), String(localized: "Left out")]
+            order.sort { (rank.firstIndex(of: $0) ?? 3) < (rank.firstIndex(of: $1) ?? 3) }
         } else if sortOrder.isEmpty { order.sort { $0.localizedStandardCompare($1) == .orderedAscending } }
         return order.map { Group(name: $0, rows: by[$0] ?? []) }
     }
 
-    var selected: BomRow? { rows.first { $0.id == selection } }
+    /// The one selected line (the detail shows it); nil when none or several are selected.
+    var selected: BomRow? { selection.count == 1 ? rows.first { selection.contains($0.id) } : nil }
+
+    /// Every selected line, in table order.
+    var selectedRows: [BomRow] { rows.filter { selection.contains($0.id) } }
 
     /// Made and bought, as the summary splits them: lines, parts per build, cost and mass.
     struct Split { var lines = 0; var parts = 0; var cost = 0.0; var mass = 0.0; var unpriced = 0 }
@@ -352,29 +501,161 @@ final class BomModel {
     }
     var currency: String { rollup.currency }
 
-    // MARK: Edits
+    /// Lines counted in the rollup with no price or cost yet.
+    var unpricedLines: Int { split(made: true).unpriced + split(made: false).unpriced }
 
-    func setBuilds(_ n: Int) { apply { try engine.call("set", ["builds": max(1, n)]) } }
+    // MARK: Undo
 
-    func edit(_ id: String, _ changes: [String: Any]) { apply { try engine.call("edit", ["id": id, "changes": changes]) } }
+    private struct Step { var name: String; var file: URL }
+    private var undoStack: [Step] = []
+    private var redoStack: [Step] = []
+    private static let undoLimit = 40
 
-    func setQty(_ row: BomRow, _ n: Int) { if n >= 0, n != row.line.perBuild { edit(row.id, ["qty": n]) } }
+    var canUndo: Bool { !undoStack.isEmpty }
+    var canRedo: Bool { !redoStack.isEmpty }
+    /// "Remove 2 Lines", for the Edit menu's "Undo Remove 2 Lines".
+    var undoName: String? { undoStack.last?.name }
+    var redoName: String? { redoStack.last?.name }
 
-    func setNotes(_ row: BomRow, _ text: String) { if text != (row.line.userNotes ?? "") { edit(row.id, ["notes": text]) } }
+    private static var undoFolder: URL {
+        let u = FileManager.default.temporaryDirectory.appendingPathComponent("viaform-bom-undo", isDirectory: true)
+        try? FileManager.default.createDirectory(at: u, withIntermediateDirectories: true)
+        return u
+    }
 
-    func setSupplier(_ row: BomRow, _ s: String?) { edit(row.id, ["supplier": s ?? NSNull()]) }
+    /// The whole bill as the engine has it now, in a file.
+    private func snapshot() async -> URL? {
+        let u = Self.undoFolder.appendingPathComponent(UUID().uuidString + ".json")
+        do {
+            _ = try await engine.run("save", json: BomEngine.json(["path": u.path]))
+            return u
+        } catch { return nil }
+    }
 
-    func setExcluded(_ row: BomRow, _ on: Bool) { edit(row.id, ["excluded": on]) }
+    private func drop(_ steps: [Step]) { for s in steps { try? FileManager.default.removeItem(at: s.file) } }
 
-    func addLine() {
-        if apply({ try engine.call("add", ["line": ["description": "New part", "category": "other"]]) }) {
-            selection = rows.last(where: { $0.line.origin == "manual" })?.id
+    private func clearHistory() {
+        drop(undoStack + redoStack)
+        undoStack = []
+        redoStack = []
+    }
+
+    /// One undoable change: the bill is saved, then each call runs in order. Answers whether the
+    /// last call worked.
+    @discardableResult
+    private func change(_ name: String, _ calls: [(String, [String: Any])]) async -> Bool {
+        let before = await snapshot()
+        var ok = true
+        for (method, params) in calls where ok { ok = await applyAsync(method, params) }
+        if ok, let before {
+            undoStack.append(Step(name: name, file: before))
+            if undoStack.count > Self.undoLimit { drop([undoStack.removeFirst()]) }
+            drop(redoStack)
+            redoStack = []
+        } else if let before {
+            try? FileManager.default.removeItem(at: before)
+        }
+        return ok
+    }
+
+    func undo() {
+        enqueue(String(localized: "Undoing")) { [self] in
+            guard let step = undoStack.popLast() else { return }
+            let now = await snapshot()
+            if await applyAsync("load", ["path": step.file.path]) {
+                if let now { redoStack.append(Step(name: step.name, file: now)) }
+                try? FileManager.default.removeItem(at: step.file)
+            } else {
+                undoStack.append(step)
+            }
         }
     }
 
-    func remove(_ row: BomRow) { apply { try engine.call("remove", ["id": row.id]) } }
+    func redo() {
+        enqueue(String(localized: "Redoing")) { [self] in
+            guard let step = redoStack.popLast() else { return }
+            let now = await snapshot()
+            if await applyAsync("load", ["path": step.file.path]) {
+                if let now { undoStack.append(Step(name: step.name, file: now)) }
+                try? FileManager.default.removeItem(at: step.file)
+            } else {
+                redoStack.append(step)
+            }
+        }
+    }
 
-    func removeOrigin(_ origin: String) { apply { try engine.call("remove_origin", ["origin": origin]) } }
+    // MARK: Edits
+
+    func setBuilds(_ n: Int) {
+        let n = max(1, n)
+        enqueue(nil) { [self] in await applyAsync("set", ["builds": n]) }
+    }
+
+    private func edit(_ name: String, _ ids: [String], _ changes: [String: Any]) {
+        let calls: [(String, [String: Any])] = ids.map { ("edit", ["id": $0, "changes": changes]) }
+        enqueue(nil) { [self] in await change(name, calls) }
+    }
+
+    /// The count per build; negative counts are refused (the field says so before it gets here).
+    func setQty(_ row: BomRow, _ n: Int) {
+        guard n >= 0, n != row.line.perBuild else { return }
+        edit(String(localized: "Change Quantity"), [row.id], ["qty": n])
+    }
+
+    func setNotes(_ row: BomRow, _ text: String) {
+        guard text != (row.line.userNotes ?? "") else { return }
+        edit(String(localized: "Edit Notes"), [row.id], ["notes": text])
+    }
+
+    func setSupplier(_ row: BomRow, _ s: String?) {
+        edit(String(localized: "Choose Supplier"), [row.id], ["supplier": s ?? NSNull()])
+    }
+
+    func setExcluded(_ row: BomRow, _ on: Bool) { setExcluded([row], on) }
+
+    func setExcluded(_ rows: [BomRow], _ on: Bool) {
+        let ids = rows.filter { $0.roll.excluded != on }.map(\.id)
+        guard !ids.isEmpty else { return }
+        edit(on ? String(localized: "Leave Out of Rollup") : String(localized: "Include in Rollup"), ids, ["excluded": on])
+    }
+
+    func addLine() {
+        enqueue(String(localized: "Adding a line")) { [self] in
+            if await change(String(localized: "Add Line"), [("add", ["line": ["description": String(localized: "New part"), "category": "other"]])]),
+               let id = rows.last(where: { $0.line.origin == "manual" })?.id {
+                selection = [id]
+            }
+        }
+    }
+
+    /// Lines a reader can remove: the ones added by hand (imported lines come back with their file).
+    func removable(_ rows: [BomRow]) -> [BomRow] { rows.filter { $0.line.origin == "manual" } }
+
+    func remove(_ row: BomRow) { remove([row]) }
+
+    /// Removes the lines and offers Undo in a toast.
+    func remove(_ rows: [BomRow]) {
+        let ids = removable(rows).map(\.id)
+        guard !ids.isEmpty else { return }
+        let name = ids.count == 1 ? String(localized: "Remove Line") : String(localized: "Remove \(ids.count) Lines")
+        enqueue(String(localized: "Removing")) { [self] in
+            if await change(name, ids.map { ("remove", ["id": $0]) }) {
+                selection.subtract(ids)
+                notify(ids.count == 1 ? String(localized: "Removed 1 line") : String(localized: "Removed \(ids.count) lines"), undo: true)
+            }
+        }
+    }
+
+    /// Removes every line of one import (a component file, the design, the board); Undo brings
+    /// them back.
+    func removeOrigin(_ origin: String) {
+        let n = doc.imports.first { $0.origin == origin }?.lines ?? rows.filter { $0.line.origin == origin }.count
+        enqueue(String(localized: "Removing \(origin)")) { [self] in
+            if await change(String(localized: "Remove \(origin)"), [("remove_origin", ["origin": origin])]) {
+                notify(String(localized: "Removed \(origin) (\(n) lines)"), undo: true)
+            }
+        }
+    }
 
     // MARK: Sources
 
@@ -393,13 +674,17 @@ final class BomModel {
     }
 
     func importFile(_ url: URL) {
-        let scoped = url.startAccessingSecurityScopedResource()
-        defer { if scoped { url.stopAccessingSecurityScopedResource() } }
-        var isDir: ObjCBool = false
-        if FileManager.default.fileExists(atPath: url.path, isDirectory: &isDir), isDir.boolValue {
-            if apply({ try engine.call("import_dir", ["dir": url.path]) }) { say("Imported the component files of \(url.lastPathComponent)") }
-        } else if apply({ try engine.call("import_file", ["path": url.path]) }) {
-            say("Imported \(url.lastPathComponent)")
+        enqueue(String(localized: "Importing \(url.lastPathComponent)")) { [self] in
+            let scoped = url.startAccessingSecurityScopedResource()
+            defer { if scoped { url.stopAccessingSecurityScopedResource() } }
+            var isDir: ObjCBool = false
+            if FileManager.default.fileExists(atPath: url.path, isDirectory: &isDir), isDir.boolValue {
+                if await change(String(localized: "Import"), [("import_dir", ["dir": url.path])]) {
+                    notify(String(localized: "Imported the component files of \(url.lastPathComponent)"), undo: true)
+                }
+            } else if await change(String(localized: "Import"), [("import_file", ["path": url.path])]) {
+                notify(String(localized: "Imported \(url.lastPathComponent)"), undo: true)
+            }
         }
     }
 
@@ -418,50 +703,96 @@ final class BomModel {
     /// (made parts with their meshes, real components matched by component_ref and rolled up,
     /// the component file's sourcing), else the component file alone.
     func importAssemblies(_ names: [String]) {
+        enqueue(String(localized: "Importing \(names.joined(separator: ", "))")) { [self] in
+            await runImportAssemblies(names)
+        }
+    }
+
+    private func runImportAssemblies(_ names: [String]) async {
         var done: [String] = []
         var issues: [String] = []
         for n in names {
             if let asm = Self.assemblyFile(n) {
-                if let r = importAssembly(asm) {
+                if let r = await importAssemblyAsync(asm) {
                     done.append(n)
                     issues += r
                 }
             } else if let dir = Self.componentsFolder {
                 let u = dir.appendingPathComponent("\(n).json")
-                if FileManager.default.fileExists(atPath: u.path), apply({ try engine.call("import_file", ["path": u.path]) }) { done.append(n) }
+                if FileManager.default.fileExists(atPath: u.path), await change(String(localized: "Import"), [("import_file", ["path": u.path])]) { done.append(n) }
             }
         }
         assemblyIssues = issues
-        if done.isEmpty { return say("Nothing to import for \(names.joined(separator: ", "))", error: true) }
+        if done.isEmpty { return say(String(localized: "Nothing to import for \(names.joined(separator: ", "))"), error: true) }
         let t = rollup.totals
-        say("Imported \(done.joined(separator: " and ")): \(t.madeLines) made, \(t.boughtLines) bought" + (issues.isEmpty ? "" : ". " + issues.joined(separator: "; ")), error: !issues.isEmpty)
+        let what = String(localized: "Imported \(done.joined(separator: " and ")): \(t.madeLines) made, \(t.boughtLines) bought")
+        if issues.isEmpty { notify(what, undo: true) } else { say(what + ". " + issues.joined(separator: "; "), error: true) }
     }
 
-    /// Imports one generated assembly with its component file; answers what does not line up.
+    /// Imports one generated assembly on this thread and answers what does not line up (the
+    /// Generate self-test reads the result right away; the panel uses the queued import).
     @discardableResult
     func importAssembly(_ url: URL) -> [String]? {
-        var result: [String: Any] = [:]
-        let ok = apply {
-            let d = try engine.call("import_assembly", ["path": url.path])
-            result = ((try? JSONSerialization.jsonObject(with: d)) as? [String: Any])?["result"] as? [String: Any] ?? [:]
-            return d
-        }
-        guard ok else { return nil }
+        var data = Data()
+        guard apply({ data = try engine.call("import_assembly", ["path": url.path]); return data }) else { return nil }
+        return Self.issues(data, url)
+    }
+
+    private static func issues(_ data: Data, _ url: URL) -> [String] {
+        let result = ((try? JSONSerialization.jsonObject(with: data)) as? [String: Any])?["result"] as? [String: Any] ?? [:]
         let name = result["assembly"] as? String ?? url.deletingLastPathComponent().lastPathComponent
         var issues: [String] = []
-        if let m = result["missing_from_file"] as? [String], !m.isEmpty { issues.append("\(name): \(m.joined(separator: ", ")) not in the component file") }
-        if let m = result["not_placed"] as? [String], !m.isEmpty { issues.append("\(name): \(m.joined(separator: ", ")) not placed") }
-        if result["components"] is NSNull || result["components"] == nil { issues.append("\(name): no component file") }
+        if let m = result["missing_from_file"] as? [String], !m.isEmpty { issues.append(String(localized: "\(name): \(m.joined(separator: ", ")) not in the component file")) }
+        if let m = result["not_placed"] as? [String], !m.isEmpty { issues.append(String(localized: "\(name): \(m.joined(separator: ", ")) not placed")) }
+        if result["components"] is NSNull || result["components"] == nil { issues.append(String(localized: "\(name): no component file")) }
         return issues
     }
 
+    /// Imports one generated assembly with its component file, off the main actor, undoable;
+    /// answers what does not line up.
+    private func importAssemblyAsync(_ url: URL) async -> [String]? {
+        let before = await snapshot()
+        let data: Data
+        do { data = try await engine.run("import_assembly", json: BomEngine.json(["path": url.path])) } catch {
+            if let before { try? FileManager.default.removeItem(at: before) }
+            say(error.localizedDescription, error: true)
+            return nil
+        }
+        guard show(data) else { return nil }
+        if let before {
+            undoStack.append(Step(name: String(localized: "Import"), file: before))
+            drop(redoStack)
+            redoStack = []
+        }
+        return Self.issues(data, url)
+    }
+
+    /// Reads the design's parts (the design session is read on the main actor, after the
+    /// queued work).
     func syncDesign(_ design: DesignModel) {
-        if apply({ try engine.call("sync_design", design: design.engine.session) }) { say("Design parts brought in") }
+        enqueue(String(localized: "Bringing in design parts")) { [self] in
+            await settleEngine()
+            let before = await snapshot()
+            if apply({ try engine.call("sync_design", design: design.engine.session) }) {
+                if let before { undoStack.append(Step(name: String(localized: "Bring In Design Parts"), file: before)) }
+                notify(String(localized: "Design parts brought in"), undo: before != nil)
+            }
+        }
     }
 
     func syncPCB(_ pcb: PCBModel) {
-        if apply({ try engine.call("sync_pcb", pcb: pcb.engine.session) }) { say("PCB components brought in") }
+        enqueue(String(localized: "Bringing in PCB components")) { [self] in
+            await settleEngine()
+            let before = await snapshot()
+            if apply({ try engine.call("sync_pcb", pcb: pcb.engine.session) }) {
+                if let before { undoStack.append(Step(name: String(localized: "Bring In PCB Components"), file: before)) }
+                notify(String(localized: "PCB components brought in"), undo: before != nil)
+            }
+        }
     }
+
+    /// Lets the engine queue drain before a call that waits on it from the main actor.
+    private func settleEngine() async { _ = try? await engine.run("state", json: "{}") }
 
     /// Selecting a design line lights its bodies in the viewport.
     func highlight(_ design: DesignModel) {
@@ -481,54 +812,109 @@ final class BomModel {
         var keys: [String: [String: String]]?
     }
 
-    private struct PlanItem: Decodable { var line: String; var query: String }
+    struct PlanItem: Decodable, Hashable, Sendable { var line: String; var query: String }
 
-    /// Searches each part number of the BOM in the distributor sources whose keys are in the
-    /// Keychain, and folds the exact matches in (price breaks, stock, checked today).
-    func refreshPrices() async {
-        guard let library = LibraryEngine() else { return say("The library could not be opened", error: true) }
+    /// Checks each part number of the BOM in the distributor sources whose keys are in the
+    /// Keychain and folds the exact matches in (price breaks, stock, checked today). Runs in the
+    /// background, line by line; a failed line does not stop the others; Stop cancels.
+    func refreshPrices() { startRefresh(nil) }
+
+    /// Checks again only the lines the last check could not read.
+    func retryFailed() {
+        let items = refreshFailures.values.map { PlanItem(line: $0.line, query: $0.query) }
+        guard !items.isEmpty else { return }
+        startRefresh(items)
+    }
+
+    func cancelRefresh() { refreshTask?.cancel() }
+
+    private func startRefresh(_ only: [PlanItem]?) {
+        guard refreshTask == nil else { return }
         refreshing = true
-        defer { refreshing = false }
+        refreshDone = 0
+        refreshTotal = 0
+        refreshTask = Task { [self] in
+            await chain?.value
+            await runRefresh(only)
+            refreshing = false
+            refreshTask = nil
+        }
+    }
+
+    private func runRefresh(_ only: [PlanItem]?) async {
+        guard let library = LibraryEngine() else { return say(String(localized: "The parts library could not be opened. Check that ViaForm can write to its Application Support folder."), error: true) }
         do {
             let state = try await library.call("state", LibParams(), as: LibraryState.self)
-            let apis = state.sources.filter { $0.access == "api" && $0.enabled && LibraryKeychain.ready($0) }
-            guard !apis.isEmpty else {
-                return say("No distributor keys in the Keychain: add DigiKey, Mouser or Octopart keys in Libraries > Sources", error: true)
+            let candidates = state.sources.filter { $0.access == "api" && $0.enabled }
+            // Keychain reads off the main actor.
+            let keyed = await Task.detached { () -> [(LibrarySource, [String: String])] in
+                candidates.filter(LibraryKeychain.ready).map { ($0, LibraryKeychain.keys($0)) }
+            }.value
+            guard !keyed.isEmpty else {
+                return say(String(localized: "No distributor keys in the Keychain. Add DigiKey, Mouser or Octopart keys in Libraries, Sources."), error: true)
             }
             var keys: [String: [String: String]] = [:]
-            for s in apis { keys[s.id] = LibraryKeychain.keys(s) }
-            let plan = try BomEngine.decoder.decode([PlanItem].self, from: planData())
-            var offers = 0
-            for (i, item) in plan.enumerated() {
-                say("Checking \(item.query) (\(i + 1) of \(plan.count))")
-                let hits = try await library.call("search", LibParams(query: item.query, only: apis.map(\.id), keys: keys), as: [LibraryHits].self)
-                let data = try LibraryEngine.encoder.encode(hits)
-                let raw = try JSONSerialization.jsonObject(with: data)
-                let reply = try engine.call("apply_hits", ["mpn": item.query, "hits": raw])
-                if let obj = try JSONSerialization.jsonObject(with: reply) as? [String: Any], let r = obj["result"] as? [String: Any] {
-                    offers += r["offers"] as? Int ?? 0
-                }
+            for (s, k) in keyed { keys[s.id] = k }
+            let ids = keyed.map(\.0.id)
+            let plan: [PlanItem]
+            if let only { plan = only } else {
+                let d = try await engine.run("refresh_plan", json: "{}")
+                let obj = try JSONSerialization.jsonObject(with: d) as? [String: Any]
+                plan = try BomEngine.decoder.decode([PlanItem].self, from: JSONSerialization.data(withJSONObject: obj?["result"] ?? []))
             }
-            apply { try engine.call("state") }
-            say("Checked \(plan.count) part numbers with \(apis.map(\.name).joined(separator: ", ")): \(offers) offers")
+            refreshTotal = plan.count
+            var failed: [BomRefreshFailure] = []
+            var offers = 0
+            var cancelled = false
+            for item in plan {
+                if Task.isCancelled { cancelled = true; break }
+                if !VFNetwork.shared.online {
+                    failed.append(BomRefreshFailure(line: item.line, query: item.query, reason: String(localized: "Offline"), offline: true))
+                    refreshDone += 1
+                    continue
+                }
+                do {
+                    let hits = try await library.call("search", LibParams(query: item.query, only: ids, keys: keys), as: [LibraryHits].self)
+                    let errors = hits.compactMap(\.error)
+                    if !hits.isEmpty, errors.count == hits.count {
+                        failed.append(BomRefreshFailure(line: item.line, query: item.query, reason: errors[0], offline: !VFNetwork.shared.online))
+                    } else {
+                        let raw = try JSONSerialization.jsonObject(with: LibraryEngine.encoder.encode(hits))
+                        let reply = try await engine.run("apply_hits", json: BomEngine.json(["mpn": item.query, "hits": raw]))
+                        if let obj = try JSONSerialization.jsonObject(with: reply) as? [String: Any], let r = obj["result"] as? [String: Any] {
+                            offers += r["offers"] as? Int ?? 0
+                        }
+                    }
+                } catch {
+                    failed.append(BomRefreshFailure(line: item.line, query: item.query, reason: error.localizedDescription, offline: !VFNetwork.shared.online))
+                }
+                refreshDone += 1
+            }
+            await applyAsync("state")
+            if only != nil {
+                for item in plan { refreshFailures[item.line] = nil }
+            } else {
+                refreshFailures = [:]
+            }
+            for f in failed { refreshFailures[f.line] = f }
+            refreshSummary = BomRefreshSummary(checked: refreshDone - failed.count, failed: failed, offers: offers,
+                                               cancelled: cancelled, sources: keyed.map(\.0.name))
+            if failed.isEmpty { say(nil) }
         } catch {
             say(error.localizedDescription, error: true)
         }
     }
 
-    private func planData() throws -> Data {
-        let d = try engine.call("refresh_plan")
-        let obj = try JSONSerialization.jsonObject(with: d) as? [String: Any]
-        return try JSONSerialization.data(withJSONObject: obj?["result"] ?? [])
-    }
-
     // MARK: Export and project files
 
-    func export(_ format: String, supplier: String? = nil) -> (text: String, filename: String)? {
+    /// The export's text and file name, made off the main actor.
+    func export(_ format: String, supplier: String? = nil) async -> (text: String, filename: String)? {
         var p: [String: Any] = ["format": format]
         if let supplier { p["supplier"] = supplier }
+        busy = String(localized: "Exporting")
+        defer { if pending == 0 { busy = nil } }
         do {
-            let e = try BomEngine.decoder.decode(BomExport.self, from: engine.call("export", p))
+            let e = try BomEngine.decoder.decode(BomExport.self, from: await engine.run("export", json: BomEngine.json(p)))
             return (e.text, e.filename)
         } catch {
             say(error.localizedDescription, error: true)
@@ -538,10 +924,12 @@ final class BomModel {
 
     /// Writes the project. The BOM panel's own Save then posts `.viaformProjectSaved`, so the
     /// pipeline writes its `flow.json` into the file too (`ProjectFiles.save` does that itself).
+    /// Synchronous: it reads the design and board sessions, which live on the main actor.
     @discardableResult
     func saveProject(_ url: URL, design: DesignModel, pcb: PCBModel) -> Bool {
+        say(nil)
         guard apply({ try engine.call("save_project", ["path": url.path], design: design.engine.session, pcb: pcb.engine.session) }) else { return false }
-        say("Saved \(url.lastPathComponent) with its bill of materials")
+        notify(String(localized: "Saved \(url.lastPathComponent) with its bill of materials"), reveal: url)
         return true
     }
 
@@ -551,22 +939,35 @@ final class BomModel {
     func openProject(_ url: URL, design: DesignModel, pcb: PCBModel) -> Bool {
         let scoped = url.startAccessingSecurityScopedResource()
         defer { if scoped { url.stopAccessingSecurityScopedResource() } }
+        say(nil)
         guard apply({ try engine.call("open_project", ["path": url.path], design: design.engine.session, pcb: pcb.engine.session) }) else { return false }
+        clearHistory()
+        refreshFailures = [:]
+        refreshSummary = nil
         design.refresh()
         design.zoomToFit()
         pcb.refresh()
-        say(doc.lines.isEmpty ? "Opened \(url.lastPathComponent) (no bill of materials in it)" : "Opened \(url.lastPathComponent)")
+        notify(doc.lines.isEmpty ? String(localized: "Opened \(url.lastPathComponent) (no bill of materials in it)") : String(localized: "Opened \(url.lastPathComponent)"))
         return true
     }
 
     /// The BOM panel's own Save and Open: the file, then the notification the pipeline follows.
+    /// The window's own models carry the pipeline along (never a broadcast: another window's
+    /// pipeline must not write into this file).
     func saveFromPanel(_ url: URL, design: DesignModel, pcb: PCBModel) {
-        if saveProject(url, design: design, pcb: pcb) { NotificationCenter.default.post(name: .viaformProjectSaved, object: url) }
+        if let c = ProjectFiles.context(for: design) {
+            ProjectFiles.save(url, in: c)
+        } else if saveProject(url, design: design, pcb: pcb) {
+            NotificationCenter.default.post(name: .viaformProjectSaved, object: url)
+        }
     }
 
     func openFromPanel(_ url: URL, design: DesignModel, pcb: PCBModel) {
+        if let c = ProjectFiles.context(for: design) {
+            ProjectFiles.open(url, in: c)
+            return
+        }
         guard openProject(url, design: design, pcb: pcb) else { return }
-        // The pipeline reads the file while the notification is delivered (synchronously, on main).
         let scoped = url.startAccessingSecurityScopedResource()
         defer { if scoped { url.stopAccessingSecurityScopedResource() } }
         NotificationCenter.default.post(name: .viaformProjectOpened, object: url)
@@ -587,7 +988,10 @@ final class BomModel {
         }
         if let a = args.first(where: { $0.hasPrefix("--bom-builds=") }), let n = Int(a.dropFirst(13)) { setBuilds(n) }
         if let a = args.first(where: { $0.hasPrefix("--bom-group=") }), let g = Grouping.allCases.first(where: { $0.rawValue.lowercased() == a.dropFirst(12).lowercased() }) { grouping = g }
-        if let a = args.first(where: { $0.hasPrefix("--bom-select=") }) { selection = String(a.dropFirst(13)) }
+        if let a = args.first(where: { $0.hasPrefix("--bom-select=") }) {
+            let id = String(a.dropFirst(13))
+            enqueue(nil) { [self] in selection = [id] }
+        }
     }
 
     static var launchRequested: Bool { ProcessInfo.processInfo.arguments.contains { $0 == "--bom" || $0.hasPrefix("--bom=") } }
@@ -596,13 +1000,25 @@ final class BomModel {
 // MARK: Formatting
 
 enum BomFormat {
+    /// Two decimals in the BOM's currency; "No price" when unknown (never "0", which reads as free).
     static func money(_ v: Double?, _ currency: String = "USD") -> String {
-        guard let v, v >= 0 else { return "" }
-        return v.formatted(.currency(code: currency).precision(.fractionLength(v < 1 && v > 0 ? 3 : 2)))
+        VFFormat.money(v, currency: currency)
     }
 
     static func mass(_ g: Double?) -> String {
-        guard let g, g >= 0 else { return "" }
+        guard let g, g >= 0 else { return String(localized: "No mass") }
         return g >= 1000 ? "\((g / 1000).formatted(.number.precision(.fractionLength(2)))) kg" : "\(g.formatted(.number.precision(.fractionLength(0...1)))) g"
+    }
+
+    /// "3 days ago" for an engine day; "Never" when there is none.
+    static func checked(_ iso: String?) -> String {
+        guard let iso, !iso.isEmpty else { return String(localized: "Never") }
+        return VFFormat.relativeDate(iso: iso)
+    }
+
+    /// The full date, for the tooltip of a relative one.
+    static func fullDate(_ iso: String?) -> String {
+        guard let iso, !iso.isEmpty else { return String(localized: "Never checked") }
+        return VFFormat.isoDate(iso)?.formatted(date: .long, time: .omitted) ?? iso
     }
 }

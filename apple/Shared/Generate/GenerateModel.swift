@@ -1,3 +1,4 @@
+import CoreGraphics
 import Foundation
 import Observation
 import simd
@@ -12,6 +13,14 @@ final class GenerateModel {
     enum Template: String, CaseIterable, Identifiable {
         case bracket = "Wall bracket", cantilever = "Cantilever", motorMount = "Motor mount", bridge = "Bridge"
         var id: String { rawValue }
+        var title: String {
+            switch self {
+            case .bracket: String(localized: "Wall bracket")
+            case .cantilever: String(localized: "Cantilever")
+            case .motorMount: String(localized: "Motor mount")
+            case .bridge: String(localized: "Bridge")
+            }
+        }
         var symbol: String {
             switch self {
             case .bracket: "l.square"
@@ -52,7 +61,12 @@ final class GenerateModel {
         }
     }
 
-    var study = GenerateModel.study(.cantilever)
+    var study = GenerateModel.study(.cantilever) {
+        didSet { if study != oldValue { recordEdit(from: oldValue) } }
+    }
+    /// The setup as it was last loaded (template, project study, sample): edits since then are
+    /// the user's own and are never replaced without asking.
+    private(set) var baseline = GenerateModel.study(.cantilever)
     var display = Display.setup
     var pane = Pane.study
     var selection: RegionKey?
@@ -62,7 +76,10 @@ final class GenerateModel {
     /// The study the candidates came from: building reruns exactly that one.
     private(set) var studied: Study?
     /// Preview geometry per candidate, built off the main actor with the outcome.
-    private(set) var previews: [PreviewMesh] = []
+    private(set) var previews: [PreviewMesh] = [] { didSet { previewsVersion += 1 } }
+    /// Bumped whenever the previews are rebuilt (a new outcome, a picked variant, a new colour
+    /// scale): the scene and the gallery follow it.
+    private(set) var previewsVersion = 0
     /// Counts outcomes, so views know when previews and thumbnails are new.
     private(set) var outcomeVersion = 0
     var selected: Int?
@@ -105,6 +122,58 @@ final class GenerateModel {
     /// Seconds the last results took to open once the engine finished (summary and surfaces).
     private(set) var openSeconds: Double?
     @ObservationIgnored private var fetchingPreview = false
+
+    // MARK: Gallery, camera and colours (kept here, so a return to Generate finds them)
+
+    /// Stills of the candidates, by index, for `thumbnailsFor` previews.
+    private(set) var thumbnails: [Int: CGImage] = [:]
+    /// Indices whose still was attempted (a surface may give none).
+    private(set) var thumbnailsDone: Set<Int> = []
+    @ObservationIgnored private var thumbnailsFor = -1
+    @ObservationIgnored private var thumbnailTask: Task<Void, Never>?
+    /// The preview's camera when the Generate view last closed.
+    @ObservationIgnored var camera: GenerateScene.CameraState?
+
+    /// Renders the gallery stills off the main actor, once per set of previews; a return to the
+    /// stage keeps the ones already made.
+    func renderThumbnails(theme: ViewportTheme) {
+        guard thumbnailsFor != previewsVersion else { return }
+        thumbnailsFor = previewsVersion
+        thumbnails = [:]
+        thumbnailsDone = []
+        thumbnailTask?.cancel()
+        let previews = previews, version = previewsVersion
+        thumbnailTask = Task { [weak self] in
+            for (i, p) in previews.enumerated() {
+                let image = await Task.detached(priority: .utility) {
+                    GenerateScene.thumbnail(p, size: CGSize(width: 320, height: 220), theme: theme)
+                }.value
+                guard let self, !Task.isCancelled, version == self.previewsVersion else { return }
+                if let image { self.thumbnails[i] = image }
+                self.thumbnailsDone.insert(i)
+            }
+        }
+    }
+
+    /// The stress heat map's colours; a change recolours the candidates off the main actor.
+    var stressScale: StressColors.Scale = StressColors.current {
+        didSet {
+            guard stressScale != oldValue else { return }
+            StressColors.current = stressScale
+            recolor()
+        }
+    }
+
+    private func recolor() {
+        guard let o = outcome, let s = studied, !o.candidates.isEmpty else { return }
+        let version = outcomeVersion
+        let candidates = o.candidates
+        Task { [weak self] in
+            let rebuilt = await Task.detached(priority: .userInitiated) { candidates.map { PreviewMesh.make($0, study: s) } }.value
+            guard let self, version == self.outcomeVersion else { return }
+            self.previews = rebuilt
+        }
+    }
 
     // MARK: Variants
 
@@ -156,6 +225,9 @@ final class GenerateModel {
         let args = ProcessInfo.processInfo.arguments
         if let name = GenerateProject.launchSample { openSample(name) }
         if let pick = args.first(where: { $0.hasPrefix("--generate-study=") })?.dropFirst(17), let e = project?.studies.first(where: { $0.name == pick }) { load(e) }
+        // What the app opened with is the start of the history, not a step to undo.
+        undoStack = []
+        redoStack = []
         if args.contains("--generate-run") { run() }
         // `--generate-explore`: run the default variants at once, then push the lightest
         // feasible one (else the first) to the results.
@@ -168,6 +240,9 @@ final class GenerateModel {
     /// The setup changed since the candidates were made.
     var stale: Bool { outcome != nil && studied != study && pickedVariant == nil }
 
+    /// The user changed the setup since it was loaded: replacing it asks first.
+    var studyEdited: Bool { study != baseline }
+
     var candidate: StudyCandidate? {
         guard let o = outcome, let s = selected, o.candidates.indices.contains(s) else { return nil }
         return o.candidates[s]
@@ -175,11 +250,129 @@ final class GenerateModel {
 
     func apply(_ t: Template) {
         let material = study.material
-        study = Self.study(t)
-        if t != .bridge { study.material = material }
+        var next = Self.study(t)
+        if t != .bridge { next.material = material }
+        named(String(localized: "Apply Template")) { study = next }
+        baseline = next
+        loadedStudy = nil
+        loadedRaw = nil
+        projectStudy = nil
         selection = nil
         activeCase = 0
         display = .setup
+    }
+
+    // MARK: Readiness
+
+    /// Why Run cannot start yet, naming the section to fill (nil when the study can run).
+    /// A project study unedited from its file runs as the file says (it may hold supports the
+    /// editor does not show).
+    var readiness: String? {
+        if loadedRaw != nil, study == loadedStudy { return nil }
+        if study.elementCount <= 0 { return String(localized: "Give the design space a size in Study.") }
+        if study.supports.isEmpty { return String(localized: "Add a support in Regions.") }
+        let loaded = study.cases.contains { !$0.loads.isEmpty || $0.acceleration != nil }
+        if !loaded { return String(localized: "Add a load in Regions.") }
+        return nil
+    }
+
+    /// The line under Run: what is missing, or what the study holds.
+    var readinessLine: String {
+        if let r = readiness { return r }
+        let loads = study.cases.reduce(0) { $0 + $1.loads.count }
+        return String(localized: "Ready: \(study.supports.count) supports, \(loads) loads in \(study.cases.count) cases")
+    }
+
+    // MARK: Undo
+
+    /// One step of the study's undo history: the setup before the change, and its name.
+    struct UndoStep: Identifiable {
+        let id = UUID()
+        let study: Study
+        let name: String
+    }
+
+    private(set) var undoStack: [UndoStep] = []
+    private(set) var redoStack: [UndoStep] = []
+    @ObservationIgnored private var lastEdit = Date.distantPast
+    @ObservationIgnored private var pendingName: String?
+    @ObservationIgnored private var restoring = false
+    @ObservationIgnored private var grouping = false
+
+    var canUndo: Bool { !running && !undoStack.isEmpty }
+    var canRedo: Bool { !running && !redoStack.isEmpty }
+    /// "Undo Study Change", or the named step ("Undo Remove Support").
+    var undoName: String { undoStack.last?.name ?? String(localized: "Study Change") }
+    var redoName: String { redoStack.last?.name ?? String(localized: "Study Change") }
+
+    /// Runs `change` as one named undo step.
+    private func named(_ name: String, _ change: () -> Void) {
+        pendingName = name
+        lastEdit = .distantPast
+        change()
+        pendingName = nil
+        lastEdit = .distantPast
+    }
+
+    /// Runs `change` (any number of edits) as one undo step named `name`.
+    func asOneStep(_ name: String, _ change: () -> Void) {
+        let before = study
+        let wasGrouping = grouping
+        grouping = true
+        change()
+        grouping = wasGrouping
+        if !wasGrouping, study != before {
+            undoStack.append(UndoStep(study: before, name: name))
+            redoStack.removeAll()
+        }
+        lastEdit = .distantPast
+    }
+
+    /// Records the setup before an edit. Edits closer than a second with the same name (typing,
+    /// dragging a region, a slider) coalesce into one step.
+    private func recordEdit(from old: Study) {
+        guard !restoring else { return }
+        redoStack.removeAll()
+        if grouping { return }
+        let name = pendingName ?? String(localized: "Study Change")
+        let now = Date()
+        if pendingName == nil, now.timeIntervalSince(lastEdit) < 1, undoStack.last?.name == name {
+            lastEdit = now
+            return
+        }
+        lastEdit = now
+        undoStack.append(UndoStep(study: old, name: name))
+        if undoStack.count > 100 { undoStack.removeFirst(undoStack.count - 100) }
+    }
+
+    func undo() {
+        guard canUndo, let step = undoStack.popLast() else { return }
+        redoStack.append(UndoStep(study: study, name: step.name))
+        restore(step.study)
+    }
+
+    func redo() {
+        guard canRedo, let step = redoStack.popLast() else { return }
+        undoStack.append(UndoStep(study: study, name: step.name))
+        restore(step.study)
+    }
+
+    /// Undoes `step` when it is still the latest one (a toast's Undo after a removal).
+    func undo(step id: UUID?) {
+        guard let id, undoStack.last?.id == id else { return }
+        undo()
+    }
+
+    /// The id of the latest undo step, for a toast to undo exactly that one.
+    var lastUndoID: UUID? { undoStack.last?.id }
+
+    private func restore(_ s: Study) {
+        restoring = true
+        study = s
+        restoring = false
+        lastEdit = .distantPast
+        if let key = selection, region(key) == nil { selection = nil }
+        activeCase = min(max(activeCase, 0), max(study.cases.count - 1, 0))
     }
 
     // MARK: Run
@@ -199,6 +392,7 @@ final class GenerateModel {
     /// it at the next one.
     func run() {
         let study = study
+        stopRequested = false
         error = nil
         notice = nil
         let job: GenerateJob
@@ -263,12 +457,12 @@ final class GenerateModel {
                 self.progress = job.progress
                 self.selected = o.candidates.indices.contains(o.best) ? o.best : (o.candidates.isEmpty ? nil : 0)
                 self.display = o.candidates.isEmpty ? .setup : .result
-                if o.candidates.isEmpty { self.error = "The study gave no candidates" }
+                if o.candidates.isEmpty { self.error = String(localized: "The study gave no candidates. Loosen the limits or add volume, then run again.") }
                 Self.calibrate(seconds: o.seconds > 0 ? o.seconds : Date().timeIntervalSince(self.startedAt ?? Date()), units: units, overhead: overhead)
                 self.afterRun?()
                 self.afterRun = nil
             case .failure(let e):
-                if e.localizedDescription == "cancelled" { self.notice = "Cancelled" } else { self.error = e.localizedDescription }
+                if e.localizedDescription == "cancelled" { self.notice = String(localized: "Stopped. The last results are kept.") } else { self.error = e.localizedDescription }
             }
         }
     }
@@ -292,22 +486,50 @@ final class GenerateModel {
         }
     }
 
+    func clearError() { error = nil }
+
     /// Holds the running study after its current iteration, or lets it go on.
     func togglePause() {
-        guard running, let job = runningJob else { return }
-        paused.toggle()
-        job.setPaused(paused)
+        guard running else { return }
+        _ = setPaused(!paused)
+    }
+
+    /// Pauses or resumes the running study (the jobs list calls this too); false when no study runs.
+    @discardableResult
+    func setPaused(_ on: Bool) -> Bool {
+        guard running, let job = runningJob else { return false }
+        if paused != on {
+            paused = on
+            job.setPaused(on)
+        }
+        return true
+    }
+
+    /// Seconds the running study has been going.
+    var runAge: Double { running ? Date().timeIntervalSince(startedAt ?? Date()) : 0 }
+
+    /// A stop that throws away more than this many seconds of solving asks first.
+    static let confirmStopAfter = 30.0
+
+    /// Set when a stop needs confirming; the Generate view shows the question.
+    var stopRequested = false
+
+    /// Stop from a button, a menu or the jobs list: at once for a young run, else asks first.
+    func requestStop() {
+        guard running else { return }
+        if runAge > Self.confirmStopAfter { stopRequested = true } else { cancel() }
     }
 
     /// Stops the running study: the engine stops at its next iteration and its answer is dropped.
     func cancel() {
+        stopRequested = false
         guard running else { return }
         runningJob?.cancel()
         runningJob = nil
         runID += 1
         running = false
         paused = false
-        notice = "Cancelled"
+        notice = String(localized: "Stopped. The last results are kept.")
     }
 
     // MARK: Variants
@@ -417,8 +639,11 @@ final class GenerateModel {
 
     // MARK: Project
 
-    /// Opens `docs/generative/<name>` and loads its first study.
-    func openSample(_ name: String) {
+    /// Opens the sample project `name` with its assembly and joints. Its first study becomes the
+    /// setup only when `replaceStudy` says so; by default (nil) only when the user has not edited
+    /// the setup, so opening a project from another stage never drops the user's study. The
+    /// replacement is one undo step.
+    func openSample(_ name: String, replaceStudy: Bool? = nil) {
         do {
             let p = try GenerateProject.open(name)
             project = p
@@ -426,16 +651,26 @@ final class GenerateModel {
             joints = p.assembly.map(AssemblyJoint.read) ?? []
             assemblySummary = p.assembly.map(AssemblyJoint.summary)
             pane = .project
-            if let first = p.firstStudy { load(first) }
+            if replaceStudy ?? !studyEdited, let first = p.firstStudy { load(first) }
         } catch {
             self.error = error.localizedDescription
         }
     }
 
-    /// Makes a project study the setup.
+    /// Opens the project's assembly and joints only, leaving the setup as it is (the grasp test
+    /// in Simulate reads the hand this way).
+    func openProjectOnly(_ name: String) {
+        guard project?.name != name else { return }
+        let keep = pane
+        openSample(name, replaceStudy: false)
+        pane = keep
+    }
+
+    /// Makes a project study the setup (one undo step).
     func load(_ e: GenerateProject.Entry) {
         guard !running else { return }
-        study = e.study
+        named(String(localized: "Open Study")) { study = e.study }
+        baseline = e.study
         loadedStudy = e.study
         loadedRaw = e.raw
         projectStudy = e.name
@@ -476,17 +711,47 @@ final class GenerateModel {
         }
     }
 
-    /// Drives one joint of the inserted assembly (degrees), as the joint tool does.
+    /// Joint values asked for since the last drive reached the engine, by joint name.
+    @ObservationIgnored private var pendingDrives: [String: Double] = [:]
+    @ObservationIgnored private var driveFlush: Task<Void, Never>?
+    @ObservationIgnored private var pendingRedraw = false
+
+    /// Drives one joint of the inserted assembly (degrees), as the joint tool does. The value
+    /// shows at once; the engine drive and the redraw are throttled to the display rate, so a
+    /// slider or the grasp loop never queues one engine call per tick.
     func drive(_ name: String, to value: Double, design: DesignModel, redraw: Bool = true) {
         guard assemblyLoaded, !EngineGate.shared.shut, let i = joints.firstIndex(where: { $0.name == name }) else { return }
         let v = min(max(value, joints[i].limits.lowerBound), joints[i].limits.upperBound)
         joints[i].value = v
-        do {
-            _ = try design.engine.execute("joint.drive", ["joint": name, "values": [String(format: "%.3f deg", v)]])
-        } catch {
-            design.flash("\(name): \(error.localizedDescription)", error: true)
+        pendingDrives[name] = v
+        if redraw { pendingRedraw = true }
+        scheduleDrives(design: design)
+    }
+
+    private func scheduleDrives(design: DesignModel) {
+        guard driveFlush == nil else { return }
+        driveFlush = Task { [weak self] in
+            try? await Task.sleep(for: .milliseconds(33))
+            self?.flushDrives(design: design)
         }
-        if redraw { design.rebuildScene() }
+    }
+
+    /// Sends every pending joint value to the engine, then redraws once.
+    func flushDrives(design: DesignModel) {
+        driveFlush?.cancel()
+        driveFlush = nil
+        let drives = pendingDrives
+        pendingDrives = [:]
+        guard !drives.isEmpty, !EngineGate.shared.shut else { return }
+        for (name, v) in drives.sorted(by: { $0.key < $1.key }) {
+            do {
+                _ = try design.engine.execute("joint.drive", ["joint": name, "values": [String(format: "%.3f deg", v)]])
+            } catch {
+                design.flash("\(name): \(error.localizedDescription)", error: true)
+            }
+        }
+        if pendingRedraw { design.rebuildScene() } else { design.refresh() }
+        pendingRedraw = false
     }
 
     /// Curls every finger and the thumb to the end of its flexion: a closed fist.
@@ -506,7 +771,6 @@ final class GenerateModel {
 
     private func pose(design: DesignModel, _ value: (AssemblyJoint) -> Double) {
         for j in joints where j.movable { drive(j.name, to: value(j), design: design, redraw: false) }
-        design.refresh()
     }
 
     /// Launch hooks for scripted runs and screenshots, through the same bridge as the panel:
@@ -678,14 +942,38 @@ final class GenerateModel {
         return nil
     }
 
-    func remove(_ key: RegionKey) {
+    /// What a region is called in undo names and toasts.
+    static func kindName(_ key: RegionKey) -> String {
         switch key {
-        case .support(let id): study.supports.removeAll { $0.id == id }
-        case .load(let id): if let (c, l) = load(id) { study.cases[c].loads.remove(at: l) }
-        case .keepOut(let id): study.keepOut.removeAll { $0.id == id }
-        case .keepIn(let id): study.keepIn.removeAll { $0.id == id }
+        case .support: String(localized: "Support")
+        case .load: String(localized: "Load")
+        case .keepOut: String(localized: "Keep-Out")
+        case .keepIn: String(localized: "Keep-In")
+        }
+    }
+
+    /// Removes a region as one undo step named after it.
+    func remove(_ key: RegionKey) {
+        named(String(localized: "Remove \(Self.kindName(key))")) {
+            switch key {
+            case .support(let id): study.supports.removeAll { $0.id == id }
+            case .load(let id): if let (c, l) = load(id) { study.cases[c].loads.remove(at: l) }
+            case .keepOut(let id): study.keepOut.removeAll { $0.id == id }
+            case .keepIn(let id): study.keepIn.removeAll { $0.id == id }
+            }
         }
         if selection == key { selection = nil }
+    }
+
+    /// Removes an impact as one undo step.
+    func removeImpact(_ id: UUID) {
+        named(String(localized: "Remove Impact")) { study.dynamics.impacts.removeAll { $0.id == id } }
+    }
+
+    func addImpact() {
+        named(String(localized: "Add Impact")) {
+            study.dynamics.impacts.append(StudyImpact(caseIndex: min(activeCase, max(study.cases.count - 1, 0))))
+        }
     }
 
     /// Picks a region, and the case its load belongs to.
@@ -698,6 +986,9 @@ final class GenerateModel {
     /// A drag in the preview starts moving `key`.
     func beginMove(_ key: RegionKey) {
         guard let r = region(key) else { return }
+        // The whole drag is one undo step (dropped again when nothing moved).
+        undoStack.append(UndoStep(study: study, name: String(localized: "Move \(Self.kindName(key))")))
+        grouping = true
         var center = Vec3.zero
         if case .load(let id) = key, let (c, l) = load(id) { center = study.cases[c].loads[l].center }
         moving = (key, r, center)
@@ -714,7 +1005,12 @@ final class GenerateModel {
         if case .load(let id) = m.key, let (c, l) = load(id) { study.cases[c].loads[l].center = m.center + snapped }
     }
 
-    func endMove() { moving = nil }
+    func endMove() {
+        moving = nil
+        if grouping, undoStack.last?.study == study { undoStack.removeLast() }
+        grouping = false
+        lastEdit = .distantPast
+    }
 
     // MARK: Adding
 
@@ -727,12 +1023,12 @@ final class GenerateModel {
     func addSupport() {
         let lo = simd_min(study.min, study.max), hi = simd_max(study.min, study.max)
         let s = StudySupport(region: .box(lo, Vec3(lo.x + max(study.voxel, 1), hi.y, hi.z)))
-        study.supports.append(s)
+        named(String(localized: "Add Support")) { study.supports.append(s) }
         select(.support(s.id))
     }
 
     func addLoad(_ kind: StudyLoad.Kind) {
-        if study.cases.isEmpty { study.cases = [StudyLoadCase(name: "Case 1")] }
+        if study.cases.isEmpty { study.cases = [StudyLoadCase(name: String(localized: "Case 1"))] }
         let c = min(max(activeCase, 0), study.cases.count - 1)
         let r = smallBox
         let load: StudyLoad
@@ -741,33 +1037,35 @@ final class GenerateModel {
         case .torque: load = .torque(r, center: r.middle, axis: Vec3(0, 0, 1), moment: 1000)
         case .pressure: load = .pressure(r, direction: Vec3(0, 0, -1), pressure: 0.1)
         }
-        study.cases[c].loads.append(load)
+        named(String(localized: "Add Load")) { study.cases[c].loads.append(load) }
         select(.load(load.id))
     }
 
     func addCase() {
-        study.cases.append(StudyLoadCase(name: "Case \(study.cases.count + 1)"))
+        named(String(localized: "Add Load Case")) { study.cases.append(StudyLoadCase(name: String(localized: "Case \(study.cases.count + 1)"))) }
         activeCase = study.cases.count - 1
     }
 
     func removeCase(_ i: Int) {
         guard study.cases.indices.contains(i), study.cases.count > 1 else { return }
-        study.cases.remove(at: i)
-        study.dynamics.impacts.removeAll { $0.caseIndex == i }
-        for k in study.dynamics.impacts.indices where study.dynamics.impacts[k].caseIndex > i { study.dynamics.impacts[k].caseIndex -= 1 }
+        var s = study
+        s.cases.remove(at: i)
+        s.dynamics.impacts.removeAll { $0.caseIndex == i }
+        for k in s.dynamics.impacts.indices where s.dynamics.impacts[k].caseIndex > i { s.dynamics.impacts[k].caseIndex -= 1 }
+        named(String(localized: "Remove Load Case")) { study = s }
         activeCase = min(activeCase, study.cases.count - 1)
         if case .load(let id)? = selection, load(id) == nil { selection = nil }
     }
 
     func addKeepOut() {
         let k = Study.Keyed(smallBox)
-        study.keepOut.append(k)
+        named(String(localized: "Add Keep-Out")) { study.keepOut.append(k) }
         select(.keepOut(k.id))
     }
 
     func addKeepIn() {
         let k = Study.Keyed(smallBox)
-        study.keepIn.append(k)
+        named(String(localized: "Add Keep-In")) { study.keepIn.append(k) }
         select(.keepIn(k.id))
     }
 

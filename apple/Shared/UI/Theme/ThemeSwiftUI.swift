@@ -1,4 +1,9 @@
 import SwiftUI
+#if os(macOS)
+import AppKit
+#else
+import UIKit
+#endif
 
 // SwiftUI side of the ViaForm tokens: the `viaFormTheme` environment value, the root modifier that
 // applies the user's Light / Dark / System setting, fonts, surfaces (materials) and small shared marks.
@@ -17,11 +22,14 @@ struct ViaFormTheme: Sendable {
     let mode: ThemeMode
     /// What is drawn (System resolved against the current appearance).
     let variant: ThemeVariant
-    var palette: VFPalette { variant.palette }
+    /// Increase Contrast is on: hairlines, strokes and secondary inks are stronger.
+    let highContrast: Bool
+    var palette: VFPalette { highContrast ? variant.highContrastPalette : variant.palette }
 
-    init(mode: ThemeMode = .default, systemIsDark: Bool = false) {
+    init(mode: ThemeMode = .default, systemIsDark: Bool = false, highContrast: Bool = false) {
         self.mode = mode
         self.variant = mode.resolve(systemIsDark: systemIsDark)
+        self.highContrast = highContrast
     }
 
     var colorScheme: ColorScheme { variant == .dark ? .dark : .light }
@@ -49,6 +57,9 @@ struct ViaFormTheme: Sendable {
     var success: Color { Color(vf: palette.success) }
     var warning: Color { Color(vf: palette.warning) }
     var danger: Color { Color(vf: palette.danger) }
+    /// Fill of the e-stop and destructive buttons, and its label.
+    var dangerFill: Color { Color(vf: palette.dangerFill) }
+    var onDanger: Color { Color(vf: palette.onDanger) }
     func status(_ s: VFStatus) -> Color { Color(vf: palette.status(s)) }
 
     // Stage chips
@@ -113,12 +124,16 @@ struct ViaFormThemeRoot: ViewModifier {
     private struct Resolve: ViewModifier {
         let mode: ThemeMode
         @Environment(\.colorScheme) private var system
+        @Environment(\.colorSchemeContrast) private var contrast
+        @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
 
         func body(content: Content) -> some View {
-            let theme = ViaFormTheme(mode: mode, systemIsDark: system == .dark)
+            let theme = ViaFormTheme(mode: mode, systemIsDark: system == .dark, highContrast: contrast == .increased)
             content
                 .environment(\.viaFormTheme, theme)
                 .environment(\.colorScheme, theme.colorScheme)
+                // Reduce Transparency: every vfSurface draws a flat, opaque fill instead of a material.
+                .environment(\.vfFlatSurfaces, reduceTransparency)
                 .tint(theme.accent)
         }
     }
@@ -144,30 +159,43 @@ struct ThemeModePicker: View {
         }
         .pickerStyle(.segmented)
         .fixedSize()
-        .help("Light is the default. System follows the Mac's or iPad's appearance.")
+        .help("System follows the Mac's or iPad's appearance. Light and Dark pin one.")
     }
 }
 
 // MARK: - Fonts
 
+/// The type scale as fonts. On the Mac the sizes are the token sizes (the Mac has no Dynamic
+/// Type for app text). On iPad and iPhone each token maps to the text style of the same default
+/// size, so every label follows the reader's text size (FRONTEND-SPEC 7.8).
 enum VFFont {
-    private static var bump: CGFloat {
-        #if os(iOS)
-        VFTypeScale.touchBump
-        #else
-        0
-        #endif
+    #if os(iOS)
+    static var micro: Font { .caption.weight(.medium).monospacedDigit() }
+    static var caps: Font { .footnote.weight(.semibold) }
+    static var small: Font { .footnote.monospacedDigit() }
+    static var row: Font { .subheadline.monospacedDigit() }
+    static var rowEmphasis: Font { .subheadline.weight(.semibold).monospacedDigit() }
+    static var title: Font { .headline }
+    static var heading: Font { .title2.weight(.semibold) }
+    static var hud: Font { .title.weight(.semibold).monospacedDigit() }
+    static var mono: Font { .footnote.monospaced() }
+    /// An SF Symbol inside a control, scaled with the text size.
+    static func glyph(_ size: CGFloat, weight: Font.Weight = .regular) -> Font {
+        .system(.body, weight: weight).leading(.tight)
     }
-
-    static var micro: Font { .system(size: VFTypeScale.micro + bump, weight: .medium).monospacedDigit() }
-    static var caps: Font { .system(size: VFTypeScale.caps + bump, weight: .semibold) }
-    static var small: Font { .system(size: VFTypeScale.small + bump).monospacedDigit() }
-    static var row: Font { .system(size: VFTypeScale.row + bump).monospacedDigit() }
-    static var rowEmphasis: Font { .system(size: VFTypeScale.row + bump, weight: .semibold).monospacedDigit() }
-    static var title: Font { .system(size: VFTypeScale.title + bump, weight: .semibold) }
-    static var heading: Font { .system(size: VFTypeScale.heading + bump, weight: .semibold) }
+    #else
+    static var micro: Font { .system(size: VFTypeScale.micro, weight: .medium).monospacedDigit() }
+    static var caps: Font { .system(size: VFTypeScale.caps, weight: .semibold) }
+    static var small: Font { .system(size: VFTypeScale.small).monospacedDigit() }
+    static var row: Font { .system(size: VFTypeScale.row).monospacedDigit() }
+    static var rowEmphasis: Font { .system(size: VFTypeScale.row, weight: .semibold).monospacedDigit() }
+    static var title: Font { .system(size: VFTypeScale.title, weight: .semibold) }
+    static var heading: Font { .system(size: VFTypeScale.heading, weight: .semibold) }
     static var hud: Font { .system(size: VFTypeScale.hud, weight: .semibold).monospacedDigit() }
-    static var mono: Font { .system(size: VFTypeScale.small + bump, design: .monospaced) }
+    static var mono: Font { .system(size: VFTypeScale.small, design: .monospaced) }
+    /// An SF Symbol inside a control.
+    static func glyph(_ size: CGFloat, weight: Font.Weight = .regular) -> Font { .system(size: size, weight: weight) }
+    #endif
 }
 
 /// Capitalised group caption: ribbon legends, BROWSER, PIPELINE OUTPUTS, inspector sections.
@@ -197,8 +225,12 @@ enum VFSurface {
     case panel
     /// Inset well inside a card.
     case well
-    /// Overlay floating on the viewport: material plus tint, stroke and shadow.
+    /// Overlay floating on the viewport that shows content (HUD numbers, cards, banners): a
+    /// near-opaque fill, stroke and shadow. Never glass (HIG: glass is for controls).
     case floating
+    /// Navigation and controls floating on the viewport (nav pill, context pill, iPad capsule and
+    /// tool groups, job capsule): Liquid Glass, or a flat fill under Reduce Transparency.
+    case control
 }
 
 struct VFSurfaceModifier: ViewModifier {
@@ -233,6 +265,16 @@ struct VFSurfaceModifier: ViewModifier {
                 }
                 .overlay(shape.strokeBorder(theme.floatingStroke, lineWidth: VFSize.hairline))
                 .shadow(color: .black.opacity(theme.isDark ? 0.35 : 0.12), radius: 10, y: 4)
+        case .control:
+            if flat {
+                content
+                    .background(shape.fill(Color(vf: theme.palette.floating.over(theme.palette.panel))))
+                    .overlay(shape.strokeBorder(theme.floatingStroke, lineWidth: VFSize.hairline))
+            } else {
+                content
+                    .glassEffect(.regular, in: shape)
+                    .overlay(theme.highContrast ? shape.strokeBorder(theme.floatingStroke, lineWidth: VFSize.hairline) : nil)
+            }
         }
     }
 }
@@ -245,6 +287,12 @@ extension View {
             case .panel: VFRadius.card
             case .well: VFRadius.well
             case .floating: VFRadius.floating
+            case .control:
+                #if os(iOS)
+                VFRadius.touchFloating
+                #else
+                VFRadius.floating
+                #endif
             }
         }()
         return modifier(VFSurfaceModifier(kind: kind, radius: r))
@@ -268,11 +316,15 @@ struct VFHairline: View {
     }
 }
 
-/// A pipeline status dot; running draws an open ring.
+/// A pipeline status mark. Never colour alone (FRONTEND-SPEC 5): each state has its own shape
+/// (filled dot current, triangle stale, cross failed, open ring running, hollow dot not built),
+/// a tooltip and a VoiceOver value with the reason when one is known.
 struct VFStatusDot: View {
     @Environment(\.viaFormTheme) private var theme
     let status: VFStatus
     var size: CGFloat = VFSize.dot
+    /// Why ("Frame v12 replaced v11"), read after the state.
+    var reason: String? = nil
 
     var body: some View {
         let color = theme.status(status)
@@ -284,22 +336,45 @@ struct VFStatusDot: View {
                     .frame(width: size + 3, height: size + 3)
             case .empty:
                 Circle().strokeBorder(color, lineWidth: 1).frame(width: size, height: size)
-            default:
+            case .stale:
+                VFTriangle().fill(color).frame(width: size + 2, height: size + 1)
+            case .failed:
+                Image(systemName: "xmark")
+                    .font(.system(size: size + 1, weight: .heavy))
+                    .foregroundStyle(color)
+                    .frame(width: size + 2, height: size + 2)
+            case .current:
                 Circle().fill(color).frame(width: size, height: size)
             }
         }
+        .frame(minWidth: size + 3, minHeight: size + 3)
+        .help(reason.map { "\(status.word): \($0)" } ?? status.word)
+        .accessibilityElement()
         .accessibilityLabel(Text(status.word))
+        .accessibilityValue(reason.map { Text($0) } ?? Text(""))
+    }
+}
+
+/// Upward triangle for the stale mark.
+struct VFTriangle: Shape {
+    func path(in r: CGRect) -> Path {
+        var p = Path()
+        p.move(to: CGPoint(x: r.midX, y: r.minY))
+        p.addLine(to: CGPoint(x: r.maxX, y: r.maxY))
+        p.addLine(to: CGPoint(x: r.minX, y: r.maxY))
+        p.closeSubpath()
+        return p
     }
 }
 
 extension VFStatus {
     var word: String {
         switch self {
-        case .current: "Up to date"
-        case .empty: "Not built yet"
-        case .stale: "Stale"
-        case .running: "Running"
-        case .failed: "Failed"
+        case .current: String(localized: "Up to date")
+        case .empty: String(localized: "Not built yet")
+        case .stale: String(localized: "Stale")
+        case .running: String(localized: "Running")
+        case .failed: String(localized: "Failed")
         }
     }
 }
@@ -325,22 +400,112 @@ extension ViaFormTheme {
 }
 
 /// The app's primary action (Done, Update, Re-run on Frame vN): the single accent, never a stage colour.
+/// Height follows the platform (44 pt on iPad); hover lightens on the Mac and with an iPad pointer.
 struct VFPrimaryButtonStyle: ButtonStyle {
-    @Environment(\.viaFormTheme) private var theme
-    @Environment(\.isEnabled) private var enabled
+    var isLoading = false
 
     func makeBody(configuration: Configuration) -> some View {
+        VFButtonBody(configuration: configuration, prominent: true, isLoading: isLoading)
+    }
+}
+
+/// The secondary action (Cancel, Show, Reveal): ink on a light wash, same size as the primary.
+struct VFSecondaryButtonStyle: ButtonStyle {
+    var isLoading = false
+
+    func makeBody(configuration: Configuration) -> some View {
+        VFButtonBody(configuration: configuration, prominent: false, isLoading: isLoading)
+    }
+}
+
+private struct VFButtonBody: View {
+    @Environment(\.viaFormTheme) private var theme
+    @Environment(\.isEnabled) private var enabled
+    let configuration: ButtonStyleConfiguration
+    let prominent: Bool
+    let isLoading: Bool
+    @State private var hovered = false
+
+    var body: some View {
+        let shape = RoundedRectangle(cornerRadius: VFRadius.control, style: .continuous)
+        let fill: Color = prominent ? theme.accent : theme.ink.opacity(0.07)
         configuration.label
             .font(VFFont.rowEmphasis)
-            .foregroundStyle(theme.onAccent)
+            .foregroundStyle(prominent ? theme.onAccent : theme.ink)
+            // The label keeps its width while a spinner shows, so the button never jumps.
+            .opacity(isLoading ? 0 : 1)
+            .overlay { if isLoading { ProgressView().controlSize(.small).tint(prominent ? theme.onAccent : theme.ink) } }
             .padding(.horizontal, VFSpace.l)
-            .frame(minHeight: 24)
-            .background(RoundedRectangle(cornerRadius: VFRadius.control, style: .continuous)
-                .fill(theme.accent.opacity(configuration.isPressed ? 0.8 : 1)))
+            .frame(minHeight: VFSize.buttonHeight)
+            .background(shape.fill(fill))
+            .overlay(shape.fill(Color.white.opacity(hovered && enabled && !configuration.isPressed ? 0.08 : 0)))
+            .overlay(shape.fill(Color.black.opacity(configuration.isPressed ? 0.14 : 0)))
+            .overlay(theme.highContrast && !prominent ? shape.strokeBorder(theme.hairline) : nil)
             .opacity(enabled ? 1 : 0.45)
+            .contentShape(shape)
+            .onHover { hovered = $0 }
+            #if os(iOS)
+            .hoverEffect(.highlight)
+            #endif
+            .accessibilityAddTraits(isLoading ? .updatesFrequently : [])
     }
 }
 
 extension ButtonStyle where Self == VFPrimaryButtonStyle {
     static var vfPrimary: VFPrimaryButtonStyle { VFPrimaryButtonStyle() }
+    static func vfPrimary(loading: Bool) -> VFPrimaryButtonStyle { VFPrimaryButtonStyle(isLoading: loading) }
+}
+
+extension ButtonStyle where Self == VFSecondaryButtonStyle {
+    static var vfSecondary: VFSecondaryButtonStyle { VFSecondaryButtonStyle() }
+    static func vfSecondary(loading: Bool) -> VFSecondaryButtonStyle { VFSecondaryButtonStyle(isLoading: loading) }
+}
+
+// MARK: - Motion
+
+extension VFMotion {
+    /// Reduce Motion is on: no slides, scales or camera flights; fades at most.
+    @MainActor static var reduced: Bool {
+        #if os(iOS)
+        UIAccessibility.isReduceMotionEnabled
+        #else
+        NSWorkspace.shared.accessibilityDisplayShouldReduceMotion
+        #endif
+    }
+
+    /// The animation to use, or nil under Reduce Motion.
+    @MainActor static func animation(_ a: Animation) -> Animation? { reduced ? nil : a }
+    @MainActor static var fastEase: Animation? { animation(.easeOut(duration: fast)) }
+    @MainActor static var standardEase: Animation? { animation(.easeOut(duration: standard)) }
+}
+
+/// `withAnimation` that does nothing under Reduce Motion.
+@MainActor
+func vfWithAnimation<R>(_ animation: Animation = .easeOut(duration: VFMotion.fast), _ body: () throws -> R) rethrows -> R {
+    try withAnimation(VFMotion.animation(animation), body)
+}
+
+private struct VFAnimationModifier<V: Equatable>: ViewModifier {
+    @Environment(\.accessibilityReduceMotion) private var reduce
+    let animation: Animation
+    let value: V
+    func body(content: Content) -> some View { content.animation(reduce ? nil : animation, value: value) }
+}
+
+private struct VFTransitionModifier: ViewModifier {
+    @Environment(\.accessibilityReduceMotion) private var reduce
+    let transition: AnyTransition
+    func body(content: Content) -> some View { content.transition(reduce ? .opacity : transition) }
+}
+
+extension View {
+    /// `.animation(_:value:)` that is off under Reduce Motion.
+    func vfAnimation<V: Equatable>(_ animation: Animation = .easeOut(duration: VFMotion.fast), value: V) -> some View {
+        modifier(VFAnimationModifier(animation: animation, value: value))
+    }
+
+    /// `.transition(_:)` that falls back to a fade under Reduce Motion.
+    func vfTransition(_ transition: AnyTransition) -> some View {
+        modifier(VFTransitionModifier(transition: transition))
+    }
 }

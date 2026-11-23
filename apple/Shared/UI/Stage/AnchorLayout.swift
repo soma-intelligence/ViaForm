@@ -31,7 +31,7 @@ enum AnchorLayout {
             let p = model.camera.project(axis.point, size: size)
             let n = model.extrudedProfiles.count
             return Anchor(point: axis.point, normal: axis.normal, screen: p,
-                          rect: CGRect(x: p.x - 36, y: p.y - 36, width: 72, height: 72), title: n == 1 ? "Profile" : "\(n) profiles")
+                          rect: CGRect(x: p.x - 36, y: p.y - 36, width: 72, height: 72), title: n == 1 ? String(localized: "Profile") : String(localized: "\(n) profiles"))
         }
         if let pick = model.selection.last {
             let p = model.camera.project(pick.point, size: size)
@@ -44,8 +44,15 @@ enum AnchorLayout {
             case let .edge(mesh, _, _):
                 body = mesh < scene.meshes.count ? scene.meshes[mesh].body : ""
             }
-            let kind = pick.isFace ? "Face" : "Edge"
-            let title = model.selection.count > 1 ? "\(model.selection.count) picks" : (body.isEmpty ? kind : "\(kind) of \(body)")
+            let n = model.selection.count
+            let title: String
+            if n > 1 {
+                title = WorkspaceMenu.inflected("^[\(n) pick](inflect: true)")
+            } else if pick.isFace {
+                title = body.isEmpty ? String(localized: "Face") : String(localized: "Face of \(body)")
+            } else {
+                title = body.isEmpty ? String(localized: "Edge") : String(localized: "Edge of \(body)")
+            }
             return Anchor(point: pick.point, normal: normal, screen: p,
                           rect: CGRect(x: p.x - 36, y: p.y - 36, width: 72, height: 72), title: title)
         }
@@ -53,7 +60,7 @@ enum AnchorLayout {
         let rect = screenRect(box, camera: model.camera, size: size)
         let top = SIMD3((box.min.x + box.max.x) / 2, (box.min.y + box.max.y) / 2, box.max.z)
         let names = model.selectedBodies.sorted()
-        let title = names.count == 1 ? names[0] : "\(names.count) bodies"
+        let title = names.count == 1 ? names[0] : WorkspaceMenu.inflected("^[\(names.count) body](inflect: true)")
         return Anchor(point: top, normal: nil, screen: model.camera.project(top, size: size), rect: rect, title: title)
     }
 
@@ -86,7 +93,8 @@ enum AnchorLayout {
     enum Side { case above, below }
 
     /// The centre of a piece of `size` next to `sel`: on the preferred side first, then the
-    /// other sides; inside `bounds` less `margin`, clear of `avoid` when a place allows it.
+    /// other sides; inside `bounds` less `margin`, clear of `avoid` when a place allows it, and
+    /// never over the selection itself when any place inside the view keeps it uncovered.
     static func place(_ size: CGSize, near sel: CGRect, in bounds: CGSize, avoid: [CGRect] = [], prefer: Side = .above,
                       gap: CGFloat = 16, margin: CGFloat = 12) -> CGPoint {
         let above = CGPoint(x: sel.midX - size.width / 2, y: sel.minY - size.height - gap)
@@ -99,13 +107,28 @@ enum AnchorLayout {
         ]
         let candidates = (prefer == .above ? [above, below] : [below, above]) + sides
         let area = CGRect(x: margin, y: margin, width: max(0, bounds.width - 2 * margin), height: max(0, bounds.height - 2 * margin))
-        let pick = candidates.first { o in
+        func clamp(_ o: CGPoint) -> CGPoint {
+            CGPoint(x: min(max(o.x, area.minX), max(area.minX, area.maxX - size.width)),
+                    y: min(max(o.y, area.minY), max(area.minY, area.maxY - size.height)))
+        }
+        // The selection keeps a little air around it.
+        let selection = sel.insetBy(dx: -4, dy: -4)
+        let clear = candidates.first { o in
             let r = CGRect(origin: o, size: size)
             return area.contains(r) && !avoid.contains { $0.intersects(r) }
-        } ?? candidates[0]
-        let x = min(max(pick.x, area.minX), max(area.minX, area.maxX - size.width))
-        let y = min(max(pick.y, area.minY), max(area.minY, area.maxY - size.height))
-        return CGPoint(x: x + size.width / 2, y: y + size.height / 2)
+        }
+        // No free place: slide a candidate into the view, keeping the selection uncovered first,
+        // then the other chrome when possible.
+        let slid = candidates.map(clamp)
+        let pick = clear
+            ?? slid.first { o in
+                let r = CGRect(origin: o, size: size)
+                return !r.intersects(selection) && !avoid.contains { $0.intersects(r) }
+            }
+            ?? slid.first { !CGRect(origin: $0, size: size).intersects(selection) }
+            ?? slid[0]
+        let o = clamp(pick)
+        return CGPoint(x: o.x + size.width / 2, y: o.y + size.height / 2)
     }
 
     /// A unit direction on screen for a world direction leaving `point`, or nil when it points

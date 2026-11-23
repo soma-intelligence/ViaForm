@@ -9,7 +9,7 @@ import SwiftUI
 ///
 /// On a narrow window the bar folds: labelled chips, then icons with the active chip labelled,
 /// then icons only, then a workspace menu whose rows carry their status. Command-1 to
-/// Command-8 come from the Workspace menu (`DeskWorkspaceCommands`), so they work in every fold
+/// Command-9 come from the Workspace menu (`DeskWorkspaceCommands`), so they work in every fold
 /// and never collide with another menu item.
 struct PipelineBar: View {
     @Environment(\.viaFormTheme) private var theme
@@ -26,7 +26,7 @@ struct PipelineBar: View {
     @State private var hovered: Workspace?
 
     var body: some View {
-        HStack(spacing: 4) {
+        HStack(spacing: VFSpace.xs) {
             ViewThatFits(in: .horizontal) {
                 chips(.labels)
                 chips(.shortLabels)
@@ -36,11 +36,11 @@ struct PipelineBar: View {
             }
             .layoutPriority(1)
             if showsJobs {
-                Spacer(minLength: 8)
+                Spacer(minLength: VFSpace.m)
                 JobsButton(flow: flow)
             }
         }
-        .padding(.horizontal, showsJobs ? 8 : 0)
+        .padding(.horizontal, showsJobs ? VFSpace.m : 0)
     }
 
     /// Full labels, short labels (Design, Gen, Asm...), the active chip labelled, icons only.
@@ -48,11 +48,11 @@ struct PipelineBar: View {
 
     private func chips(_ fold: Fold) -> some View {
         // Chevrons read as flow only between labels; between icons they are noise.
-        HStack(spacing: fold == .labels ? 1 : 6) {
+        HStack(spacing: fold == .labels ? 1 : VFSpace.s) {
             ForEach(Workspace.allCases) { w in
                 chip(w, label: label(w, fold))
                 if fold == .labels, w != Workspace.allCases.last {
-                    Image(systemName: "chevron.compact.right").font(.system(size: 10)).foregroundStyle(theme.inkTertiary)
+                    Image(systemName: "chevron.compact.right").font(VFFont.glyph(10)).foregroundStyle(theme.inkTertiary)
                         .accessibilityHidden(true)
                 }
             }
@@ -74,20 +74,20 @@ struct PipelineBar: View {
         Menu {
             ForEach(Workspace.allCases) { w in
                 Button { workspace = w } label: {
-                    Label("\(w.title)  ·  \(Self.describe(flow.stage(w)?.status ?? .empty))", systemImage: w.symbol)
+                    Label("\(w.title), \(Self.describe(flow.stage(w)?.status ?? .empty))", systemImage: w.symbol)
                 }
                 .keyboardShortcut(w.shortcut, modifiers: .command)
             }
         } label: {
-            HStack(spacing: 5) {
+            HStack(spacing: VFSpace.s) {
                 Image(systemName: workspace.symbol)
-                Text(workspace.title).font(.system(size: 12, weight: .semibold))
-                StatusMark(status: flow.stage(workspace)?.status ?? .empty, stale: staleCount)
+                Text(workspace.title).font(VFFont.rowEmphasis)
+                StatusMark(status: flow.stage(workspace)?.status ?? .empty, stale: staleCount, reason: flow.stage(workspace)?.reason)
             }
         }
         .menuStyle(.borderlessButton)
         .fixedSize()
-        .help("Workspaces (Command-1 to Command-8)")
+        .help("Workspaces (Command-1 to Command-9)")
     }
 
     private var staleCount: Int { flow.stages.filter { $0.status == .stale || $0.status == .failed }.count }
@@ -101,29 +101,29 @@ struct PipelineBar: View {
             Button {
                 if on { card = w } else { workspace = w }
             } label: {
-                HStack(spacing: 5) {
-                    Image(systemName: w.symbol).font(.system(size: 11, weight: .medium)).frame(width: 14)
-                    if let label { Text(label).font(.system(size: 12, weight: on ? .semibold : .regular)).lineLimit(1) }
+                HStack(spacing: VFSpace.s) {
+                    Image(systemName: w.symbol).font(VFFont.glyph(11, weight: .medium)).frame(width: 14)
+                    if let label { Text(label).font(on ? VFFont.rowEmphasis : VFFont.row).lineLimit(1) }
                 }
-                .padding(.leading, label != nil ? 8 : 6)
-                .padding(.trailing, 4)
+                .padding(.leading, label != nil ? VFSpace.m : VFSpace.s)
+                .padding(.trailing, VFSpace.xs)
                 .frame(height: VFSize.chip)
                 .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
             .help(help(w, stage))
-            .accessibilityLabel("\(w.title), \(Self.describe(status))")
+            .accessibilityLabel(String(localized: "\(w.title), \(Self.describe(status))"))
             .accessibilityAddTraits(on ? .isSelected : [])
-            .accessibilityHint("Command \(w.index + 1)")
+            .accessibilityHint(String(localized: "Command \(w.index + 1)"))
             Button { if fixable { offer = w } else if on { card = w } else { workspace = w } } label: {
-                dot(status, stage: stage, on: on)
-                    .frame(width: 14, height: VFSize.chip)
-                    .padding(.trailing, 5)
+                dot(status, stage: stage)
+                    .frame(minWidth: 14, minHeight: VFSize.chip)
+                    .padding(.trailing, VFSpace.s)
                     .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
-            .help(fixable ? "Why it is \(Self.describe(status)), and update it" : Self.describe(status))
-            .accessibilityLabel(fixable ? "Update \(w.title), \(Self.describe(status))" : "\(w.title) status, \(Self.describe(status))")
+            .help(fixable ? String(localized: "Why it is \(Self.describe(status)), and update it") : Self.describe(status))
+            .accessibilityLabel(fixable ? String(localized: "Update \(w.title), \(Self.describe(status))") : String(localized: "\(w.title) status, \(Self.describe(status))"))
             .popover(isPresented: Binding(get: { offer == w }, set: { if !$0 { offer = nil } }), arrowEdge: .bottom) {
                 UpdatePopover(flow: flow, workspace: w, update: { plan in offer = nil; update(plan) }, showFlow: { offer = nil; card = w })
             }
@@ -136,7 +136,7 @@ struct PipelineBar: View {
                 card = nil
                 if let t = Workspace(stage: target) { workspace = t }
             }, update: { plan in card = nil; update(plan) })
-            .padding(14).frame(width: 360)
+            .padding(VFSpace.panelPadding).frame(width: 360)
         }
         .contextMenu {
             Button("Show Flow") { card = w }
@@ -144,36 +144,23 @@ struct PipelineBar: View {
         }
     }
 
-    @ViewBuilder private func dot(_ status: FlowModel.Status, stage: FlowModel.Stage?, on: Bool) -> some View {
-        let progress = flow.queue.on(stage: stage?.id ?? "").flatMap { $0.determinate ? $0.progress : nil }
-        if status == .running {
-            if let p = progress, p > 0 {
-                ProgressView(value: p).progressViewStyle(.circular).controlSize(.mini)
-            } else {
-                ProgressView().controlSize(.mini)
+    /// The stage's status mark, with the count of stale artifacts when more than one ("3").
+    @ViewBuilder private func dot(_ status: FlowModel.Status, stage: FlowModel.Stage?) -> some View {
+        HStack(spacing: VFSpace.xxs) {
+            VFStatusDot(status: status.vfStatus, reason: stage.flatMap { $0.reason.isEmpty ? nil : $0.reason })
+            if status == .stale, let s = stage, s.stale > 1 {
+                Text("\(s.stale)").font(VFFont.micro).monospacedDigit()
+                    .accessibilityHidden(true)
             }
-        } else if status == .stale, let s = stage, s.stale > 1 {
-            Text("\(s.stale)")
-                .font(.system(size: 9, weight: .bold)).monospacedDigit()
-                .foregroundStyle(.black)
-                .frame(minWidth: 13, minHeight: 13)
-                .background(Capsule().fill(theme.status(.stale)))
-        } else if status == .empty {
-            // Hollow ring: not built. Told from stale (filled ocre) by shape, not only by colour.
-            Circle().strokeBorder(theme.inkTertiary, lineWidth: 1.25).frame(width: 7, height: 7)
-        } else {
-            Circle().fill(theme.color(status)).frame(width: 6, height: 6)
-                .overlay(Circle().strokeBorder(theme.chrome, lineWidth: 1))
-                .frame(width: 8, height: 8)
         }
     }
 
     private func help(_ w: Workspace, _ stage: FlowModel.Stage?) -> String {
-        var s = "\(w.title): \(Self.describe(stage?.status ?? .empty))"
-        if let r = stage?.reason, !r.isEmpty { s += ". \(r)" }
-        s += " (Command-\(w.index + 1))"
-        if workspace == w { s += ". Click again for its flow." }
-        return s
+        let state = Self.describe(stage?.status ?? .empty)
+        var lines = [String(localized: "\(w.title): \(state) (Command-\(w.index + 1))")]
+        if let r = stage?.reason, !r.isEmpty { lines.append(r) }
+        if workspace == w { lines.append(String(localized: "Click again for its flow.")) }
+        return lines.joined(separator: "\n")
     }
 
     static func describe(_ s: FlowModel.Status) -> String { PipelineWords.describe(s) }
@@ -194,27 +181,27 @@ struct UpdatePopover: View {
         let nodes = flow.nodes(in: workspace.stage).filter { $0.status == .stale || $0.status == .failed }
         VStack(alignment: .leading, spacing: VFSpace.m) {
             HStack(spacing: VFSpace.s) {
-                Image(systemName: workspace.symbol)
-                Text("\(workspace.title) is \(stage?.status == .failed ? "failed" : "stale")").font(VFFont.title)
+                Image(systemName: workspace.symbol).accessibilityHidden(true)
+                (stage?.status == .failed ? Text("\(workspace.title) failed") : Text("\(workspace.title) is stale")).font(VFFont.title)
             }
             if let r = stage?.reason, !r.isEmpty {
                 Text(r).font(VFFont.row).foregroundStyle(theme.ink)
             }
             ForEach(nodes) { n in
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(n.name + (n.revisionName.map { " · \($0)" } ?? "")).font(VFFont.rowEmphasis)
+                VStack(alignment: .leading, spacing: VFSpace.xxs) {
+                    Text(n.revisionName.map { "\(n.name) · \($0)" } ?? n.name).font(VFFont.rowEmphasis)
                     if !n.reason.isEmpty { Text(n.reason).font(VFFont.small).foregroundStyle(theme.inkSecondary) }
                     if let e = n.error { Text(e).font(VFFont.small).foregroundStyle(theme.danger) }
                 }
             }
             if let a = stage?.action {
-                Text("Rebuilds in order: " + a.plan.map(name).joined(separator: ", "))
+                Text("Rebuilds in order: \(a.plan.map(name).joined(separator: ", "))")
                     .font(VFFont.small).foregroundStyle(theme.inkSecondary)
                     .fixedSize(horizontal: false, vertical: true)
                 HStack {
                     Button("Show Flow", action: showFlow).buttonStyle(.borderless)
                     Spacer()
-                    Button(a.label.isEmpty ? "Update" : a.label) { update(a.plan) }
+                    Button(a.label.isEmpty ? String(localized: "Update") : a.label) { update(a.plan) }
                         .buttonStyle(.vfPrimary)
                         .keyboardShortcut(.defaultAction)
                 }
@@ -222,7 +209,7 @@ struct UpdatePopover: View {
                 Button("Show Flow", action: showFlow)
             }
         }
-        .padding(14)
+        .padding(VFSpace.panelPadding)
         .frame(width: 320, alignment: .leading)
     }
 }
@@ -244,11 +231,12 @@ struct JobsButton: View {
             }
         }
         .popover(isPresented: $shown, arrowEdge: .bottom) {
-            JobList(flow: flow).padding(12).frame(width: 340)
+            JobList(flow: flow).padding(VFSpace.l).frame(width: 340)
                 .background(theme.panel)
         }
         .help("Long jobs: generation, simulation, training")
-        .accessibilityLabel(flow.jobs.isEmpty ? "Jobs, none running" : "Jobs, \(flow.jobs.count) running")
+        .accessibilityLabel(flow.jobs.isEmpty ? String(localized: "Jobs, none running")
+                            : WorkspaceMenu.inflected("Jobs, ^[\(flow.jobs.count) job](inflect: true) running"))
     }
 
     /// The jobs as an icon: a clock when idle, a progress ring with a count badge while running.
@@ -262,18 +250,18 @@ struct JobsButton: View {
             }
             if flow.jobs.count > 0 {
                 Text("\(flow.jobs.count)")
-                    .font(.system(size: 9, weight: .bold)).monospacedDigit()
+                    .font(VFFont.micro.weight(.bold)).monospacedDigit()
                     .foregroundStyle(theme.onAccent)
-                    .frame(minWidth: 13, minHeight: 13)
+                    .frame(minWidth: 14, minHeight: 14)
                     .background(Circle().fill(theme.accent))
                     .offset(x: 6, y: -5)
             }
         }
-        .help(flow.queue.headline ?? "Jobs")
+        .help(flow.queue.headline ?? String(localized: "Jobs"))
     }
 
     private var full: some View {
-            HStack(spacing: 5) {
+            HStack(spacing: VFSpace.s) {
                 if flow.jobs.isEmpty {
                     Image(systemName: "clock.arrow.circlepath")
                 } else if let j = flow.jobs.first, j.determinate {
@@ -281,52 +269,51 @@ struct JobsButton: View {
                 } else {
                     ProgressView().controlSize(.mini)
                 }
-                Text(flow.jobs.isEmpty ? "Jobs" : (flow.queue.headline ?? "Jobs")).lineLimit(1)
+                Text(flow.jobs.isEmpty ? String(localized: "Jobs") : (flow.queue.headline ?? String(localized: "Jobs"))).lineLimit(1)
                 if flow.jobs.count > 1 {
                     Text("\(flow.jobs.count)")
-                        .font(.system(size: 10, weight: .bold)).monospacedDigit()
+                        .font(VFFont.micro.weight(.bold)).monospacedDigit()
                         .foregroundStyle(theme.onAccent)
                         .frame(minWidth: 16, minHeight: 16)
                         .background(Circle().fill(theme.accent))
                 }
             }
-            .font(.system(size: 12))
+            .font(VFFont.small)
             .frame(maxWidth: compact ? 150 : 260)
     }
 }
 
-/// The small status sign after a stage or an artifact name.
+/// The small status sign after a stage or an artifact name: the shared `VFStatusDot` (shape per
+/// state, the reason as tooltip and VoiceOver value), with the stale count when more than one.
 struct StatusMark: View {
+    @Environment(\.viaFormTheme) private var theme
     let status: FlowModel.Status
     var stale = 0
     var progress: Double?
+    var reason: String?
 
     var body: some View {
-        switch status {
-        case .current:
-            Image(systemName: "checkmark.circle.fill").font(.system(size: 9)).foregroundStyle(.green)
-        case .empty:
-            Image(systemName: "circle.dotted").font(.system(size: 9)).foregroundStyle(.tertiary)
-        case .stale:
-            Text(stale > 1 ? "\(stale)" : "!")
-                .font(.system(size: 9, weight: .bold)).foregroundStyle(.black)
-                .frame(minWidth: 13, minHeight: 13)
-                .background(Capsule().fill(.orange))
-        case .running:
-            if let p = progress, p > 0 {
-                ProgressView(value: p).progressViewStyle(.circular).controlSize(.mini)
-            } else {
-                ProgressView().controlSize(.mini)
+        HStack(spacing: VFSpace.xxs) {
+            VFStatusDot(status: status.vfStatus, reason: why)
+            if status == .stale, stale > 1 {
+                Text("\(stale) stale").font(VFFont.micro).foregroundStyle(theme.inkSecondary).monospacedDigit()
+                    .accessibilityHidden(true)
             }
-        case .failed:
-            Image(systemName: "xmark.octagon.fill").font(.system(size: 9)).foregroundStyle(.red)
         }
+    }
+
+    /// The reason, or the progress of a running job ("42 %").
+    private var why: String? {
+        if let reason, !reason.isEmpty { return reason }
+        if status == .running, let p = progress, p > 0 { return VFFormat.value(p * 100, .percent) }
+        return nil
     }
 }
 
 /// What one stage builds, what it is built from, what it feeds, why it is stale and the one
 /// action that fixes it ("Re-run on Frame v12"), with the artifact's revisions.
 struct FlowCard: View {
+    @Environment(\.viaFormTheme) private var theme
     let flow: FlowModel
     let stage: String
     /// Opens another stage's workspace.
@@ -338,13 +325,13 @@ struct FlowCard: View {
     private func name(_ id: String) -> String { flow.node(id)?.name ?? id }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: VFSpace.l) {
             if let s = flow.stage(stage) {
                 HStack {
-                    Text(s.name).font(.headline)
+                    Text(s.name).font(VFFont.title)
                     Spacer()
-                    StatusMark(status: s.status, stale: s.stale)
-                    Text(PipelineBar.describe(s.status)).font(.caption).foregroundStyle(.secondary)
+                    StatusMark(status: s.status, stale: s.stale, reason: s.reason)
+                    Text(PipelineBar.describe(s.status)).font(VFFont.small).foregroundStyle(theme.inkSecondary)
                 }
             }
             ForEach(flow.nodes(in: stage)) { n in node(n) }
@@ -352,69 +339,71 @@ struct FlowCard: View {
     }
 
     private func node(_ n: FlowModel.Node) -> some View {
-        VStack(alignment: .leading, spacing: 6) {
-            HStack(spacing: 6) {
-                StatusMark(status: n.status, progress: n.job.flatMap { $0.determinate ? $0.progress : nil })
-                Text(n.name).font(.system(size: 12, weight: .semibold))
+        VStack(alignment: .leading, spacing: VFSpace.s) {
+            HStack(spacing: VFSpace.s) {
+                StatusMark(status: n.status, progress: n.job.flatMap { $0.determinate ? $0.progress : nil }, reason: n.reason)
+                Text(n.name).font(VFFont.rowEmphasis)
                 Spacer()
-                Button(n.revisionName ?? "not built") { showRevisions = showRevisions == n.id ? nil : n.id }
+                Button(n.revisionName ?? String(localized: "Not built yet")) { showRevisions = showRevisions == n.id ? nil : n.id }
                     .buttonStyle(.borderless)
-                    .font(.caption.monospacedDigit())
+                    .font(VFFont.small)
                     .disabled(n.revisions == 0)
-                    .help("Revisions")
+                    .help(n.revisions == 0 ? String(localized: "No revision yet") : String(localized: "Show the revisions"))
             }
-            if let job = n.job { Text(job.caption).font(.caption).foregroundStyle(.secondary) }
-            if let e = n.error { Text(e).font(.caption).foregroundStyle(.red) }
-            if let note = n.note { Text(note).font(.caption).foregroundStyle(.secondary) }
-            if !n.summary.isEmpty { Text(n.summary).font(.caption).foregroundStyle(.secondary) }
+            if let job = n.job { Text(job.caption).font(VFFont.small).foregroundStyle(theme.inkSecondary) }
+            if let e = n.error { Label(e, systemImage: "xmark.octagon").font(VFFont.small).foregroundStyle(theme.danger) }
+            if let note = n.note { Text(note).font(VFFont.small).foregroundStyle(theme.inkSecondary) }
+            if !n.summary.isEmpty { Text(n.summary).font(VFFont.small).foregroundStyle(theme.inkSecondary) }
             if showRevisions == n.id { RevisionList(flow: flow, artifact: n.id) }
             if !n.consumes.isEmpty {
-                section("Built from") {
+                section(String(localized: "Built from")) {
                     ForEach(n.consumes, id: \.id) { i in
-                        row(name(i.id), detail: i.current ? (i.now_name ?? "rev \(i.now)") : "built on \(i.seen_name ?? "rev \(i.seen)"), now \(i.now_name ?? "rev \(i.now)")",
+                        let now = i.now_name ?? String(localized: "rev \(i.now)")
+                        let seen = i.seen_name ?? String(localized: "rev \(i.seen)")
+                        row(name(i.id), detail: i.current ? now : String(localized: "built on \(seen), now \(now)"),
                             warn: !i.current, target: flow.node(i.id)?.stage)
                     }
                 }
             }
             if !n.feeds.isEmpty {
-                section("Feeds") {
+                section(String(localized: "Feeds")) {
                     ForEach(n.feeds, id: \.self) { f in
                         row(name(f), detail: PipelineBar.describe(flow.node(f)?.status ?? .empty), warn: flow.node(f)?.status == .stale, target: flow.node(f)?.stage)
                     }
                 }
             }
             if let a = n.action, n.status == .stale || n.status == .failed {
-                VStack(alignment: .leading, spacing: 4) {
-                    if !n.reason.isEmpty { Text(n.reason).font(.caption.weight(.semibold)) }
-                    Text("Rebuild in order: " + a.plan.map(name).joined(separator: ", ")).font(.caption).foregroundStyle(.secondary)
+                VStack(alignment: .leading, spacing: VFSpace.xs) {
+                    if !n.reason.isEmpty { Text(n.reason).font(VFFont.small.weight(.semibold)) }
+                    Text("Rebuild in order: \(a.plan.map(name).joined(separator: ", "))").font(VFFont.small).foregroundStyle(theme.inkSecondary)
                     Button(a.label) {
                         if let update { update(a.plan) } else if let first = a.plan.first, let s = flow.node(first)?.stage { open(s) }
                     }
-                    .controlSize(.small)
-                    .buttonStyle(.borderedProminent)
+                    .buttonStyle(.vfPrimary)
                 }
-                .padding(8)
+                .padding(VFSpace.m)
                 .frame(maxWidth: .infinity, alignment: .leading)
-                .background(RoundedRectangle(cornerRadius: 6).fill(Color.orange.opacity(0.12)))
+                .background(RoundedRectangle(cornerRadius: VFRadius.control, style: .continuous).fill(theme.warning.opacity(0.12)))
             }
         }
-        .padding(10)
-        .background(RoundedRectangle(cornerRadius: 8).fill(Color.primary.opacity(0.05)))
+        .padding(VFSpace.panelPadding)
+        .vfSurface(.well)
     }
 
     private func section<C: View>(_ title: String, @ViewBuilder _ content: () -> C) -> some View {
-        VStack(alignment: .leading, spacing: 3) {
-            Text(title.uppercased()).font(.system(size: 9, weight: .bold)).foregroundStyle(.secondary)
+        VStack(alignment: .leading, spacing: VFSpace.xxs) {
+            VFCaption(title)
             content()
         }
     }
 
     private func row(_ title: String, detail: String, warn: Bool, target: String?) -> some View {
         Button { if let target { open(target) } } label: {
-            HStack {
-                Text(title).font(.caption)
+            HStack(spacing: VFSpace.s) {
+                Text(title).font(VFFont.small).foregroundStyle(theme.ink)
                 Spacer()
-                Text(detail).font(.caption).foregroundStyle(warn ? Color.orange : .secondary)
+                if warn { VFTriangle().fill(theme.warning).frame(width: 8, height: 7).accessibilityHidden(true) }
+                Text(detail).font(VFFont.small).foregroundStyle(warn ? theme.warning : theme.inkSecondary)
             }
             .contentShape(Rectangle())
         }
@@ -423,65 +412,88 @@ struct FlowCard: View {
 }
 
 /// An artifact's revisions, newest first: which is in use, where each came from, and a way back
-/// to an older one.
+/// to an older one. The eight newest show; Show All lists the rest.
 struct RevisionList: View {
+    @Environment(\.viaFormTheme) private var theme
     let flow: FlowModel
     let artifact: String
+    @State private var showAll = false
+    private static let shortCount = 8
 
     var body: some View {
-        let list = flow.revisions(artifact).reversed()
-        VStack(alignment: .leading, spacing: 3) {
+        let list = Array(flow.revisions(artifact).reversed())
+        VStack(alignment: .leading, spacing: VFSpace.xxs) {
             if let d = flow.diff(artifact), d.from != d.to {
-                Text("\(d.from) to \(d.to): " + (d.summary.changed ? d.summary.to : "same summary")).font(.caption2).foregroundStyle(.secondary)
+                Text(d.summary.changed ? "\(d.from) to \(d.to): \(d.summary.to)" : "\(d.from) to \(d.to): same summary")
+                    .font(VFFont.micro).foregroundStyle(theme.inkSecondary)
             }
-            ForEach(Array(list.prefix(8))) { r in
-                HStack(spacing: 6) {
-                    Image(systemName: r.active ? "largecircle.fill.circle" : "circle").font(.system(size: 9))
-                    Text(r.name).font(.caption.monospacedDigit().weight(r.active ? .semibold : .regular))
-                    Text(r.from ?? r.summary).font(.caption2).foregroundStyle(.secondary).lineLimit(1)
+            ForEach(showAll ? list : Array(list.prefix(Self.shortCount))) { r in
+                HStack(spacing: VFSpace.s) {
+                    Image(systemName: r.active ? "largecircle.fill.circle" : "circle").font(VFFont.glyph(9))
+                        .foregroundStyle(r.active ? theme.accentText : theme.inkTertiary)
+                        .accessibilityHidden(true)
+                    Text(r.name).font(r.active ? VFFont.small.weight(.semibold) : VFFont.small).foregroundStyle(theme.ink)
+                    Text(r.from ?? r.summary).font(VFFont.micro).foregroundStyle(theme.inkSecondary).lineLimit(1)
                     Spacer()
-                    if !r.active { Button("Use") { flow.activate(artifact, revision: r.number) }.controlSize(.mini) }
+                    if r.active {
+                        Text("In use").font(VFFont.micro).foregroundStyle(theme.accentText)
+                    } else {
+                        Button("Use") { flow.activate(artifact, revision: r.number) }
+                            .controlSize(.mini)
+                            .accessibilityLabel(String(localized: "Use \(r.name)"))
+                    }
                 }
+                .accessibilityElement(children: .combine)
+            }
+            if list.count > Self.shortCount {
+                Button(showAll ? String(localized: "Show Fewer") : String(localized: "Show All \(list.count)")) {
+                    vfWithAnimation { showAll.toggle() }
+                }
+                .buttonStyle(.borderless)
+                .font(VFFont.small)
             }
         }
-        .padding(6)
-        .background(RoundedRectangle(cornerRadius: 5).fill(Color.primary.opacity(0.04)))
+        .padding(VFSpace.s)
+        .vfSurface(.well, radius: VFRadius.chip)
     }
 }
 
-/// The running jobs: what each does, how far along, the time left, pause, resume and cancel.
+/// The running jobs: what each does, how far along, the time left, pause and resume when the job
+/// can pause, and Stop.
 struct JobList: View {
+    @Environment(\.viaFormTheme) private var theme
     let flow: FlowModel
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            Text("Jobs").font(.headline)
+        VStack(alignment: .leading, spacing: VFSpace.l) {
+            Text("Jobs").font(VFFont.title)
             if flow.jobs.isEmpty {
-                Text("Nothing running. Generation, simulation and training runs show here.").font(.caption).foregroundStyle(.secondary)
+                Text("Nothing running. Generation, simulation and training runs show here.")
+                    .font(VFFont.small).foregroundStyle(theme.inkSecondary)
+                    .fixedSize(horizontal: false, vertical: true)
             }
             ForEach(flow.jobs) { j in
-                VStack(alignment: .leading, spacing: 4) {
+                VStack(alignment: .leading, spacing: VFSpace.xs) {
                     HStack {
-                        Text(flow.node(j.artifact)?.name ?? j.artifact).font(.system(size: 12, weight: .semibold))
+                        Text(flow.node(j.artifact)?.name ?? j.artifact).font(VFFont.rowEmphasis).foregroundStyle(theme.ink)
                         Spacer()
-                        Text(flow.stage(j.stage)?.name ?? j.stage).font(.caption).foregroundStyle(.secondary)
+                        Text(flow.stage(j.stage)?.name ?? j.stage).font(VFFont.small).foregroundStyle(theme.inkSecondary)
                     }
                     if j.determinate { ProgressView(value: j.progress) } else { ProgressView().progressViewStyle(.linear) }
-                    HStack {
-                        Text(j.caption).font(.caption).foregroundStyle(.secondary)
+                    HStack(spacing: VFSpace.xs) {
+                        Text(j.paused ? String(localized: "Paused. \(j.caption)") : j.caption)
+                            .font(VFFont.small).foregroundStyle(theme.inkSecondary)
                         Spacer()
                         if j.pausable {
-                            Button { j.paused ? flow.resume(job: j.id) : flow.pause(job: j.id) } label: {
-                                Image(systemName: j.paused ? "play.fill" : "pause.fill")
+                            VFIconButton(j.paused ? "play.fill" : "pause.fill",
+                                         label: j.paused ? String(localized: "Resume \(j.label)") : String(localized: "Pause \(j.label)"),
+                                         size: 11) {
+                                j.paused ? flow.resume(job: j.id) : flow.pause(job: j.id)
                             }
-                            .buttonStyle(.borderless)
-                            .help(j.paused ? "Resume" : "Pause")
-                            .accessibilityLabel(j.paused ? "Resume \(j.label)" : "Pause \(j.label)")
                         }
-                        Button { flow.cancel(job: j.id) } label: { Image(systemName: "xmark.circle.fill") }
-                            .buttonStyle(.borderless)
-                            .help("Cancel")
-                            .accessibilityLabel("Cancel \(j.label)")
+                        VFIconButton("stop.fill", label: String(localized: "Stop \(j.label)"), size: 11) {
+                            flow.cancel(job: j.id)
+                        }
                     }
                 }
             }
@@ -491,6 +503,7 @@ struct JobList: View {
 
 /// A workspace that has no editor of its own yet: its place in the flow, and what it can do today.
 struct StageOverview<Actions: View>: View {
+    @Environment(\.viaFormTheme) private var theme
     let flow: FlowModel
     let stage: String
     let note: String
@@ -500,15 +513,15 @@ struct StageOverview<Actions: View>: View {
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 16) {
-                Text(note).font(.callout).foregroundStyle(.secondary)
-                HStack(spacing: 8) { actions }
+            VStack(alignment: .leading, spacing: VFSpace.xl) {
+                Text(note).font(VFFont.row).foregroundStyle(theme.inkSecondary)
+                HStack(spacing: VFSpace.m) { actions }
                 FlowCard(flow: flow, stage: stage, open: open, update: update)
             }
-            .padding(24)
+            .padding(VFSpace.xxl)
             .frame(maxWidth: 520, alignment: .leading)
             .vfSurface(.panel)
-            .padding(24)
+            .padding(VFSpace.xxl)
             .frame(maxWidth: .infinity)
         }
     }

@@ -1,12 +1,16 @@
 import SwiftUI
 
 /// The Simulation stage of the hand product: a grasp test by joint drive on the generated hand
-/// (docs/generative/hand/assembly.json inserted into the design), not the drone's flight. Every
+/// (the hand project's assembly inserted into the design), not the drone's flight. Every
 /// movable joint is driven from rest to its fist value and back, the way the joint tool drives
 /// it, and the joints are read back. It is kinematic: contacts, tendon loads and grip force are
 /// not simulated (sim/ models the drone only), and the stage says so. Without a hand assembly it
 /// shows an empty state that says what is missing.
+///
+/// Opening the hand here reads its assembly and joints only: the Generate study the user set up
+/// is never replaced.
 struct HandGraspView: View {
+    @Environment(\.viaFormTheme) private var palette
     @Bindable var generate: GenerateModel
     let design: DesignModel
     let theme: ViewportTheme
@@ -32,36 +36,36 @@ struct HandGraspView: View {
             }
         }
         .onAppear {
-            if generate.project?.name != "hand", !generate.running { generate.openSample("hand") }
+            if generate.project?.name != "hand", !generate.running { generate.openProjectOnly("hand") }
         }
-        .onDisappear { stop() }
+        .onDisappear {
+            stop()
+            generate.flushDrives(design: design)
+        }
     }
 
     // MARK: States
 
     private var empty: some View {
-        ContentUnavailableView {
-            Label("No hand simulation yet", systemImage: "hand.raised.slash")
-        } description: {
-            Text("The grasp test drives the generated hand's joints. It needs docs/generative/hand/assembly.json, which the generative design writes. The drone's flight does not apply to the hand.")
-        }
+        EmptyState(String(localized: "No hand simulation yet"), systemImage: "hand.raised.slash",
+                   message: String(localized: "The grasp test drives the generated hand's joints. Run the hand project's studies and its assembly step in Generate first. The drone's flight does not apply to the hand."))
     }
 
     private func insert(_ p: GenerateProject) -> some View {
-        ContentUnavailableView {
-            Label("Grasp test", systemImage: "hand.raised")
-        } description: {
-            let s = generate.assemblySummary
-            Text("Drives every finger of the generated hand from open to a fist and back, by its joints. Insert the hand's assembly first\(s.map { ": \($0.parts) parts, \(generate.joints.filter(\.movable).count) movable joints" } ?? "").")
-        } actions: {
-            Button {
-                generate.loadAssembly(into: design)
-            } label: {
-                if generate.loadingAssembly { ProgressView().controlSize(.small) } else { Label("Insert the Hand Assembly", systemImage: "square.stack.3d.down.right") }
+        let s = generate.assemblySummary
+        let joints = generate.joints.filter(\.movable).count
+        return EmptyState(String(localized: "Grasp test"), systemImage: "hand.raised",
+                          message: s.map { String(localized: "Drives every finger of the generated hand from open to a fist and back, by its joints. Insert the hand's assembly first: \($0.parts) parts, \(joints) movable joints.") }
+                              ?? String(localized: "Drives every finger of the generated hand from open to a fist and back, by its joints. Insert the hand's assembly first."),
+                          actionTitle: String(localized: "Insert the Hand Assembly")) { generate.loadAssembly(into: design) }
+            .vfDisabled(EngineGate.shared.shut || generate.loadingAssembly,
+                        reason: EngineGate.shared.shut ? EngineGate.reason : String(localized: "Inserting the assembly now."))
+            .overlay(alignment: .bottom) {
+                if generate.loadingAssembly {
+                    DelayedProgress(label: String(localized: "Inserting the assembly"))
+                        .padding(.bottom, VFSpace.xxl)
+                }
             }
-            .buttonStyle(.borderedProminent)
-            .disabled(generate.loadingAssembly || EngineGate.shared.shut)
-        }
     }
 
     private var scenario: some View {
@@ -71,18 +75,18 @@ struct HandGraspView: View {
                     .ignoresSafeArea(edges: compact ? [.horizontal, .bottom] : .all)
                 VStack {
                     HStack(alignment: .top) {
-                        missionCard.frame(maxWidth: 260)
+                        missionCard.frame(maxWidth: VFSize.inspectorMin)
                         Spacer()
-                        readout.frame(width: 230)
+                        readout.frame(width: VFSize.inspectorMin - VFSpace.xxl - VFSpace.xs)
                     }
                     Spacer()
                     transport
                 }
-                .padding(compact ? 12 : 14)
+                .padding(compact ? VFSpace.panelPadding : VFSpace.overlayInset)
             }
             if !compact {
                 Divider()
-                jointList.frame(width: 320)
+                jointList.frame(width: VFSize.sidePanel)
             }
         }
         // The slider starts where the joints are (a fist closed elsewhere reads 100 %).
@@ -106,61 +110,69 @@ struct HandGraspView: View {
     }
 
     private var missionCard: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            Text("GRASP TEST").font(.system(size: 10, weight: .bold)).foregroundStyle(.secondary)
-            Text("Close to a fist, then open").font(.callout.weight(.medium))
+        VStack(alignment: .leading, spacing: VFSpace.xs) {
+            VFCaption(String(localized: "Grasp test"))
+            Text("Close to a fist, then open").font(VFFont.rowEmphasis).foregroundStyle(palette.ink)
             Text("Joint drive on the generated hand: \(movable.count) joints, \(Self.cycle.formatted()) s a cycle.")
-                .font(.caption).foregroundStyle(.secondary)
-            Text("Kinematic only: contact and grip force are not simulated.")
-                .font(.caption2).foregroundStyle(.orange)
+                .font(VFFont.small).foregroundStyle(palette.inkSecondary)
+            Label("Kinematic only: contact and grip force are not simulated.", systemImage: "info.circle")
+                .font(VFFont.micro).foregroundStyle(palette.warning)
         }
-        .padding(12)
-        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 12))
+        .padding(VFSpace.panelPadding)
+        .vfSurface(.floating)
     }
 
     private var readout: some View {
-        VStack(alignment: .leading, spacing: 5) {
-            Text("JOINTS").font(.system(size: 10, weight: .bold)).foregroundStyle(.secondary)
-            row("Closure", String(format: "%.0f %%", reached * 100))
-            row("Driven", "\(movable.count) joints")
-            row("Cycles", "\(cycles)")
-            row("Time", String(format: "%.1f s", elapsed))
-            if let s = generate.assemblySummary, let m = s.massG { row("Hand mass", String(format: "%.0f g", m)) }
+        VStack(alignment: .leading, spacing: VFSpace.xs) {
+            VFCaption(String(localized: "Joints"))
+            row(String(localized: "Closure"), VFFormat.value(reached * 100, .percent))
+            row(String(localized: "Driven"), String(localized: "\(movable.count) joints"))
+            row(String(localized: "Cycles"), "\(cycles)")
+            row(String(localized: "Time"), String(format: "%.1f s", elapsed))
+            if let s = generate.assemblySummary, let m = s.massG { row(String(localized: "Hand mass"), VFFormat.mass(m)) }
         }
-        .font(.system(size: 12).monospacedDigit())
-        .padding(12)
-        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 12))
+        .font(VFFont.small)
+        .monospacedDigit()
+        .padding(VFSpace.panelPadding)
+        .vfSurface(.floating)
     }
 
     private func row(_ k: String, _ v: String) -> some View {
-        HStack { Text(k).foregroundStyle(.secondary); Spacer(); Text(v) }
+        HStack { Text(k).foregroundStyle(palette.inkSecondary); Spacer(); Text(v).foregroundStyle(palette.ink) }
+            .accessibilityElement(children: .combine)
     }
 
     private var transport: some View {
-        HStack(spacing: 12) {
-            Button { playing ? stop() : play() } label: { Image(systemName: playing ? "pause.fill" : "play.fill").frame(width: 22) }
-                .help(playing ? "Pause" : "Run the grasp test")
-            Button { stop(); set(0) } label: { Image(systemName: "hand.raised") }.help("Open the hand")
-            Button { stop(); set(1) } label: { Image(systemName: "hand.raised.fingers.spread.fill") }.help("Close the fist")
-            Divider().frame(height: 18)
+        HStack(spacing: VFSpace.l) {
+            VFIconButton(playing ? "pause.fill" : "play.fill",
+                         label: playing ? String(localized: "Pause") : String(localized: "Run the grasp test"), size: 15) {
+                playing ? stop() : play()
+            }
+            VFIconButton("hand.raised", label: String(localized: "Open the hand"), size: 15) { stop(); set(0) }
+            VFIconButton("hand.raised.fingers.spread.fill", label: String(localized: "Close the fist"), size: 15) { stop(); set(1) }
+            Divider().frame(height: VFSize.chip)
             Slider(value: Binding(get: { closure }, set: { stop(); set($0) }), in: 0...1)
                 .frame(width: compact ? 140 : 200)
                 .accessibilityLabel("Closure")
-            Text(String(format: "%.0f %%", closure * 100)).monospacedDigit().frame(width: 44, alignment: .trailing)
+                .accessibilityValue(VFFormat.value(closure * 100, .percent))
+            Text(VFFormat.value(closure * 100, .percent))
+                .font(VFFont.rowEmphasis)
+                .monospacedDigit()
+                .foregroundStyle(palette.ink)
+                .frame(minWidth: 44, alignment: .trailing)
+                .accessibilityHidden(true)
         }
-        .buttonStyle(.borderless)
-        .font(.system(size: 15, weight: .semibold))
-        .disabled(EngineGate.shared.shut)
-        .padding(.horizontal, 14).padding(.vertical, 9)
-        .background(.regularMaterial, in: Capsule())
+        .vfEngineGate()
+        .padding(.horizontal, VFSpace.l).padding(.vertical, VFSpace.s)
+        .vfSurface(.control)
     }
 
     private var jointList: some View {
         let groups = Dictionary(grouping: movable, by: \.group)
         return Form {
             Section {
-                Text("Each joint is driven within its limits from assembly.json, the same drive as the joint tool. Rest is zero (or the nearest limit); the fist is the flexion end of each joint, abduction centred.")
-                    .font(.caption).foregroundStyle(.secondary)
+                Text("Each joint is driven within its limits, the same drive as the joint tool. Rest is zero (or the nearest limit); the fist is the flexion end of each joint, with sideways joints centred.")
+                    .font(VFFont.small).foregroundStyle(palette.inkSecondary)
             } header: { Text("Grasp test") }
             ForEach(groups.keys.sorted(), id: \.self) { g in
                 Section(g.capitalized) {
@@ -180,6 +192,8 @@ struct HandGraspView: View {
         generate.grasp(c, design: design)
     }
 
+    /// The cycle advances at the display rate; the model sends the drives to the engine at most
+    /// once a frame.
     private func play() {
         guard !playing else { return }
         playing = true
@@ -193,7 +207,7 @@ struct HandGraspView: View {
                 let phase = t.truncatingRemainder(dividingBy: Self.cycle) / Self.cycle
                 let x = phase < 0.5 ? phase * 2 : (1 - phase) * 2
                 set(0.5 - 0.5 * cos(.pi * x))
-                try? await Task.sleep(for: .milliseconds(80))
+                try? await Task.sleep(for: .milliseconds(50))
             }
         }
     }

@@ -13,42 +13,47 @@ struct PillAction: Identifiable {
 }
 
 /// The selection's verbs, floating next to it: the tools it invites (jet icon over caption),
-/// then the cross-stage verbs, under a small CONTEXT caption.
+/// then the cross-stage verbs, under a small CONTEXT caption. A control, so Liquid Glass
+/// (`vfSurface(.control)`), placed by `AnchorLayout` beside the selection, never over it.
 struct StageContextPill: View {
     @Environment(\.viaFormTheme) private var theme
     let title: String
     let actions: [PillAction]
     var dismiss: (() -> Void)?
 
+    /// The pill's size for `AnchorLayout.place` (it is laid out with `fixedSize`).
+    static func size(count: Int) -> CGSize {
+        CGSize(width: CGFloat(count) * (actionWidth + VFSpace.xxs) + 2 * VFSpace.s, height: 92)
+    }
+    private static let actionWidth: CGFloat = 54
+
     var body: some View {
-        VStack(alignment: .leading, spacing: VFSpace.xs) {
+        VStack(alignment: .leading, spacing: VFSpace.xxs) {
             HStack(spacing: VFSpace.s) {
-                Text("CONTEXT").font(.system(size: VFTypeScale.micro, weight: .semibold)).tracking(VFTypeScale.capsTracking)
-                    .foregroundStyle(theme.inkTertiary)
-                Text(title).font(VFFont.micro).foregroundStyle(theme.inkSecondary).lineLimit(1)
+                VFCaption("Context", color: theme.inkTertiary)
+                Text(title).font(VFFont.small).foregroundStyle(theme.inkSecondary).lineLimit(1)
                 Spacer(minLength: 0)
                 if let dismiss {
-                    Button(action: dismiss) { Image(systemName: "xmark").font(.system(size: 8, weight: .bold)) }
-                        .buttonStyle(.plain).foregroundStyle(theme.inkTertiary)
-                        .help("Clear the selection (Esc)")
+                    VFIconButton("xmark", label: String(localized: "Clear Selection (Esc)"), size: 10, action: dismiss)
                 }
             }
-            .padding(.horizontal, VFSpace.xs)
-            HStack(spacing: 2) {
+            .padding(.leading, VFSpace.xs)
+            HStack(spacing: VFSpace.xxs) {
                 ForEach(actions) { a in
                     Button(action: a.run) {
-                        VStack(spacing: 3) {
+                        VStack(spacing: VFSpace.xxs) {
                             Group {
                                 if let t = a.tool { ToolChipIcon(tool: t, size: 18) } else {
-                                    Image(systemName: a.symbol).font(.system(size: 15, weight: .medium)).foregroundStyle(theme.ink)
+                                    Image(systemName: a.symbol).font(VFFont.glyph(15, weight: .medium)).foregroundStyle(theme.ink)
                                 }
                             }
                             .frame(height: 24)
-                            Text(a.title).font(.system(size: 10.5, weight: .medium)).lineLimit(1).fixedSize()
+                            .accessibilityHidden(true)
+                            Text(a.title).font(VFFont.micro).lineLimit(1).fixedSize()
                                 .foregroundStyle(a.on ? theme.accentText : theme.ink)
                         }
-                        .padding(.horizontal, 6)
-                        .frame(minWidth: 52, minHeight: 46)
+                        .padding(.horizontal, VFSpace.s)
+                        .frame(minWidth: Self.actionWidth, minHeight: 46)
                         .background(RoundedRectangle(cornerRadius: VFRadius.control, style: .continuous)
                             .fill(a.on ? theme.accent.opacity(0.14) : .clear))
                         .overlay(alignment: .bottom) {
@@ -58,12 +63,16 @@ struct StageContextPill: View {
                     }
                     .buttonStyle(.plain)
                     .help(a.title)
+                    .accessibilityLabel(a.title)
+                    .accessibilityAddTraits(a.on ? .isSelected : [])
                 }
             }
         }
         .padding(VFSpace.s)
-        .vfSurface(.floating, radius: VFRadius.floating)
+        .vfSurface(.control, radius: VFRadius.floating)
         .fixedSize()
+        .accessibilityElement(children: .contain)
+        .accessibilityLabel(String(localized: "Actions for \(title)"))
     }
 }
 
@@ -73,10 +82,10 @@ struct ValueBadge: View {
     let text: String
 
     var body: some View {
-        Text(text).font(.system(size: 12.5, weight: .semibold)).monospacedDigit()
+        Text(text).font(VFFont.rowEmphasis)
             .foregroundStyle(theme.onAccent)
-            .padding(.horizontal, 10).frame(height: 24)
-            .background(RoundedRectangle(cornerRadius: VFRadius.control).fill(theme.accent))
+            .padding(.horizontal, VFSpace.m).frame(height: 24)
+            .background(RoundedRectangle(cornerRadius: VFRadius.control, style: .continuous).fill(theme.accent))
             .shadow(color: .black.opacity(0.18), radius: 4, y: 1)
     }
 }
@@ -141,7 +150,7 @@ struct GizmoArc: View {
 
     private func dot(_ ctx: inout GraphicsContext, _ p: CGPoint, _ color: Color) {
         let r: CGFloat = 5
-        ctx.fill(Path(ellipseIn: CGRect(x: p.x - r, y: p.y - r, width: r * 2, height: r * 2)), with: .color(.white))
+        ctx.fill(Path(ellipseIn: CGRect(x: p.x - r, y: p.y - r, width: r * 2, height: r * 2)), with: .color(theme.onAccent))
         ctx.fill(Path(ellipseIn: CGRect(x: p.x - r + 1.6, y: p.y - r + 1.6, width: (r - 1.6) * 2, height: (r - 1.6) * 2)), with: .color(color))
     }
 }
@@ -177,9 +186,8 @@ struct DesignAnchorOverlay: View {
                         }
                         let list = pillActions(a)
                         if !list.isEmpty {
-                            let w = CGFloat(list.count) * 56 + 18, h: CGFloat = 78
                             StageContextPill(title: a.title, actions: list, dismiss: clear)
-                                .position(AnchorLayout.place(CGSize(width: w, height: h), near: a.rect, in: size, avoid: keepClear, prefer: .above))
+                                .position(AnchorLayout.place(StageContextPill.size(count: list.count), near: a.rect, in: size, avoid: keepClear, prefer: .above))
                         }
                     }
                 }
@@ -249,7 +257,7 @@ struct DesignAnchorOverlay: View {
     }
 
     static func format(_ v: Double, _ unit: String) -> String {
-        unit == "deg" ? String(format: "%.0f deg", v) : unit.isEmpty ? String(format: "%.0f", v) : String(format: "%.2f %@", v, unit)
+        VFFormat.value(v, VFUnit(symbol: unit))
     }
 
     // MARK: Pill
@@ -266,13 +274,15 @@ struct DesignAnchorOverlay: View {
         // Cross-stage verbs: what the selection leads to in the other stages.
         let bodies = selectedBodyNames
         if workspace != .assemble, !model.assembly.isEmpty {
-            out.append(PillAction(id: "joint", title: "Joint", symbol: "link") { actions.open(.assemble) })
+            out.append(PillAction(id: "joint", title: String(localized: "Joint"), symbol: "link") { actions.open(.assemble) })
         }
         if model.assembly.contains(where: { $0.linkedPCB && !Set($0.bodies).isDisjoint(with: bodies) }) {
-            out.append(PillAction(id: "board", title: "Show Board", symbol: "cpu") { pcb.sheet = .board; actions.open(.electronics) })
+            out.append(PillAction(id: "board", title: String(localized: "Show Board"), symbol: "cpu") { pcb.sheet = .board; actions.open(.electronics) })
         }
-        out.append(PillAction(id: "stress", title: "Stress Here", symbol: "waveform.path.ecg") { actions.run("simulate.stress") })
-        out.append(PillAction(id: "more", title: "More", symbol: "ellipsis") {
+        if actions.canRun("simulate.stress") {
+            out.append(PillAction(id: "stress", title: String(localized: "Stress Here"), symbol: "waveform.path.ecg") { actions.run("simulate.stress") })
+        }
+        out.append(PillAction(id: "more", title: String(localized: "More"), symbol: "ellipsis") {
             model.markingMenu = CGPoint(x: a.screen.x, y: a.screen.y)
         })
         return out

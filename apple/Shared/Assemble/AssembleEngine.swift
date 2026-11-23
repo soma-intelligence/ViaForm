@@ -226,7 +226,7 @@ struct AsmMotionStudy: Equatable {
         var collisions: [String]
         static func == (a: Self, b: Self) -> Bool { a.time == b.time && a.q == b.q && a.collisions == b.collisions }
     }
-    struct Contact: Equatable { var a: String; var b: String; var time: Double }
+    struct Contact: Hashable { var a: String; var b: String; var time: Double }
     var id: String
     var title: String
     var steps: [Step]
@@ -241,4 +241,15 @@ enum AsmFormat {
         let r = (v * p).rounded() / p
         return String(format: "%.\(digits)f°", r == 0 ? 0 : r)
     }
+
+    /// A joint value with its unit: degrees for a revolute joint, mm for a slider.
+    static func value(_ v: Double, _ j: AsmJoint, digits: Int = 0) -> String {
+        guard !j.angular else { return deg(v, digits: digits) }
+        let p = pow(10.0, Double(digits))
+        let r = (v * p).rounded() / p
+        return String(format: "%.\(digits)f mm", r == 0 ? 0 : r)
+    }
+
+    /// "shoulder_pan" as "Shoulder Pan": ids read as words in the UI.
+    static func title(_ id: String) -> String { id.replacingOccurrences(of: "_", with: " ").capitalized }
 }

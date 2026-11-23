@@ -18,6 +18,11 @@ struct FlowReporting: ViewModifier {
     @State private var generateJob: Int?
     @State private var generateVersion = 0
     @State private var trainJob: Int?
+    /// The paused state last told to the pipeline for the Generate job.
+    @State private var generatePaused = false
+    /// The joint count and the assembly read the engine's joint list: done once the design
+    /// settles, not on every revision (FRONTEND-SPEC 7.2, nothing heavy on the hot path).
+    @State private var jointsPass: Task<Void, Never>?
 
     func body(content: Content) -> some View {
         content
@@ -30,10 +35,9 @@ struct FlowReporting: ViewModifier {
                 reportGenerated()
             }
             .onChange(of: design.snapshot.revision) { _, _ in
-                countJoints()
                 flow.reportDesign(design.snapshot)
                 reportDesignTree()
-                reportAssembly()
+                scheduleJointsPass()
             }
             .onChange(of: design.snapshot.path) { _, path in documentPathChanged(path) }
             .onChange(of: flow.documentEpoch) { _, _ in
@@ -46,6 +50,17 @@ struct FlowReporting: ViewModifier {
                 reportGenerated()
             }
             .onChange(of: generate.running) { _, on in generateChanged(on) }
+            .onChange(of: generate.progress) { _, p in
+                guard let j = generateJob, let p else { return }
+                let total = max(p.iterations, 1) * max(p.variants, 1)
+                flow.progress(job: j, fraction: min(max(p.fraction, 0), 1), done: min(p.variant * max(p.iterations, 1) + p.iteration, total), total: total)
+            }
+            .onChange(of: generate.paused) { _, on in
+                // Paused from the study's own button: the jobs list and the capsule follow.
+                guard let j = generateJob, on != generatePaused else { return }
+                generatePaused = on
+                if on { flow.pause(job: j) } else { flow.resume(job: j) }
+            }
             .onChange(of: generate.project) { _, _ in reportGenerated() }
             .onChange(of: generate.assemblyLoaded) { _, _ in reportGenerated() }
             .onChange(of: pcb.revision) { _, _ in reportBoard() }
@@ -65,6 +80,18 @@ struct FlowReporting: ViewModifier {
                     flow.produce("make.bundle", summary: "Design exported")
                 }
             }
+    }
+
+    /// Reads the engine's joint list once the design has been still for a moment (a drag or a
+    /// typed value sends many revisions): the joint count and the assembly follow.
+    private func scheduleJointsPass() {
+        jointsPass?.cancel()
+        jointsPass = Task { @MainActor in
+            try? await Task.sleep(for: .milliseconds(300))
+            guard !Task.isCancelled else { return }
+            countJoints()
+            reportAssembly()
+        }
     }
 
     /// Joints from the engine's own list, motors from the bodies named so: the counts follow
@@ -87,9 +114,13 @@ struct FlowReporting: ViewModifier {
     private func generateChanged(_ on: Bool) {
         if on {
             generateVersion = generate.outcomeVersion
+            generatePaused = false
             let g = generate
-            generateJob = flow.startJob("generate.frame", verb: "Generating", label: "Generative study", expected: generate.expected > 0 ? generate.expected : nil,
-                                        controls: .init(cancel: { g.cancel() }))
+            let p = generate.progress
+            generateJob = flow.startJob("generate.frame", verb: String(localized: "Generating"), label: String(localized: "Generative study"),
+                                        total: p.map { max($0.iterations, 1) * max($0.variants, 1) },
+                                        expected: generate.expected > 0 ? generate.expected : nil,
+                                        controls: .init(pause: { g.setPaused(true) }, resume: { g.setPaused(false) }, cancel: { g.cancel() }))
             return
         }
         guard let j = generateJob ?? flow.job(on: "generate.frame")?.id else { return }
@@ -97,7 +128,7 @@ struct FlowReporting: ViewModifier {
         if let e = generate.error {
             flow.end(job: j, error: e)
         } else if generate.outcomeVersion != generateVersion, let o = generate.outcome {
-            flow.end(job: j, summary: "\(o.candidates.count) candidates")
+            flow.end(job: j, summary: String(localized: "\(o.candidates.count) candidates"))
         } else {
             // Stopped from the study's own button: the frame keeps its last build.
             flow.cancel(job: j)
@@ -107,7 +138,7 @@ struct FlowReporting: ViewModifier {
     private func trainingChanged(_ on: Bool) {
         let t = sim.training
         if on {
-            trainJob = flow.startJob("train.policy", verb: "Training", label: t.target.name, total: t.total,
+            trainJob = flow.startJob("train.policy", verb: String(localized: "Training"), label: t.target.name, total: t.total,
                                      controls: .init(cancel: { t.cancel() }))
             return
         }

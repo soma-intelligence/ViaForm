@@ -16,6 +16,8 @@ struct WorkspaceDropdown: View {
     var short = false
     var updateAll: () -> Void
     @State private var hovered = false
+    /// "Show Flow Graph" was picked: the graph opens once the menu's popover has gone.
+    @State private var graphAfterClose = false
 
     var body: some View {
         let badge = WorkspaceMenu.badge(flow, current: workspace)
@@ -26,7 +28,7 @@ struct WorkspaceDropdown: View {
         .frame(width: 92)
         .frame(maxHeight: .infinity)
         .padding(.horizontal, VFSpace.xs)
-        .help("Workspaces (Command-0), Command-1 to Command-9 open a stage")
+        .help("Workspaces (Command-0). Command-1 to Command-9 open a stage.")
         .accessibilityLabel(WorkspaceMenu.spoken(current: workspace, badge: badge))
         .accessibilityHint("Opens the list of stages")
         .accessibilityAddTraits(.isButton)
@@ -35,11 +37,18 @@ struct WorkspaceDropdown: View {
                               open: { w in isOpen = false; workspace = w },
                               updateAll: updateAll,
                               showFlow: {
+                                  graphAfterClose = true
                                   isOpen = false
-                                  DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) { showGraph = true }
                               },
                               close: { isOpen = false })
                 .background(theme.panel)
+                // Hand off to the graph when the menu has really left the screen (no fixed delay).
+                .onDisappear {
+                    if graphAfterClose {
+                        graphAfterClose = false
+                        showGraph = true
+                    }
+                }
         }
         .background(
             Color.clear.popover(isPresented: $showGraph, arrowEdge: .bottom) {
@@ -55,18 +64,18 @@ struct WorkspaceDropdown: View {
         let content = Group {
             if short {
                 HStack(spacing: VFSpace.s) {
-                    Image(systemName: workspace.symbol).font(.system(size: 18, weight: .regular))
+                    Image(systemName: workspace.symbol).font(VFFont.glyph(18))
                         .foregroundStyle(theme.stageFill(tone))
                     Text(workspace.title.uppercased()).font(VFFont.caps).tracking(VFTypeScale.capsTracking)
                         .foregroundStyle(theme.ink).lineLimit(1).fixedSize()
                     chevron
                 }
             } else {
-                VStack(spacing: 3) {
-                    Image(systemName: workspace.symbol).font(.system(size: 24, weight: .regular))
+                VStack(spacing: VFSpace.xxs) {
+                    Image(systemName: workspace.symbol).font(VFFont.glyph(24))
                         .foregroundStyle(theme.stageFill(tone))
                         .frame(height: 28)
-                    HStack(spacing: 3) {
+                    HStack(spacing: VFSpace.xxs) {
                         Text(workspace.title.uppercased()).font(VFFont.caps).tracking(VFTypeScale.capsTracking)
                             .foregroundStyle(theme.ink).lineLimit(1).fixedSize()
                         chevron
@@ -77,15 +86,15 @@ struct WorkspaceDropdown: View {
         return content
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .background(
-                RoundedRectangle(cornerRadius: VFRadius.card)
+                RoundedRectangle(cornerRadius: VFRadius.card, style: .continuous)
                     .fill(isOpen ? theme.accent.opacity(0.10) : (hovered ? theme.well : .clear))
             )
             .overlay(
-                RoundedRectangle(cornerRadius: VFRadius.card)
+                RoundedRectangle(cornerRadius: VFRadius.card, style: .continuous)
                     .strokeBorder(isOpen ? theme.accent : theme.hairline, lineWidth: isOpen ? 1.5 : 1)
             )
             .overlay(alignment: .topTrailing) {
-                WorkspaceBadgeView(badge: badge).offset(x: 5, y: -5)
+                WorkspaceBadgeView(badge: badge).offset(x: VFSpace.s, y: -VFSpace.s)
             }
             .padding(.vertical, short ? VFSpace.xs : VFSpace.s)
             .contentShape(Rectangle())
@@ -93,20 +102,23 @@ struct WorkspaceDropdown: View {
     }
 
     private var chevron: some View {
-        Image(systemName: "chevron.down").font(.system(size: 9, weight: .bold)).foregroundStyle(theme.inkSecondary)
+        Image(systemName: "chevron.down").font(VFFont.glyph(9, weight: .bold)).foregroundStyle(theme.inkSecondary)
+            .accessibilityHidden(true)
     }
 }
 
 /// The job capsule in the toolbar while a job runs: verb, progress ring, count and time left
-/// ("Generating 74 of 120 · 3 min left"), pause and stop; a click opens the jobs list.
+/// ("Generating 74 of 120 · 3 min left"), pause when the job can pause, and Stop; a click opens
+/// the jobs list. Liquid Glass: it is a control.
 struct ToolbarJobCapsule: View {
     @Environment(\.viaFormTheme) private var theme
     let flow: FlowModel
     @State private var shown = false
+    private static let height: CGFloat = 26
 
     var body: some View {
         if let j = flow.queue.jobs.first {
-            HStack(spacing: VFSpace.s) {
+            HStack(spacing: VFSpace.xs) {
                 Button { shown.toggle() } label: {
                     HStack(spacing: VFSpace.s) {
                         if j.determinate {
@@ -117,35 +129,34 @@ struct ToolbarJobCapsule: View {
                         Text(j.caption.isEmpty ? j.verb : j.caption).font(VFFont.small).foregroundStyle(theme.ink).lineLimit(1)
                         if flow.jobs.count > 1 {
                             Text("+\(flow.jobs.count - 1)").font(VFFont.micro).foregroundStyle(theme.inkSecondary)
+                                .accessibilityLabel(WorkspaceMenu.inflected("^[\(flow.jobs.count - 1) more job](inflect: true)"))
                         }
                     }
                     .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
-                .help("Jobs: pause, resume or cancel")
+                .help("Show the jobs")
                 if j.pausable {
-                    Button { j.paused ? flow.resume(job: j.id) : flow.pause(job: j.id) } label: {
-                        Image(systemName: j.paused ? "play.fill" : "pause.fill").font(.system(size: 9))
+                    VFIconButton(j.paused ? "play.fill" : "pause.fill",
+                                 label: j.paused ? String(localized: "Resume \(j.label)") : String(localized: "Pause \(j.label)"),
+                                 size: 9) {
+                        j.paused ? flow.resume(job: j.id) : flow.pause(job: j.id)
                     }
-                    .buttonStyle(.borderless)
-                    .help(j.paused ? "Resume" : "Pause")
-                    .accessibilityLabel(j.paused ? "Resume \(j.label)" : "Pause \(j.label)")
                 }
-                Button { flow.cancel(job: j.id) } label: { Image(systemName: "stop.fill").font(.system(size: 9)) }
-                    .buttonStyle(.borderless)
-                    .help("Stop (Command-.)")
-                    .accessibilityLabel("Stop \(j.label)")
+                VFIconButton("stop.fill", label: String(localized: "Stop \(j.label) (Command-.)"), size: 9) {
+                    flow.cancel(job: j.id)
+                }
             }
-            .padding(.horizontal, VFSpace.m)
-            .frame(height: 24)
+            .padding(.leading, VFSpace.m)
+            .padding(.trailing, VFSpace.xxs)
+            .frame(height: Self.height)
             .frame(maxWidth: 380)
-            .background(Capsule().fill(theme.well))
-            .overlay(Capsule().strokeBorder(theme.hairline))
+            .vfSurface(.control, radius: Self.height / 2)
             .popover(isPresented: $shown, arrowEdge: .bottom) {
-                JobList(flow: flow).padding(12).frame(width: 340).background(theme.panel)
+                JobList(flow: flow).padding(VFSpace.l).frame(width: 340).background(theme.panel)
             }
             .accessibilityElement(children: .contain)
-            .accessibilityLabel("Job, \(j.caption)")
+            .accessibilityLabel(String(localized: "Job, \(j.caption.isEmpty ? j.verb : j.caption)"))
         }
     }
 }

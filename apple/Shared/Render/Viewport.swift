@@ -139,10 +139,19 @@ final class CADView: MTKView {
     private var sketchDragging = false
     private var sketchMoved = false
 
+    /// A Command-click without a drag toggles the hit (Command-drag pans in the ViaForm preset).
+    private var commandClick = false
+    private var leftMove: MousePreset.Move = .none
+
     override func mouseDown(with e: NSEvent) {
         window?.makeFirstResponder(self)
         last = point(e)
-        guard !e.modifierFlags.contains(.option), !e.modifierFlags.contains(.command) else { return }
+        let flags = e.modifierFlags
+        // Control-click is the Mac's secondary click: the marking menu.
+        if flags.contains(.control) { coordinator?.model.markingMenu = last; return }
+        leftMove = MousePreset.current.leftDrag(option: flags.contains(.option), command: flags.contains(.command))
+        if flags.contains(.option) { return }
+        if flags.contains(.command) { commandClick = true; return }
         if e.clickCount == 1, coordinator?.model.beginSketchDrag(at: last) == true {
             sketchDragging = true
             sketchMoved = false
@@ -151,7 +160,7 @@ final class CADView: MTKView {
         if e.clickCount == 2 {
             coordinator?.model.doubleClick(at: last)
         } else {
-            coordinator?.model.click(at: last, additive: e.modifierFlags.contains(.shift) || e.modifierFlags.contains(.control))
+            coordinator?.model.click(at: last, mode: flags.contains(.shift) ? .add : .replace)
         }
     }
 
@@ -163,7 +172,8 @@ final class CADView: MTKView {
             last = p
             return
         }
-        if e.modifierFlags.contains(.option) { orbit(p) } else if e.modifierFlags.contains(.command) { pan(p) }
+        if commandClick, hypot(p.x - last.x, p.y - last.y) > 3 { commandClick = false }
+        apply(leftMove, p)
         last = p
     }
 
@@ -173,16 +183,23 @@ final class CADView: MTKView {
             if sketchMoved { coordinator?.model.endSketchDrag() } else { coordinator?.model.sketchDrag = nil }
             return
         }
+        if commandClick {
+            commandClick = false
+            coordinator?.model.click(at: point(e), mode: .toggle)
+            return
+        }
         coordinator?.moved(final: true)
     }
 
     private var rightDragged = false
 
-    // A right click opens the marking menu; a right drag still orbits.
+    // A right click opens the marking menu; a right drag moves the camera as the preset says.
     override func rightMouseDown(with e: NSEvent) { last = point(e); rightDragged = false }
     override func rightMouseDragged(with e: NSEvent) {
         let p = point(e)
-        if rightDragged || hypot(p.x - last.x, p.y - last.y) > 3 { rightDragged = true; orbit(p); last = p }
+        let move = MousePreset.current.rightDrag(control: e.modifierFlags.contains(.control))
+        guard move != .none else { return }
+        if rightDragged || hypot(p.x - last.x, p.y - last.y) > 3 { rightDragged = true; apply(move, p); last = p }
     }
     override func rightMouseUp(with e: NSEvent) {
         if rightDragged { coordinator?.moved(final: true) } else { coordinator?.model.markingMenu = point(e) }
@@ -191,10 +208,22 @@ final class CADView: MTKView {
     override func otherMouseDown(with e: NSEvent) { last = point(e) }
     override func otherMouseDragged(with e: NSEvent) {
         let p = point(e)
-        if e.modifierFlags.contains(.shift) { orbit(p) } else { pan(p) }
+        apply(MousePreset.current.middleDrag(shift: e.modifierFlags.contains(.shift), control: e.modifierFlags.contains(.control)), p)
         last = p
     }
     override func otherMouseUp(with e: NSEvent) { coordinator?.moved(final: true) }
+
+    private func apply(_ move: MousePreset.Move, _ p: CGPoint) {
+        switch move {
+        case .orbit: orbit(p)
+        case .pan: pan(p)
+        case .zoom:
+            guard let c = coordinator else { return }
+            c.model.camera.zoom(exp(Double(p.y - last.y) * 0.01), toward: nil)
+            c.moved()
+        case .none: break
+        }
+    }
 
     private func orbit(_ p: CGPoint) {
         guard let c = coordinator else { return }
@@ -211,8 +240,9 @@ final class CADView: MTKView {
     override func scrollWheel(with e: NSEvent) {
         guard let c = coordinator else { return }
         if e.hasPreciseScrollingDeltas, !e.modifierFlags.contains(.command) {
-            // Trackpad: two fingers pan, Shift two fingers orbit.
-            if e.modifierFlags.contains(.shift) {
+            // Trackpad: two fingers pan or orbit, as the navigation preset says.
+            let move = MousePreset.current.trackpad(shift: e.modifierFlags.contains(.shift), option: e.modifierFlags.contains(.option))
+            if move == .orbit {
                 c.model.camera.orbit(dx: -Double(e.scrollingDeltaX), dy: -Double(e.scrollingDeltaY))
             } else {
                 c.model.camera.pan(dx: Double(e.scrollingDeltaX), dy: Double(e.scrollingDeltaY), viewHeight: Double(bounds.height))

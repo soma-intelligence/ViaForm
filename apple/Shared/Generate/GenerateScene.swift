@@ -13,21 +13,56 @@ typealias GenerateImage = UIImage
 
 // MARK: Stress colours
 
-/// Blue (unstressed) to red (at the allowable), as the legend shows it.
+/// The stress heat map. Viridis by default (FRONTEND-SPEC 7.8: perceptually even and readable
+/// with colour blindness); a red-blue diverging scale on request. Data colours, not UI tokens:
+/// they paint the 3D preview, and the legend mirrors them.
 enum StressColors {
-    static let stops: [SIMD3<Float>] = [
-        SIMD3(0.16, 0.32, 0.92), SIMD3(0.10, 0.74, 0.90), SIMD3(0.30, 0.82, 0.36), SIMD3(0.98, 0.84, 0.20), SIMD3(0.92, 0.20, 0.16),
-    ]
+    enum Scale: String, CaseIterable, Identifiable, Sendable {
+        case viridis, redBlue
+        var id: String { rawValue }
+        var title: String {
+            switch self {
+            case .viridis: String(localized: "Viridis")
+            case .redBlue: String(localized: "Blue to red")
+            }
+        }
+        var stops: [SIMD3<Float>] {
+            switch self {
+            case .viridis:
+                [SIMD3(0.267, 0.005, 0.329), SIMD3(0.231, 0.322, 0.545), SIMD3(0.129, 0.569, 0.549),
+                 SIMD3(0.369, 0.788, 0.384), SIMD3(0.992, 0.906, 0.145)]
+            case .redBlue:
+                [SIMD3(0.129, 0.400, 0.675), SIMD3(0.404, 0.663, 0.812), SIMD3(0.969, 0.969, 0.969),
+                 SIMD3(0.937, 0.541, 0.384), SIMD3(0.698, 0.094, 0.169)]
+            }
+        }
+    }
 
-    /// `t` in 0...1 along the scale; above 1 stays red.
-    static func rgb(_ t: Float) -> SIMD3<Float> {
+    private static let storageKey = "generate.stressScale"
+
+    /// The scale the next previews are coloured with (read off the main actor too).
+    static var current: Scale {
+        get { UserDefaults.standard.string(forKey: storageKey).flatMap(Scale.init(rawValue:)) ?? .viridis }
+        set { UserDefaults.standard.set(newValue.rawValue, forKey: storageKey) }
+    }
+
+    /// `t` in 0...1 along the scale; above 1 stays at the top colour.
+    static func rgb(_ t: Float, scale: Scale = current) -> SIMD3<Float> {
+        let stops = scale.stops
         let x = min(max(t.isFinite ? t : 0, 0), 1) * Float(stops.count - 1)
         let i = min(Int(x), stops.count - 2)
         return simd_mix(stops[i], stops[i + 1], SIMD3(repeating: x - Float(i)))
     }
 
-    static var gradient: Gradient {
-        Gradient(colors: stops.map { Color(red: Double($0.x), green: Double($0.y), blue: Double($0.z)) })
+    static func gradient(_ scale: Scale = current) -> Gradient {
+        Gradient(colors: scale.stops.map { Color(scene: SIMD3(Double($0.x), Double($0.y), Double($0.z))) })
+    }
+}
+
+extension Color {
+    /// A colour the 3D preview paints (region kinds, stress scale), so a legend matches the scene.
+    init(scene rgb: SIMD3<Double>) {
+        self.init(cgColor: CGColor(srgbRed: CGFloat(rgb.x), green: CGFloat(rgb.y), blue: CGFloat(rgb.z), alpha: 1))
     }
 }
 
@@ -206,7 +241,6 @@ struct PreviewMesh: Sendable {
     }
 
     /// The SceneKit geometry over the packed buffers.
-    @MainActor
     func geometry() -> SCNGeometry {
         let v = SCNGeometrySource(data: positions, semantic: .vertex, vectorCount: vertexCount, usesFloatComponents: true,
                                   componentsPerVector: 3, bytesPerComponent: 4, dataOffset: 0, dataStride: 12)
@@ -286,7 +320,7 @@ final class GenerateScene {
         applyCamera()
     }
 
-    private static func backdrop(_ theme: ViewportTheme) -> CGImage? {
+    nonisolated private static func backdrop(_ theme: ViewportTheme) -> CGImage? {
         let (top, bottom) = (theme.backgroundTop, theme.backgroundBottom)
         let space = CGColorSpace(name: CGColorSpace.sRGB)!
         guard let ctx = CGContext(data: nil, width: 4, height: 256, bitsPerComponent: 8, bytesPerRow: 16, space: space,
@@ -305,7 +339,7 @@ final class GenerateScene {
     var back: Vec3 { Vec3(cos(pitch) * cos(yaw), cos(pitch) * sin(yaw), sin(pitch)) }
 
     /// World (z up) to SceneKit (y up).
-    static func toScene(_ p: Vec3) -> SIMD3<Float> { SIMD3(Float(p.x), Float(p.z), Float(-p.y)) }
+    nonisolated static func toScene(_ p: Vec3) -> SIMD3<Float> { SIMD3(Float(p.x), Float(p.z), Float(-p.y)) }
 
     func applyCamera() {
         let eye = target + back * distance
@@ -427,8 +461,8 @@ final class GenerateScene {
             shownResult = nil
         }
         let index = result ? model.selected : nil
-        if shownResult == nil || shownResult!.version != model.outcomeVersion || shownResult!.index != index {
-            shownResult = (model.outcomeVersion, index)
+        if shownResult == nil || shownResult!.version != model.previewsVersion || shownResult!.index != index {
+            shownResult = (model.previewsVersion, index)
             resultNode.childNodes.forEach { $0.removeFromParentNode() }
             if let index, let p = model.previews[safe: index], !p.isEmpty {
                 resultNode.addChildNode(SCNNode(geometry: p.geometry()))
@@ -691,16 +725,82 @@ final class GenerateScene {
 
     // MARK: Thumbnails
 
-    /// A still of a candidate's surface from the default orbit, for the gallery.
-    static func thumbnail(_ preview: PreviewMesh, size: CGSize, theme: ViewportTheme) -> GenerateImage? {
+    /// A still of a candidate's surface from the default orbit, for the gallery. Builds its own
+    /// small scene, so it runs off the main actor.
+    nonisolated static func thumbnail(_ preview: PreviewMesh, size: CGSize, theme: ViewportTheme) -> CGImage? {
         guard !preview.isEmpty else { return nil }
-        let s = GenerateScene(theme: theme)
-        s.resultNode.addChildNode(SCNNode(geometry: preview.geometry()))
-        s.fit(Vec3(preview.min), Vec3(preview.max))
+        let scene = SCNScene()
+        scene.background.contents = backdrop(theme)
+        let root = SCNNode()
+        root.simdEulerAngles.x = -.pi / 2
+        scene.rootNode.addChildNode(root)
+        root.addChildNode(SCNNode(geometry: preview.geometry()))
+        let camera = SCNCamera()
+        camera.fieldOfView = 40
+        let cameraNode = SCNNode()
+        cameraNode.camera = camera
+        scene.rootNode.addChildNode(cameraNode)
+        let head = SCNNode()
+        head.light = SCNLight()
+        head.light?.type = .directional
+        head.light?.intensity = 650
+        head.simdEulerAngles = SIMD3(-0.35, 0.3, 0)
+        cameraNode.addChildNode(head)
+        let fill = SCNNode()
+        fill.light = SCNLight()
+        fill.light?.type = .ambient
+        fill.light?.intensity = 420
+        scene.rootNode.addChildNode(fill)
+        // The default orbit, framing the surface's box.
+        let lo = Vec3(preview.min), hi = Vec3(preview.max)
+        let yaw = -0.9, pitch = 0.45
+        let back = Vec3(cos(pitch) * cos(yaw), cos(pitch) * sin(yaw), sin(pitch))
+        let target = (lo + hi) / 2
+        let radius = max(simd_length(hi - lo) / 2, 1)
+        let vertical = 40.0 * .pi / 180
+        let aspect = size.width / max(size.height, 1)
+        let fov = min(vertical, 2 * atan(tan(vertical / 2) * aspect))
+        let distance = radius / sin(fov / 2) * 1.22
+        cameraNode.simdPosition = toScene(target + back * distance)
+        cameraNode.simdLook(at: toScene(target), up: SIMD3(0, 1, 0), localFront: SIMD3(0, 0, -1))
+        camera.zNear = max(0.05, distance * 0.002)
+        camera.zFar = distance * 20 + 1000
         let renderer = SCNRenderer(device: MTLCreateSystemDefaultDevice(), options: nil)
-        renderer.scene = s.scene
-        renderer.pointOfView = s.cameraNode
-        return renderer.snapshot(atTime: 0, with: size, antialiasingMode: .multisampling4X)
+        renderer.scene = scene
+        renderer.pointOfView = cameraNode
+        let image = renderer.snapshot(atTime: 0, with: size, antialiasingMode: .multisampling4X)
+        #if os(macOS)
+        return image.cgImage(forProposedRect: nil, context: nil, hints: nil)
+        #else
+        return image.cgImage
+        #endif
+    }
+
+    // MARK: Camera state
+
+    /// Where the camera is, kept by the model so a return to Generate finds the same view.
+    struct CameraState {
+        var target: Vec3
+        var yaw: Double
+        var pitch: Double
+        var distance: Double
+        var homedFor: String?
+        var moved: Bool
+        var framed: (Vec3, Vec3)?
+    }
+
+    var cameraState: CameraState {
+        get { CameraState(target: target, yaw: yaw, pitch: pitch, distance: distance, homedFor: homedFor, moved: moved, framed: framed) }
+        set {
+            target = newValue.target
+            yaw = newValue.yaw
+            pitch = newValue.pitch
+            distance = newValue.distance
+            homedFor = newValue.homedFor
+            moved = newValue.moved
+            framed = newValue.framed
+            applyCamera()
+        }
     }
 }
 

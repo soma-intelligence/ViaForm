@@ -100,7 +100,34 @@ final class SimModel {
         tick += 1
     }
 
+    // MARK: Option changes
+
+    @ObservationIgnored private var pendingReset: Task<Void, Never>?
+
+    /// The options changed: rebuilds the course once they settle (a quarter second), so a run of
+    /// picker or stepper changes restarts the flight once, not on every tick.
+    func optionsChanged() {
+        pendingReset?.cancel()
+        pendingReset = Task { [weak self] in
+            try? await Task.sleep(for: .milliseconds(250))
+            guard !Task.isCancelled, let self else { return }
+            self.pendingReset = nil
+            self.reset()
+        }
+    }
+
+    /// Applies a pending option change now (before flying).
+    private func settleOptions() {
+        guard let p = pendingReset else { return }
+        p.cancel()
+        pendingReset = nil
+        reset()
+    }
+
+    func clearError() { error = nil }
+
     func play() {
+        settleOptions()
         if status?.finished == true { reset() }
         guard !playing else { return }
         playing = true
@@ -118,6 +145,7 @@ final class SimModel {
     }
 
     func pause() {
+        if finishing { stopFinishing() }
         playing = false
         loop?.cancel()
         loop = nil
@@ -142,7 +170,38 @@ final class SimModel {
         if step.status.finished { pause() }
     }
 
-    /// Runs the whole flight at once (for tests and the "Run to end" button).
+    /// The flight is being run to its end in steps.
+    private(set) var finishing = false
+    @ObservationIgnored private var finishTask: Task<Void, Never>?
+
+    /// Runs the flight to its end without holding the main actor: a few simulated seconds per
+    /// turn of the run loop, so the view keeps drawing and Pause still answers.
+    func finish(limit: Double = 60) {
+        guard !finishing else { return }
+        settleOptions()
+        pause()
+        if status?.finished == true { reset() }
+        finishing = true
+        finishTask = Task { [weak self] in
+            var t = 0.0
+            while let self, !Task.isCancelled, self.status?.finished != true, t < limit, self.error == nil {
+                self.advance(0.5)
+                t += 0.5
+                await Task.yield()
+                try? await Task.sleep(for: .milliseconds(4))
+            }
+            self?.finishing = false
+            self?.finishTask = nil
+        }
+    }
+
+    func stopFinishing() {
+        finishTask?.cancel()
+        finishTask = nil
+        finishing = false
+    }
+
+    /// Runs the whole flight at once, synchronously (the self-test).
     func runToEnd(limit: Double = 60) {
         pause()
         var t = 0.0
@@ -256,6 +315,8 @@ final class SimTraining {
     private(set) var history: [SimTrainJob.Point] = []
     private(set) var stage = ""
     private(set) var running = false
+    /// Stop was asked: the trainer ends its current iteration, then its brain is kept.
+    private(set) var stopping = false
     private(set) var total = 0
     private(set) var heldOut: (before: Double, after: Double)?
     private(set) var brainJSON: String?
@@ -264,7 +325,12 @@ final class SimTraining {
     private var poll: Task<Void, Never>?
 
     func start() {
-        cancel()
+        // A training still running is dropped (its brain is not wanted any more).
+        job?.cancel()
+        poll?.cancel()
+        poll = nil
+        running = false
+        stopping = false
         history = []
         heldOut = nil
         brainJSON = nil
@@ -272,7 +338,7 @@ final class SimTraining {
         let opts: [String: Any] = [
             "target": target.rawValue, "rateLoop": rateLoop, "iterations": iterations, "population": population, "episodes": episodes,
         ]
-        guard let job = SimTrainJob(options: opts) else { error = "The training options were refused."; return }
+        guard let job = SimTrainJob(options: opts) else { error = String(localized: "The training could not start with these settings."); return }
         self.job = job
         running = true
         total = iterations
@@ -288,13 +354,18 @@ final class SimTraining {
     /// Reads the job's progress; false once it has ended.
     @discardableResult
     func refresh() -> Bool {
-        guard let job, let p = job.progress() else { return false }
+        guard let job, let p = job.progress() else {
+            running = false
+            stopping = false
+            return false
+        }
         history = p.history
         stage = p.stage
         total = p.total
         error = p.error
         if !p.running {
             running = false
+            stopping = false
             if let r = p.result { heldOut = (r.heldOut.before, r.heldOut.after) }
             brainJSON = job.brainJSON
             return false
@@ -302,16 +373,20 @@ final class SimTraining {
         return true
     }
 
+    /// Asks the trainer to stop. It ends its current iteration on its own threads; the poll sees
+    /// it end and keeps its brain. Never waits on the main actor.
     func cancel() {
+        guard running, !stopping else { return }
+        stopping = true
         job?.cancel()
-        poll?.cancel()
-        poll = nil
-        if running {
-            // The job stops after its current iteration; wait for it so its brain is kept.
-            while job?.progress()?.running == true { Thread.sleep(forTimeInterval: 0.05) }
-            refresh()
+        if poll == nil {
+            poll = Task { [weak self] in
+                while !Task.isCancelled {
+                    try? await Task.sleep(for: .milliseconds(100))
+                    guard let self, self.refresh() else { return }
+                }
+            }
         }
-        running = false
     }
 
     /// Runs a training to its end (the self-test).

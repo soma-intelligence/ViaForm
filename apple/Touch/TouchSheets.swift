@@ -16,6 +16,16 @@ struct TouchBrowserSheet: View {
     let loadHand: () -> Void
     let showBom: () -> Void
     let showLibrary: () -> Void
+    @State private var confirm: ConfirmRequest?
+
+    /// Sample entries are for screenshots and tests: debug builds, or `--samples`.
+    static var showsSamples: Bool {
+        #if DEBUG
+        true
+        #else
+        ProcessInfo.processInfo.arguments.contains("--samples")
+        #endif
+    }
 
     var body: some View {
         let _ = flow.version
@@ -24,7 +34,7 @@ struct TouchBrowserSheet: View {
                 Section(stage.title) {
                     let rows = flow.tree(stage.stage)
                     if rows.isEmpty {
-                        Text("Nothing in this stage yet.").foregroundStyle(theme.inkSecondary)
+                        Text("Nothing in this stage yet.").font(VFFont.row).foregroundStyle(theme.inkSecondary)
                     }
                     ForEach(rows) { r in row(r) }
                 }
@@ -35,22 +45,28 @@ struct TouchBrowserSheet: View {
                     ForEach(Workspace.allCases) { w in
                         Button { dismiss(); open(w) } label: {
                             HStack(spacing: 12) {
-                                Image(systemName: w.symbol).frame(width: 24)
+                                Image(systemName: w.symbol).frame(width: 24).accessibilityHidden(true)
                                 Text(w.title)
                                 Spacer()
-                                Text(PipelineWords.describe(flow.stage(w)?.status ?? .empty)).font(.footnote).foregroundStyle(theme.inkSecondary)
+                                Text(PipelineWords.describe(flow.stage(w)?.status ?? .empty)).font(VFFont.small).foregroundStyle(theme.inkSecondary)
                                 VFStatusDot(status: (flow.stage(w)?.status ?? .empty).vfStatus, size: 8)
+                                    .accessibilityHidden(true)
                             }
-                            .frame(minHeight: VFSize.touchRow - 8)
+                            .frame(minHeight: VFSize.touchTarget)
                             .foregroundStyle(w == stage ? theme.accentText : theme.ink)
                         }
+                        .accessibilityAddTraits(w == stage ? .isSelected : [])
                     }
                 }
                 Section("Design") {
-                    Button("New Design", systemImage: "plus") { ProjectFiles.newDesign(model, in: ProjectFiles.current); dismiss() }
+                    Button("New Design", systemImage: "plus") { guarded(String(localized: "Discard and Start New")) { ProjectFiles.newDesign(model, in: ProjectFiles.context(for: model)) } }
                     Button("Open or Import…", systemImage: "folder") { dismiss(); importFile() }
-                    Button("Sample Bracket", systemImage: "wand.and.stars") { model.loadSample(); dismiss() }
-                    Button("Sample Hand", systemImage: "hand.raised") { dismiss(); loadHand() }
+                }
+                if Self.showsSamples {
+                    Section("Samples") {
+                        Button("Sample Bracket", systemImage: "wand.and.stars") { guarded(String(localized: "Discard and Open Sample")) { model.loadSample() } }
+                        Button("Sample Hand", systemImage: "hand.raised") { guarded(String(localized: "Discard and Open Sample")) { loadHand() } }
+                    }
                 }
                 Section("Files") {
                     Button("Save Design…", systemImage: "square.and.arrow.down") { dismiss(); export(.design) }
@@ -63,30 +79,39 @@ struct TouchBrowserSheet: View {
             }
             .navigationTitle(ProjectTitle.of(flow: flow, design: model))
             .navigationBarTitleDisplayMode(.inline)
-            .toolbar { Button("Done") { dismiss() } }
+            .toolbar { ToolbarItem(placement: .confirmationAction) { Button("Done") { dismiss() } } }
         }
+        .confirmSheet($confirm)
+    }
+
+    /// Replacing the open design asks first when it has changes since the last save.
+    private func guarded(_ verb: String, _ action: @escaping () -> Void) {
+        let run = { action(); dismiss() }
+        guard let c = ProjectFiles.context(for: model), ProjectFiles.isEdited(c) else { run(); return }
+        let name = ProjectTitle.of(flow: flow, design: model)
+        confirm = ConfirmRequest(title: String(localized: "Discard changes to \(name)?"),
+                                 message: String(localized: "The changes since the last save are lost. Save the design first to keep them."),
+                                 verb: verb, destructive: true, perform: run)
     }
 
     /// A tree row: indent, kind icon, name and detail, then eye and lock, 48 points tall.
     private func row(_ r: FlowModel.TreeRow) -> some View {
         HStack(spacing: 10) {
-            Image(systemName: Self.symbol(r.kind)).foregroundStyle(theme.inkSecondary).frame(width: 22)
+            Image(systemName: Self.symbol(r.kind)).foregroundStyle(theme.inkSecondary).frame(width: 22).accessibilityHidden(true)
             VStack(alignment: .leading, spacing: 1) {
                 Text(r.name).foregroundStyle(r.shown ? theme.ink : theme.inkTertiary)
-                if let d = r.detail { Text(d).font(.caption).foregroundStyle(theme.inkSecondary) }
+                if let d = r.detail { Text(d).font(VFFont.small).foregroundStyle(theme.inkSecondary) }
             }
             Spacer()
-            if let s = r.status { VFStatusDot(status: s.vfStatus, size: 7) }
-            Button { setVisible(r, !r.visible) } label: {
-                Image(systemName: r.visible ? "eye" : "eye.slash").frame(width: VFSize.touchTarget, height: VFSize.touchTarget)
+            if let s = r.status {
+                VFStatusDot(status: s.vfStatus, size: 7).accessibilityLabel(s.vfStatus.word)
             }
-            .buttonStyle(.plain).foregroundStyle(r.visible ? theme.ink : theme.inkTertiary)
-            .accessibilityLabel(r.visible ? "Hide \(r.name)" : "Show \(r.name)")
-            Button { flow.setLocked(r.id, !r.locked) } label: {
-                Image(systemName: r.locked ? "lock.fill" : "lock.open").frame(width: VFSize.touchTarget, height: VFSize.touchTarget)
-            }
-            .buttonStyle(.plain).foregroundStyle(r.locked ? theme.ink : theme.inkTertiary)
-            .accessibilityLabel(r.locked ? "Unlock \(r.name)" : "Lock \(r.name)")
+            VFIconButton(r.visible ? "eye" : "eye.slash",
+                         label: r.visible ? String(localized: "Hide \(r.name)") : String(localized: "Show \(r.name)"),
+                         size: 16, tint: r.visible ? theme.ink : theme.inkTertiary) { setVisible(r, !r.visible) }
+            VFIconButton(r.locked ? "lock.fill" : "lock.open",
+                         label: r.locked ? String(localized: "Unlock \(r.name)") : String(localized: "Lock \(r.name)"),
+                         size: 16, tint: r.locked ? theme.ink : theme.inkTertiary) { flow.setLocked(r.id, !r.locked) }
         }
         .padding(.leading, CGFloat(r.depth) * 18)
         .frame(minHeight: VFSize.touchRow)
@@ -101,16 +126,17 @@ struct TouchBrowserSheet: View {
 
     private func output(_ o: FlowModel.Output) -> some View {
         HStack(spacing: 10) {
-            VFStatusDot(status: o.status.vfStatus, size: 8)
+            VFStatusDot(status: o.status.vfStatus, size: 8).accessibilityHidden(true)
             VStack(alignment: .leading, spacing: 2) {
-                Text(o.revision_name ?? o.label).font(.body.weight(.medium))
-                Text(o.reason.isEmpty ? PipelineWords.describe(o.status) : o.reason).font(.caption).foregroundStyle(theme.inkSecondary).lineLimit(1)
+                Text(o.revision_name ?? o.label).font(VFFont.rowEmphasis)
+                Text(o.reason.isEmpty ? PipelineWords.describe(o.status) : o.reason).font(VFFont.small).foregroundStyle(theme.inkSecondary).lineLimit(2)
             }
+            .accessibilityElement(children: .combine)
             Spacer()
             if o.status == .stale || o.status == .failed || o.status == .empty, let w = Workspace(stage: o.stage) {
                 // It takes you to the stage that rebuilds it; the label says so.
-                Button("Go to \(w.title)") { dismiss(); open(w) }
-                    .buttonStyle(.bordered)
+                Button(String(localized: "Go to \(w.title)")) { dismiss(); open(w) }
+                    .buttonStyle(.vfSecondary)
                     .frame(minHeight: VFSize.touchTarget)
             }
         }
@@ -156,21 +182,20 @@ struct TouchCommandPalette: View {
     var body: some View {
         VStack(spacing: 0) {
             HStack(spacing: 10) {
-                Image(systemName: "magnifyingglass").foregroundStyle(theme.inkSecondary)
-                TextField("Search the eight stages", text: $query)
+                Image(systemName: "magnifyingglass").foregroundStyle(theme.inkSecondary).accessibilityHidden(true)
+                TextField("Search the nine stages", text: $query)
                     .textFieldStyle(.plain)
-                    .font(.system(size: 17))
+                    .font(.body)
                     .focused($focused)
                     .submitLabel(.go)
                     .autocorrectionDisabled()
                     .textInputAutocapitalization(.never)
                     .onSubmit { if let c = results.first { pick(c) } }
                 if !query.isEmpty {
-                    Button { query = "" } label: { Image(systemName: "xmark.circle.fill").foregroundStyle(theme.inkTertiary) }
-                        .buttonStyle(.plain).accessibilityLabel("Clear search")
+                    VFIconButton("xmark.circle.fill", label: String(localized: "Clear search"), size: 16, tint: theme.inkTertiary) { query = "" }
                 }
             }
-            .padding(.horizontal, 16)
+            .padding(.horizontal, VFSpace.xl)
             .frame(height: 52)
             VFHairline()
             ScrollView(.horizontal, showsIndicators: false) {
@@ -179,16 +204,16 @@ struct TouchCommandPalette: View {
                         let on = w == stage
                         Button { pick(FlowModel.Command(id: "stage.\(w.stage)", label: w.title, stage: w.stage, group: "WORKSPACE", icon: "stage", source: "app")) } label: {
                             HStack(spacing: 6) {
-                                Image(systemName: w.symbol).font(.system(size: 15, weight: .medium))
-                                if on { Text(w.title).font(.system(size: 14, weight: .semibold)) }
+                                Image(systemName: w.symbol).font(VFFont.glyph(15, weight: .medium))
+                                if on { Text(w.title).font(VFFont.rowEmphasis) }
                             }
-                            .padding(.horizontal, on ? 12 : 0)
-                            .frame(minWidth: VFSize.touchTarget, minHeight: 36)
+                            .padding(.horizontal, on ? VFSpace.l : 0)
+                            .frame(minWidth: VFSize.touchTarget, minHeight: VFSize.touchTarget)
                             .foregroundStyle(on ? theme.accentText : theme.ink)
                             .background(Capsule().fill(on ? theme.accent.opacity(0.14) : theme.well))
                         }
-                        .buttonStyle(.plain)
-                        .accessibilityLabel("Go to \(w.title)")
+                        .buttonStyle(.vfTouch)
+                        .accessibilityLabel(String(localized: "Go to \(w.title)"))
                         .accessibilityAddTraits(on ? .isSelected : [])
                     }
                 }
@@ -198,24 +223,24 @@ struct TouchCommandPalette: View {
             VFHairline()
             ScrollView {
                 LazyVStack(alignment: .leading, spacing: 0) {
-                    Text(query.isEmpty ? "\(stage.title) commands" : "Results").font(VFFont.small.weight(.semibold))
+                    Text(query.isEmpty ? String(localized: "\(stage.title) commands") : String(localized: "Results")).font(VFFont.small.weight(.semibold))
                         .foregroundStyle(theme.inkSecondary).padding(.horizontal, 16).padding(.top, 8).padding(.bottom, 4)
                     ForEach(results) { c in
                         let runnable = canRun(c.id)
                         Button { pick(c) } label: {
                             HStack(spacing: 12) {
-                                ToolChipIcon(icon: c.icon, id: c.id, size: 16).frame(width: 30)
+                                ToolChipIcon(icon: c.icon, id: c.id, size: 16).frame(width: 30).accessibilityHidden(true)
                                 VStack(alignment: .leading, spacing: 1) {
                                     Text(StageLabels.command(c.label)).foregroundStyle(theme.ink).lineLimit(1)
                                     Text(Self.where_(c)).font(.caption).foregroundStyle(theme.inkSecondary).lineLimit(1)
                                 }
                                 Spacer(minLength: 8)
                                 if let k = c.key, k.count == 1 {
-                                    Text(k).font(.system(size: 13, weight: .semibold, design: .rounded))
+                                    Text(k).font(VFFont.mono.weight(.semibold))
                                         .foregroundStyle(theme.inkSecondary)
-                                        .frame(width: 26, height: 26)
-                                        .background(theme.well, in: RoundedRectangle(cornerRadius: 6))
-                                        .accessibilityLabel("Shortcut \(k)")
+                                        .frame(minWidth: 26, minHeight: 26)
+                                        .background(theme.well, in: RoundedRectangle(cornerRadius: VFRadius.control))
+                                        .accessibilityLabel(String(localized: "Shortcut \(k)"))
                                 }
                             }
                             .padding(.horizontal, 16)
@@ -223,11 +248,11 @@ struct TouchCommandPalette: View {
                             .contentShape(Rectangle())
                             .opacity(runnable ? 1 : 0.4)
                         }
-                        .buttonStyle(.plain)
-                        .disabled(!runnable)
+                        .buttonStyle(.vfTouch)
+                        .vfDisabled(!runnable, reason: String(localized: "Not available right now"))
                     }
                     if results.isEmpty {
-                        Text("No command matches.").font(VFFont.small).foregroundStyle(theme.inkSecondary).padding(16)
+                        Text("No command matches. Try another word.").font(VFFont.small).foregroundStyle(theme.inkSecondary).padding(VFSpace.xl)
                     }
                 }
                 .padding(.bottom, 8)
@@ -236,7 +261,7 @@ struct TouchCommandPalette: View {
             .frame(maxHeight: 440)
         }
         .frame(maxWidth: 560)
-        .vfSurface(.floating, radius: 20)
+        .vfSurface(.floating, radius: VFRadius.touchFloating)
         .onAppear { focused = true }
         .onKeyPress(.escape) { close(); return .handled }
         .gesture(DragGesture(minimumDistance: 30).onEnded { g in if g.translation.height > 80 { close() } })
