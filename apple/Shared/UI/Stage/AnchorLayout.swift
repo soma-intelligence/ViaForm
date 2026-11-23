@@ -212,7 +212,7 @@ struct SceneThumbnail: View {
         for t in tris {
             var p = Path()
             p.move(to: t.a); p.addLine(to: t.b); p.addLine(to: t.c); p.closeSubpath()
-            let base = t.hot ? accent : Color(red: Double(t.color.x), green: Double(t.color.y), blue: Double(t.color.z))
+            let base = t.hot ? accent : Color(SIMD4(t.color.x, t.color.y, t.color.z, 1))
             ctx.fill(p, with: .color(base))
             ctx.fill(p, with: .color(Color.black.opacity(1 - t.shade)))
             ctx.stroke(p, with: .color(base.opacity(0.5)), lineWidth: 0.4)

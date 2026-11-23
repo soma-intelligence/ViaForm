@@ -119,6 +119,107 @@ enum GenerateSelfTest {
             out.append((false, "generative live: \(error.localizedDescription)"))
         }
 
+        // Outcomes (VIAFORM-SPEC 7.10.3): mesh checks from the engine on every candidate, the
+        // gallery's sorts, the Pareto front, the compare figures, and export in each format.
+        do {
+            var multi = s
+            multi.voxel = 3
+            multi.iterations = 12
+            multi.variants = 3
+            let job = try GenerateJob(json: try GenerateEngine.json(multi))
+            let o = try job.summary()
+            let request = GenerateModel.checkRequest(multi, route: nil)
+            let t = Date()
+            let reports = try o.candidates.map { try GenerateEngine.checkMesh($0.mesh, request: request) }
+            let checkSeconds = Date().timeIntervalSince(t)
+            let ids = ["watertight", "manifold", "bodies", "min_wall", "overhangs", "voids", "triangles"]
+            let complete = reports.allSatisfy { $0.items.map(\.id) == ids }
+            let closed = reports.allSatisfy { $0.item("watertight")?.status == .pass && $0.item("manifold")?.status == .pass }
+            let walls = reports.compactMap(\.minWall)
+            out.append((o.candidates.count == 3 && complete && closed && walls.count == 3 && walls.allSatisfy { $0 > 0 },
+                        "mesh checks: \(reports.count) candidates watertight and manifold, thinnest walls \(walls.map { String(format: "%.2f", $0) }.joined(separator: "/")) mm in \(String(format: "%.2f", checkSeconds)) s"))
+            var printed = multi
+            printed.manufacturing.process = .additive
+            let fdm = try GenerateEngine.checkMesh(o.candidates[0].mesh, request: GenerateModel.checkRequest(printed, route: nil))
+            let sls = try GenerateEngine.checkMesh(o.candidates[0].mesh, request: GenerateModel.checkRequest(multi, route: .sls))
+            out.append((fdm.item("overhangs")?.status != .skipped && fdm.item("min_wall")?.limit == 0.8
+                        && reports[0].item("overhangs")?.status == .skipped && sls.item("min_wall")?.limit == 0.7,
+                        "mesh checks follow the process: additive overhangs \(fdm.item("overhangs")?.status.word ?? "none"), walls held to 0.8 mm (FDM) and 0.7 mm (SLS)"))
+            let empty = try GenerateEngine.checkMesh(StudyMesh(), request: "{}")
+            out.append((empty.item("watertight")?.status == .fail && !empty.passed, "mesh checks fail an empty surface instead of passing it"))
+
+            // Sorts: each a permutation, in order by its figure.
+            let cs = o.candidates
+            func sorted(_ by: OutcomeSort, _ key: (StudyCandidate) -> Double, ascending: Bool) -> Bool {
+                let order = by.ordered(cs)
+                guard Set(order) == Set(cs.indices), order.count == cs.count else { return false }
+                let keys = order.map { key(cs[$0]) }
+                return zip(keys, keys.dropFirst()).allSatisfy { ascending ? $0 <= $1 : $0 >= $1 }
+            }
+            let sorts = [
+                sorted(.mass, { $0.massG }, ascending: true),
+                sorted(.safety, { $0.analysis.safetyFactor.isFinite ? $0.analysis.safetyFactor : .greatestFiniteMagnitude }, ascending: false),
+                sorted(.stress, { $0.analysis.worstStress }, ascending: true),
+                sorted(.displacement, { $0.analysis.worstDisplacement }, ascending: true),
+                sorted(.cost, { $0.cost ?? .greatestFiniteMagnitude }, ascending: true),
+                sorted(.iteration, { Double($0.keptIteration ?? $0.history.count) }, ascending: true),
+            ]
+            out.append((sorts.allSatisfy { $0 }, "outcome sorts: mass, safety factor, stress, displacement, cost and iterations each order all \(cs.count) candidates"))
+
+            // Pareto front: not empty, holds the lightest, and no member is beaten on both axes.
+            let front = GenerateModel.paretoFront(cs)
+            let lightest = cs.indices.min { cs[$0].massG < cs[$1].massG }
+            func sf(_ c: StudyCandidate) -> Double { c.analysis.safetyFactor.isFinite ? c.analysis.safetyFactor : .greatestFiniteMagnitude }
+            let undominated = front.allSatisfy { i in !cs.indices.contains { j in j != i && cs[j].massG < cs[i].massG && sf(cs[j]) > sf(cs[i]) } }
+            out.append((!front.isEmpty && lightest.map(front.contains) == true && undominated,
+                        "Pareto front: \(front.count) of \(cs.count) candidates, lightest on it"))
+
+            // Compare: the difference reads in its unit with a verdict in words.
+            let heavier = CompareSheet.Row(id: "mass", label: "Mass", a: 100, b: 112, format: { VFFormat.mass($0) }, better: -1, unit: "g")
+            let safer = CompareSheet.Row(id: "sf", label: "Safety factor", a: 2, b: 3, format: formatFactor, better: 1, unit: "")
+            let same = CompareSheet.Row(id: "f1", label: "First mode", a: 50, b: 50, format: { VFFormat.value($0, .frequency) }, better: 1, unit: "Hz")
+            let missing = CompareSheet.Row(id: "cost", label: "Cost", a: nil, b: 3, format: { VFFormat.money($0) }, better: -1, unit: "USD")
+            let h = CompareSheet.diffText(heavier), sa = CompareSheet.diffText(safer)
+            out.append((h.text.hasPrefix("+12 g (+12 %)") && h.verdict == -1 && sa.verdict == 1 && sa.text.contains("B better")
+                        && CompareSheet.diffText(same).verdict == 0 && CompareSheet.diffText(missing).text == "–",
+                        "compare: \(h.text); \(sa.text)"))
+
+            // Export: every format written where asked; a missing folder says why.
+            let dir = FileManager.default.temporaryDirectory.appendingPathComponent("vf-export-selftest-\(ProcessInfo.processInfo.processIdentifier)")
+            try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+            var written: [String] = []
+            for f in MeshExportFormat.allCases {
+                let url = dir.appendingPathComponent("candidate.\(f.rawValue)")
+                let bytes = try GenerateEngine.exportMesh(cs[0].mesh, to: url, format: f, name: "Self test")
+                let size = (try? FileManager.default.attributesOfItem(atPath: url.path)[.size] as? Int) ?? -1
+                if bytes > 0 && size == bytes { written.append("\(f.title) \(bytes / 1024) KB") }
+            }
+            var failure = ""
+            do { _ = try GenerateEngine.exportMesh(cs[0].mesh, to: dir.appendingPathComponent("no/such/candidate.stl"), format: .stl, name: "x") } catch { failure = error.localizedDescription }
+            try? FileManager.default.removeItem(at: dir)
+            out.append((written.count == 3 && failure.contains("does not exist"),
+                        "export: \(written.joined(separator: ", ")); bad folder reports \"\(failure)\""))
+        } catch {
+            out.append((false, "generative outcomes: \(error.localizedDescription)"))
+        }
+
+        // Inspector sections: a fresh study is complete where it can be, missing its supports
+        // when it has none, and a bad value is an error.
+        do {
+            var bare = s
+            bare.supports = []
+            var broken = s
+            broken.voxel = 0
+            broken.safetyFactor = 0.5
+            let ok = StudySection.allCases.allSatisfy { s.status($0) == .complete }
+            let missing: Bool = if case .missing = bare.status(.supports) { true } else { false }
+            let errors: Bool = if case .error = broken.status(.designSpace), case .error = broken.status(.limits) { true } else { false }
+            let folds = InspectorFolds.toggled(InspectorFolds.toggled("", "goal", open: false), "limits", open: false)
+            let reopened = InspectorFolds.toggled(folds, "goal", open: true)
+            out.append((ok && missing && errors && InspectorFolds.folded(folds) == ["goal", "limits"] && InspectorFolds.folded(reopened) == ["limits"],
+                        "inspector sections: complete, missing and error statuses; folds remembered (\(folds))"))
+        }
+
         // Variants: volume fraction, material and process run at once, compared, one built.
         do {
             var base = s

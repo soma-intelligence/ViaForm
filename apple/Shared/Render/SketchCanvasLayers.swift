@@ -5,6 +5,7 @@ import simd
 /// accent, the others outlined so they read as pickable, the one under the pointer washed.
 /// With an open sketch and Select, the sketch's points as small rings (they can be dragged).
 struct SketchProfileLayer: View {
+    @Environment(\.viaFormTheme) private var theme
     let model: DesignModel
     let color: Color
 
@@ -42,8 +43,8 @@ struct SketchProfileLayer: View {
                     let s = screen(p.at)
                     let r: CGFloat = 3.5
                     let dot = Path(ellipseIn: CGRect(x: s.x - r, y: s.y - r, width: r * 2, height: r * 2))
-                    ctx.fill(dot, with: .color(.white))
-                    ctx.stroke(dot, with: .color(p.fixed ? Color.gray : color), lineWidth: 1.4)
+                    ctx.fill(dot, with: .color(theme.onAccent))
+                    ctx.stroke(dot, with: .color(p.fixed ? theme.inkTertiary : color), lineWidth: 1.4)
                 }
             }
         }
@@ -56,6 +57,8 @@ struct SketchProfileLayer: View {
 struct SketchDimensionLayer: View {
     @Environment(\.viaFormTheme) private var theme
     let model: DesignModel
+    /// The typed field is a half step taller than the label chip, and never narrower than this.
+    private static let fieldMinWidth: CGFloat = 64
     @State private var editing: String?
     @State private var text = ""
     @FocusState private var focused: Bool
@@ -82,10 +85,11 @@ struct SketchDimensionLayer: View {
         if editing == d.id {
             TextField("Value", text: $text)
                 .textFieldStyle(.plain)
-                .font(.system(size: 12, weight: .semibold).monospacedDigit())
+                .font(VFFont.small.weight(.semibold))
                 .multilineTextAlignment(.center)
                 .foregroundStyle(theme.ink)
-                .frame(width: max(64, CGFloat(text.count) * 8 + 24), height: 24)
+                .frame(width: max(Self.fieldMinWidth, CGFloat(text.count) * VFSpace.m + VFSpace.xxl),
+                       height: VFSize.chip + VFSpace.xxs)
                 .background(RoundedRectangle(cornerRadius: VFRadius.control).fill(theme.panel))
                 .overlay(RoundedRectangle(cornerRadius: VFRadius.control).strokeBorder(theme.accent, lineWidth: 1.5))
                 .focused($focused)
@@ -102,13 +106,13 @@ struct SketchDimensionLayer: View {
                 editing = d.id
             } label: {
                 Text(d.driven ? "(\(d.text))" : d.text)
-                    .font(.system(size: 12, weight: .semibold).monospacedDigit())
+                    .font(VFFont.small.weight(.semibold))
                     .foregroundStyle(d.failing ? theme.danger : (d.driven ? theme.inkSecondary : theme.ink))
-                    .padding(.horizontal, 7)
-                    .frame(height: 22)
+                    .padding(.horizontal, VFSpace.s)
+                    .frame(height: VFSize.chip)
                     .background(RoundedRectangle(cornerRadius: VFRadius.control).fill(theme.panel.opacity(0.94)))
                     .overlay(RoundedRectangle(cornerRadius: VFRadius.control)
-                        .strokeBorder(d.failing ? theme.danger : theme.hairline, lineWidth: 1))
+                        .strokeBorder(d.failing ? theme.danger : theme.hairline, lineWidth: VFSize.hairline))
                     .contentShape(Rectangle())
             }
             .buttonStyle(.plain)

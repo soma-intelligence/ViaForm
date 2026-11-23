@@ -1,0 +1,7 @@
+# Justified exceptions to scripts/lint-ui-tokens.sh, one path (relative to the repo root) per line.
+# Say why after a #. Remove a line as soon as its file is swept.
+
+# SceneKit materials built from computed SIMD colours (material and load data from the engine),
+# not literal colours. Owned by the Generate work; sweep its fixed colours into ThemeScenes.swift
+# when that work lands.
+apple/Shared/Generate/GenerateScene.swift

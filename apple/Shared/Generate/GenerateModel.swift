@@ -134,6 +134,29 @@ final class GenerateModel {
     /// The preview's camera when the Generate view last closed.
     @ObservationIgnored var camera: GenerateScene.CameraState?
 
+    // MARK: Outcomes (VIAFORM-SPEC 7.10.3: sort, compare, mesh checks, export, Pareto)
+
+    /// The gallery's order.
+    var outcomeSort = OutcomeSort.mass
+    /// The candidate under the pointer in the gallery or the Pareto chart (they light together).
+    var hoveredOutcome: Int?
+    /// The two candidates the compare sheet shows, by index; nil when it is closed.
+    var comparing: OutcomePair?
+    /// Mesh checks per candidate index, for `meshChecksFor` outcomes.
+    var meshChecks: [Int: MeshCheckReport] = [:]
+    /// Candidates whose checks failed to run, with the reason.
+    var meshCheckErrors: [Int: String] = [:]
+    @ObservationIgnored var meshChecksFor = -1
+    /// An export is being written.
+    var exporting = false
+    /// The last export's failure, shown with Try Again until dismissed.
+    var exportFailure: OutcomeExportFailure?
+    /// Try Again on a failed export: the export menu picks it up and starts over.
+    var retryExport: OutcomeExportFailure?
+    /// A box to frame in the preview (a mesh check's Show), and a count so the view reacts to it.
+    var focusBox: (lo: Vec3, hi: Vec3)?
+    var focusVersion = 0
+
     /// Renders the gallery stills off the main actor, once per set of previews; a return to the
     /// stage keeps the ones already made.
     func renderThumbnails(theme: ViewportTheme) {
@@ -221,6 +244,12 @@ final class GenerateModel {
     /// The variant last pushed to the results (Build takes it from there).
     private(set) var pickedVariant: Int?
 
+    /// The route of the variant pushed to the results, if any (mesh checks hold it to its process).
+    var pickedRoute: Route? {
+        guard let i = pickedVariant, let label = variants[safe: i]?.label else { return nil }
+        return Route.allCases.first { label.hasPrefix($0.rawValue) }
+    }
+
     init() {
         let args = ProcessInfo.processInfo.arguments
         if let name = GenerateProject.launchSample { openSample(name) }
@@ -228,6 +257,11 @@ final class GenerateModel {
         // What the app opened with is the start of the history, not a step to undo.
         undoStack = []
         redoStack = []
+        // `--generate-variants=N`: run N candidates (screenshots of the outcomes gallery).
+        if let n = args.first(where: { $0.hasPrefix("--generate-variants=") }).flatMap({ Int($0.dropFirst(20)) }) {
+            study.variants = min(max(n, 1), 8)
+            undoStack = []
+        }
         if args.contains("--generate-run") { run() }
         // `--generate-explore`: run the default variants at once, then push the lightest
         // feasible one (else the first) to the results.

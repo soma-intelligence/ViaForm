@@ -251,6 +251,72 @@ pub unsafe extern "C" fn vf_generate_loads_from_record(request: *const c_char) -
     }))
 }
 
+/// A mesh handed in as flat arrays (the shape of a [`VfGenMesh`]); empty when a pointer is null.
+///
+/// # Safety
+/// `positions` holds `3 * vertex_count` floats and `indices` `index_count` indices, or is null.
+unsafe fn mesh_in(positions: *const f32, vertex_count: u64, indices: *const u32, index_count: u64) -> viaform_core::viaform_generative::solid::Mesh {
+    let mut m = viaform_core::viaform_generative::solid::Mesh::default();
+    if !positions.is_null() && vertex_count > 0 {
+        // SAFETY: the caller passes 3 * vertex_count floats.
+        m.positions = unsafe { std::slice::from_raw_parts(positions, 3 * vertex_count as usize) }.to_vec();
+    }
+    if !indices.is_null() && index_count > 0 {
+        // SAFETY: the caller passes index_count indices.
+        m.indices = unsafe { std::slice::from_raw_parts(indices, index_count as usize) }.to_vec();
+    }
+    m
+}
+
+/// Mesh checks on a candidate's surface (VIAFORM-SPEC 7.10.3), the JSON op `check_mesh`:
+/// `request` is `{process?, build?, overhang?, min_wall?, max_bodies?, plate_tolerance?,
+/// samples?}` (`viaform_generative::solid::checks::CheckRequest`; null or "" for the defaults);
+/// answers `{"ok": {checks: [{id, name, status, value, limit, unit, detail, spot}], triangles,
+/// vertices, area_mm2, volume_mm3, open_edges, nonmanifold_edges, bodies, voids, min_wall_mm,
+/// thin_share, wall_samples, overhang_mm2, overhang_share, passed, warnings, failures, seconds}}`
+/// or `{"error"}`. Runs on the calling thread: call it off the main thread.
+///
+/// # Safety
+/// The arrays are as [`mesh_in`] says; `request` is null or a NUL-terminated string.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn vf_generate_check_mesh(positions: *const f32, vertex_count: u64, indices: *const u32, index_count: u64, request: *const c_char) -> *mut c_char {
+    // SAFETY: per the contract above.
+    let (mesh, request) = unsafe { (mesh_in(positions, vertex_count, indices, index_count), text(request)) };
+    link_reply(guard(Err("the engine stopped checking the mesh".into()), || {
+        use viaform_core::viaform_generative::solid::checks;
+        let req: checks::CheckRequest = match request.map(str::trim).filter(|r| !r.is_empty()) {
+            Some(r) => serde_json::from_str(r).map_err(|e| format!("request: {e}"))?,
+            None => checks::CheckRequest::default(),
+        };
+        serde_json::to_value(checks::check(&mesh, &req)).map_err(|e| e.to_string())
+    }))
+}
+
+/// Writes a candidate's surface to a file, the JSON op `export_mesh`: `request` is `{path,
+/// format: "stl" | "3mf" | "obj" (default: the path's extension), name?}`; answers `{"ok":
+/// {path, format, bytes, triangles}}` or `{"error"}` in words (no folder, no such format, disk
+/// full). The file is written beside its final name and renamed into place.
+///
+/// # Safety
+/// The arrays are as [`mesh_in`] says; `request` is a NUL-terminated string.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn vf_generate_export_mesh(positions: *const f32, vertex_count: u64, indices: *const u32, index_count: u64, request: *const c_char) -> *mut c_char {
+    // SAFETY: per the contract above.
+    let (mesh, request) = unsafe { (mesh_in(positions, vertex_count, indices, index_count), text(request)) };
+    link_reply(guard(Err("the engine stopped writing the mesh".into()), || {
+        let v: Value = serde_json::from_str(request.ok_or("no request")?).map_err(|e| format!("request: {e}"))?;
+        let path = v["path"].as_str().filter(|p| !p.is_empty()).ok_or("no path to write")?;
+        let path = std::path::Path::new(path);
+        let format = match v["format"].as_str() {
+            Some(f) if !f.is_empty() => f.to_ascii_lowercase(),
+            _ => path.extension().map(|e| e.to_string_lossy().to_ascii_lowercase()).unwrap_or_default(),
+        };
+        let name = v["name"].as_str().unwrap_or("Generated");
+        let bytes = viaform_core::viaform_generative::solid::export::write(&mesh, &format, name, path)?;
+        Ok(json!({"path": path.to_string_lossy(), "format": format, "bytes": bytes, "triangles": mesh.indices.len() / 3}))
+    }))
+}
+
 /// Frees the job; a study still running is cancelled and ends on its own.
 ///
 /// # Safety
@@ -305,6 +371,60 @@ mod tests {
             assert!(t.elapsed().as_secs() < 120, "never reached iteration {n}: {p}");
             std::thread::sleep(std::time::Duration::from_millis(5));
         }
+    }
+
+    /// A closed 10 mm cube as flat arrays, outward triangles.
+    fn cube() -> (Vec<f32>, Vec<u32>) {
+        let mut p = Vec::new();
+        for k in 0..8 {
+            p.extend([(k & 1) as f32 * 10.0, ((k >> 1) & 1) as f32 * 10.0, ((k >> 2) & 1) as f32 * 10.0]);
+        }
+        let faces: [[u32; 4]; 6] = [[0, 2, 3, 1], [4, 5, 7, 6], [0, 1, 5, 4], [2, 6, 7, 3], [0, 4, 6, 2], [1, 3, 7, 5]];
+        let i = faces.iter().flat_map(|f| [f[0], f[1], f[2], f[0], f[2], f[3]]).collect();
+        (p, i)
+    }
+
+    /// The checks op answers every check for a cube, and its request reads.
+    #[test]
+    fn check_mesh_answers_every_check() {
+        let (p, i) = cube();
+        let req = CString::new(r#"{"process": "fdm", "build": [0, 0, 1]}"#).unwrap();
+        // SAFETY: arrays and their lengths match; NUL-terminated request.
+        let r = reply(unsafe { vf_generate_check_mesh(p.as_ptr(), 8, i.as_ptr(), i.len() as u64, req.as_ptr()) });
+        let ok = &r["ok"];
+        let ids: Vec<&str> = ok["checks"].as_array().unwrap().iter().map(|c| c["id"].as_str().unwrap()).collect();
+        assert_eq!(ids, ["watertight", "manifold", "bodies", "min_wall", "overhangs", "voids", "triangles"], "{r}");
+        assert_eq!(ok["passed"], true, "{r}");
+        assert!((ok["min_wall_mm"].as_f64().unwrap() - 10.0).abs() < 1e-6);
+        assert_eq!(ok["checks"][3]["limit"], 0.8);
+        // Null request: the defaults (a free shape, no overhang check).
+        let d = reply(unsafe { vf_generate_check_mesh(p.as_ptr(), 8, i.as_ptr(), i.len() as u64, std::ptr::null()) });
+        assert_eq!(d["ok"]["checks"][4]["status"], "skipped");
+        let bad = CString::new("{nope").unwrap();
+        let e = reply(unsafe { vf_generate_check_mesh(p.as_ptr(), 8, i.as_ptr(), i.len() as u64, bad.as_ptr()) });
+        assert!(e["error"].as_str().unwrap().starts_with("request"));
+    }
+
+    /// The export op writes the file and answers its size; a bad path says why.
+    #[test]
+    fn export_mesh_writes_and_reports_failure() {
+        let (p, i) = cube();
+        let dir = std::env::temp_dir().join(format!("vf-bridge-export-{}", std::process::id()));
+        std::fs::create_dir_all(&dir).unwrap();
+        let path = dir.join("cube.stl");
+        let req = CString::new(json!({"path": path.to_string_lossy(), "name": "Cube"}).to_string()).unwrap();
+        // SAFETY: arrays and their lengths match; NUL-terminated request.
+        let r = reply(unsafe { vf_generate_export_mesh(p.as_ptr(), 8, i.as_ptr(), i.len() as u64, req.as_ptr()) });
+        assert_eq!(r["ok"]["format"], "stl", "{r}");
+        assert_eq!(r["ok"]["bytes"], 84 + 50 * 12);
+        assert_eq!(std::fs::metadata(&path).unwrap().len(), 84 + 50 * 12);
+        let three = CString::new(json!({"path": dir.join("cube.bin").to_string_lossy(), "format": "3MF"}).to_string()).unwrap();
+        let r = reply(unsafe { vf_generate_export_mesh(p.as_ptr(), 8, i.as_ptr(), i.len() as u64, three.as_ptr()) });
+        assert_eq!(r["ok"]["format"], "3mf", "{r}");
+        let nowhere = CString::new(json!({"path": dir.join("no/such/cube.stl").to_string_lossy()}).to_string()).unwrap();
+        let e = reply(unsafe { vf_generate_export_mesh(p.as_ptr(), 8, i.as_ptr(), i.len() as u64, nowhere.as_ptr()) });
+        assert!(e["error"].as_str().unwrap().contains("does not exist"), "{e}");
+        let _ = std::fs::remove_dir_all(&dir);
     }
 
     /// Stopping mid-run keeps the best design so far: the summary flags it stopped and not

@@ -7,6 +7,15 @@ on:
   workflow_call:
 
 jobs:
+  # UI-UX-AUDIT P1-6 and P1-7: no hard-coded font sizes or literal colours in the Swift apps
+  # outside apple/Shared/UI/Theme (exceptions in scripts/lint-ui-tokens.allow). Shell only.
+  ui-tokens:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: UI token lint
+        run: bash scripts/lint-ui-tokens.sh
+
   test:
     strategy:
       fail-fast: false

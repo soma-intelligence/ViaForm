@@ -57,20 +57,10 @@ enum Workspace: String, CaseIterable, Identifiable, Codable {
         self = w
     }
 
-    /// The tint of the stage's chip when it is the active one. Buttons keep the app's single
-    /// accent; only the active chip of the pipeline bar wears this.
-    var accent: Color {
-        switch self {
-        case .design: Color(red: 0.24, green: 0.55, blue: 1.0)
-        case .generate: Color(red: 0.93, green: 0.36, blue: 0.62)
-        case .assemble: Color(red: 0.55, green: 0.45, blue: 0.95)
-        case .electronics: Color(red: 0.16, green: 0.72, blue: 0.66)
-        case .simulation: Color(red: 0.98, green: 0.55, blue: 0.20)
-        case .train: Color(red: 0.95, green: 0.70, blue: 0.15)
-        case .render: Color(red: 0.40, green: 0.70, blue: 0.95)
-        case .make: Color(red: 0.55, green: 0.62, blue: 0.70)
-        case .robot: Color(red: 0.13, green: 0.71, blue: 0.83)
-        }
+    /// The tint of the stage's chip when it is the active one: the stage tone of the theme.
+    /// Buttons keep the app's single accent; only the active chip of the pipeline bar wears this.
+    func accent(_ theme: ViaFormTheme) -> Color {
+        VFStage(stageID: stage).map(theme.stageFill) ?? theme.accent
     }
 
     /// The workspace a launch flag opens (`--design`, `--generate`, ... `--simulation`).

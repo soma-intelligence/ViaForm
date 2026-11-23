@@ -156,6 +156,36 @@ fn esc(s: &str) -> String {
     out
 }
 
+/// The formats [`write`] takes, by file extension.
+pub const FORMATS: [&str; 3] = ["stl", "3mf", "obj"];
+
+/// Writes `mesh` to `path` as `format` (`stl`, `3mf` or `obj`, any case), through a temporary
+/// file in the same folder renamed into place, so a failed write never leaves half a file.
+/// Answers the bytes written, or why it failed in words.
+pub fn write(mesh: &Mesh, format: &str, name: &str, path: &std::path::Path) -> Result<usize, String> {
+    if triangles(mesh).is_empty() {
+        return Err("the surface has no triangles to export".into());
+    }
+    let bytes = match format.to_ascii_lowercase().trim_start_matches('.') {
+        "stl" => stl(mesh, name),
+        "3mf" => three_mf(mesh, name),
+        "obj" => obj(mesh).into_bytes(),
+        other => return Err(format!("no export to {other}: use STL, 3MF or OBJ")),
+    };
+    let dir = path.parent().filter(|d| !d.as_os_str().is_empty()).unwrap_or(std::path::Path::new("."));
+    if !dir.is_dir() {
+        return Err(format!("the folder {} does not exist", dir.display()));
+    }
+    let file = path.file_name().ok_or_else(|| format!("{} names no file", path.display()))?;
+    let tmp = dir.join(format!(".{}.part-{}", file.to_string_lossy(), std::process::id()));
+    std::fs::write(&tmp, &bytes).map_err(|e| format!("writing {}: {e}", path.display()))?;
+    if let Err(e) = std::fs::rename(&tmp, path) {
+        let _ = std::fs::remove_file(&tmp);
+        return Err(format!("writing {}: {e}", path.display()));
+    }
+    Ok(bytes.len())
+}
+
 /// The triangles that name three distinct vertices of the mesh.
 fn triangles(mesh: &Mesh) -> Vec<[u32; 3]> {
     let nv = (mesh.positions.len() / 3) as u64;
@@ -317,6 +347,30 @@ mod tests {
             indices: vec![0, 2, 1, 0, 1, 3, 0, 3, 2, 1, 2, 3],
             stress: Vec::new(),
         }
+    }
+
+    #[test]
+    fn write_puts_each_format_in_place_and_says_why_it_fails() {
+        let dir = std::env::temp_dir().join(format!("viaform-export-{}", std::process::id()));
+        std::fs::create_dir_all(&dir).unwrap();
+        for f in FORMATS {
+            let path = dir.join(format!("part.{f}"));
+            let n = write(&tetra(), &f.to_uppercase(), "Part", &path).unwrap();
+            let on_disk = std::fs::read(&path).unwrap();
+            assert_eq!(on_disk.len(), n, "{f}");
+            match f {
+                "stl" => assert_eq!(n, 84 + 50 * 4),
+                "obj" => assert!(String::from_utf8(on_disk).unwrap().contains("f 1 3 2")),
+                _ => assert_eq!(&on_disk[..2], b"PK"),
+            }
+        }
+        // No temporary file is left beside them.
+        let left: Vec<_> = std::fs::read_dir(&dir).unwrap().filter_map(|e| e.ok()).filter(|e| e.file_name().to_string_lossy().starts_with('.')).collect();
+        assert!(left.is_empty());
+        assert!(write(&tetra(), "step", "Part", &dir.join("part.step")).unwrap_err().contains("STL, 3MF or OBJ"));
+        assert!(write(&tetra(), "stl", "Part", &dir.join("missing").join("part.stl")).unwrap_err().contains("does not exist"));
+        assert!(write(&Mesh::default(), "stl", "Part", &dir.join("empty.stl")).unwrap_err().contains("no triangles"));
+        let _ = std::fs::remove_dir_all(&dir);
     }
 
     fn u16_at(b: &[u8], at: usize) -> usize {

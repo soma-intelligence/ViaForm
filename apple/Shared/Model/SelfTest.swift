@@ -130,6 +130,8 @@ enum SelfTest {
         for (ok, what) in MainActor.assumeIsolated({ BomSelfTest.checks() }) { check(ok, what) }
         // P0-1, P0-2, P0-10 follow-ups: undo names, the edited mark, exact-step toasts.
         for (ok, what) in MainActor.assumeIsolated({ ProjectSelfTest.checks() }) { check(ok, what) }
+        // P1-5 typed command forms, P1-12 body rename (CommonViews.swift).
+        for (ok, what) in MainActor.assumeIsolated({ CommandFormSelfTest.checks() }) { check(ok, what) }
         #if os(macOS)
         let alertOK = MainActor.assumeIsolated { () -> Bool in
             let a = FileActions.failureAlert(url: URL(fileURLWithPath: "/tmp/x.viaform"), reason: "Disk full")

@@ -43,7 +43,7 @@ struct CommandIcon: View {
                         radius: scheme == .dark ? 1.2 : 0.5, y: scheme == .dark ? 0 : 0.5)
                 .shadow(color: scheme == .dark ? .white.opacity(0.12) : .clear, radius: 4)
         } else {
-            Image(systemName: symbol).font(.system(size: size))
+            Image(systemName: symbol).font(VFFont.icon(size))
         }
     }
 }

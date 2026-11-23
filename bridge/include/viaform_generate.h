@@ -75,6 +75,22 @@ char *vf_generate_variant(const char *base_json, const char *variant_json);
 // mm/N), t, sample, governs, force, moment, scale}], samples, peak_force, peak_moment,
 // dropped}} or {"error"}.
 char *vf_generate_loads_from_record(const char *request_json);
+// Mesh checks (VIAFORM-SPEC 7.10.3), op check_mesh: a surface as flat arrays (as VfGenMesh) and
+// a request {process ("free" | "additive" | "fdm" | "sls" | "resin" | "milling" | "extrusion"),
+// build [x,y,z], overhang (deg from the plate, 45), min_wall (mm, default the process minimum),
+// max_bodies (1), plate_tolerance (mm, 0.5), samples (20000)} or NULL for the defaults.
+// Answers {"ok": {checks: [{id (watertight | manifold | bodies | min_wall | overhangs | voids |
+// triangles), name, status (pass | warning | fail | skipped), value, limit, unit, detail,
+// spot: {min, max} or null}], triangles, vertices, area_mm2, volume_mm3, open_edges,
+// nonmanifold_edges, bodies, voids, min_wall_mm, thin_share, wall_samples, overhang_mm2,
+// overhang_share, passed, warnings, failures, seconds}} or {"error"}. Call it off the main thread.
+char *vf_generate_check_mesh(const float *positions, uint64_t vertex_count, const uint32_t *indices,
+                             uint64_t index_count, const char *request_json);
+// Writes a surface to a file, op export_mesh: request {path, format ("stl" | "3mf" | "obj";
+// default the path's extension), name?}. Written beside the final name, then renamed into
+// place. {"ok": {path, format, bytes, triangles}} or {"error": why, in words}.
+char *vf_generate_export_mesh(const float *positions, uint64_t vertex_count, const uint32_t *indices,
+                              uint64_t index_count, const char *request_json);
 // Cancels a running study and frees the handle.
 void vf_generate_free(VfGenJob *job);
 

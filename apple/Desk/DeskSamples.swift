@@ -112,6 +112,11 @@ enum DeskSamples {
         if let t = args.first(where: { $0.hasPrefix("--tool=") })?.dropFirst(7), let tool = Tool(rawValue: String(t)) {
             model.tool = tool
         }
+        // Opens the typed form of one engine command, for screenshots (e.g. --command=solid.fillet).
+        if let id = args.first(where: { $0.hasPrefix("--command=") })?.dropFirst(10),
+           let info = CADEngine.commands.first(where: { $0.id == String(id) }) {
+            model.genericCommand = info
+        }
     }
 
     /// Picks the top face of a body (the triangle facing +z the highest up), as a click would.

@@ -103,7 +103,7 @@ struct StudyForm: View {
                 }
                 TextField("Body name", text: $model.study.name)
             }
-            Section {
+            InspectorSection(.designSpace, String(localized: "Design space"), status: s.status(.designSpace)) {
                 Vec3Row("Min", value: $model.study.min, unit: "mm")
                 Vec3Row("Max", value: $model.study.max, unit: "mm")
                 NumberRow("Voxel", value: $model.study.voxel, unit: "mm", range: 0.05...1000)
@@ -117,12 +117,10 @@ struct StudyForm: View {
                     let t = GenerateModel.estimate(s)
                     Text("about \(readableDuration(t))").monospacedDigit().foregroundStyle(t > 600 ? theme.warning : theme.inkSecondary)
                 }
-            } header: {
-                Text("Design space")
             } footer: {
                 Text("World millimetres, Z up. Each voxel is one hexahedral element.")
             }
-            Section("Goal") {
+            InspectorSection(.goal, String(localized: "Goal"), status: s.status(.goal)) {
                 Picker("Method", selection: $model.study.method) {
                     ForEach(StudyMethod.allCases, id: \.self) { Text($0.label).tag($0) }
                 }
@@ -143,7 +141,7 @@ struct StudyForm: View {
                 IntRow(String(localized: "Bodies allowed"), value: $model.study.maxBodies, range: 1...8)
                 Toggle("Cut round keep-outs exactly", isOn: $model.study.exactKeepOuts)
             }
-            Section {
+            InspectorSection(.solver, String(localized: "Solver"), status: s.status(.solver)) {
                 OptionalNumberRow(String(localized: "Target mass"), value: $model.study.massTargetG, unit: "g", fallback: 0, label: String(localized: "Target"))
                 Toggle("Hold up to thinner and thicker prints", isOn: Binding(get: { model.study.robustDelta != nil },
                                                                               set: { model.study.robustDelta = $0 ? (model.study.robustDelta ?? 0.15) : nil }))
@@ -157,12 +155,10 @@ struct StudyForm: View {
                 NumberRow(String(localized: "Finish when change is under"), value: Binding(get: { model.study.tolerance * 100 }, set: { model.study.tolerance = $0 / 100 }), unit: "%", range: 0...50)
                     .help("The run ends early once the shape changes less than this between iterations.")
                 IntRow(String(localized: "Modes kept above the frequency floor"), value: $model.study.frequencyModes, range: 1...8)
-            } header: {
-                Text("Solver")
             } footer: {
                 Text("Without a target mass, the volume fraction decides how much material stays.")
             }
-            Section {
+            InspectorSection(.material, String(localized: "Material"), status: s.status(.material)) {
                 Picker("Material", selection: materialName) {
                     ForEach(StudyMaterial.presets, id: \.name) { Text($0.name).tag($0.name) }
                     if !StudyMaterial.presets.contains(where: { $0.name == s.material.name }) {
@@ -174,26 +170,22 @@ struct StudyForm: View {
                 NumberRow(String(localized: "Density"), value: Binding(get: { model.study.material.density * 1000 },
                                                                        set: { model.study.material.density = $0 / 1000 }), unit: "g/cm³", range: 0.01...30)
                 NumberRow(String(localized: "Allowable stress"), value: $model.study.material.allowable, unit: "MPa", range: 0.01...1e5)
-            } header: {
-                Text("Material")
             }
-            Section {
+            InspectorSection(.limits, String(localized: "Limits"), status: s.status(.limits)) {
                 NumberRow(String(localized: "Safety factor"), value: $model.study.safetyFactor, unit: "", range: 1...20)
                 OptionalNumberRow(String(localized: "Stress limit"), value: $model.study.maxStress, unit: "MPa",
                                   fallback: s.material.allowable / max(s.safetyFactor, 1))
                 OptionalNumberRow(String(localized: "Displacement limit"), value: $model.study.maxDisplacement, unit: "mm", fallback: 0.5)
                 OptionalNumberRow(String(localized: "Lowest frequency"), value: $model.study.minFrequency, unit: "Hz", fallback: 200)
-            } header: {
-                Text("Limits")
             } footer: {
                 Text("Stress held at \(Int(s.stressLimit.rounded())) MPa.")
             }
-            Section("Symmetry") {
+            InspectorSection(.symmetry, String(localized: "Symmetry"), status: s.status(.symmetry)) {
                 Toggle("Mirror across X", isOn: $model.study.symmetry[0])
                 Toggle("Mirror across Y", isOn: $model.study.symmetry[1])
                 Toggle("Mirror across Z", isOn: $model.study.symmetry[2])
             }
-            Section("Manufacturing") {
+            InspectorSection(.manufacturing, String(localized: "Manufacturing"), status: s.status(.manufacturing)) {
                 Picker("Process", selection: $model.study.manufacturing.process) {
                     ForEach(StudyManufacturing.Process.allCases, id: \.self) { Text($0.label).tag($0) }
                 }
@@ -230,7 +222,7 @@ struct DynamicsSection: View {
     @Bindable var model: GenerateModel
 
     var body: some View {
-        Section {
+        InspectorSection(.dynamics, String(localized: "Dynamics"), status: model.study.status(.dynamics)) {
             IntRow(String(localized: "Natural modes to find"), value: $model.study.dynamics.modes, range: 0...12)
             ForEach($model.study.dynamics.impacts) { $impact in
                 VStack(alignment: .leading, spacing: VFSpace.m) {
@@ -254,8 +246,6 @@ struct DynamicsSection: View {
             }
             Button("Add Impact", systemImage: "plus") { model.addImpact() }
                 .vfDisabled(model.study.cases.isEmpty, reason: String(localized: "Add a load case first."))
-        } header: {
-            Text("Dynamics")
         } footer: {
             Text("An impact applies its load case as a half-sine pulse, then integrates the response over the window.")
         }
@@ -270,7 +260,7 @@ struct RegionsForm: View {
 
     var body: some View {
         Form {
-            Section {
+            InspectorSection(.supports, String(localized: "Supports"), status: model.study.status(.supports)) {
                 if model.study.supports.isEmpty {
                     Label("No support yet: the study needs at least one to run.", systemImage: "exclamationmark.circle")
                         .font(VFFont.row)
@@ -290,13 +280,11 @@ struct RegionsForm: View {
                     }
                 }
                 Button("Add Support", systemImage: "plus") { model.addSupport() }
-            } header: {
-                Text("Supports")
             } footer: {
                 Text("Pick a region here or in the preview, then drag it there to move it.")
             }
             LoadCasesSection(model: model)
-            Section("Keep out") {
+            InspectorSection(.keepOut, String(localized: "Keep out"), status: model.study.status(.keepOut)) {
                 ForEach($model.study.keepOut) { $k in
                     RegionRow(model: model, key: .keepOut(k.id), title: String(localized: "Keep out"), detail: k.region.shape.label, color: GenerateScene.keepOutColor) {
                         RegionFields(region: $k.region)
@@ -304,7 +292,7 @@ struct RegionsForm: View {
                 }
                 Button("Add Keep-Out", systemImage: "plus") { model.addKeepOut() }
             }
-            Section("Keep in") {
+            InspectorSection(.keepIn, String(localized: "Keep in"), status: model.study.status(.keepIn)) {
                 ForEach($model.study.keepIn) { $k in
                     RegionRow(model: model, key: .keepIn(k.id), title: String(localized: "Keep in"), detail: k.region.shape.label, color: GenerateScene.keepInColor) {
                         RegionFields(region: $k.region)
@@ -322,7 +310,7 @@ struct LoadCasesSection: View {
     @Bindable var model: GenerateModel
 
     var body: some View {
-        Section {
+        InspectorSection(.loads, String(localized: "Load cases"), status: model.study.status(.loads)) {
             if model.study.cases.indices.contains(model.activeCase) {
                 Picker("Case", selection: $model.activeCase) {
                     ForEach(Array(model.study.cases.enumerated()), id: \.offset) { i, c in
@@ -359,8 +347,6 @@ struct LoadCasesSection: View {
                 .vfDisabled(model.study.cases.count < 2, reason: String(localized: "A study keeps at least one load case."))
             }
             .buttonStyle(.borderless)
-        } header: {
-            Text("Load cases")
         } footer: {
             Text("Forces in N, torques in N·mm about an axis through their centre (right-hand rule), pressures in MPa. Gravity is 0, 0, -9810 mm/s².")
         }

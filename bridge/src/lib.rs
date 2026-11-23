@@ -113,9 +113,11 @@ pub unsafe extern "C" fn sc_execute(s: *mut ScSession, id: *const c_char, params
             Ok(p) => p.unwrap_or_else(|| json!({})),
             Err(e) => return json!({"error": format!("params: {e}")}),
         };
-        match s.session.execute(id, &p) {
+        // Through the core: `command.schema` and the validated `body.rename` run there, the rest
+        // in the engine's registry.
+        match viaform_core::commands::execute(&mut s.session, id, &p) {
             Ok(v) => json!({"ok": v}),
-            Err(e) => json!({"error": e.to_string()}),
+            Err(e) => json!({"error": e}),
         }
     });
     out(&reply)
@@ -145,7 +147,9 @@ pub unsafe extern "C" fn sc_run_script(s: *mut ScSession, script: *const c_char)
     out(&reply)
 }
 
-/// The command registry: id, label, tab, panel, icon, shortcut and params doc of each command.
+/// The command registry: id, label, tab, panel, icon, shortcut and params doc of each command,
+/// and `schema`, the typed fields of its form, for the commands the core describes
+/// (`viaform_core::commands`).
 #[unsafe(no_mangle)]
 pub extern "C" fn sc_commands() -> *mut c_char {
     out(&guard(json!([]), || {
@@ -156,6 +160,7 @@ pub extern "C" fn sc_commands() -> *mut c_char {
                     json!({
                         "id": c.id, "label": c.label, "tab": c.tab, "panel": c.panel,
                         "icon": c.icon, "key": c.shortcut, "params": c.params,
+                        "schema": viaform_core::commands::schema(c.id),
                     })
                 })
                 .collect(),

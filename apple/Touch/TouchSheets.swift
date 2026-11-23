@@ -17,6 +17,10 @@ struct TouchBrowserSheet: View {
     let showBom: () -> Void
     let showLibrary: () -> Void
     @State private var confirm: ConfirmRequest?
+    /// The body being renamed (from its row's menu), the draft name and why a try was refused.
+    @State private var renaming: String?
+    @State private var draft = ""
+    @State private var renameError: String?
 
     /// Sample entries are for screenshots and tests: debug builds, or `--samples`.
     static var showsSamples: Bool {
@@ -36,7 +40,13 @@ struct TouchBrowserSheet: View {
                     if rows.isEmpty {
                         Text("Nothing in this stage yet.").font(VFFont.row).foregroundStyle(theme.inkSecondary)
                     }
-                    ForEach(rows) { r in row(r) }
+                    ForEach(rows) { r in
+                        row(r).contextMenu {
+                            if r.id.hasPrefix("body:") {
+                                Button("Rename", systemImage: "pencil") { startRename(String(r.id.dropFirst(5))) }
+                            }
+                        }
+                    }
                 }
                 Section("Pipeline outputs") {
                     ForEach(flow.outputs()) { o in output(o) }
@@ -82,6 +92,31 @@ struct TouchBrowserSheet: View {
             .toolbar { ToolbarItem(placement: .confirmationAction) { Button("Done") { dismiss() } } }
         }
         .confirmSheet($confirm)
+        .alert("Rename Body", isPresented: Binding(get: { renaming != nil }, set: { if !$0 { renaming = nil } })) {
+            TextField("Body name", text: $draft)
+                .autocorrectionDisabled()
+            Button("Rename") { commitRename() }
+            Button("Cancel", role: .cancel) { renaming = nil }
+        } message: {
+            Text(renameError ?? String(localized: "Features that use the body follow the new name."))
+        }
+    }
+
+    private func startRename(_ name: String) {
+        draft = name
+        renameError = nil
+        renaming = name
+    }
+
+    /// Renames through the engine (one undoable step); a refused name opens the prompt again with
+    /// the reason.
+    private func commitRename() {
+        guard let old = renaming else { return }
+        renaming = nil
+        if let why = model.renameBody(old, to: draft) {
+            renameError = why
+            DispatchQueue.main.async { renaming = old }
+        }
     }
 
     /// Replacing the open design asks first when it has changes since the last save.

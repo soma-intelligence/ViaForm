@@ -761,7 +761,7 @@ struct ProjectWindow: View {
             assemble.openArm(flow: flow)
         }
         AssembleLaunch.apply(args, assemble: assemble, sim: armSim, flow: flow, open: { workspace = $0 }, showBottom: { showBottom = $0 })
-        if args.contains(where: { $0.hasPrefix("--select=") || $0.hasPrefix("--pick-top=") || $0.hasPrefix("--tool=") }) {
+        if args.contains(where: { $0.hasPrefix("--select=") || $0.hasPrefix("--pick-top=") || $0.hasPrefix("--tool=") || $0.hasPrefix("--command=") }) {
             DispatchQueue.main.async { DeskSamples.applySelectionFlags(model) }
         }
         if args.contains("--library") { inspectorMode = .library; showInspector = true }

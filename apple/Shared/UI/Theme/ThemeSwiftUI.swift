@@ -196,6 +196,10 @@ enum VFFont {
     /// An SF Symbol inside a control.
     static func glyph(_ size: CGFloat, weight: Font.Weight = .regular) -> Font { .system(size: size, weight: weight) }
     #endif
+
+    /// An SF Symbol drawn at a fixed point size inside a fixed frame (tool icons, a canvas grip),
+    /// on every platform. Use `glyph` for symbols that sit with text and should scale with it.
+    static func icon(_ size: CGFloat, weight: Font.Weight = .regular) -> Font { .system(size: size, weight: weight) }
 }
 
 /// Capitalised group caption: ribbon legends, BROWSER, PIPELINE OUTPUTS, inspector sections.

@@ -51,6 +51,13 @@ struct GenerateView: View {
         .onChange(of: model.previewsVersion) { _, _ in scene?.update(model) }
         .onChange(of: scene == nil) { _, _ in scene?.update(model) }
         .task(id: model.previewsVersion) { model.renderThumbnails(theme: theme) }
+        .task(id: model.outcomeVersion) { await model.runMeshChecks() }
+        .onChange(of: model.focusVersion) { _, _ in
+            if let b = model.focusBox { scene?.fit(b.lo, b.hi) }
+        }
+        .sheet(item: $model.comparing) { pair in
+            CompareSheet(model: model, pair: pair)
+        }
         .confirmSheet(Binding(get: { model.stopRequested ? stopRequest : nil },
                               set: { if $0 == nil { model.stopRequested = false } }))
     }
@@ -75,7 +82,7 @@ struct GenerateView: View {
                 stage(scene)
                 if model.outcome != nil {
                     Divider()
-                    CandidateStrip(model: model)
+                    OutcomesPanel(model: model)
                         .padding(.vertical, VFSpace.l)
                         .background(palette.panel)
                 }
@@ -159,7 +166,7 @@ struct GenerateView: View {
                     ErrorBanner(message: error, retry: model.readiness == nil ? { model.run() } : nil) { model.clearError() }
                 }
                 if !sideBySide, model.outcome != nil, model.display == .result {
-                    CandidateStrip(model: model, compact: true)
+                    CandidateStrip(model: model, order: model.sortedOutcomes, compact: true)
                         .padding(.vertical, VFSpace.m)
                         .vfSurface(.floating)
                 }
@@ -332,25 +339,33 @@ struct GenerateRunBar: View {
 
 // MARK: Gallery
 
-/// The study's candidates side by side; a tap picks one to show, analyse and build.
+/// The study's candidates side by side, in `order` (by default the engine's); a tap picks one to
+/// show, analyse and build. Hovering a card lights its dot in the Pareto chart.
 struct CandidateStrip: View {
     @Bindable var model: GenerateModel
+    var order: [Int]? = nil
     var compact = false
 
     var body: some View {
         if let o = model.outcome, let s = model.studied {
             ScrollView(.horizontal) {
                 HStack(spacing: VFSpace.l) {
-                    ForEach(Array(o.candidates.enumerated()), id: \.offset) { i, c in
+                    ForEach(order ?? Array(o.candidates.indices), id: \.self) { i in
+                        let c = o.candidates[i]
                         Button {
                             model.selected = i
                             model.display = .result
                         } label: {
                             CandidateCard(candidate: c, study: s, image: model.thumbnails[i], rendered: model.thumbnailsDone.contains(i),
-                                          best: i == o.best, selected: model.selected == i, compact: compact)
+                                          best: i == o.best, selected: model.selected == i, compact: compact,
+                                          checks: model.meshChecks[i], hovered: model.hoveredOutcome == i)
                         }
                         .buttonStyle(.plain)
+                        .onHover { inside in
+                            if inside { model.hoveredOutcome = i } else if model.hoveredOutcome == i { model.hoveredOutcome = nil }
+                        }
                         .accessibilityLabel(Self.label(c, index: i, best: i == o.best))
+                        .accessibilityValue(model.meshChecks[i].map { Text($0.summary) } ?? Text(""))
                         .accessibilityAddTraits(model.selected == i ? .isSelected : [])
                     }
                 }
@@ -384,6 +399,10 @@ struct CandidateCard: View {
     let best: Bool
     let selected: Bool
     var compact = false
+    /// The candidate's mesh checks, once run.
+    var checks: MeshCheckReport? = nil
+    /// Lit from the Pareto chart.
+    var hovered = false
 
     private var width: CGFloat { compact ? 112 : 160 }
 
@@ -420,11 +439,15 @@ struct CandidateCard: View {
             if !candidate.converged {
                 StoppedLine(candidate: candidate, compact: compact)
             }
+            if let checks, !compact {
+                CheckStatusLabel(status: checks.status, word: checks.summary)
+                    .help(checks.items.filter { $0.status == .warning || $0.status == .fail }.map(\.detail).joined(separator: "\n"))
+            }
         }
         .frame(width: width)
         .padding(VFSpace.m)
-        .background(RoundedRectangle(cornerRadius: VFRadius.card, style: .continuous).fill(selected ? theme.selection : .clear))
-        .overlay(RoundedRectangle(cornerRadius: VFRadius.card, style: .continuous).strokeBorder(selected ? theme.accent : .clear, lineWidth: 2))
+        .background(RoundedRectangle(cornerRadius: VFRadius.card, style: .continuous).fill(selected ? theme.selection : (hovered ? theme.ink.opacity(0.06) : .clear)))
+        .overlay(RoundedRectangle(cornerRadius: VFRadius.card, style: .continuous).strokeBorder(selected ? theme.accent : (hovered ? theme.hairline : .clear), lineWidth: 2))
         .contentShape(RoundedRectangle(cornerRadius: VFRadius.card, style: .continuous))
     }
 }

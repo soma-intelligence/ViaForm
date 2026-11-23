@@ -24,12 +24,14 @@ final class SimScene {
     private let targetNode = SCNNode()
     private var builtVersion = -1
     private var trailCount = 0
+    /// The scene's colours (theme tokens; a night scene in every variant).
+    private let colors = VFSimSceneColors.standard
 
     init() {
         root.simdEulerAngles.x = -.pi / 2
         scene.rootNode.addChildNode(root)
         [courseNode, trailNode, raysNode, targetNode, drone].forEach(root.addChildNode)
-        scene.background.contents = SimColor(red: 0.14, green: 0.15, blue: 0.17, alpha: 1)
+        scene.background.contents = SimColor(vf: colors.background)
 
         let camera = SCNCamera()
         camera.zNear = 0.02
@@ -53,7 +55,7 @@ final class SimScene {
 
         buildDrone()
         let target = SCNSphere(radius: 0.025)
-        target.firstMaterial = material(SimColor(red: 1, green: 0.62, blue: 0.1, alpha: 0.9), emissive: true)
+        target.firstMaterial = material(SimColor(vf: colors.target), emissive: true)
         targetNode.geometry = target
     }
 
@@ -75,7 +77,7 @@ final class SimScene {
         // In a race the marker shows the next gate (or the pad), else the planner's target.
         targetNode.simdPosition = vec(model.race?.target ?? f.target)
         if model.trail.count != trailCount {
-            trailNode.geometry = polyline(model.trail, color: SimColor(red: 0.35, green: 0.7, blue: 1, alpha: 1))
+            trailNode.geometry = polyline(model.trail, color: SimColor(vf: colors.trail))
             trailCount = model.trail.count
         }
         raysNode.geometry = rays(from: f.p, f.rays)
@@ -115,12 +117,12 @@ final class SimScene {
     // MARK: Building
 
     private func buildDrone() {
-        let carbon = material(SimColor(white: 0.12, alpha: 1))
+        let carbon = material(SimColor(vf: colors.carbon))
         let plate = SCNBox(width: 0.06, height: 0.04, length: 0.012, chamferRadius: 0.004)
         plate.firstMaterial = carbon
         drone.addChildNode(SCNNode(geometry: plate))
         let battery = SCNBox(width: 0.055, height: 0.03, length: 0.017, chamferRadius: 0.003)
-        battery.firstMaterial = material(SimColor(red: 0.85, green: 0.25, blue: 0.2, alpha: 1))
+        battery.firstMaterial = material(SimColor(vf: colors.battery))
         let batteryNode = SCNNode(geometry: battery)
         batteryNode.simdPosition.z = 0.015
         drone.addChildNode(batteryNode)
@@ -136,7 +138,7 @@ final class SimScene {
             barNode.simdEulerAngles.z = Float(a)
             drone.addChildNode(barNode)
             let disc = SCNCylinder(radius: 0.0381, height: 0.002)
-            disc.firstMaterial = material(i < 2 ? SimColor(red: 0.3, green: 0.75, blue: 1, alpha: 0.55) : SimColor(white: 0.85, alpha: 0.5))
+            disc.firstMaterial = material(SimColor(vf: i < 2 ? colors.rotorFront : colors.rotorRear))
             let rotor = SCNNode(geometry: disc)
             rotor.simdEulerAngles.x = .pi / 2
             let hub = SCNNode()
@@ -154,7 +156,7 @@ final class SimScene {
         // An endless floor: a box ends somewhere, and a low follow camera sees the edge.
         let ground = SCNFloor()
         ground.reflectivity = 0
-        ground.firstMaterial = material(SimColor(red: 0.19, green: 0.21, blue: 0.23, alpha: 1))
+        ground.firstMaterial = material(SimColor(vf: colors.ground))
         let groundNode = SCNNode(geometry: ground)
         // SCNFloor lies in its node's x-z plane; turn it so its normal is the sim's z.
         groundNode.simdEulerAngles.x = .pi / 2
@@ -163,7 +165,7 @@ final class SimScene {
         courseNode.addChildNode(grid(lo: lo, hi: hi))
 
         for o in world.obstacles {
-            let color = SimColor(hex: o.color)
+            let color = SimColor(hex: o.color, fallback: colors.fallback)
             if o.kind == "box", let mn = o.min, let mx = o.max {
                 let box = SCNBox(width: mx[0] - mn[0], height: mx[1] - mn[1], length: mx[2] - mn[2], chamferRadius: 0.005)
                 box.firstMaterial = material(color)
@@ -182,13 +184,13 @@ final class SimScene {
         for (i, w) in world.waypoints.enumerated() {
             let last = i == world.waypoints.count - 1
             let dot = last ? SCNCylinder(radius: 0.45, height: 0.01) : SCNSphere(radius: 0.05)
-            dot.firstMaterial = material(last ? SimColor(red: 0.2, green: 0.8, blue: 0.45, alpha: 1) : SimColor(white: 1, alpha: 0.5), emissive: !last)
+            dot.firstMaterial = material(SimColor(vf: last ? colors.goal : colors.waypoint), emissive: !last)
             let n = SCNNode(geometry: dot)
             if last { n.simdEulerAngles.x = .pi / 2 }
             n.simdPosition = vec(w)
             courseNode.addChildNode(n)
         }
-        let route = SCNNode(geometry: polyline(world.waypoints, color: SimColor(white: 1, alpha: 0.22)))
+        let route = SCNNode(geometry: polyline(world.waypoints, color: SimColor(vf: colors.route)))
         courseNode.addChildNode(route)
     }
 
@@ -199,7 +201,7 @@ final class SimScene {
         while x <= x1 { pts += [SIMD3(Float(x), Float(y0), 0.001), SIMD3(Float(x), Float(y1), 0.001)]; x += 1 }
         var y = y0
         while y <= y1 { pts += [SIMD3(Float(x0), Float(y), 0.001), SIMD3(Float(x1), Float(y), 0.001)]; y += 1 }
-        return SCNNode(geometry: lines(pts, color: SimColor(white: 1, alpha: 0.07)))
+        return SCNNode(geometry: lines(pts, color: SimColor(vf: colors.grid)))
     }
 
     private func rays(from p: [Double], _ rays: [SimFrame.Ray]) -> SCNGeometry? {
@@ -207,7 +209,7 @@ final class SimScene {
         let o = vec(p)
         let hits = rays.filter(\.hit)
         guard !hits.isEmpty else { return nil }
-        return lines(hits.flatMap { [o, vec($0.point)] }, color: SimColor(red: 1, green: 0.35, blue: 0.3, alpha: 0.85))
+        return lines(hits.flatMap { [o, vec($0.point)] }, color: SimColor(vf: colors.rayHit))
     }
 
     private func polyline(_ points: [[Double]], color: SimColor) -> SCNGeometry? {
@@ -241,10 +243,12 @@ final class SimScene {
 }
 
 extension SimColor {
-    /// `#rrggbb`, grey when it does not parse.
-    convenience init(hex: String) {
+    /// `#rrggbb`, the scene's neutral grey when it does not parse.
+    convenience init(hex: String) { self.init(hex: hex, fallback: VFSimSceneColors.standard.fallback) }
+
+    /// `#rrggbb`, `fallback` when it does not parse.
+    convenience init(hex: String, fallback: VFColor) {
         let s = hex.hasPrefix("#") ? String(hex.dropFirst()) : hex
-        let v = UInt32(s, radix: 16) ?? 0x8b93a1
-        self.init(red: CGFloat((v >> 16) & 0xff) / 255, green: CGFloat((v >> 8) & 0xff) / 255, blue: CGFloat(v & 0xff) / 255, alpha: 1)
+        self.init(vf: UInt32(s, radix: 16).map { VFColor(hex: $0) } ?? fallback)
     }
 }

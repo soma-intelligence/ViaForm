@@ -20,6 +20,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::spec::Material;
 
+pub mod checks;
 pub mod dynamics;
 pub mod export;
 pub mod fem;

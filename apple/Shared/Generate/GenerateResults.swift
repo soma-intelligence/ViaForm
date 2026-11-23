@@ -39,6 +39,10 @@ struct GenerateResults: View {
                     Button { model.build(into: design) } label: { Label("Build into the Design", systemImage: "hammer.fill") }
                         .buttonStyle(.vfPrimary(loading: model.building))
                         .vfDisabled(buildBlocked != nil, reason: buildBlocked ?? "")
+                    if let i = model.selected { OutcomeActions(model: model, candidate: i) }
+                }
+                if let i = model.selected {
+                    MeshChecksSection(report: model.meshChecks[i], error: model.meshCheckErrors[i]) { model.focus($0) }
                 }
                 CasesSection(candidate: c, study: s)
                 if c.history.count > 1 {

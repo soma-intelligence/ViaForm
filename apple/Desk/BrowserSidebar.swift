@@ -199,8 +199,9 @@ enum BrowserItem: Hashable {
 /// The 3D model's tree as an outline list. Selecting bodies selects them in the model
 /// (`model.selectedBodies`, the same set the viewport shows): click replaces, Shift extends,
 /// Command toggles. Return or a double-click runs a row's main action (sketch on a plane, edit a
-/// sketch, select a component's bodies); the context menu holds Hide or Show, Delete (undoable,
-/// with Undo in the toast) and the row's verbs.
+/// sketch, select a component's bodies, rename a body in place); the context menu holds Rename,
+/// Hide or Show, Delete (undoable, with Undo in the toast) and the row's verbs. A rename commits on
+/// Return, Esc cancels it, and a refused name says why under the field.
 struct DesignOutline: View {
     @Environment(\.viaFormTheme) private var theme
     @Environment(\.vfToasts) private var toasts
@@ -212,6 +213,11 @@ struct DesignOutline: View {
     @State private var hidden: Set<String> = []
     /// The selected rows that are not bodies (planes, sketches, components...).
     @State private var others: Set<BrowserItem> = []
+    /// The body being renamed in place, its draft name and why the last try was refused.
+    @State private var renaming: String?
+    @State private var draft = ""
+    @State private var renameError: String?
+    @FocusState private var renameFocused: Bool
 
     private static let planes = ["XY", "XZ", "YZ"]
 
@@ -246,6 +252,7 @@ struct DesignOutline: View {
                     bodyRow(b)
                         .tag(BrowserItem.body(b.name))
                         .typeSelectEquivalent(Text(b.name))
+                        .help("Return to rename")
                 }
             }
             folder("Sketches", String(localized: "Sketches"), "pencil.and.outline") {
@@ -279,6 +286,12 @@ struct DesignOutline: View {
             primary(items)
         }
         .onDeleteCommand { delete(bodies(in: selection.wrappedValue)) }
+        .onAppear {
+            // Screenshot hook: --rename=Body opens the in-place rename field on that body.
+            if let name = ProcessInfo.processInfo.arguments.first(where: { $0.hasPrefix("--rename=") })?.dropFirst(9) {
+                startRename(String(name))
+            }
+        }
     }
 
     // MARK: Selection
@@ -347,6 +360,9 @@ struct DesignOutline: View {
                     setVisible(names, true)
                 }
             }
+            if names.count == 1, let name = names.first {
+                Button("Rename") { startRename(name) }
+            }
             Divider()
             Button(role: .destructive) { delete(names) } label: {
                 Text(names.count == 1 ? String(localized: "Delete") : String(localized: "Delete \(names.count) Bodies"))
@@ -361,8 +377,36 @@ struct DesignOutline: View {
         case let .plane(p): model.startSketch(p)
         case let .sketch(id): editSketch(id)
         case let .component(id): selectComponent(id)
+        case let .body(name): startRename(name)
         default: break
         }
+    }
+
+    // MARK: Rename
+
+    private func startRename(_ name: String) {
+        draft = name
+        renameError = nil
+        renaming = name
+        DispatchQueue.main.async { renameFocused = true }
+    }
+
+    /// Return: rename through the engine (one undoable step); a refused name keeps the field
+    /// open with the reason under it.
+    private func commitRename() {
+        guard let old = renaming else { return }
+        if let why = model.renameBody(old, to: draft) {
+            renameError = why
+            renameFocused = true
+            return
+        }
+        endRename()
+    }
+
+    private func endRename() {
+        renaming = nil
+        renameError = nil
+        draft = ""
     }
 
     private func editSketch(_ id: Int) {
@@ -439,7 +483,26 @@ struct DesignOutline: View {
         let off = isHidden(b.name)
         return HStack(spacing: VFSpace.s) {
             Label {
-                Text(b.name).lineLimit(1).opacity(off ? 0.55 : 1)
+                if renaming == b.name {
+                    VStack(alignment: .leading, spacing: VFSpace.xxs) {
+                        TextField("Body name", text: $draft)
+                            .textFieldStyle(.roundedBorder)
+                            .focused($renameFocused)
+                            .onSubmit { commitRename() }
+                            .onExitCommand { endRename() }
+                            .onChange(of: draft) { _, _ in renameError = nil }
+                            .onChange(of: renameFocused) { _, focused in
+                                // Clicking away commits, as in Finder; a refused name stays open.
+                                if !focused, renaming == b.name, renameError == nil { commitRename() }
+                            }
+                            .accessibilityLabel(Text("New name for \(b.name)"))
+                        if let renameError {
+                            InlineError(renameError)
+                        }
+                    }
+                } else {
+                    Text(b.name).lineLimit(1).opacity(off ? 0.55 : 1)
+                }
             } icon: {
                 Image(systemName: "cube").foregroundStyle(theme.inkSecondary)
             }
@@ -451,6 +514,7 @@ struct DesignOutline: View {
             }
         }
         .accessibilityValue(off ? Text("Hidden") : Text(""))
+        .accessibilityAction(named: Text("Rename")) { startRename(b.name) }
     }
 
     /// "Palm", or "Palm (2)" for a component placed more than once: never the ":1" suffix.

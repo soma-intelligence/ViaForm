@@ -51,7 +51,7 @@ struct SketchOverlay: View {
                 let r: CGFloat = model.cursorSnap == nil ? 3 : 5
                 ctx.stroke(Path(ellipseIn: CGRect(x: s.x - r, y: s.y - r, width: r * 2, height: r * 2)), with: .color(color), lineWidth: 1.5)
                 let label = String(format: "%.2f, %.2f", cur.x, cur.y) + (model.cursorSnap.map { "  \($0)" } ?? "")
-                ctx.draw(Text(label).font(.system(size: 10, weight: .medium).monospacedDigit()).foregroundStyle(color), at: CGPoint(x: s.x + 12, y: s.y - 12), anchor: .leading)
+                ctx.draw(Text(label).font(VFFont.micro).foregroundStyle(color), at: CGPoint(x: s.x + 12, y: s.y - 12), anchor: .leading)
             }
         }
     }

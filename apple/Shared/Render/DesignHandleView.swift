@@ -20,25 +20,32 @@ struct DesignDistanceHandle: View {
     var touch = false
     @State private var startTip: CGPoint?
 
+    /// Grip disc, its arrow glyph and its hit area: Mac, then touch (a 44 point target).
+    private static let grip: (mac: CGFloat, touch: CGFloat) = (18, 28)
+    private static let glyph: (mac: CGFloat, touch: CGFloat) = (9, 13)
+    private static let hitMac: CGFloat = 30
+    /// The anchor dot at the arrow's foot.
+    private static let anchorRadius: CGFloat = 4.5
+
     var body: some View {
         let anchor = model.camera.project(point, size: size)
         let tip = Self.tip(model: model, point: point, normal: normal, size: size)
-        let grip: CGFloat = touch ? 28 : 18
+        let grip = touch ? Self.grip.touch : Self.grip.mac
         ZStack(alignment: .topLeading) {
             Color.clear.allowsHitTesting(false)
             arrow(from: anchor, to: tip).allowsHitTesting(false)
             Circle()
                 .fill(theme.accent)
-                .overlay(Circle().strokeBorder(.white, lineWidth: 2))
+                .overlay(Circle().strokeBorder(theme.onAccent, lineWidth: 2))
                 .overlay(
                     Image(systemName: "arrow.up")
-                        .font(.system(size: touch ? 13 : 9, weight: .bold))
+                        .font(VFFont.icon(touch ? Self.glyph.touch : Self.glyph.mac, weight: .bold))
                         .foregroundStyle(theme.onAccent)
                         .rotationEffect(.radians(atan2(tip.x - anchor.x, -(tip.y - anchor.y))))
                 )
                 .frame(width: grip, height: grip)
                 .shadow(color: .black.opacity(0.22), radius: 3, y: 1)
-                .frame(width: touch ? 44 : 30, height: touch ? 44 : 30)
+                .frame(width: touch ? VFSize.touchTarget : Self.hitMac, height: touch ? VFSize.touchTarget : Self.hitMac)
                 .contentShape(Circle())
                 .position(tip)
                 .gesture(drag)
@@ -84,8 +91,8 @@ struct DesignDistanceHandle: View {
             line.move(to: a)
             line.addLine(to: b)
             ctx.stroke(line, with: .color(c), style: StrokeStyle(lineWidth: 1.8, lineCap: .round))
-            let r: CGFloat = 4.5
-            ctx.fill(Path(ellipseIn: CGRect(x: a.x - r, y: a.y - r, width: r * 2, height: r * 2)), with: .color(.white))
+            let r = Self.anchorRadius
+            ctx.fill(Path(ellipseIn: CGRect(x: a.x - r, y: a.y - r, width: r * 2, height: r * 2)), with: .color(theme.onAccent))
             ctx.fill(Path(ellipseIn: CGRect(x: a.x - r + 1.5, y: a.y - r + 1.5, width: (r - 1.5) * 2, height: (r - 1.5) * 2)), with: .color(c))
         }
     }

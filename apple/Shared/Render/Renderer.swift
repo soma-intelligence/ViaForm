@@ -89,7 +89,7 @@ final class Renderer: NSObject, MTKViewDelegate {
 
     var camera = OrbitCamera() { didSet { requestDraw() } }
     var radius: Double = 100
-    var theme: ViewportTheme { didSet { requestDraw() } }
+    var theme: ViewportTheme { didSet { view?.clearColor = theme.clearColor; requestDraw() } }
     var highlight = Highlight()
     var pointSize: CGSize = .init(width: 1, height: 1) { didSet { if pointSize != oldValue { requestDraw() } } }
     private var scene = SceneData()
@@ -119,7 +119,7 @@ final class Renderer: NSObject, MTKViewDelegate {
         view.colorPixelFormat = .bgra8Unorm
         view.depthStencilPixelFormat = .depth32Float
         view.sampleCount = 4
-        view.clearColor = MTLClearColor(red: 0.9, green: 0.9, blue: 0.92, alpha: 1)
+        view.clearColor = theme.clearColor
         view.isPaused = true
         view.enableSetNeedsDisplay = true
         self.view = view
