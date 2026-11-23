@@ -2,7 +2,7 @@
 # copy of each engine.
 [workspace]
 resolver = "3"
-members = ["core", "bridge", "node"]
+members = ["core", "bridge", "node", "generative", "sim", "library", "bom"]
 # The engines are workspaces of their own.
 exclude = ["engines"]
 
@@ -16,6 +16,10 @@ solidcraft-engine = { path = "engines/solidcraft/crates/engine" }
 pcbcraft-engine = { path = "engines/pcbcraft/crates/engine" }
 pcbcraft-io = { path = "engines/pcbcraft/crates/io" }
 viaform-core = { path = "core" }
+viaform-library = { path = "library" }
+viaform-generative = { path = "generative" }
+viaform-sim = { path = "sim" }
+viaform-bom = { path = "bom" }
 serde = { version = "1", features = ["derive"] }
 serde_json = { version = "1", features = ["float_roundtrip"] }
 
