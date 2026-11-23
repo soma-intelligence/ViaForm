@@ -59,7 +59,7 @@ struct GenericCommandForm: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack {
-                Image(systemName: CommandSymbol.of(command.icon, id: command.id))
+                CommandIcon(icon: command.icon, id: command.id, size: 16)
                 Text(command.label).font(.headline)
                 Spacer()
                 Text(command.id).font(.caption.monospaced()).foregroundStyle(.secondary)

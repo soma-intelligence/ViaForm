@@ -53,35 +53,104 @@ enum ScenePicker {
 
     static func pickFace(_ scene: SceneData, camera: OrbitCamera, at p: CGPoint, size: CGSize) -> Pick? {
         let (o, d) = camera.ray(at: p, size: size)
+        let inv = SIMD3<Double>(1 / d.x, 1 / d.y, 1 / d.z)
         var best: (t: Double, pick: Pick)?
         for (mi, m) in scene.meshes.enumerated() {
-            let idx = m.indices
-            var t = 0
-            while t + 2 < idx.count {
-                let a = SIMD3<Double>(m.positions[Int(idx[t])]), b = SIMD3<Double>(m.positions[Int(idx[t + 1])]), c = SIMD3<Double>(m.positions[Int(idx[t + 2])])
-                if let hit = intersect(o, d, a, b, c), hit > 0, hit < (best?.t ?? .infinity) {
-                    var n = simd_cross(b - a, c - a)
-                    n = simd_length(n) > 0 ? simd_normalize(n) : SIMD3(0, 0, 1)
-                    let face = m.triFace.indices.contains(t / 3) ? m.triFace[t / 3] : 0
-                    best = (hit, .face(mesh: mi, face: face, point: o + d * hit, normal: n))
+            // A body whose box the ray misses, or meets beyond the best hit, has no closer face.
+            if m.lo.x <= m.hi.x {
+                guard let near = slab(o, inv, SIMD3<Double>(m.lo), SIMD3<Double>(m.hi)), near <= (best?.t ?? .infinity) else { continue }
+            }
+            m.positions.withUnsafeBufferPointer { pos in
+                m.indices.withUnsafeBufferPointer { idx in
+                    var t = 0
+                    while t + 2 < idx.count {
+                        let ia = Int(idx[t]), ib = Int(idx[t + 1]), ic = Int(idx[t + 2])
+                        if ia < pos.count, ib < pos.count, ic < pos.count {
+                            let a = SIMD3<Double>(pos[ia]), b = SIMD3<Double>(pos[ib]), c = SIMD3<Double>(pos[ic])
+                            if let hit = intersect(o, d, a, b, c), hit > 0, hit < (best?.t ?? .infinity) {
+                                var n = simd_cross(b - a, c - a)
+                                n = simd_length(n) > 0 ? simd_normalize(n) : SIMD3(0, 0, 1)
+                                let face = m.triFace.indices.contains(t / 3) ? m.triFace[t / 3] : 0
+                                best = (hit, .face(mesh: mi, face: face, point: o + d * hit, normal: n))
+                            }
+                        }
+                        t += 3
+                    }
                 }
-                t += 3
             }
         }
         return best?.pick
     }
 
+    /// Where a ray enters a box (0 when it starts inside), or nil when it misses it.
+    private static func slab(_ o: SIMD3<Double>, _ inv: SIMD3<Double>, _ lo: SIMD3<Double>, _ hi: SIMD3<Double>) -> Double? {
+        let pad = simd_reduce_max(hi - lo) * 1e-4 + 1e-6
+        let t1 = (lo - pad - o) * inv, t2 = (hi + pad - o) * inv
+        let tmin = simd_reduce_max(simd_min(t1, t2)), tmax = simd_reduce_min(simd_max(t1, t2))
+        // NaN (a zero direction component on a slab face) keeps the box: never a wrong miss.
+        if tmin.isNaN || tmax.isNaN { return 0 }
+        guard tmax >= max(tmin, 0) else { return nil }
+        return max(tmin, 0)
+    }
+
+    /// `OrbitCamera.project` with the camera's basis worked out once, for many points.
+    private struct Projector {
+        let r, u, b, eye: SIMD3<Double>
+        let perspective: Bool
+        let distance, sx, sy, w, h: Double
+
+        init(_ c: OrbitCamera, size: CGSize) {
+            (r, u, b) = c.basis
+            eye = c.eye
+            perspective = c.fov > 0
+            distance = c.distance
+            let aspect = Double(size.width / max(size.height, 1))
+            sx = c.halfHeight * aspect
+            sy = c.halfHeight
+            w = Double(size.width)
+            h = Double(size.height)
+        }
+
+        /// Screen point and depth along the view.
+        func callAsFunction(_ p: SIMD3<Double>) -> (CGPoint, Double) {
+            let d = p - eye
+            var x = simd_dot(d, r), y = simd_dot(d, u)
+            let z = -simd_dot(d, b)
+            if perspective {
+                let s = distance / max(z, 1e-6)
+                x *= s; y *= s
+            }
+            return (CGPoint(x: (x / sx + 1) / 2 * w, y: (1 - y / sy) / 2 * h), z)
+        }
+    }
+
     static func pickEdge(_ scene: SceneData, camera: OrbitCamera, at p: CGPoint, size: CGSize, tolerance: CGFloat) -> Pick? {
+        let project = Projector(camera, size: size)
         var best: (dist: CGFloat, pick: Pick)?
-        for (mi, m) in scene.meshes.enumerated() {
+        for (mi, m) in scene.meshes.enumerated() where !m.edges.isEmpty {
+            // Skip a body whose box, on screen, is farther than the tolerance from the cursor.
+            // In perspective a corner behind the eye makes the box unbounded on screen: kept.
+            if m.lo.x <= m.hi.x {
+                var minX = CGFloat.infinity, minY = CGFloat.infinity, maxX = -CGFloat.infinity, maxY = -CGFloat.infinity
+                var behind = false
+                for k in 0..<8 {
+                    let c = SIMD3<Double>(Double(k & 1 == 0 ? m.lo.x : m.hi.x), Double(k & 2 == 0 ? m.lo.y : m.hi.y), Double(k & 4 == 0 ? m.lo.z : m.hi.z))
+                    let (q, z) = project(c)
+                    if project.perspective, z <= 1e-6 { behind = true; break }
+                    minX = min(minX, q.x); maxX = max(maxX, q.x); minY = min(minY, q.y); maxY = max(maxY, q.y)
+                }
+                if !behind, p.x < minX - tolerance || p.x > maxX + tolerance || p.y < minY - tolerance || p.y > maxY + tolerance { continue }
+            }
             for (ei, e) in m.edges.enumerated() where e.count > 1 {
+                var sa = project(SIMD3<Double>(e[0])).0
                 for i in 0..<(e.count - 1) {
                     let a = SIMD3<Double>(e[i]), b = SIMD3<Double>(e[i + 1])
-                    let sa = camera.project(a, size: size), sb = camera.project(b, size: size)
+                    let sb = project(b).0
                     let (dist, s) = segmentDistance(p, sa, sb)
                     if dist < tolerance, dist < (best?.dist ?? .infinity) {
                         best = (dist, .edge(mesh: mi, edge: ei, point: a + (b - a) * Double(s)))
                     }
+                    sa = sb
                 }
             }
         }

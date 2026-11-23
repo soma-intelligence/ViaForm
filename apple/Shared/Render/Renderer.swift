@@ -87,12 +87,27 @@ final class Renderer: NSObject, MTKViewDelegate {
     private var overlayBuffer: MTLBuffer?
     private var overlayCount = 0
 
-    var camera = OrbitCamera()
+    var camera = OrbitCamera() { didSet { requestDraw() } }
     var radius: Double = 100
-    var theme: ViewportTheme
+    var theme: ViewportTheme { didSet { requestDraw() } }
     var highlight = Highlight()
-    var pointSize: CGSize = .init(width: 1, height: 1)
+    var pointSize: CGSize = .init(width: 1, height: 1) { didSet { if pointSize != oldValue { requestDraw() } } }
     private var scene = SceneData()
+    /// The view drawn into. It draws on demand (a new scene, camera, highlight or size), not
+    /// on a timer: an idle viewport costs nothing and leaves the main thread free.
+    private weak var view: MTKView?
+
+    /// The bodies' GPU buffers of the last scene uploaded, shared by every renderer on the same
+    /// device: a viewport made again (a workspace switched back to) does not upload them again.
+    nonisolated(unsafe) private static var shared: (serial: Int, device: ObjectIdentifier, meshes: [GPUMesh])?
+
+    func requestDraw() {
+        #if os(macOS)
+        view?.needsDisplay = true
+        #else
+        view?.setNeedsDisplay()
+        #endif
+    }
 
     init?(view: MTKView, theme: ViewportTheme) {
         guard let device = view.device ?? MTLCreateSystemDefaultDevice(), let queue = device.makeCommandQueue() else { return nil }
@@ -105,6 +120,9 @@ final class Renderer: NSObject, MTKViewDelegate {
         view.depthStencilPixelFormat = .depth32Float
         view.sampleCount = 4
         view.clearColor = MTLClearColor(red: 0.9, green: 0.9, blue: 0.92, alpha: 1)
+        view.isPaused = true
+        view.enableSetNeedsDisplay = true
+        self.view = view
         guard buildPipelines(view) else { return nil }
     }
 
@@ -144,39 +162,92 @@ final class Renderer: NSObject, MTKViewDelegate {
 
     /// Takes a new scene from the engine.
     func update(scene: SceneData) {
+        Perf.measure("scene.upload") { apply(scene) }
+    }
+
+    private func apply(_ scene: SceneData) {
         self.scene = scene
         radius = Double(scene.radius)
-        meshes = scene.meshes.compactMap(upload)
+        let dev = ObjectIdentifier(device)
+        if scene.serial != 0, let s = Self.shared, s.serial == scene.serial, s.device == dev {
+            meshes = s.meshes
+        } else {
+            meshes = scene.meshes.compactMap(upload)
+            if scene.serial != 0 { Self.shared = (scene.serial, dev, meshes) }
+        }
         (lineBuffer, lineCount) = segments(scene.lines)
-        let grid = theme.gridOpacity == 1 ? scene.grid : scene.grid.map { l in
+        (gridBuffer, gridCount) = segments(themedGrid(scene.grid))
+        rebuildOverlay()
+        requestDraw()
+    }
+
+    /// Takes the camera-dependent lines (grid, axes, edges) and keeps the bodies' buffers.
+    func updateGuides(_ g: SceneData) {
+        Perf.measure("guides.upload") {
+            radius = Double(g.radius)
+            scene.lines = g.lines
+            scene.grid = g.grid
+            (lineBuffer, lineCount) = segments(g.lines)
+            (gridBuffer, gridCount) = segments(themedGrid(g.grid))
+        }
+        requestDraw()
+    }
+
+    private func themedGrid(_ grid: [SceneData.Line]) -> [SceneData.Line] {
+        theme.gridOpacity == 1 ? grid : grid.map { l in
             var l = l
             l.color.w *= theme.gridOpacity
             return l
         }
-        (gridBuffer, gridCount) = segments(grid)
-        rebuildOverlay()
     }
 
     func setHighlight(_ h: Highlight) {
         guard h != highlight else { return }
         highlight = h
         rebuildOverlay()
+        requestDraw()
+    }
+
+    /// Writes the vectors as packed float3 (the shaders' layout) straight into a new buffer.
+    private func packed(_ v: [SIMD3<Float>], count n: Int) -> MTLBuffer? {
+        guard let b = device.makeBuffer(length: max(n, 1) * 12, options: .storageModeShared) else { return nil }
+        let out = b.contents().bindMemory(to: Float.self, capacity: n * 3)
+        if v.count == n {
+            v.withUnsafeBufferPointer { src in
+                for j in 0..<n {
+                    out[j * 3] = src[j].x
+                    out[j * 3 + 1] = src[j].y
+                    out[j * 3 + 2] = src[j].z
+                }
+            }
+        } else {
+            out.initialize(repeating: 0, count: n * 3)
+        }
+        return b
     }
 
     private func upload(_ m: SceneData.Mesh) -> GPUMesh? {
-        guard !m.positions.isEmpty, !m.indices.isEmpty else { return nil }
-        var faces = [UInt32](repeating: 0, count: m.positions.count)
-        for t in 0..<(m.indices.count / 3) {
-            let f = t < m.triFace.count ? m.triFace[t] : 0
-            for k in 0..<3 { faces[Int(m.indices[t * 3 + k])] = f }
+        let n = m.positions.count
+        guard n > 0, !m.indices.isEmpty,
+              let p = packed(m.positions, count: n),
+              let nb = packed(m.normals, count: n),
+              let f = device.makeBuffer(length: n * 4, options: .storageModeShared),
+              let i = m.indices.withUnsafeBytes({ device.makeBuffer(bytes: $0.baseAddress!, length: $0.count, options: .storageModeShared) }) else { return nil }
+        // The B-rep face of each vertex, from its triangles.
+        let faces = f.contents().bindMemory(to: UInt32.self, capacity: n)
+        faces.initialize(repeating: 0, count: n)
+        m.indices.withUnsafeBufferPointer { idx in
+            m.triFace.withUnsafeBufferPointer { tf in
+                for t in 0..<(idx.count / 3) {
+                    let face = t < tf.count ? tf[t] : 0
+                    for k in 0..<3 {
+                        let vtx = Int(idx[t * 3 + k])
+                        if vtx < n { faces[vtx] = face }
+                    }
+                }
+            }
         }
-        let pos = m.positions.flatMap { [$0.x, $0.y, $0.z] }
-        let nrm = m.normals.count == m.positions.count ? m.normals.flatMap { [$0.x, $0.y, $0.z] } : [Float](repeating: 0, count: pos.count)
-        guard let p = device.makeBuffer(bytes: pos, length: pos.count * 4),
-              let n = device.makeBuffer(bytes: nrm, length: nrm.count * 4),
-              let f = device.makeBuffer(bytes: faces, length: faces.count * 4),
-              let i = device.makeBuffer(bytes: m.indices, length: m.indices.count * 4) else { return nil }
-        return GPUMesh(positions: p, normals: n, faces: f, indices: i, indexCount: m.indices.count, color: m.color)
+        return GPUMesh(positions: p, normals: nb, faces: f, indices: i, indexCount: m.indices.count, color: m.color)
     }
 
     private func segments(_ lines: [SceneData.Line], width: Float? = nil, color: SIMD4<Float>? = nil, onTop: Bool? = nil) -> (MTLBuffer?, Int) {
@@ -204,9 +275,13 @@ final class Renderer: NSObject, MTKViewDelegate {
         (overlayBuffer, overlayCount) = segments(lines)
     }
 
-    func mtkView(_ view: MTKView, drawableSizeWillChange size: CGSize) {}
+    func mtkView(_ view: MTKView, drawableSizeWillChange size: CGSize) { requestDraw() }
+
+    private var drewOnce = false
 
     func draw(in view: MTKView) {
+        let t0 = Perf.now()
+        defer { Perf.frame(start: t0, end: Perf.now()) }
         guard let pass = view.currentRenderPassDescriptor, let drawable = view.currentDrawable,
               let cmd = queue.makeCommandBuffer(), let enc = cmd.makeRenderCommandEncoder(descriptor: pass) else { return }
         let px = view.drawableSize
@@ -248,7 +323,13 @@ final class Renderer: NSObject, MTKViewDelegate {
 
         enc.endEncoding()
         cmd.present(drawable)
+        if Perf.enabled {
+            let phase = Perf.phase
+            cmd.addCompletedHandler { c in Perf.gpu((c.gpuEndTime - c.gpuStartTime) * 1000, phase: phase) }
+        }
         cmd.commit()
+        if !drewOnce { drewOnce = true; Perf.milestone("first frame") }
+        if !meshes.isEmpty { Perf.milestone("first frame with bodies") }
     }
 
     private func drawMesh(_ enc: MTLRenderCommandEncoder, _ m: GPUMesh, index: Int) {

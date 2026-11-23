@@ -13,32 +13,41 @@ struct MarkingMenu: View {
     private struct Slot: Identifiable {
         let id: String
         let symbol: String
+        var art: String? = nil
         let run: (DesignModel) -> Void
+
+        init(id: String, tool: Tool, run: @escaping (DesignModel) -> Void) {
+            self.init(id: id, symbol: tool.symbol, art: ToolIcons.art(for: tool), run: run)
+        }
+
+        init(id: String, symbol: String, art: String? = nil, run: @escaping (DesignModel) -> Void) {
+            self.id = id; self.symbol = symbol; self.art = art; self.run = run
+        }
     }
 
     private var wheel: [Slot] {
         if model.sketchOpen {
             return [
-                Slot(id: "Line", symbol: Tool.line.symbol) { $0.tool = .line },
+                Slot(id: "Line", tool: .line) { $0.tool = .line },
                 Slot(id: "Finish Sketch", symbol: "checkmark.circle") { $0.finishSketch() },
-                Slot(id: "Rectangle", symbol: Tool.rectangle.symbol) { $0.tool = .rectangle },
+                Slot(id: "Rectangle", tool: .rectangle) { $0.tool = .rectangle },
                 Slot(id: "Redo", symbol: "arrow.uturn.forward") { $0.redo() },
-                Slot(id: "Trim", symbol: Tool.trim.symbol) { $0.tool = .trim },
-                Slot(id: "Delete", symbol: "trash") { $0.deleteSelection() },
-                Slot(id: "Circle", symbol: Tool.circle.symbol) { $0.tool = .circle },
+                Slot(id: "Trim", tool: .trim) { $0.tool = .trim },
+                Slot(id: "Delete", tool: .delete) { $0.deleteSelection() },
+                Slot(id: "Circle", tool: .circle) { $0.tool = .circle },
                 Slot(id: "Undo", symbol: "arrow.uturn.backward") { $0.undo() },
             ]
         }
         return [
-            Slot(id: "Sketch", symbol: Tool.sketch.symbol) { m in
+            Slot(id: "Sketch", tool: .sketch) { m in
                 if m.selection.contains(where: \.isFace) { m.sketchOnSelectedFace() } else { m.tool = .sketch }
             },
-            Slot(id: "Press Pull", symbol: Tool.pressPull.symbol) { $0.tool = .pressPull },
-            Slot(id: "Extrude", symbol: Tool.extrude.symbol) { $0.tool = .extrude },
+            Slot(id: "Push / Pull", tool: .pressPull) { $0.tool = .pressPull },
+            Slot(id: "Extrude", tool: .extrude) { $0.tool = .extrude },
             Slot(id: "Redo", symbol: "arrow.uturn.forward") { $0.redo() },
-            Slot(id: "Move", symbol: Tool.move.symbol) { $0.tool = .move },
-            Slot(id: "Delete", symbol: "trash") { $0.deleteSelection() },
-            Slot(id: "Fillet", symbol: Tool.fillet.symbol) { $0.tool = .fillet },
+            Slot(id: "Move", tool: .move) { $0.tool = .move },
+            Slot(id: "Delete", tool: .delete) { $0.deleteSelection() },
+            Slot(id: "Fillet", tool: .fillet) { $0.tool = .fillet },
             Slot(id: "Undo", symbol: "arrow.uturn.backward") { $0.undo() },
         ]
     }
@@ -47,17 +56,24 @@ struct MarkingMenu: View {
         [
             Slot(id: "Repeat Last", symbol: "repeat") { m in if let t = m.lastTool { m.tool = t } },
             Slot(id: "Fit", symbol: "arrow.up.left.and.down.right.magnifyingglass") { $0.zoomToFit() },
-            Slot(id: "Measure", symbol: "ruler") { $0.measureSelection() },
+            Slot(id: "Measure", tool: .measure) { $0.measureSelection() },
             Slot(id: "Toolbox Search", symbol: "magnifyingglass") { $0.toolboxOpen = true },
         ]
     }
 
     private let radius: CGFloat = 92
+    /// Opened by the --show-marking screenshot hook: for its first 20 s a stray click on the window (the Mac
+    /// is in use while the docs are captured) must not close it. Escape or a slot still does.
+    private static let hookOpened = Date()
+    private static var pinned: Bool {
+        ProcessInfo.processInfo.arguments.contains("--show-marking") && Date().timeIntervalSince(hookOpened) < 20
+    }
 
     var body: some View {
         ZStack {
+            let _ = Self.hookOpened
             Color.black.opacity(0.001)
-                .onTapGesture { model.markingMenu = nil }
+                .onTapGesture { if !Self.pinned { model.markingMenu = nil } }
             Circle().fill(.ultraThinMaterial).frame(width: 30, height: 30)
                 .overlay(Circle().stroke(Color.black.opacity(0.2)))
                 .position(at)
@@ -70,7 +86,8 @@ struct MarkingMenu: View {
             VStack(alignment: .leading, spacing: 0) {
                 ForEach(overflow) { slot in
                     Button { fire(slot) } label: {
-                        Label(slot.id, systemImage: slot.symbol).frame(maxWidth: .infinity, alignment: .leading)
+                        Label { Text(slot.id) } icon: { CommandIcon(art: slot.art, symbol: slot.symbol, size: 12) }
+                            .frame(maxWidth: .infinity, alignment: .leading)
                             .padding(.horizontal, 10).frame(height: 24).contentShape(Rectangle())
                     }
                     .buttonStyle(.plain)
@@ -88,7 +105,7 @@ struct MarkingMenu: View {
     private func pill(_ slot: Slot) -> some View {
         Button { fire(slot) } label: {
             HStack(spacing: 6) {
-                Image(systemName: slot.symbol).frame(width: 16)
+                CommandIcon(art: slot.art, symbol: slot.symbol, size: 12).frame(width: 20)
                 Text(slot.id)
             }
             .font(.system(size: 12))
@@ -141,8 +158,8 @@ struct ToolboxSearch: View {
                     ForEach(matches) { c in
                         Button { run(c) } label: {
                             HStack(spacing: 8) {
-                                Image(systemName: CommandSymbol.of(c.icon, id: c.id)).frame(width: 18)
-                                Text(c.label)
+                                CommandIcon(icon: c.icon, id: c.id, size: 13).frame(width: 22)
+                                Text(StageLabels.command(c.label))
                                 Spacer()
                                 Text(c.tab.capitalized + " · " + c.panel.capitalized).foregroundStyle(.secondary).font(.system(size: 11))
                                 if let k = c.key { Text(k).font(.system(size: 11, design: .monospaced)).foregroundStyle(.secondary) }
@@ -191,7 +208,7 @@ struct DataPanel: View {
             .padding(12)
             Divider()
             HStack(spacing: 8) {
-                Button("New Design") { model.newDesign(); shown = false }
+                Button("New Design") { FileActions.newDesign(model); shown = false }
                 Button("Open…") { FileActions.open(model); shown = false }
             }
             .padding(12)
@@ -201,7 +218,7 @@ struct DataPanel: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: 0) {
                     ForEach(NSDocumentController.shared.recentDocumentURLs, id: \.self) { url in
-                        tile(url.deletingPathExtension().lastPathComponent, "doc") { model.open(url); shown = false }
+                        tile(url.deletingPathExtension().lastPathComponent, "doc") { FileActions.open(url, model); shown = false }
                     }
                 }
             }

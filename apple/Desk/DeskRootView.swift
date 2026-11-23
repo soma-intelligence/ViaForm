@@ -11,10 +11,21 @@ struct DeskRootView: View {
     let pcb: PCBModel
     @State private var workspace = Workspace.design
     @State private var sim = SimModel()
+    @State private var generate = GenerateModel()
     @State private var tab = "SOLID"
     @State private var showBrowser = true
     @State private var perspective = false
     @State private var showData = false
+    @State private var library = LibraryModel()
+    @State private var showLibrary = false
+    @State private var bom = BomModel()
+    @State private var showBom = BomModel.launchRequested
+    @State private var flow = FlowModel()
+    @State private var flowCard: Workspace?
+
+    private func openStage(_ stage: String) {
+        if let w = Workspace(stage: stage) { workspace = w }
+    }
 
     static let theme = ViewportTheme(
         backgroundTop: SIMD4(0.28, 0.30, 0.34, 1),
@@ -25,49 +36,72 @@ struct DeskRootView: View {
         gridOpacity: 0.3
     )
 
-    enum Workspace: String, CaseIterable {
-        case design = "DESIGN", electronics = "ELECTRONICS", simulation = "SIMULATION"
-        var symbol: String {
-            switch self {
-            case .design: "cube"
-            case .electronics: "cpu"
-            case .simulation: "wind"
-            }
-        }
-    }
+    /// The workspaces in pipeline order (`Workspace`, shared with the iPad app); each one is a
+    /// stage of the product flow (`FlowModel`).
+    typealias Workspace = ViaFormWorkspace
 
     var body: some View {
         VStack(spacing: 0) {
             AppBar(model: model, showData: $showData)
+                .disabled(EngineGate.shared.shut)
             HStack(spacing: 0) {
-                Menu(workspace.rawValue) {
-                    ForEach(Workspace.allCases, id: \.self) { w in
-                        Button { workspace = w } label: { Label(w.rawValue.capitalized, systemImage: w.symbol) }
-                    }
-                }
-                .menuStyle(.borderlessButton).fixedSize()
-                .font(.system(size: 11, weight: .bold))
-                .foregroundStyle(Color.accentColor)
-                .padding(.horizontal, 10)
+                PipelineBar(flow: flow, workspace: $workspace, card: $flowCard, showsJobs: true)
+                    .disabled(EngineGate.shared.shut)
                 Divider().frame(height: 16)
-                Spacer()
+                Button { showBom.toggle() } label: {
+                    Label("BOM", systemImage: "list.bullet.rectangle").font(.system(size: 11, weight: .semibold))
+                }
+                .buttonStyle(.borderless)
+                .foregroundStyle(showBom ? Color.accentColor : Color.primary)
+                .keyboardShortcut("b", modifiers: [.command, .shift])
+                .help("Bill of materials: design parts, PCB components and component files, priced for N builds (Shift-Command-B)")
+                Button { showLibrary.toggle() } label: {
+                    Label("Libraries", systemImage: "books.vertical").font(.system(size: 11, weight: .semibold))
+                }
+                .buttonStyle(.borderless)
+                .foregroundStyle(showLibrary ? Color.accentColor : Color.primary)
+                .keyboardShortcut("l", modifiers: [.command, .shift])
+                .help("Libraries: KiCad, standard hardware, distributors, marketplaces, saved parts (Shift-Command-L)")
+                .padding(.horizontal, 10)
             }
-            .frame(height: 24)
+            .frame(height: 30)
             .background(Color(nsColor: .windowBackgroundColor))
-            if workspace == .electronics {
+            switch workspace {
+            case .electronics:
                 DeskPCBView(model: pcb, design: model) { workspace = .design }
-            } else if workspace == .simulation {
+            case .simulation, .train:
+                // Training lives in the simulation workspace for now (its Train panel).
                 SimulationView(model: sim)
-            } else {
+            case .generate:
+                GenerateView(model: generate, design: model, theme: Self.theme)
+            case .make:
+                StageOverview(flow: flow, stage: "make", note: "Manufacturing gathers the frame, the board, the assembly and the flight policy. Exports available today:", open: openStage) {
+                    Button("Export Design…") { FileActions.export(model) }
+                    Button("Bill of Materials") { showBom = true }
+                }
+            case .design, .assemble, .render:
                 designBody
+            }
+            if showBom {
+                Divider()
+                BomPanel(model: bom, design: model, pcb: pcb) { showBom = false }.frame(height: 460)
             }
         }
         .background(Color(nsColor: .windowBackgroundColor))
         .onAppear {
             let args = ProcessInfo.processInfo.arguments
+            if showBom { bom.applyLaunchFlags(); BomSnapshot.runIfAsked(model: bom, design: model, pcb: pcb) }
             if args.contains("--electronics") { workspace = .electronics }
             if args.contains("--simulation") { workspace = .simulation }
+            if args.contains("--generate") { workspace = .generate }
+            generate.launchHooks(design: model)
             if args.contains("--board") { workspace = .electronics; pcb.sheet = .board }
+            if args.contains("--library") { showLibrary = true }
+            if let q = args.first(where: { $0.hasPrefix("--library=") })?.dropFirst(10) {
+                showLibrary = true
+                library.query = String(q)
+                Task { await library.search() }
+            }
             if args.contains("--pcb-3d") {
                 // Demo for the docs: an enclosure, the sample board sent to 3D and mounted on it.
                 model.newDesign()
@@ -78,7 +112,18 @@ struct DeskRootView: View {
                 model.zoomToFit()
             }
         }
-        .onChange(of: workspace) { _, _ in pcb.syncLink(model) }
+        .onChange(of: workspace) { _, w in
+            pcb.syncLink(model)
+            if w == .render, model.commands.contains(where: { $0.tab == "RENDER" }) { tab = "RENDER" }
+        }
+        // What each workspace builds, reported to the pipeline.
+        .reportsToFlow(flow, design: model, pcb: pcb, generate: generate, sim: sim)
+        .projectFilesContext(design: model, pcb: pcb, bom: bom, flow: flow)
+        .focusedSceneValue(\.vfDesk, DeskFocus(workspace: workspace, open: { workspace = $0 }, search: { model.toolboxOpen = true }))
+        .inspector(isPresented: $showLibrary) {
+            LibraryView(model: library, design: model, pcb: pcb) { showLibrary = false }
+                .inspectorColumnWidth(min: 320, ideal: 380, max: 560)
+        }
     }
 
     @ViewBuilder private var designBody: some View {
@@ -137,11 +182,11 @@ struct AppBar: View {
         HStack(spacing: 14) {
             Button { showData.toggle() } label: { Image(systemName: "square.grid.3x3") }.help("Data Panel")
             Menu {
-                Button("New Design") { model.newDesign() }.keyboardShortcut("n")
+                Button("New Design") { FileActions.newDesign(model) }.keyboardShortcut("n")
                 Button("Open…") { FileActions.open(model) }.keyboardShortcut("o")
                 Button("Sample Bracket") { model.loadSample() }
                 Divider()
-                Button("Save As…") { FileActions.save(model) }.keyboardShortcut("s")
+                Button("Save As…") { FileActions.saveAs(model) }.keyboardShortcut("s")
                 Button("Export…") { FileActions.export(model) }.keyboardShortcut("e", modifiers: [.command, .shift])
             } label: { Image(systemName: "doc") }
             .menuStyle(.borderlessButton).menuIndicator(.visible).fixedSize()
@@ -158,7 +203,7 @@ struct AppBar: View {
                 .padding(.horizontal, 14).frame(height: 30)
                 .background(Color(nsColor: .windowBackgroundColor))
                 .clipShape(UnevenRoundedRectangle(topLeadingRadius: 6, topTrailingRadius: 6))
-                Button { model.newDesign() } label: { Image(systemName: "plus").frame(width: 28, height: 28) }.help("New Design")
+                Button { FileActions.newDesign(model) } label: { Image(systemName: "plus").frame(width: 28, height: 28) }.help("New Design")
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(.top, 4)
@@ -199,7 +244,7 @@ struct Ribbon: View {
     private var panels: [(String, [CommandInfo])] {
         var order: [String] = []
         var by: [String: [CommandInfo]] = [:]
-        for c in model.commands where c.tab == tab {
+        for c in model.commands where c.tab == tab && c.panel != "FINISH SKETCH" {
             if by[c.panel] == nil { order.append(c.panel) }
             by[c.panel, default: []].append(c)
         }
@@ -211,7 +256,7 @@ struct Ribbon: View {
             HStack(spacing: 0) {
                 ForEach(tabs, id: \.self) { t in
                     Button { tab = t } label: {
-                        Text(t).font(.system(size: 11, weight: .semibold))
+                        Text(StageLabels.tab(t)).font(.system(size: 11, weight: .semibold))
                             .padding(.horizontal, 12).padding(.vertical, 6)
                             .foregroundStyle(tab == t ? Color.accentColor : (t == "SKETCH" ? Color.accentColor.opacity(0.8) : .primary))
                             .overlay(alignment: .bottom) { if tab == t { Rectangle().fill(Color.accentColor).frame(height: 2) } }
@@ -228,12 +273,7 @@ struct Ribbon: View {
                         Divider().frame(height: 54)
                     }
                     if tab == "SKETCH" {
-                        Button { model.finishSketch() } label: {
-                            VStack(spacing: 3) {
-                                Image(systemName: "checkmark.circle.fill").font(.system(size: 24)).foregroundStyle(.green)
-                                Text("FINISH SKETCH").font(.system(size: 9, weight: .bold))
-                            }.frame(width: 90, height: 60)
-                        }.buttonStyle(.plain)
+                        DoneButton { model.finishSketch() }.padding(.horizontal, 12).frame(height: 60)
                     }
                 }
                 .padding(.horizontal, 6)
@@ -260,20 +300,19 @@ struct RibbonPanel: View {
             HStack(spacing: 2) {
                 ForEach(main) { c in
                     Button { CommandRouter.run(c, model) } label: {
-                        Image(systemName: CommandSymbol.of(c.icon, id: c.id))
-                            .font(.system(size: 20))
+                        CommandIcon(icon: c.icon, id: c.id)
                             .frame(width: 40, height: 34)
                             .foregroundStyle(active(c) ? Color.white : Color.primary)
                             .background(active(c) ? Color.accentColor : Color.clear, in: RoundedRectangle(cornerRadius: 5))
                     }
                     .buttonStyle(.plain)
-                    .help(c.label + (c.key.map { "  (\($0))" } ?? ""))
+                    .help(StageLabels.command(c.label) + (c.key.map { "  (\($0))" } ?? ""))
                 }
             }
             Menu {
                 ForEach(commands) { c in
                     Button { CommandRouter.run(c, model) } label: {
-                        Label(c.label, systemImage: CommandSymbol.of(c.icon, id: c.id))
+                        Label(StageLabels.command(c.label), systemImage: CommandSymbol.of(c.icon, id: c.id))
                     }
                 }
             } label: {
@@ -438,38 +477,40 @@ struct BrowserPanel: View {
 
 /// The dialog of the running command, docked at the right of the viewport.
 struct CommandDialog: View {
+    @Environment(\.viaFormTheme) private var theme
     @Bindable var model: DesignModel
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            HStack {
-                Image(systemName: icon)
-                Text(title.uppercased()).font(.system(size: 11, weight: .bold))
+            HStack(spacing: 8) {
+                Image(systemName: icon).foregroundStyle(theme.accentText)
+                Text(title.uppercased()).font(VFFont.caps).tracking(VFTypeScale.capsTracking).foregroundStyle(theme.ink)
                 Spacer()
-                Button { close() } label: { Image(systemName: "xmark").font(.system(size: 10, weight: .bold)) }.buttonStyle(.plain)
+                Button { close() } label: { Image(systemName: "xmark").font(.system(size: 10, weight: .bold)) }
+                    .buttonStyle(.plain).foregroundStyle(theme.inkSecondary).help("Cancel (Escape)")
             }
-            .padding(.horizontal, 10).frame(height: 28)
-            .background(Color.accentColor.opacity(0.85)).foregroundStyle(.white)
+            .padding(.horizontal, 12).frame(height: 34)
+            .overlay(alignment: .bottom) { VFHairline() }
             if let c = model.genericCommand {
                 GenericCommandForm(model: model, command: c)
             } else {
                 VStack(alignment: .leading, spacing: 10) { rows }
                     .padding(12)
                 Divider()
-                HStack {
-                    Spacer()
-                    Button("Cancel") { model.cancelTool() }
-                    Button("OK") { ok() }.keyboardShortcut(.defaultAction).buttonStyle(.borderedProminent)
+                HStack(spacing: VFSpace.s) {
+                    Button { model.cancelTool() } label: { Text("Cancel").frame(maxWidth: .infinity) }
+                        .buttonStyle(.bordered)
+                        .keyboardShortcut(.cancelAction)
+                    Button { ok() } label: { Text("Done").frame(maxWidth: .infinity) }
+                        .keyboardShortcut(.defaultAction).buttonStyle(.vfPrimary)
                 }
                 .padding(10)
             }
         }
-        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 6))
-        .overlay(RoundedRectangle(cornerRadius: 6).stroke(Color.black.opacity(0.15)))
-        .shadow(color: .black.opacity(0.15), radius: 10, y: 3)
+        .vfSurface(.floating)
     }
 
-    private var title: String { model.genericCommand?.label ?? model.tool.label }
+    private var title: String { StageLabels.command(model.genericCommand?.label ?? model.tool.label) }
     private var icon: String { model.genericCommand.map { CommandSymbol.of($0.icon, id: $0.id) } ?? model.tool.symbol }
 
     @ViewBuilder private var rows: some View {
@@ -538,7 +579,11 @@ struct CommandDialog: View {
         }
     }
 
-    private func ok() {
+    private func ok() { Self.finish(model) }
+
+    /// What Done does for the running command, from the dialog or the ribbon.
+    static func finish(_ model: DesignModel) {
+        if model.genericCommand != nil { return }
         switch model.tool {
         case .move: model.moveSelected(); model.tool = .select
         case .mirror: model.mirrorSelected(); model.tool = .select
@@ -650,19 +695,51 @@ struct TimelineBar: View {
 
 // MARK: Files
 
+@MainActor
 enum FileActions {
+    /// Opens a project (`.viaform`: design, board, BOM and pipeline), a design or a file to
+    /// insert into the open design.
     static func open(_ model: DesignModel) {
         let p = NSOpenPanel()
-        p.allowedContentTypes = ["sc", "solidcraft", "json", "step", "stp", "iges", "igs", "stl", "obj", "3mf", "dxf", "svg"].compactMap { UTType(filenameExtension: $0) }
+        p.allowedContentTypes = ["viaform", "sc", "solidcraft", "json", "step", "stp", "iges", "igs", "stl", "obj", "3mf", "dxf", "svg"].compactMap { UTType(filenameExtension: $0) }
         p.allowsOtherFileTypes = true
-        if p.runModal() == .OK, let url = p.url { model.open(url) }
+        if p.runModal() == .OK, let url = p.url { open(url, model) }
     }
 
+    static func open(_ url: URL, _ model: DesignModel) {
+        NSDocumentController.shared.noteNewRecentDocumentURL(url)
+        ProjectFiles.open(url, design: model, in: ProjectFiles.current)
+    }
+
+    /// Saves the open project in place, else asks where: a `.viaform` project (with its BOM and
+    /// pipeline) by default, or a bare design file.
     static func save(_ model: DesignModel) {
+        let c = ProjectFiles.current
+        if let c, c.flow.isProjectFile, let key = c.flow.documentKey {
+            ProjectFiles.save(URL(fileURLWithPath: key), in: c)
+            return
+        }
         if let path = model.snapshot.path { model.run("file.save", ["path": path]); return }
+        saveAs(model)
+    }
+
+    static func saveAs(_ model: DesignModel) {
         let p = NSSavePanel()
-        p.nameFieldStringValue = model.snapshot.name + ".sc"
-        if p.runModal() == .OK, let url = p.url { model.save(to: url) }
+        let name = ProjectFiles.current.map { ProjectTitle.of(flow: $0.flow, design: model) } ?? model.snapshot.name
+        p.nameFieldStringValue = name + ".viaform"
+        p.allowedContentTypes = ["viaform", "sc"].compactMap { UTType(filenameExtension: $0) }
+        p.allowsOtherFileTypes = false
+        guard p.runModal() == .OK, let url = p.url else { return }
+        if ProjectFiles.isProject(url), let c = ProjectFiles.current {
+            ProjectFiles.save(url, in: c)
+        } else {
+            model.save(to: url)
+            ProjectFiles.current?.flow.adoptDocument(url.path)
+        }
+    }
+
+    static func newDesign(_ model: DesignModel) {
+        ProjectFiles.newDesign(model, in: ProjectFiles.current)
     }
 
     static func export(_ model: DesignModel) {

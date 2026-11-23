@@ -9,7 +9,16 @@ import UniformTypeIdentifiers
 struct DeskPCBView: View {
     @Bindable var model: PCBModel
     let design: DesignModel
+    /// Inside the project window: the window's sidebar lists the parts and nets, so the floating
+    /// browser starts closed (its button brings it back).
+    var embedded = false
+    /// Board layers hidden by the window's layer bar (embedded only).
+    var hiddenLayers: Set<String> = []
+    /// Runs the rule checks the way the stage verb does (embedded only).
+    var runChecks: (() -> Void)?
     let openDesign: () -> Void
+    @State private var transform: PCBCanvasTransform?
+    @State private var cardFrame: CGRect?
     @State private var showBrowser = true
     @State private var showInspector = true
     @State private var open: Set<String> = ["Parts", "Board"]
@@ -19,25 +28,54 @@ struct DeskPCBView: View {
             toolbar
             Divider()
             ZStack(alignment: .top) {
-                PCBCanvas(model: model)
+                PCBCanvas(model: model, dense: embedded, hiddenLayers: hiddenLayers, onTransform: { transform = $0 },
+                          reserveTrailing: embedded && model.sheet == .board ? 300 : 0)
+                if embedded { linkLayer }
+                if !embedded {
                 HStack(alignment: .top) {
                     if showBrowser { browser.frame(width: 250) } else { reopen("sidebar.left", "Show the browser") { showBrowser = true } }
                     Spacer()
                     if showInspector { inspector.frame(width: 280) } else { reopen("sidebar.right", "Show the inspector") { showInspector = true } }
                 }
                 .padding(10)
+                }
                 VStack(spacing: 6) {
                     if let hint = model.toolHint { pill(hint, color: .secondary) }
                     if let m = model.message { pill(m, color: model.messageIsError ? .red : .primary) }
                 }
                 .padding(10)
             }
+            .coordinateSpace(name: "pcbStage")
         }
+        .onAppear { if embedded { showBrowser = false } }
         .onKeyPress(.escape) { model.tool = .select; return .handled }
         .onKeyPress(.delete) { model.deleteSelection(); return .handled }
         .onKeyPress("r") { model.rotateSelection(); return .handled }
         .onKeyPress("w") { model.tool = .wire; return .handled }
         .onKeyPress("x") { model.tool = .route; return .handled }
+    }
+
+    /// Embedded in the project window: the 3D link card (top right) with its leader, the keep-in
+    /// and clearance dimensions over the board, and the rule-check capsule (bottom left). The
+    /// window's sidebar and inspector stand in for the floating browser and inspector.
+    @ViewBuilder private var linkLayer: some View {
+        let info = BoardLinkInfo.read(design: design, pcb: model)
+        if model.sheet == .board, let t = transform, let p = model.project {
+            BoardLinkAnnotations(info: info, board: CGSize(width: p.board.width, height: p.board.height), transform: t, card: cardFrame)
+        }
+        if model.sheet == .board {
+            LinkCard(info: info, design: design, pcb: model, showIn3D: openDesign)
+                .background(GeometryReader { g in
+                    Color.clear
+                        .onAppear { cardFrame = g.frame(in: .named("pcbStage")) }
+                        .onChange(of: g.frame(in: .named("pcbStage"))) { _, f in cardFrame = f }
+                })
+                .padding(VFSpace.overlayInset)
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topTrailing)
+        }
+        DRCCapsule(pcb: model) { runChecks?() ?? model.refresh() }
+            .padding(VFSpace.overlayInset)
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomLeading)
     }
 
     private func pill(_ text: String, color: Color) -> some View {
@@ -162,8 +200,8 @@ struct DeskPCBView: View {
                 ForEach(PCBModel.Sheet.allCases, id: \.self) { s in
                     let name = s == .schematic ? "SCHEMATIC" : "PCB"
                     Button { model.sheet = s; model.tool = .select } label: {
-                        Text(name).font(.system(size: 11, weight: .semibold))
-                            .padding(.horizontal, 12).padding(.vertical, 6)
+                        Text(name).font(.system(size: 11, weight: .semibold)).tracking(VFTypeScale.capsTracking)
+                            .padding(.horizontal, 10).frame(height: 24)
                             .foregroundStyle(model.sheet == s ? Color.accentColor : .primary)
                             .overlay(alignment: .bottom) { if model.sheet == s { Rectangle().fill(Color.accentColor).frame(height: 2) } }
                     }
@@ -171,8 +209,8 @@ struct DeskPCBView: View {
                 }
                 Spacer()
             }
-            .frame(height: 28)
-            panels.frame(height: 70)
+            .frame(height: 24)
+            panels.frame(height: 60)
         }
         .background(Color(nsColor: .windowBackgroundColor))
     }
@@ -207,6 +245,10 @@ struct DeskPCBView: View {
                 big("rotate.right", "Rotate (R)") { model.rotateSelection() }.disabled(model.selection == nil)
                 big("trash", "Delete") { model.deleteSelection() }.disabled(model.selection == nil)
             }
+            panel("CHECK") {
+                // Design and electrical rules in one run; the capsule on the canvas shows the result.
+                big("checkmark.seal", "Run the design and electrical rule checks") { if let runChecks { runChecks() } else { model.refresh() } }
+            }
             panel("3D") {
                 ZStack(alignment: .topTrailing) {
                     big("cube.transparent", model.linkedRevision == nil ? "Send board to the 3D design" : "Update the 3D board") { model.sendTo3D(design) }
@@ -226,23 +268,26 @@ struct DeskPCBView: View {
         HStack(spacing: 0) {
             VStack(spacing: 2) {
                 HStack(spacing: 2) { content() }
-                Text(name).font(.system(size: 9.5, weight: .bold)).foregroundStyle(.secondary)
+                // The ribbon's caption, on one line (it wrapped to "BOAR D" at 9.5 pt bold).
+                VFCaption(name).lineLimit(1).fixedSize()
             }
             .padding(.horizontal, 8).padding(.top, 4)
-            Divider().frame(height: 54)
+            VFHairline(vertical: true).frame(height: 42)
         }
     }
 
     private func big(_ symbol: String, _ help: String, on: Bool = false, action: @escaping () -> Void) -> some View {
         Button(action: action) {
             Image(systemName: symbol)
-                .font(.system(size: 19))
-                .frame(width: 40, height: 34)
+                .font(.system(size: 17))
+                .frame(width: 36, height: 32)
                 .foregroundStyle(on ? Color.white : Color.primary)
                 .background(on ? Color.accentColor : .clear, in: RoundedRectangle(cornerRadius: 5))
         }
         .buttonStyle(.plain)
         .help(help)
+        .accessibilityLabel(help)
+        .accessibilityAddTraits(on ? .isSelected : [])
     }
 
     private func exportKiCad() {

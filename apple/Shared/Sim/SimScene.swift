@@ -72,7 +72,8 @@ final class SimScene {
         for (i, r) in rotors.enumerated() where !idle {
             r.simdEulerAngles.z += (i % 2 == 0 ? 1 : -1) * 0.9
         }
-        targetNode.simdPosition = vec(f.target)
+        // In a race the marker shows the next gate (or the pad), else the planner's target.
+        targetNode.simdPosition = vec(model.race?.target ?? f.target)
         if model.trail.count != trailCount {
             trailNode.geometry = polyline(model.trail, color: SimColor(red: 0.35, green: 0.7, blue: 1, alpha: 1))
             trailCount = model.trail.count
@@ -85,11 +86,21 @@ final class SimScene {
         let p = scenePoint(f.p)
         switch model.camera {
         case .follow:
-            // Behind and above the drone along its velocity, eased so turns stay readable.
+            // Behind and above the drone along its velocity, eased so turns stay readable. The
+            // distance is held to about eight drone widths (a 3-inch quad spans 0.13 m): the ease
+            // alone let it trail several metres at 4x and lose the drone in the course.
             let v = SIMD2(f.v[0], f.v[1])
             let dir = simd_length(v) > 0.4 ? simd_normalize(v) : SIMD2(1, 0)
-            let want = p + SIMD3(Float(-dir.x) * 1.6, 0.8, Float(dir.y) * 1.6)
-            cameraNode.simdPosition = simd_mix(cameraNode.simdPosition, want, SIMD3(repeating: 0.12))
+            let back: Float = 0.95, up: Float = 0.42
+            let want = p + SIMD3(Float(-dir.x) * back, up, Float(dir.y) * back)
+            var at = simd_mix(cameraNode.simdPosition, want, SIMD3(repeating: 0.18))
+            let d = simd_length(at - p), target = simd_length(want - p)
+            if d > 1e-4, d < target * 0.85 || d > target * 1.15 {
+                at = p + (at - p) / d * min(max(d, target * 0.85), target * 1.15)
+            }
+            // Never under the floor.
+            at.y = max(at.y, 0.15)
+            cameraNode.simdPosition = at
             cameraNode.simdLook(at: p)
         case .overview:
             guard let w = model.world else { return }
@@ -140,10 +151,14 @@ final class SimScene {
         courseNode.childNodes.forEach { $0.removeFromParentNode() }
         // Ground with a one-metre grid.
         let lo = world.bounds.min, hi = world.bounds.max
-        let ground = SCNBox(width: hi[0] - lo[0] + 10, height: hi[1] - lo[1] + 10, length: 0.02, chamferRadius: 0)
+        // An endless floor: a box ends somewhere, and a low follow camera sees the edge.
+        let ground = SCNFloor()
+        ground.reflectivity = 0
         ground.firstMaterial = material(SimColor(red: 0.19, green: 0.21, blue: 0.23, alpha: 1))
         let groundNode = SCNNode(geometry: ground)
-        groundNode.simdPosition = SIMD3(Float(lo[0] + hi[0]) / 2, Float(lo[1] + hi[1]) / 2, -0.011)
+        // SCNFloor lies in its node's x-z plane; turn it so its normal is the sim's z.
+        groundNode.simdEulerAngles.x = .pi / 2
+        groundNode.simdPosition.z = -0.001
         courseNode.addChildNode(groundNode)
         courseNode.addChildNode(grid(lo: lo, hi: hi))
 

@@ -1,5 +1,5 @@
 import Foundation
-import SolidCraftFFI
+import ViaFormFFI
 import simd
 
 /// An error the engine answered with (bad parameters, a failed feature, an unknown command).
@@ -31,6 +31,9 @@ struct SceneData {
         var edges: [[SIMD3<Float>]]
         var color: SIMD4<Float>
         var body: String
+        /// Axis-aligned bounds of `positions`, so picking can skip a body the ray misses.
+        var lo = SIMD3<Float>(repeating: .infinity)
+        var hi = SIMD3<Float>(repeating: -.infinity)
     }
 
     struct Line {
@@ -45,6 +48,11 @@ struct SceneData {
     var grid: [Line] = []
     var radius: Float = 100
     var revision = 0
+    /// Unique per build of the meshes: a renderer that already uploaded this scene's bodies
+    /// (another viewport, a workspace switched back to) reuses its GPU buffers.
+    var serial = 0
+    nonisolated(unsafe) private static var lastSerial = 0
+    static func nextSerial() -> Int { lastSerial += 1; return lastSerial }
 }
 
 /// A sketch plane in world coordinates.
@@ -144,34 +152,60 @@ final class CADEngine {
     private static func edges(_ v: ScMeshView) -> [[SIMD3<Float>]] {
         guard let pts = v.edge_points, let offs = v.edge_offsets, v.edge_count > 0 else { return [] }
         return (0..<Int(v.edge_count)).map { e in
-            (Int(offs[e])..<Int(offs[e + 1])).map { SIMD3(pts[$0 * 3], pts[$0 * 3 + 1], pts[$0 * 3 + 2]) }
+            let a = Int(offs[e]), b = Int(offs[e + 1])
+            return [SIMD3<Float>](unsafeUninitializedCapacity: max(b - a, 0)) { buf, count in
+                for j in a..<max(a, b) { buf[j - a] = SIMD3(pts[j * 3], pts[j * 3 + 1], pts[j * 3 + 2]) }
+                count = max(b - a, 0)
+            }
         }
     }
 
     func scene(camera: OrbitCamera) -> SceneData {
+        Perf.measure("scene.build") { buildScene(camera: camera, meshes: true) }
+    }
+
+    /// The camera-dependent part of the scene only (grid, axes and lines, the view radius): what
+    /// an orbit, a pan or a zoom changes. The bodies are not copied.
+    func guides(camera: OrbitCamera) -> SceneData {
+        Perf.measure("scene.guides") { buildScene(camera: camera, meshes: false) }
+    }
+
+    private func buildScene(camera: OrbitCamera, meshes: Bool) -> SceneData {
         let camText = (try? String(decoding: JSONEncoder().encode(camera), as: UTF8.self)) ?? "null"
-        guard let sc = sc_scene_build(session, camText) else { return SceneData() }
+        guard let sc = Perf.measure("scene.ffi", { sc_scene_build(session, camText) }) else { return SceneData() }
         defer { sc_scene_free(sc) }
         var out = SceneData()
         out.radius = sc_scene_radius(sc)
-        for i in 0..<sc_scene_mesh_count(sc) {
+        for i in 0..<(meshes ? sc_scene_mesh_count(sc) : 0) {
             var v = ScMeshView()
             guard sc_scene_mesh(sc, i, &v) else { continue }
             let n = Int(v.vertex_count), k = Int(v.index_count)
-            func vec3(_ p: UnsafePointer<Float>?) -> [SIMD3<Float>] {
+            var lo = SIMD3<Float>(repeating: .infinity), hi = SIMD3<Float>(repeating: -.infinity)
+            func vec3(_ p: UnsafePointer<Float>?, bounds: Bool) -> [SIMD3<Float>] {
                 guard let p, n > 0 else { return [] }
-                return (0..<n).map { SIMD3(p[$0 * 3], p[$0 * 3 + 1], p[$0 * 3 + 2]) }
+                return [SIMD3<Float>](unsafeUninitializedCapacity: n) { buf, count in
+                    for j in 0..<n {
+                        let q = SIMD3(p[j * 3], p[j * 3 + 1], p[j * 3 + 2])
+                        if bounds { lo = simd_min(lo, q); hi = simd_max(hi, q) }
+                        buf[j] = q
+                    }
+                    count = n
+                }
             }
-            out.meshes.append(.init(
-                positions: vec3(v.positions),
-                normals: vec3(v.normals),
+            var mesh = SceneData.Mesh(
+                positions: vec3(v.positions, bounds: true),
+                normals: vec3(v.normals, bounds: false),
                 indices: v.indices.map { Array(UnsafeBufferPointer(start: $0, count: k)) } ?? [],
                 triFace: v.tri_face.map { Array(UnsafeBufferPointer(start: $0, count: k / 3)) } ?? [],
                 edges: Self.edges(v),
                 color: SIMD4(v.color.0, v.color.1, v.color.2, v.color.3),
                 body: sc_scene_body_name(sc, i).map { String(cString: $0) } ?? "Body\(i + 1)"
-            ))
+            )
+            mesh.lo = lo
+            mesh.hi = hi
+            out.meshes.append(mesh)
         }
+        if meshes { out.serial = SceneData.nextSerial() }
         for grid in [false, true] {
             for i in 0..<sc_scene_line_count(sc, grid) {
                 var l = ScLineView()

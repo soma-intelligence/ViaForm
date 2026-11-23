@@ -62,30 +62,45 @@ final class DesignModel {
     var toolboxOpen = false
 
     /// Called when the picture must be redrawn (new scene, camera or highlight).
-    var onSceneChange: ((SceneData) -> Void)?
-    var onHighlightChange: ((Highlight) -> Void)?
+    @ObservationIgnored var onSceneChange: ((SceneData) -> Void)?
+    @ObservationIgnored var onHighlightChange: ((Highlight) -> Void)?
 
     private var previewCheckpoint: Int?
     private var previewApplied = false
 
     init() {
+        Perf.watchMainThread()
+        Perf.milestone("design model init")
         refresh()
         if let home = engine.homeCamera() { camera = home }
-        if ProcessInfo.processInfo.arguments.contains("--sample") { loadSample() }
+        // `--sample hand` and `--sample drone` open a generative project, not the sample design.
+        if ProcessInfo.processInfo.arguments.contains("--sample") && GenerateProject.launchSample == nil { loadSample() }
     }
 
     // MARK: Engine
 
+    /// The last registry command run, so other parts of the app (the pipeline) can follow
+    /// what the design did without each command reporting itself.
+    struct RunRecord: Equatable {
+        var id: String
+        var ok: Bool
+        var serial: Int
+    }
+    private(set) var lastRun: RunRecord?
+
     @discardableResult
     func run(_ id: String, _ params: [String: Any] = [:], quiet: Bool = false) -> Any? {
+        let serial = (lastRun?.serial ?? 0) + 1
         do {
             let r = try engine.execute(id, params)
             if !quiet { flash(nil) }
             refresh()
+            lastRun = RunRecord(id: id, ok: true, serial: serial)
             return r
         } catch {
             flash(error.localizedDescription, error: true)
             refresh()
+            lastRun = RunRecord(id: id, ok: false, serial: serial)
             return nil
         }
     }
@@ -101,25 +116,76 @@ final class DesignModel {
     }
 
     func refresh() {
-        snapshot = engine.inspect()
-        sketchPlane = engine.sketchPlane()
-        refreshAssembly()
-        rebuildScene()
+        Perf.measure("refresh") {
+            snapshot = Perf.measure("refresh.inspect") { engine.inspect() }
+            sketchPlane = engine.sketchPlane()
+            Perf.measure("refresh.assembly") { refreshAssembly() }
+            rebuildScene()
+        }
     }
 
     func rebuildScene() {
+        Perf.measure("rebuildScene") { rebuildSceneNow() }
+    }
+
+    private func rebuildSceneNow() {
         scene = engine.scene(camera: camera)
         scene.revision = snapshot.revision
-        // Drop picks that no longer exist.
-        selection = selection.filter { $0.mesh < scene.meshes.count }
+        // Drop picks that no longer exist. Only written when something went: every write of an
+        // observed property invalidates the views that read it.
+        let kept = selection.filter { $0.mesh < scene.meshes.count }
+        if kept.count != selection.count { selection = kept }
         onSceneChange?(scene)
         pushHighlight()
     }
 
-    /// The camera moved: the grid follows it, so the scene is laid out again.
-    func cameraChanged() {
-        rebuildScene()
+    /// Called with the camera-dependent lines (grid, axes, edges) after an orbit, pan or zoom.
+    @ObservationIgnored var onGuidesChange: ((SceneData) -> Void)?
+
+    /// Called with the new camera at once on every move, before the grid follows.
+    @ObservationIgnored var onCameraMove: ((OrbitCamera) -> Void)?
+
+    /// The camera moved: the bodies are drawn from it at once, and the grid and the axes follow
+    /// it. The bodies do not depend on the camera, so they are neither copied nor uploaded
+    /// again, and `scene` (which views observe) is left alone. Laying the grid out goes through
+    /// the whole scene in the engine, so in a stream of moves (a drag of the view or the view
+    /// cube) it runs only as often as it is cheap: every move for a small design, after the
+    /// stream for a big assembly. `final` (the end of a gesture) lays it out now.
+    func cameraChanged(final: Bool = false) {
+        onCameraMove?(camera)
+        cameraSerial += 1
+        let now = Perf.now()
+        defer { lastCameraMove = now }
+        let cost = guidesSeconds
+        let every: Double? = cost < 0.004 ? 1.0 / 60 : (cost < 0.008 ? cost * 10 : nil)
+        let quietBefore = now - lastCameraMove > 0.25
+        if final || quietBefore || every.map({ now - lastGuides >= $0 }) == true {
+            layOutGuides()
+            return
+        }
+        // Later, once the moves stop.
+        let serial = cameraSerial
+        let me = UncheckedWeak(self)
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
+            guard let m = me.value, m.cameraSerial == serial else { return }
+            m.layOutGuides()
+        }
     }
+
+    private func layOutGuides() {
+        let t0 = Perf.now()
+        let g = engine.guides(camera: camera)
+        guidesSeconds = Perf.now() - t0
+        lastGuides = Perf.now()
+        onGuidesChange?(g)
+    }
+
+    @ObservationIgnored private var cameraSerial = 0
+    @ObservationIgnored private var lastCameraMove = 0.0
+    @ObservationIgnored private var lastGuides = 0.0
+
+    /// How long the last grid and axes layout took, so gestures know how often to ask for one.
+    @ObservationIgnored private(set) var guidesSeconds = 0.0
 
     private func refreshAssembly() {
         let comps = ((try? engine.execute("component.list")) as? [String: Any])?["components"] as? [[String: Any]] ?? []
@@ -656,4 +722,11 @@ final class DesignModel {
         refresh()
         zoomToFit()
     }
+}
+
+/// A weak reference handed to a main-queue callback. The model lives on the main thread; the
+/// callback runs there too.
+private final class UncheckedWeak<T: AnyObject>: @unchecked Sendable {
+    weak var value: T?
+    init(_ v: T) { value = v }
 }

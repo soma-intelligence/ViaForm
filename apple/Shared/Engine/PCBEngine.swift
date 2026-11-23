@@ -1,5 +1,5 @@
 import Foundation
-import SolidCraftFFI
+import ViaFormFFI
 
 /// The PCBCraft engine (schematic, board, KiCad export) behind the C bridge.
 final class PCBEngine {

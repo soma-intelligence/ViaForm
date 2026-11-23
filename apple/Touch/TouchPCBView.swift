@@ -16,25 +16,70 @@ struct TouchPCBView: View {
 
     private var compact: Bool { hSize == .compact }
 
+    @State private var hiddenLayers: Set<String> = []
+    @State private var transform: PCBCanvasTransform?
+    @State private var cardFrame: CGRect?
+
     var body: some View {
+        let info = BoardLinkInfo.read(design: design, pcb: model)
         ZStack {
-            PCBCanvas(model: model).ignoresSafeArea()
+            // The dense board, as on the Mac: soldermask, copper by layer, the keep-in from the
+            // part it is mounted on and the clearance, the leader to the link card.
+            PCBCanvas(model: model, dense: true, hiddenLayers: hiddenLayers, onTransform: { transform = $0 },
+                      reserveTrailing: !compact && model.sheet == .board ? 300 : 0)
+                .ignoresSafeArea()
+            if model.sheet == .board, let t = transform, let p = model.project {
+                GeometryReader { g in
+                    let origin = g.frame(in: .global).origin
+                    BoardLinkAnnotations(info: info, board: CGSize(width: p.board.width, height: p.board.height), transform: t,
+                                         card: compact ? nil : cardFrame.map { $0.offsetBy(dx: -origin.x, dy: -origin.y) })
+                }
+                .ignoresSafeArea()
+                .allowsHitTesting(false)
+            }
+            if !compact {
+                // The board's tools at mid height on the leading edge, as in the 3D stages.
+                HStack(spacing: 0) { tools; Spacer(minLength: 0) }
+                    .padding(.leading, 12)
+                    .padding(.bottom, 40)
+            }
             VStack(spacing: 10) {
-                topBar
                 HStack(alignment: .top, spacing: 10) {
-                    if !compact { tools }
                     Spacer(minLength: 0)
-                    if !compact, let side { sidebar(side).frame(width: 290, height: 440) }
+                    VStack(alignment: .trailing, spacing: 10) {
+                        header
+                        if !compact, model.sheet == .board {
+                            LinkCard(info: info, design: design, pcb: model, showIn3D: openDesign)
+                                .background(GeometryReader { g in
+                                    Color.clear
+                                        .onAppear { cardFrame = g.frame(in: .global) }
+                                        .onChange(of: g.frame(in: .global)) { _, f in cardFrame = f }
+                                })
+                        }
+                        if !compact, let side { sidebar(side).frame(width: 290, height: 380) }
+                    }
                 }
                 Spacer(minLength: 0)
                 if let hint = model.toolHint { pill(hint, color: .secondary) }
                 if let m = model.message { pill(m, color: model.messageIsError ? .red : .primary) }
+                HStack(alignment: .bottom, spacing: 10) {
+                    DRCCapsule(pcb: model) { model.refresh() }
+                    Spacer(minLength: 0)
+                    if !compact, model.sheet == .board {
+                        ScrollView(.horizontal, showsIndicators: false) {
+                            PCBLayerBar(hidden: $hiddenLayers, active: model.layer) { model.layer = $0 }
+                                .padding(.horizontal, 10).frame(minHeight: VFSize.touchTarget)
+                        }
+                        .fixedSize(horizontal: true, vertical: false)
+                        .vfSurface(.floating, radius: 22)
+                    }
+                }
                 if compact { tools }
             }
             .padding(.horizontal, 12)
             .padding(.vertical, 8)
         }
-        .animation(.snappy(duration: 0.25), value: side)
+        .animation(.snappy(duration: VFMotion.standard), value: side)
         .sheet(isPresented: Binding(get: { compact && side != nil }, set: { if !$0 { side = nil } })) {
             if let side { sidebar(side).presentationDetents([.medium, .large]) }
         }
@@ -51,18 +96,17 @@ struct TouchPCBView: View {
 
     private struct ExportedFile: Identifiable { let url: URL; var id: String { url.path } }
 
-    private var topBar: some View {
+    /// The sheet switch and the board's actions in the right column's header card (no second
+    /// capsule under the window's own).
+    private var header: some View {
         HStack(spacing: 4) {
-            bar("sidebar.left", "Project", on: showProject) { showProject.toggle() }
             Picker("Sheet", selection: $model.sheet) {
                 ForEach(PCBModel.Sheet.allCases, id: \.self) { Text($0.rawValue).tag($0) }
             }
             .pickerStyle(.segmented)
-            .frame(width: compact ? 170 : 220)
-            Spacer()
-            bar("arrow.uturn.backward", "Undo") { model.undo() }.disabled(model.undoCount == 0)
-            bar("arrow.uturn.forward", "Redo") { model.redo() }.disabled(model.redoCount == 0)
-            Divider().frame(height: 22)
+            .frame(width: compact ? 150 : 170)
+            Spacer(minLength: 4)
+            // Browser, undo and redo are in the window's top capsule.
             bar("list.bullet.rectangle", "Parts", on: side == .parts) { side = side == .parts ? nil : .parts }
             ZStack(alignment: .topTrailing) {
                 bar(PCBSymbol.checks, "Checks", on: side == .checks) { side = side == .checks ? nil : .checks }
@@ -81,8 +125,8 @@ struct TouchPCBView: View {
             bar(PCBSymbol.export, "Export KiCad") { export() }
         }
         .padding(.horizontal, 6)
-        .background(.regularMaterial, in: Capsule())
-        .shadow(color: .black.opacity(0.08), radius: 10, y: 3)
+        .frame(minHeight: 52)
+        .vfSurface(.floating, radius: 18)
     }
 
     @ViewBuilder private var tools: some View {

@@ -76,6 +76,13 @@ struct ViewCube: View {
         }
         .frame(width: size, height: size)
         .contentShape(Rectangle())
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("View orientation")
+        .accessibilityActions {
+            ForEach(StandardView.allCases, id: \.self) { v in
+                Button(v == .iso ? "Home view" : "\(v.rawValue.capitalized) view") { model.setView(v) }
+            }
+        }
         .onContinuousHover { phase in
             if case let .active(p) = phase { hovered = face(at: p, shown) } else { hovered = nil }
         }
@@ -96,9 +103,10 @@ struct ViewCube: View {
             })
         .overlay(alignment: .topTrailing) {
             Button { model.setView(.iso) } label: {
-                Image(systemName: "house").font(.system(size: 11, weight: .semibold))
+                Image(systemName: "arrow.counterclockwise").font(.system(size: 10, weight: .semibold))
             }
             .buttonStyle(.plain)
+            .accessibilityLabel("Home view")
             .foregroundStyle(textColor)
             .offset(x: 6, y: -4)
             .help("Home view")

@@ -5,6 +5,16 @@ import SwiftUI
 /// pinch zooms.
 struct PCBCanvas: View {
     @Bindable var model: PCBModel
+    /// The dense board style (soldermask, gold pads, silkscreen, mounting holes, dotted
+    /// airwires) instead of the flat one. The Mac project window uses it.
+    var dense = false
+    /// Board layers not drawn ("F.Cu", "B.Cu", "Silk", "Edge", "Airwires").
+    var hiddenLayers: Set<String> = []
+    /// Called with the sheet-to-view mapping whenever it changes, for overlays drawn over the
+    /// canvas (the 3D link's leader and clearance).
+    var onTransform: ((PCBCanvasTransform) -> Void)?
+    /// Room the board fit leaves free on the trailing edge (a card over the canvas), in points.
+    var reserveTrailing: CGFloat = 0
     @State private var center = PCBPoint(x: 30, y: 20)
     @State private var scale = 12.0
     @State private var pinchBase: Double?
@@ -45,8 +55,9 @@ struct PCBCanvas: View {
                         scale = min(200, max(1, (pinchBase ?? scale) * v.magnification))
                     }
                     .onEnded { _ in pinchBase = nil })
-                .onAppear { if !fitted { fit(geo.size); fitted = true } }
+                .onAppear { if !fitted { fit(geo.size); fitted = true }; report(geo.size) }
                 .onChange(of: model.sheet) { _, _ in fit(geo.size) }
+                .onChange(of: PCBCanvasTransform(center: center, scale: scale, size: geo.size)) { _, t in onTransform?(t) }
                 .overlay(alignment: .bottomTrailing) {
                     HStack(spacing: 2) {
                         zoomButton("minus.magnifyingglass") { scale = max(1, scale / 1.3) }
@@ -63,6 +74,8 @@ struct PCBCanvas: View {
     private func zoomButton(_ symbol: String, action: @escaping () -> Void) -> some View {
         Button(action: action) { Image(systemName: symbol).frame(width: 30, height: 28) }.buttonStyle(.plain)
     }
+
+    private func report(_ size: CGSize) { onTransform?(PCBCanvasTransform(center: center, scale: scale, size: size)) }
 
     // MARK: Coordinates
 
@@ -84,8 +97,12 @@ struct PCBCanvas: View {
         }
         guard !pts.isEmpty else { center = PCBPoint(x: 0, y: 0); scale = 12; return }
         let minX = pts.map(\.x).min()!, maxX = pts.map(\.x).max()!, minY = pts.map(\.y).min()!, maxY = pts.map(\.y).max()!
-        center = PCBPoint(x: (minX + maxX) / 2, y: (minY + maxY) / 2)
-        scale = min(size.width / max(maxX - minX + 12, 10), size.height / max(maxY - minY + 12, 10))
+        // The dense board keeps room around it for the keep-in and the dimensions.
+        let pad = dense && model.sheet == .board ? max(maxX - minX, maxY - minY) * 0.45 : 12
+        let usable = max(size.width - reserveTrailing, size.width * 0.4)
+        scale = min(usable / max(maxX - minX + pad, 10), size.height / max(maxY - minY + pad, 10))
+        // Centred in the part of the canvas the card leaves free.
+        center = PCBPoint(x: (minX + maxX) / 2 + (size.width - usable) / 2 / scale, y: (minY + maxY) / 2)
     }
 
     private func dragGesture(_ size: CGSize) -> some Gesture {
@@ -120,7 +137,7 @@ struct PCBCanvas: View {
     private func draw(_ ctx: inout GraphicsContext, _ size: CGSize) {
         guard let p = model.project else { return }
         drawGrid(&ctx, size)
-        if model.sheet == .schematic { drawSchematic(&ctx, size, p) } else { drawBoard(&ctx, size, p) }
+        if model.sheet == .schematic { drawSchematic(&ctx, size, p) } else if dense { drawDenseBoard(&ctx, size, p) } else { drawBoard(&ctx, size, p) }
     }
 
     private func drawGrid(_ ctx: inout GraphicsContext, _ size: CGSize) {
@@ -204,6 +221,87 @@ struct PCBCanvas: View {
         ctx.stroke(path, with: .color(ink), lineWidth: 1.8)
     }
 
+    /// The dense board: soldermask over the outline, B.Cu under F.Cu with round caps, gold pads
+    /// with their drills, plated mounting holes, the parts' silkscreen outlines and references,
+    /// the dotted airwires still to route, the board's name in the corner.
+    private func drawDenseBoard(_ ctx: inout GraphicsContext, _ size: CGSize, _ p: PCBProject) {
+        let o = toView(PCBPoint(x: 0, y: 0), size)
+        let rect = CGRect(x: o.x, y: o.y, width: p.board.width * scale, height: p.board.height * scale)
+        let corner = min(1.2 * scale, rect.width / 8)
+        let outline = Path(roundedRect: rect, cornerRadius: corner)
+        let mask = PCBDense.self
+        ctx.fill(outline, with: .linearGradient(Gradient(colors: [mask.maskTop, mask.maskBottom]),
+                                                startPoint: CGPoint(x: rect.minX, y: rect.minY), endPoint: CGPoint(x: rect.maxX, y: rect.maxY)))
+        if !hiddenLayers.contains("Edge") {
+            ctx.stroke(outline, with: .color(mask.edge), lineWidth: 1.6)
+            ctx.stroke(Path(roundedRect: rect.insetBy(dx: 0.35 * scale, dy: 0.35 * scale), cornerRadius: max(0, corner - 0.35 * scale)),
+                       with: .color(.white.opacity(0.06)), lineWidth: 1)
+        }
+        for cut in p.board.cutouts {
+            let c = toView(cut.center, size), r = cut.radius * scale
+            let ring = r + max(0.6 * scale, 2)
+            ctx.fill(Path(ellipseIn: CGRect(x: c.x - ring, y: c.y - ring, width: ring * 2, height: ring * 2)), with: .color(mask.gold))
+            ctx.fill(Path(ellipseIn: CGRect(x: c.x - r, y: c.y - r, width: r * 2, height: r * 2)), with: .color(mask.drill))
+        }
+        let nets = model.nets
+        for layer in ["B.Cu", "F.Cu"] where !hiddenLayers.contains(layer) {
+            for t in p.board.tracks where t.layer == layer {
+                var path = Path()
+                path.move(to: toView(t.start, size))
+                path.addLine(to: toView(t.end, size))
+                let base = layer == "F.Cu" ? mask.front : mask.back
+                let color = model.selection == t.id ? palette.select : base.opacity(model.layer == layer ? 1 : 0.7)
+                ctx.stroke(path, with: .color(color), style: StrokeStyle(lineWidth: max(1.2, t.width * scale), lineCap: .round, lineJoin: .round))
+            }
+        }
+        for f in p.board.footprints {
+            let selected = model.selection == f.id
+            let shift = ghost != nil && selected ? PCBPoint(x: ghost!.x - f.position.x, y: ghost!.y - f.position.y) : PCBPoint(x: 0, y: 0)
+            let pads = f.pads.map { f.padPosition($0) + shift }
+            if !hiddenLayers.contains("Silk"),
+               let minX = pads.map(\.x).min(), let maxX = pads.map(\.x).max(), let minY = pads.map(\.y).min(), let maxY = pads.map(\.y).max() {
+                let a = toView(PCBPoint(x: minX - 1.2, y: minY - 1.2), size), b = toView(PCBPoint(x: maxX + 1.2, y: maxY + 1.2), size)
+                let box = CGRect(x: a.x, y: a.y, width: b.x - a.x, height: b.y - a.y)
+                // Package body between the pads, then the silkscreen outline and pin-1 dot.
+                ctx.fill(Path(roundedRect: box.insetBy(dx: box.width * 0.18, dy: box.height * 0.18), cornerRadius: 2), with: .color(mask.package))
+                ctx.stroke(Path(roundedRect: box, cornerRadius: 2), with: .color(selected ? palette.select : mask.silk.opacity(0.85)), lineWidth: selected ? 2 : 1)
+                if let first = pads.first {
+                    let d = toView(first, size)
+                    ctx.fill(Path(ellipseIn: CGRect(x: box.minX + 2, y: d.y - 2, width: 4, height: 4)), with: .color(mask.silk))
+                }
+                if let c = model.component(f.component) {
+                    ctx.draw(Text(c.reference).font(.system(size: max(8, min(13, scale * 1.1)), weight: .bold)).foregroundStyle(mask.silk),
+                             at: CGPoint(x: box.midX, y: box.minY - 7))
+                }
+            }
+            for pad in f.pads {
+                let c = toView(f.padPosition(pad) + shift, size), r = pad.diameter / 2 * scale
+                let pendingHere = model.pending?.object == f.id && model.pending?.pin == pad.number
+                ctx.fill(Path(roundedRect: CGRect(x: c.x - r, y: c.y - r, width: r * 2, height: r * 2), cornerRadius: r * 0.45),
+                         with: .color(pendingHere ? palette.select : mask.gold))
+                let hole = r * 0.42
+                ctx.fill(Path(ellipseIn: CGRect(x: c.x - hole, y: c.y - hole, width: hole * 2, height: hole * 2)), with: .color(mask.drill))
+                if scale > 14, let n = pad.net.flatMap({ nets[$0] }) {
+                    ctx.draw(Text(n).font(.system(size: 7.5, weight: .medium)).foregroundStyle(mask.silk.opacity(0.75)),
+                             at: CGPoint(x: c.x, y: c.y + r + 6))
+                }
+            }
+        }
+        if !hiddenLayers.contains("Airwires") {
+            for a in model.checks?.airwires ?? [] {
+                var path = Path()
+                path.move(to: toView(a.from, size))
+                path.addLine(to: toView(a.to, size))
+                ctx.stroke(path, with: .color(mask.air), style: StrokeStyle(lineWidth: 1, dash: [2, 3]))
+            }
+        }
+        if !hiddenLayers.contains("Silk"), rect.width > 120 {
+            let name = (p.name ?? "Board").uppercased()
+            ctx.draw(Text(name).font(.system(size: max(8, min(12, scale * 0.9)), weight: .heavy)).foregroundStyle(mask.silk.opacity(0.9)),
+                     at: CGPoint(x: rect.minX + 8, y: rect.maxY - 8), anchor: .bottomLeading)
+        }
+    }
+
     private func drawBoard(_ ctx: inout GraphicsContext, _ size: CGSize, _ p: PCBProject) {
         let o = toView(PCBPoint(x: 0, y: 0), size)
         let outline = Path(roundedRect: CGRect(x: o.x, y: o.y, width: p.board.width * scale, height: p.board.height * scale), cornerRadius: 0)
@@ -257,4 +355,31 @@ struct PCBCanvas: View {
             ctx.stroke(path, with: .color(palette.air), style: StrokeStyle(lineWidth: 1, dash: [4, 3]))
         }
     }
+}
+
+/// The canvas's sheet-to-view mapping, for overlays: a sheet point (millimetres) to a view point.
+struct PCBCanvasTransform: Equatable {
+    var center: PCBPoint
+    var scale: Double
+    var size: CGSize
+
+    func view(_ p: PCBPoint) -> CGPoint {
+        CGPoint(x: size.width / 2 + (p.x - center.x) * scale, y: size.height / 2 + (p.y - center.y) * scale)
+    }
+}
+
+/// The dense board's colours: soldermask, copper by layer, gold, silk, drills, airwires.
+enum PCBDense {
+    static let maskTop = Color(red: 0.08, green: 0.42, blue: 0.22)
+    static let maskBottom = Color(red: 0.05, green: 0.29, blue: 0.15)
+    static let edge = Color(red: 0.93, green: 0.86, blue: 0.55)
+    static let front = Color(red: 0.86, green: 0.22, blue: 0.20)
+    static let back = Color(red: 0.24, green: 0.45, blue: 0.95)
+    static let gold = Color(red: 0.85, green: 0.70, blue: 0.36)
+    static let drill = Color(red: 0.05, green: 0.05, blue: 0.06)
+    static let silk = Color(white: 0.95)
+    static let package = Color(red: 0.11, green: 0.12, blue: 0.13).opacity(0.85)
+    static let air = Color.white.opacity(0.7)
+    static let inner1 = Color(red: 0.95, green: 0.62, blue: 0.22)
+    static let inner2 = Color(red: 0.62, green: 0.36, blue: 0.92)
 }

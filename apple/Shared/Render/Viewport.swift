@@ -58,7 +58,6 @@ struct SketchOverlay: View {
 final class ViewportCoordinator {
     let model: DesignModel
     var renderer: Renderer?
-    private var lastLayout = Date.distantPast
 
     init(model: DesignModel) { self.model = model }
 
@@ -74,13 +73,20 @@ final class ViewportCoordinator {
             r.update(scene: s)
         }
         model.onHighlightChange = { [weak self] h in self?.renderer?.setHighlight(h) }
+        model.onCameraMove = { [weak self] c in self?.renderer?.camera = c }
+        model.onGuidesChange = { [weak self] g in
+            guard let self, let r = self.renderer else { return }
+            r.camera = self.model.camera
+            r.updateGuides(g)
+        }
+        PerfScript.viewportAttached(self)
     }
 
     private var fitted = false
 
     func sync(size: CGSize) {
         if size.width > 0, size.height > 0 {
-            model.viewSize = size
+            if model.viewSize != size { model.viewSize = size }
             // The first real size: frame the design for this view's shape.
             if !fitted { fitted = true; model.zoomToFit() }
         }
@@ -88,13 +94,11 @@ final class ViewportCoordinator {
         renderer?.camera = model.camera
     }
 
-    /// The camera moved during a gesture: draw at once, lay the scene out again now and then.
+    /// The camera moved during a gesture: draw at once; the model decides when the grid and
+    /// the axes follow (see `DesignModel.cameraChanged`).
     func moved(final: Bool = false) {
         renderer?.camera = model.camera
-        if final || Date().timeIntervalSince(lastLayout) > 0.12 {
-            lastLayout = Date()
-            model.cameraChanged()
-        }
+        model.cameraChanged(final: final)
     }
 
     func worldUnder(_ p: CGPoint) -> SIMD3<Double>? {
@@ -235,7 +239,7 @@ struct MetalViewport: NSViewRepresentable {
     func makeNSView(context: Context) -> CADView {
         let v = CADView(frame: .zero, device: MTLCreateSystemDefaultDevice())
         v.coordinator = context.coordinator
-        v.preferredFramesPerSecond = 60
+        v.preferredFramesPerSecond = 120
         context.coordinator.attach(v, theme: theme)
         return v
     }
@@ -348,7 +352,7 @@ struct MetalViewport: UIViewRepresentable {
     func makeUIView(context: Context) -> CADView {
         let v = CADView(frame: .zero, device: MTLCreateSystemDefaultDevice())
         v.coordinator = context.coordinator
-        v.preferredFramesPerSecond = 60
+        v.preferredFramesPerSecond = 120
         context.coordinator.attach(v, theme: theme)
         return v
     }
