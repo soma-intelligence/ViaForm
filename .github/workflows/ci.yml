@@ -24,8 +24,12 @@ jobs:
           node-version: 22
           cache: npm
           cache-dependency-path: electron/package-lock.json
-      - name: Core tests (link, project file)
-        run: cargo test --release -p viaform-core
+      # Every crate of the workspace (the engines are workspaces of their own and stay out),
+      # including the bridge smoke tests in bridge/tests/smoke.rs. viaform-node is a N-API
+      # cdylib: its symbols come from the Node process, so a test binary cannot link it on
+      # every OS. The Electron step below builds and tests it through Node instead.
+      - name: Workspace tests
+        run: cargo test --release --workspace --exclude viaform-node
       - name: App build and end-to-end tests
         working-directory: electron
         run: |

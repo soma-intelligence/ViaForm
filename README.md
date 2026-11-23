@@ -3,13 +3,20 @@
 3D design and electronics as one app, on open source Rust engines (SolidCraft for CAD,
 PCBCraft for PCB).
 
-- **Windows, Linux and macOS**: an Electron app (`electron/`). Design and Electronics are two
-  workspaces of one project, saved together as a `.viaform` file. It updates itself from this
-  repository's GitHub Releases.
 - **macOS**: a desktop layout with a ribbon of tabs and panels, a browser tree, a timeline,
   a right-click marking menu, command search on S and a view cube.
 - **iPad and iPhone**: a touch-first layout with a project sidebar, items and history
   sidebars, a tool column (a bottom row on iPhone) and tools suggested from the selection.
+- **Windows, Linux and macOS**: an Electron app (`electron/`), in maintenance (see Platforms).
+  Design and Electronics are two workspaces of one project, saved together as a `.viaform`
+  file. It updates itself from this repository's GitHub Releases.
+
+## Platforms
+
+The Swift apps on Mac and iPad are the product: new stages and features land there first.
+The Electron app is in maintenance. CI still builds and tests it on macOS, Linux and Windows,
+and it gets fixes, but no new stages, until a Windows user needs it (decision D-1 in
+`docs/specs/VIAFORM-SPEC.md`).
 
 The Apple apps draw with Metal, the Electron app with WebGL. All of them run every action
 through the engines' command APIs, and share one Rust core (`core/`) for everything that joins
@@ -51,8 +58,8 @@ Electron app (any platform, needs Rust and Node 22):
 cd electron && npm ci && npm start
 ```
 
-`npm test` runs the app's end-to-end tests on the addon; `cargo test -p viaform-core` runs the
-core's. `npm run test:ui` starts the app and drives its interface (toolbar, browser, view cube,
+`npm test` runs the app's end-to-end tests on the addon; `cargo test --workspace --exclude
+viaform-node` runs every Rust crate's, including the bridge smoke tests (`bridge/tests/smoke.rs`). `npm run test:ui` starts the app and drives its interface (toolbar, browser, view cube,
 timeline, sketch, electronics); it needs a display. `npm run dist` packages for the current platform.
 
 `npm test` includes a flying drone built end to end (`electron/src/test/drone.ts`): a 5-inch X
