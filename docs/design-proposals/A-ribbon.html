@@ -1,0 +1,537 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ViaForm Ribbon Pro</title>
+<style>
+:root{--bg:#1e1e20;--win:#232326;--bar:#2a2a2d;--rib:#262629;--side:rgba(38,38,42,.92);--sep:rgba(255,255,255,.085);--sep2:rgba(0,0,0,.45);--tx:#e8e8ea;--tx2:#a1a1a6;--tx3:#6e6e73;--acc:#0a84ff;--acc2:rgba(10,132,255,.22);--grn:#30d158;--org:#ff9f0a;--red:#ff453a;--pur:#bf5af2;--yel:#ffd60a;--teal:#64d2ff}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{background:radial-gradient(120% 90% at 20% 10%,#3a4a6a 0%,#1b2236 45%,#0d1018 100%);font:13px/1.3 -apple-system,BlinkMacSystemFont,"SF Pro Text","Helvetica Neue",sans-serif;color:var(--tx);-webkit-font-smoothing:antialiased;display:flex;align-items:center;justify-content:center;overflow:hidden;user-select:none}
+.win{width:1600px;height:1000px;max-width:100vw;max-height:100vh;background:var(--win);border-radius:12px;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 0 0 .5px rgba(0,0,0,.9),inset 0 0 0 .5px rgba(255,255,255,.14),0 30px 80px rgba(0,0,0,.55),0 10px 24px rgba(0,0,0,.4);position:relative}
+svg{display:block}
+.ic{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.35;stroke-linecap:round;stroke-linejoin:round}
+/* toolbar */
+.tb{height:52px;display:flex;align-items:center;gap:6px;padding:0 12px 0 14px;background:linear-gradient(#2e2e31,#2a2a2d);border-bottom:1px solid var(--sep2);box-shadow:inset 0 -1px 0 rgba(255,255,255,.03);flex:none}
+.lights{display:flex;gap:8px;margin-right:14px}.lights i{width:12px;height:12px;border-radius:50%;display:block;box-shadow:inset 0 0 0 .5px rgba(0,0,0,.25)}
+.lights i:nth-child(1){background:#ff5f57}.lights i:nth-child(2){background:#febc2e}.lights i:nth-child(3){background:#28c840}
+.tbtn{height:28px;min-width:28px;border-radius:6px;display:flex;align-items:center;justify-content:center;gap:5px;color:var(--tx2);padding:0 6px;cursor:default}
+.tbtn:hover{background:rgba(255,255,255,.07);color:var(--tx)}
+.tbtn .ic{width:17px;height:17px}
+.ws{height:28px;border-radius:7px;background:rgba(255,255,255,.06);box-shadow:inset 0 0 0 .5px rgba(255,255,255,.1);display:flex;align-items:center;gap:7px;padding:0 9px 0 7px;font-weight:600;position:relative;cursor:default}
+.ws .badge{width:20px;height:20px;border-radius:5px;background:var(--acc);display:flex;align-items:center;justify-content:center;color:#fff}
+.ws .badge .ic{width:13px;height:13px;stroke-width:1.6}
+.ws .chev{width:9px;height:9px;color:var(--tx2)}
+.title{display:flex;flex-direction:column;margin-left:10px;line-height:1.15}
+.title b{font-size:13px;font-weight:600}.title span{font-size:11px;color:var(--tx3)}
+.flex{flex:1}
+.seg{display:flex;background:rgba(0,0,0,.25);border-radius:7px;padding:2px;box-shadow:inset 0 0 0 .5px rgba(255,255,255,.08)}
+.seg div{height:22px;padding:0 9px;display:flex;align-items:center;gap:5px;border-radius:5px;color:var(--tx2);font-size:12px}
+.seg div.on{background:#5a5a5f;color:#fff;box-shadow:0 1px 1px rgba(0,0,0,.3)}
+.jobs{height:28px;border-radius:7px;display:flex;align-items:center;gap:8px;padding:0 10px;background:rgba(255,255,255,.05);box-shadow:inset 0 0 0 .5px rgba(255,255,255,.09);font-size:12px;color:var(--tx2);cursor:default;position:relative}
+.ring{width:16px;height:16px}
+.search{width:180px;height:28px;border-radius:7px;background:rgba(255,255,255,.06);display:flex;align-items:center;gap:6px;padding:0 8px;color:var(--tx3);font-size:12.5px;box-shadow:inset 0 0 0 .5px rgba(255,255,255,.08)}
+.search kbd{margin-left:auto;font:11px -apple-system;color:var(--tx3);border:1px solid rgba(255,255,255,.12);border-radius:4px;padding:0 4px}
+.share{height:26px;padding:0 11px;border-radius:6px;background:var(--acc);color:#fff;font-weight:500;font-size:12.5px;display:flex;align-items:center}
+/* ws menu */
+.menu{position:absolute;top:34px;left:0;width:262px;background:rgba(44,44,48,.97);backdrop-filter:blur(30px);border-radius:9px;padding:5px;box-shadow:0 0 0 .5px rgba(0,0,0,.8),inset 0 0 0 .5px rgba(255,255,255,.14),0 18px 40px rgba(0,0,0,.5);z-index:50;display:none;font-weight:400}
+.menu.open{display:block}
+.mi{height:26px;display:flex;align-items:center;gap:9px;padding:0 9px;border-radius:5px;font-size:13px}
+.mi:hover{background:var(--acc);color:#fff}.mi:hover .k,.mi:hover .st{color:#fff}
+.mi .k{margin-left:auto;color:var(--tx3);font-size:12px}
+.mi .st{font-size:10.5px;color:var(--org)}
+.msep{height:1px;background:var(--sep);margin:4px 8px}
+.mh{font-size:11px;color:var(--tx3);padding:4px 9px 2px;font-weight:600}
+/* ribbon */
+.rib{background:var(--rib);border-bottom:1px solid var(--sep2);flex:none}
+.tabs{height:28px;display:flex;align-items:flex-end;padding:0 10px;gap:2px;border-bottom:1px solid var(--sep)}
+.tab{height:27px;padding:0 12px;display:flex;align-items:center;font-size:11.5px;font-weight:600;letter-spacing:.02em;color:var(--tx2);position:relative;cursor:default}
+.tab.on{color:var(--tx)}.tab.on:after{content:"";position:absolute;left:8px;right:8px;bottom:-1px;height:2px;border-radius:2px;background:var(--acc)}
+.tab.fin{color:var(--grn)}.tab.fin.on:after{background:var(--grn)}
+.tab .dot{width:6px;height:6px;border-radius:50%;background:var(--org);margin-left:6px}
+.panels{height:74px;display:flex;align-items:stretch;padding:0 6px;overflow:hidden}
+.pnl{display:flex;flex-direction:column;align-items:center;padding:5px 8px 3px;border-right:1px solid var(--sep)}
+.pnl .row{display:flex;gap:2px;flex:1;align-items:center}
+.tool{width:44px;height:44px;border-radius:7px;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#d8d8dc;position:relative;cursor:default}
+.tool:hover{background:rgba(255,255,255,.07)}
+.tool.on{background:var(--acc2);color:#fff;box-shadow:inset 0 0 0 1px rgba(10,132,255,.6)}
+.tool .ic{width:24px;height:24px;stroke-width:1.25}
+.tool .l{font-size:9.5px;color:var(--tx2);margin-top:2px;white-space:nowrap}
+.tool .c1{color:var(--acc)}
+.pname{font-size:9.5px;font-weight:700;letter-spacing:.06em;color:var(--tx3);display:flex;align-items:center;gap:3px}
+.pname:after{content:"";width:0;height:0;border-left:3px solid transparent;border-right:3px solid transparent;border-top:4px solid var(--tx3)}
+.pnl.finish .tool{color:var(--grn);width:62px}
+.pnl.finish .tool .ic{stroke-width:1.6}
+.pnl.finish .pname{color:var(--grn)}.pnl.finish .pname:after{display:none}
+.pnl.wide .tool{width:auto;padding:0 8px}
+/* main */
+.main{flex:1;display:flex;min-height:0}
+.side{width:262px;flex:none;background:#28282b;border-right:1px solid var(--sep2);display:flex;flex-direction:column;min-height:0}
+.shead{height:30px;display:flex;align-items:center;padding:0 10px 0 12px;gap:6px;font-size:11px;font-weight:600;color:var(--tx3);border-bottom:1px solid var(--sep)}
+.shead .seg div{height:18px;font-size:11px;padding:0 7px}
+.tree{flex:1;overflow:hidden;padding:4px 6px}
+.tr{height:22px;display:flex;align-items:center;gap:5px;padding-right:6px;border-radius:5px;font-size:12.5px;color:var(--tx);white-space:nowrap;position:relative;cursor:default}
+.tr:hover{background:rgba(255,255,255,.05)}
+.tr.sel{background:var(--acc);color:#fff}.tr.sel .ti,.tr.sel .meta{color:#fff}
+.tr.lk{background:rgba(10,132,255,.16);box-shadow:inset 2px 0 0 var(--acc)}
+.tr .dis{width:10px;height:10px;color:var(--tx3);flex:none}
+.tr .ti{width:15px;height:15px;color:var(--tx2);flex:none}
+.tr .meta{margin-left:auto;font-size:11px;color:var(--tx3);display:flex;gap:4px;align-items:center}
+.tr.grp{font-size:11px;font-weight:600;color:var(--tx3);margin-top:6px}
+.pill{font-size:10px;font-weight:600;padding:1px 5px;border-radius:4px;line-height:13px}
+.p-stale{background:rgba(255,159,10,.18);color:var(--org)}
+.p-ok{background:rgba(48,209,88,.16);color:var(--grn)}
+.p-run{background:rgba(10,132,255,.2);color:#5eb0ff}
+.p-link{background:rgba(191,90,242,.18);color:#d48cff}
+.p-gray{background:rgba(255,255,255,.08);color:var(--tx2)}
+.dep{width:13px;height:13px;color:var(--pur)}
+.sfoot{border-top:1px solid var(--sep);padding:8px 10px;font-size:11px;color:var(--tx3)}
+/* viewport */
+.vpw{flex:1;position:relative;min-width:0;display:flex;flex-direction:column}
+.vp{flex:1;position:relative;overflow:hidden;background:linear-gradient(#4b5260 0%,#30343c 55%,#23262c 100%)}
+.vp>svg.scene{position:absolute;inset:0;width:100%;height:100%}
+.ov{position:absolute}
+.glass{background:rgba(40,40,44,.72);backdrop-filter:blur(22px) saturate(1.6);-webkit-backdrop-filter:blur(22px) saturate(1.6);border-radius:9px;box-shadow:0 0 0 .5px rgba(0,0,0,.6),inset 0 0 0 .5px rgba(255,255,255,.12),0 8px 24px rgba(0,0,0,.3)}
+.navbar{bottom:12px;left:50%;transform:translateX(-50%);height:34px;display:flex;align-items:center;gap:1px;padding:0 5px}
+.navbar .tbtn{height:26px;min-width:30px}
+.navbar .vs{width:1px;height:18px;background:var(--sep);margin:0 4px}
+.cube{top:12px;right:14px;width:112px;height:120px}
+.hud{top:12px;left:12px;padding:9px 11px;font-size:11.5px;max-width:330px}
+.hud b{font-weight:600;font-size:12px}
+.hud .r{display:flex;gap:6px;align-items:center;color:var(--tx2);margin-top:3px}
+.fl{display:flex;align-items:center;gap:6px}
+/* timeline */
+.tl{height:40px;flex:none;background:#2a2a2d;border-top:1px solid var(--sep2);display:flex;align-items:center;padding:0 10px;gap:6px}
+.tl .ctl{display:flex;gap:0}.tl .ctl .tbtn{min-width:24px;height:24px}
+.tl .vs{width:1px;height:20px;background:var(--sep);margin:0 4px}
+.feat{width:28px;height:26px;border-radius:5px;display:flex;align-items:center;justify-content:center;color:#cfd2d8;position:relative;cursor:default}
+.feat .ic{width:17px;height:17px}
+.feat.f-sk{background:rgba(255,214,10,.1);color:#ffe066}
+.feat.f-so{background:rgba(10,132,255,.14);color:#78b8ff}
+.feat.f-gen{background:rgba(191,90,242,.18);color:#d9a0ff}
+.feat.f-pcb{background:rgba(48,209,88,.15);color:#6fe08e}
+.feat.f-as{background:rgba(255,159,10,.14);color:#ffbf5a}
+.feat.stale:after{content:"";position:absolute;top:-2px;right:-2px;width:7px;height:7px;border-radius:50%;background:var(--org);box-shadow:0 0 0 1.5px #2a2a2d}
+.feat.hl{box-shadow:0 0 0 1.5px var(--acc)}
+.marker{width:3px;height:28px;border-radius:2px;background:var(--org);margin:0 2px}
+.tl .lane{font-size:10px;font-weight:700;letter-spacing:.06em;color:var(--tx3);margin-right:2px}
+/* inspector */
+.insp{width:292px;flex:none;background:#28282b;border-left:1px solid var(--sep2);display:flex;flex-direction:column;min-height:0;overflow:hidden}
+.ihead{height:30px;display:flex;align-items:center;padding:0 12px;gap:8px;border-bottom:1px solid var(--sep)}
+.ihead .seg div{height:18px;font-size:11px;padding:0 8px}
+.ibody{flex:1;overflow:hidden;padding:0 0 10px}
+.sec{padding:10px 14px;border-bottom:1px solid var(--sep)}
+.sec h4{font-size:11px;font-weight:600;color:var(--tx3);margin-bottom:8px;display:flex;align-items:center;gap:6px}
+.sec h4 .x{margin-left:auto;font-weight:400}
+.kv{display:flex;align-items:center;height:24px;font-size:12px}
+.kv .k{width:96px;color:var(--tx2);flex:none}
+.fld{flex:1;height:22px;border-radius:5px;background:rgba(0,0,0,.25);box-shadow:inset 0 0 0 .5px rgba(255,255,255,.1);display:flex;align-items:center;padding:0 7px;font-size:12px;font-variant-numeric:tabular-nums}
+.fld .u{margin-left:auto;color:var(--tx3)}
+.pop{flex:1;height:22px;border-radius:5px;background:#4a4a4e;box-shadow:0 .5px 0 rgba(255,255,255,.08) inset,0 1px 1px rgba(0,0,0,.3);display:flex;align-items:center;padding:0 7px;font-size:12px}
+.pop:after{content:"";margin-left:auto;width:6px;height:6px;border:solid var(--tx2);border-width:0 1.3px 1.3px 0;transform:rotate(45deg) translateY(-2px)}
+.btn{height:24px;border-radius:6px;padding:0 11px;display:inline-flex;align-items:center;gap:5px;font-size:12px;background:#4a4a4e;box-shadow:0 1px 1px rgba(0,0,0,.3),inset 0 .5px 0 rgba(255,255,255,.1);cursor:default}
+.btn.p{background:var(--acc);color:#fff}
+.btn.g{background:#248a3d;color:#fff}
+.btns{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap}
+.flow{display:flex;align-items:center;gap:8px;padding:7px 9px;border-radius:7px;background:rgba(255,255,255,.04);box-shadow:inset 0 0 0 .5px rgba(255,255,255,.07);margin-bottom:6px;font-size:12px}
+.flow .fi{width:26px;height:26px;border-radius:6px;display:flex;align-items:center;justify-content:center;flex:none}
+.flow .fi .ic{width:15px;height:15px}
+.flow .d{display:flex;flex-direction:column;line-height:1.25;min-width:0}
+.flow .d span{font-size:11px;color:var(--tx3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.flow .pill{margin-left:auto}
+.arrow{height:12px;margin:-4px 0 2px 21px;border-left:1px dashed rgba(255,255,255,.25)}
+.bar{height:5px;border-radius:3px;background:rgba(255,255,255,.08);overflow:hidden;margin-top:5px}.bar i{display:block;height:100%;background:var(--acc);border-radius:3px}
+.sw{width:30px;height:18px;border-radius:9px;background:var(--grn);position:relative;flex:none}.sw:after{content:"";position:absolute;right:2px;top:2px;width:14px;height:14px;border-radius:50%;background:#fff}
+.sw.off{background:#555}.sw.off:after{right:auto;left:2px}
+.mini{font-size:11px;color:var(--tx3);line-height:1.4}
+/* status */
+.status{height:22px;flex:none;background:#252528;border-top:1px solid var(--sep);display:flex;align-items:center;gap:14px;padding:0 12px;font-size:11px;color:var(--tx3)}
+.status .fl{gap:5px}
+.status .dotg{width:6px;height:6px;border-radius:50%;background:var(--grn)}
+/* jobs popover */
+.jpop{position:absolute;top:44px;right:226px;width:330px;padding:10px;z-index:40;display:none}
+.jpop.open{display:block}
+.jrow{display:flex;gap:9px;align-items:center;padding:7px 4px;border-bottom:1px solid var(--sep);font-size:12px}
+.jrow:last-child{border:0}
+.jrow .d{flex:1;min-width:0}.jrow .d span{display:block;font-size:11px;color:var(--tx3)}
+.caption{position:fixed;right:16px;bottom:30px;max-width:268px;padding:9px 12px;border-radius:9px;background:rgba(10,12,18,.78);backdrop-filter:blur(14px);box-shadow:0 0 0 .5px rgba(255,255,255,.15);font-size:11.5px;color:#c9ccd4;z-index:100;line-height:1.4}
+.caption b{color:#fff;font-weight:600;display:block;font-size:12px}
+.toast{bottom:58px;left:50%;transform:translateX(-50%);padding:7px 12px;font-size:12px;display:flex;align-items:center;gap:8px;white-space:nowrap}
+.ctx{padding:4px;display:flex;gap:2px;align-items:center}
+.ctx .tbtn{height:26px}
+</style></head><body>
+<div class="win" id="win">
+ <div class="tb">
+  <div class="lights"><i></i><i></i><i></i></div>
+  <div class="tbtn" title="Toggle Sidebar" data-i="sidebar"></div>
+  <div class="ws" id="wsBtn"><div class="badge" id="wsIcon"></div><span id="wsName">Design</span><svg class="chev ic" viewBox="0 0 10 10"><path d="M2 3.5l3 3 3-3"/></svg>
+   <div class="menu" id="wsMenu"></div>
+  </div>
+  <div class="title"><b>Drone 3in Race</b><span id="docSub">Edited . Rev 42 . main</span></div>
+  <div class="tbtn" style="margin-left:10px" data-i="undo"></div><div class="tbtn" data-i="redo"></div>
+  <div class="flex"></div>
+  <div class="jobs" id="jobsBtn"><svg class="ring" viewBox="0 0 16 16"><circle cx="8" cy="8" r="6" stroke="rgba(255,255,255,.15)" stroke-width="2" fill="none"/><circle cx="8" cy="8" r="6" stroke="#0a84ff" stroke-width="2" fill="none" stroke-dasharray="37.7" stroke-dashoffset="13" transform="rotate(-90 8 8)" stroke-linecap="round"/></svg><span id="jobsTxt">3 jobs . Training 64%</span></div>
+  <div class="search"><svg class="ic" viewBox="0 0 16 16" style="width:13px;height:13px"><circle cx="7" cy="7" r="4.5"/><path d="M10.5 10.5l3 3"/></svg>Commands<kbd>S</kbd></div>
+  <div class="tbtn" data-i="bell"></div>
+  <div class="share">Share</div>
+  <div class="tbtn" title="Inspector" data-i="inspector"></div>
+  <div class="glass jpop" id="jpop"></div>
+ </div>
+ <div class="rib"><div class="tabs" id="tabs"></div><div class="panels" id="panels"></div></div>
+ <div class="main">
+  <div class="side">
+   <div class="shead"><span>BROWSER</span><div class="flex"></div><div class="seg"><div class="on">Tree</div><div>Flow</div></div></div>
+   <div class="tree" id="tree"></div>
+   <div class="sfoot" id="sfoot"></div>
+  </div>
+  <div class="vpw">
+   <div class="vp" id="vp"></div>
+   <div class="tl" id="tl"></div>
+  </div>
+  <div class="insp">
+   <div class="ihead"><div class="seg"><div class="on">Inspector</div><div>Flow</div><div>Notes</div></div></div>
+   <div class="ibody" id="insp"></div>
+  </div>
+ </div>
+ <div class="status" id="status"></div>
+</div>
+<div class="caption"><b>A. Ribbon Pro</b>A dense pro ribbon per workspace, made native: one browser tree holds every discipline, with dependency badges, stale states and a shared job queue carrying data from design to flight.</div>
+<script>
+const P={
+sidebar:'<rect x="1.5" y="2.5" width="13" height="11" rx="2"/><path d="M6 2.5v11M3 5h1.5M3 7h1.5"/>',
+inspector:'<rect x="1.5" y="2.5" width="13" height="11" rx="2"/><path d="M10 2.5v11M11.5 5H13M11.5 7H13"/>',
+undo:'<path d="M5 6H10a3.5 3.5 0 010 7H6"/><path d="M7.5 3.5L5 6l2.5 2.5"/>',
+redo:'<path d="M11 6H6a3.5 3.5 0 000 7h4"/><path d="M8.5 3.5L11 6 8.5 8.5"/>',
+bell:'<path d="M4 11V7.5a4 4 0 018 0V11l1 1.5H3z"/><path d="M6.8 14a1.3 1.3 0 002.4 0"/>',
+cube:'<path d="M8 1.8l5.5 3.1v6.2L8 14.2 2.5 11.1V4.9z"/><path d="M2.5 4.9L8 8l5.5-3.1M8 8v6.2"/>',
+sketch:'<rect x="2" y="2" width="12" height="12" rx="1.5"/><path d="M5 11l5.5-5.5 1 1L6 12H5z"/>',
+extrude:'<path d="M3 10.5l5 2.5 5-2.5M3 10.5L8 8l5 2.5"/><path d="M8 8V2.5M6 4.5l2-2 2 2"/>',
+revolve:'<path d="M8 2v12"/><path d="M8 4c3.5 0 5 1.8 5 4s-1.5 4-5 4"/><path d="M11 13.5L8 12l2-2"/>',
+fillet:'<path d="M3 13V7a4 4 0 014-4h6"/><path d="M3 13h10V3"/>',
+shell:'<rect x="2.5" y="4" width="11" height="9" rx="1"/><rect x="5" y="6.5" width="6" height="4" rx=".5"/>',
+hole:'<ellipse cx="8" cy="5" rx="5" ry="2"/><path d="M3 5v6c0 1.1 2.2 2 5 2s5-.9 5-2V5"/><ellipse cx="8" cy="5" rx="2" ry=".8"/>',
+pattern:'<rect x="2" y="2" width="4" height="4" rx="1"/><rect x="10" y="2" width="4" height="4" rx="1"/><rect x="2" y="10" width="4" height="4" rx="1"/><rect x="10" y="10" width="4" height="4" rx="1"/>',
+mirror:'<path d="M8 1.5v13" stroke-dasharray="1.5 1.5"/><path d="M6 4L2 12h4zM10 4l4 8h-4z"/>',
+combine:'<rect x="2" y="2" width="8" height="8" rx="1"/><rect x="6" y="6" width="8" height="8" rx="1"/>',
+plane:'<path d="M1.5 11L5 5h9.5L11 11z"/>',
+axis:'<path d="M3 13L13 3"/><circle cx="3" cy="13" r="1"/><circle cx="13" cy="3" r="1"/>',
+measure:'<path d="M2 11l9-9 3 3-9 9z"/><path d="M5 8l1 1M7 6l1.5 1.5M9 4l1 1"/>',
+section:'<path d="M8 1.8l5.5 3.1v6.2L8 14.2 2.5 11.1V4.9z"/><path d="M1 9l14-3" stroke-dasharray="1.6 1.4"/>',
+param:'<path d="M5 13c1.5 0 1.5-1 2-4.5S8.5 3 10 3"/><path d="M4.5 7.5H9M10 8.5l3 4M13 8.5l-3 4"/>',
+insert:'<path d="M8 2v8M5 7l3 3 3-3"/><path d="M2.5 11v2.5h11V11"/>',
+joint:'<circle cx="5" cy="5" r="2.5"/><circle cx="11" cy="11" r="2.5"/><path d="M6.8 6.8l2.4 2.4"/>',
+rigid:'<rect x="2" y="2" width="6" height="6" rx="1"/><rect x="8" y="8" width="6" height="6" rx="1"/><path d="M6 10h-2v2M10 6h2V4"/>',
+motion:'<path d="M2 12c3 0 3-8 6-8s3 8 6 8"/><circle cx="8" cy="4" r="1.2"/>',
+contact:'<path d="M3 8h4M9 8h4M7 5v6M9 5v6"/>',
+explode:'<rect x="5.5" y="5.5" width="5" height="5" rx="1"/><path d="M3 3l1.5 1.5M13 3l-1.5 1.5M3 13l1.5-1.5M13 13l-1.5-1.5"/>',
+ground:'<path d="M8 2v7M4 12h8M5.5 14h5M3 9.5h10"/>',
+wand:'<path d="M2.5 13.5l8-8 2 2-8 8z"/><path d="M12 1.5v2M14.5 4h-2M10 2.5l.8.8M14 7.5l-.8-.8"/>',
+load:'<path d="M8 2v9M5 8l3 3 3-3"/><path d="M3 14h10"/>',
+fix:'<path d="M3 3v10M3 5l-1.5 1.5M3 8l-1.5 1.5M3 11l-1.5 1.5"/><rect x="5" y="5" width="8" height="6" rx="1"/>',
+keep:'<rect x="2.5" y="2.5" width="11" height="11" rx="1.5" stroke-dasharray="2 1.6"/><path d="M5.5 5.5l5 5M10.5 5.5l-5 5"/>',
+target:'<circle cx="8" cy="8" r="5.5"/><circle cx="8" cy="8" r="2.5"/><circle cx="8" cy="8" r=".5"/>',
+grid:'<rect x="2" y="2" width="5" height="5" rx="1"/><rect x="9" y="2" width="5" height="5" rx="1"/><rect x="2" y="9" width="5" height="5" rx="1"/><rect x="9" y="9" width="5" height="5" rx="1"/>',
+play:'<path d="M5 3l8 5-8 5z"/>',
+pause:'<path d="M5 3v10M11 3v10"/>',
+compare:'<path d="M2 13V7M6 13V3M10 13V9M14 13V5"/>',
+cpu:'<rect x="4" y="4" width="8" height="8" rx="1"/><rect x="6.3" y="6.3" width="3.4" height="3.4"/><path d="M6 1.5V4M10 1.5V4M6 12v2.5M10 12v2.5M1.5 6H4M1.5 10H4M12 6h2.5M12 10h2.5"/>',
+resistor:'<path d="M1.5 8h2l1-2.5 2 5 2-5 2 5 1-2.5h3"/>',
+wire:'<circle cx="3" cy="12" r="1.3"/><circle cx="13" cy="4" r="1.3"/><path d="M4.3 12H8V4h3.7"/>',
+net:'<path d="M2 8h12M5 5v6M11 5v6"/>',
+route:'<path d="M2 12h4l4-8h4"/><circle cx="2" cy="12" r="1"/><circle cx="14" cy="4" r="1"/>',
+via:'<circle cx="8" cy="8" r="5"/><circle cx="8" cy="8" r="2"/>',
+drc:'<path d="M8 1.8l5.5 2v4.4c0 3-2.5 5-5.5 6-3-1-5.5-3-5.5-6V3.8z"/><path d="M5.5 8l2 2 3-3.5"/>',
+board3d:'<path d="M1.5 9.5L8 6l6.5 3.5L8 13z"/><path d="M1.5 9.5v1.5L8 14.5l6.5-3.5V9.5"/><rect x="6.3" y="8" width="3" height="2" transform="rotate(-28 8 9)"/>',
+mount:'<path d="M2 12h12"/><rect x="4" y="5" width="8" height="4" rx=".8"/><path d="M8 9v3M8 1.5V4M6.5 3L8 4.5 9.5 3"/>',
+wind:'<path d="M2 6h8a2 2 0 10-2-2M2 10h10a2 2 0 11-2 2M2 8h5"/>',
+cloud:'<path d="M4.5 12.5a3 3 0 01-.3-6 4 4 0 017.6.8 2.6 2.6 0 01-.3 5.2z"/>',
+flag:'<path d="M3 14V2M3 2.5h9l-2 3 2 3H3"/>',
+drone:'<circle cx="3.5" cy="3.5" r="2"/><circle cx="12.5" cy="3.5" r="2"/><circle cx="3.5" cy="12.5" r="2"/><circle cx="12.5" cy="12.5" r="2"/><path d="M5 5l6 6M11 5l-6 6"/><rect x="6.5" y="6.5" width="3" height="3" rx=".5"/>',
+stress:'<path d="M2 13c2-6 4-9 6-9s4 3 6 9"/><path d="M5 9h6"/>',
+gauge:'<path d="M2.5 11a5.5 5.5 0 1111 0"/><path d="M8 11l3-4"/>',
+brain:'<path d="M6 2.5a2 2 0 00-2 2 2 2 0 00-1.5 3.3A2.2 2.2 0 004 11.5a2 2 0 002 2h0V2.5zM10 2.5a2 2 0 012 2 2 2 0 011.5 3.3 2.2 2.2 0 01-1.5 3.7 2 2 0 01-2 2V2.5z"/>',
+curve:'<path d="M2 2v12h12"/><path d="M4 11c2-6 4-7 9-8"/>',
+dice:'<rect x="2.5" y="2.5" width="11" height="11" rx="2.5"/><circle cx="5.5" cy="5.5" r=".6"/><circle cx="10.5" cy="10.5" r=".6"/><circle cx="8" cy="8" r=".6"/>',
+episode:'<rect x="2" y="3" width="12" height="10" rx="1.5"/><path d="M6.5 6v4l3.5-2z"/>',
+export:'<path d="M8 10V2M5 5l3-3 3 3"/><path d="M3 8v5.5h10V8"/>',
+sun:'<circle cx="8" cy="8" r="3"/><path d="M8 1.5v1.5M8 13v1.5M1.5 8H3M13 8h1.5M3.4 3.4l1 1M11.6 11.6l1 1M3.4 12.6l1-1M11.6 4.4l1-1"/>',
+material:'<circle cx="8" cy="8" r="6"/><path d="M4 6.5c2.5 1 5.5 1 8 0" /><circle cx="6" cy="5" r="1"/>',
+camera:'<rect x="1.5" y="4.5" width="13" height="9" rx="1.5"/><circle cx="8" cy="9" r="2.5"/><path d="M5.5 4.5l1-2h3l1 2"/>',
+render:'<rect x="2" y="2.5" width="12" height="9" rx="1.5"/><path d="M2 9l3.5-3 3 2.5 2-1.5L14 9.5M5 14h6"/>',
+queue:'<path d="M2.5 4h11M2.5 8h11M2.5 12h7"/>',
+printer:'<path d="M4 6V2h8v4"/><rect x="2" y="6" width="12" height="6" rx="1"/><path d="M4.5 10h7v4h-7z"/>',
+cam:'<path d="M6 2h4v4l-2 2-2-2z"/><path d="M8 8v3M3 14h10M5 11h6v3H5z"/>',
+gear:'<circle cx="8" cy="8" r="2.2"/><path d="M8 1.5v2M8 12.5v2M1.5 8h2M12.5 8h2M3.4 3.4l1.4 1.4M11.2 11.2l1.4 1.4M3.4 12.6l1.4-1.4M11.2 4.8l1.4-1.4"/>',
+check:'<path d="M3 8.5l3.2 3L13 4.5"/>',
+checkc:'<circle cx="8" cy="8" r="6.5"/><path d="M5 8.2l2 2 4-4.2"/>',
+link:'<path d="M7 9a2.5 2.5 0 003.5 0l2.5-2.5a2.5 2.5 0 00-3.5-3.5L8.5 4"/><path d="M9 7a2.5 2.5 0 00-3.5 0L3 9.5A2.5 2.5 0 006.5 13l1-1"/>',
+folder:'<path d="M1.8 4.5a1 1 0 011-1H6l1.5 1.5h5.7a1 1 0 011 1v6.5a1 1 0 01-1 1H2.8a1 1 0 01-1-1z"/>',
+doc:'<path d="M4 1.8h5.2L12.5 5v9.2H4z"/><path d="M9 1.8V5h3.5"/>',
+body:'<path d="M8 1.8l5.5 3.1v6.2L8 14.2 2.5 11.1V4.9z"/><path d="M2.5 4.9L8 8l5.5-3.1M8 8v6.2"/>',
+origin:'<circle cx="8" cy="8" r="1.4"/><path d="M8 2v3.5M8 10.5V14M2 8h3.5M10.5 8H14"/>',
+eye:'<path d="M1.5 8S4 3.5 8 3.5 14.5 8 14.5 8 12 12.5 8 12.5 1.5 8 1.5 8z"/><circle cx="8" cy="8" r="2"/>',
+chev:'<path d="M6 4l4 4-4 4"/>',chevd:'<path d="M4 6l4 4 4-4"/>',
+orbit:'<ellipse cx="8" cy="8" rx="6.5" ry="2.8"/><circle cx="8" cy="8" r="2.3"/>',
+pan:'<path d="M8 1.5v13M1.5 8h13M8 1.5L6.5 3M8 1.5L9.5 3M8 14.5L6.5 13M8 14.5l1.5-1.5M1.5 8L3 6.5M1.5 8L3 9.5M14.5 8L13 6.5M14.5 8L13 9.5"/>',
+zoom:'<circle cx="7" cy="7" r="4.5"/><path d="M10.5 10.5l3.5 3.5M5 7h4M7 5v4"/>',
+fit:'<path d="M2 5.5V2h3.5M10.5 2H14v3.5M14 10.5V14h-3.5M5.5 14H2v-3.5"/>',
+display:'<path d="M8 1.8l5.5 3.1v6.2L8 14.2 2.5 11.1V4.9z"/><path d="M8 8l5.5-3.1M8 8v6.2" opacity=".5"/>',
+gridv:'<path d="M2 5h12M2 11h12M5 2v12M11 2v12"/>',
+first:'<path d="M3 3v10M13 3L6 8l7 5z"/>',prev:'<path d="M11 3L4 8l7 5z"/>',next:'<path d="M5 3l7 5-7 5z"/>',last:'<path d="M13 3v10M3 3l7 5-7 5z"/>',
+warn:'<path d="M8 2l6.5 11.5h-13z"/><path d="M8 6.5v3.2M8 11.6v.2"/>',
+clock:'<circle cx="8" cy="8" r="6"/><path d="M8 4.5V8l2.5 1.5"/>',
+bolt:'<path d="M9 1.5L3.5 9H8l-1 5.5L12.5 7H8z"/>',
+battery:'<rect x="1.5" y="5" width="11.5" height="6" rx="1.2"/><path d="M14.5 7v2"/><rect x="3" y="6.5" width="6" height="3" fill="currentColor" stroke="none"/>',
+motor:'<circle cx="8" cy="8" r="5.5"/><circle cx="8" cy="8" r="1.5"/><path d="M8 2.5v4M13.5 8h-4"/>',
+prop:'<path d="M8 8C5 6 2 6.5 2 8s3 2 6 0 6-2 6 0-3 1.5-6 0"/><circle cx="8" cy="8" r="1"/>',
+stack:'<path d="M8 2l6 3-6 3-6-3z"/><path d="M2 8l6 3 6-3M2 11l6 3 6-3"/>',
+dep:'<path d="M3 4h4a2 2 0 012 2v4a2 2 0 002 2h2"/><path d="M11 10l2 2-2 2"/><circle cx="3" cy="4" r="1.3"/>',
+plus:'<path d="M8 3v10M3 8h10"/>',
+filter:'<path d="M2 3h12l-4.5 5.5V13l-3 1.5v-6z"/>'
+};
+function I(n,c,st){return '<svg class="ic '+(c||'')+'" viewBox="0 0 16 16"'+(st?' style="'+st+'"':'')+'>'+(P[n]||P.cube)+'</svg>'}
+document.querySelectorAll('[data-i]').forEach(e=>e.innerHTML=I(e.dataset.i));
+const WS={
+design:{name:'Design',icon:'cube',key:'1',tabs:['SOLID','SURFACE','SHEET METAL','MESH','INSPECT','UTILITIES'],fin:'FINISH SKETCH',ft:'SKETCH',
+ panels:[['CREATE',[['sketch','Sketch',1],['extrude','Extrude'],['revolve','Revolve'],['hole','Hole'],['pattern','Pattern']]],['MODIFY',[['fillet','Fillet'],['shell','Shell'],['combine','Combine'],['mirror','Mirror']]],['CONSTRUCT',[['plane','Plane'],['axis','Axis']]],['INSPECT',[['measure','Measure'],['section','Section']]],['CONFIGURE',[['param','Params']]],['INSERT',[['insert','Insert'],['board3d','Board']]]],
+ sel:'sk1',lk:['frame','arm'],tl:6},
+generative:{name:'Generative',icon:'wand',key:'2',tabs:['DEFINE','STUDY','EXPLORE'],tab:2,fin:'FINISH STUDY',
+ panels:[['DESIGN SPACE',[['keep','Obstacle'],['target','Preserve'],['body','Start Shape']]],['LOADS',[['fix','Fix'],['load','Load Case'],['dice','Cases']]],['OBJECTIVES',[['gauge','Mass'],['stress','Safety']]],['GENERATE',[['play','Generate',1],['grid','Explore']]],['COMPARE',[['compare','Compare'],['filter','Filter']]],['USE',[['export','Create Design']]]],
+ sel:'study',lk:['frame','o7'],tl:3},
+assembly:{name:'Assembly',icon:'joint',key:'3',tabs:['ASSEMBLE','MOTION','INSPECT'],fin:'FINISH JOINT',
+ panels:[['ASSEMBLE',[['joint','Joint',1],['rigid','Rigid Group'],['ground','Ground']]],['POSITION',[['pan','Move'],['explode','Explode']]],['MOTION',[['motion','Motion Link'],['contact','Contact'],['play','Study']]],['INSPECT',[['measure','Interfere'],['gauge','Mass Props']]]],
+ sel:'j3',lk:['motor','prop','j3'],tl:8},
+electronics:{name:'Electronics',icon:'cpu',key:'4',tabs:['SCHEMATIC','PCB','3D BOARD','LIBRARY'],tab:1,fin:'PUSH TO 3D',
+ panels:[['PLACE',[['cpu','Part'],['resistor','Passive'],['insert','Library']]],['ROUTE',[['route','Route',1],['via','Via'],['net','Pour']]],['RULES',[['drc','DRC'],['gear','Stackup']]],['3D',[['board3d','Push'],['mount','Mount']]],['OUTPUT',[['export','KiCad']]]],
+ sel:'fc',lk:['fcc','fc'],tl:9},
+simulation:{name:'Simulation',icon:'wind',key:'5',tabs:['FLIGHT','STRUCTURAL','SETUP'],fin:'FINISH RUN',
+ panels:[['SCENARIO',[['flag','Course'],['cloud','Weather'],['dice','Seeds']]],['VEHICLE',[['drone','From Design'],['brain','Controller']]],['RUN',[['play','Fly',1],['pause','Pause'],['episode','Record']]],['STRUCTURAL',[['stress','Static'],['bolt','Crash']]],['RESULTS',[['curve','Plots'],['compare','Compare']]]],
+ sel:'s1',lk:['s1','frame','fcc'],tl:10},
+training:{name:'Training',icon:'brain',key:'6',tabs:['RUNS','POLICY','EVALUATE'],fin:'PROMOTE POLICY',
+ panels:[['SETUP',[['flag','Scenarios'],['dice','Randomize'],['gauge','Reward']]],['STAGES',[['param','PID (CEM)'],['brain','NN (ES)',1]]],['RUN',[['play','Train'],['pause','Pause'],['queue','Queue']]],['EVALUATE',[['curve','Curves'],['episode','Replay'],['compare','A/B']]]],
+ sel:'t2',lk:['t2','s1'],tl:11},
+render:{name:'Render',icon:'camera',key:'7',tabs:['SETUP','RENDER','GALLERY'],tab:1,fin:'FINISH RENDER',
+ panels:[['SETUP',[['material','Appearance',1],['sun','Environment'],['camera','Camera']]],['DECALS',[['insert','Decal']]],['RENDER',[['render','Render'],['queue','Queue']]],['MOTION',[['episode','Flight Clip']]]],
+ sel:'r1',lk:['r1','frame'],tl:12},
+manufacture:{name:'Manufacture',icon:'printer',key:'8',tabs:['ADDITIVE','MILLING','EXPORT'],fin:'POST PROCESS',
+ panels:[['SETUP',[['gear','Setup',1],['body','Stock']]],['ADDITIVE',[['printer','Arrange'],['stack','Supports'],['bolt','Slice']]],['MILLING',[['cam','2D Contour'],['hole','Drill']]],['EXPORT',[['export','STEP'],['cpu','Gerber'],['doc','BOM']]]],
+ sel:'m1',lk:['m1','frame','fc'],tl:13}
+};
+const ORDER=['design','generative','assembly','electronics','simulation','training','render','manufacture'];
+/* one tree for every discipline: [id,depth,icon,name,meta,deps] */
+const TREE=[
+['doc',0,'doc','Drone 3in Race','<span class="pill p-gray">v42</span>'],
+['g1',1,'folder','Document Settings'],
+['g2',1,'origin','Origin'],
+['h1',0,'','COMPONENTS'],
+['frame',1,'body','Frame','<span class="pill p-link">gen . o7</span>','generative'],
+['arm',2,'sketch','Arm profile','<span class="mini">60.2 mm</span>'],
+['sk1',2,'sketch','Sketch: motor pads',''],
+['motor',1,'motor','Motor 1404 x4','<span class="mini">4.2 g</span>'],
+['prop',1,'prop','Prop 3018 x4',''],
+['bat',1,'battery','Battery 4S 450','<span class="mini">52 g</span>'],
+['fcc',1,'cpu','Flight controller','<span class="pill p-stale">rev 195</span>','electronics'],
+['h2',0,'','STUDIES'],
+['study',1,'wand','Frame study','<span class="pill p-ok">24 outcomes</span>'],
+['o7',2,'grid','Outcome 7 (in use)','<span class="mini">11.0 g</span>'],
+['h3',0,'','BOARDS'],
+['fc',1,'cpu','FC 30x30 . 4 layer','<span class="pill p-stale">rev 196</span>'],
+['h4',0,'','JOINTS'],
+['j3',1,'joint','Revolute: Motor 1 shaft','<span class="mini">x4</span>'],
+['j5',1,'rigid','Rigid: FC on standoffs',''],
+['h5',0,'','SIMULATIONS'],
+['s1',1,'flag','Obstacle course . Breezy','<span class="pill p-stale">stale</span>','design'],
+['s2',1,'stress','Crash load 6 g . FEA','<span class="pill p-run">58%</span>'],
+['h6',0,'','TRAINING RUNS'],
+['t1',1,'param','PID gains . CEM run 3','<span class="pill p-ok">done</span>'],
+['t2',1,'brain','NN residual . ES run 7','<span class="pill p-run">64%</span>','simulation'],
+['h7',0,'','RENDERS'],
+['r1',1,'camera','Hero shot . Studio','<span class="pill p-gray">queued</span>'],
+['h8',0,'','MANUFACTURE'],
+['m1',1,'printer','Frame . CF plate 3 mm','<span class="pill p-ok">ready</span>'],
+['m2',1,'export','STEP + KiCad bundle','']
+];
+const WSOF={frame:'design',arm:'design',sk1:'design',motor:'assembly',prop:'assembly',bat:'assembly',fcc:'electronics',study:'generative',o7:'generative',fc:'electronics',j3:'assembly',j5:'assembly',s1:'simulation',s2:'simulation',t1:'training',t2:'training',r1:'render',m1:'manufacture',m2:'manufacture'};
+let cur='generative';
+function renderTree(){const w=WS[cur];let h='';
+ TREE.forEach(r=>{const [id,d,ic,nm,meta,dep]=r;
+  if(id[0]=='h'&&!ic){h+='<div class="tr grp" style="padding-left:8px">'+nm+'</div>';return}
+  const cls=(id==w.sel?' sel':'')+(w.lk.includes(id)&&id!=w.sel?' lk':'');
+  h+='<div class="tr'+cls+'" data-id="'+id+'" style="padding-left:'+(6+d*14)+'px">'+(d<2&&id!='doc'?I('chevd','dis'):'<span style="width:10px"></span>')+I(ic,'ti')+'<span>'+nm+'</span><span class="meta">'+(dep?'<span title="Depends on '+WS[dep].name+'">'+I('dep','dep')+'</span>':'')+(meta||'')+'</span></div>'});
+ document.getElementById('tree').innerHTML=h;
+ document.querySelectorAll('.tr[data-id]').forEach(e=>e.onclick=()=>{const t=WSOF[e.dataset.id];if(t)go(t)});
+ document.getElementById('sfoot').innerHTML='<div class="fl" style="justify-content:space-between"><span class="fl">'+I('dep','dep')+'depends on another workspace</span><span class="fl"><span class="pill p-stale">stale</span> 3</span></div>';
+}
+function renderRibbon(){const w=WS[cur],at=w.tab||0;let t='';
+ w.tabs.forEach((x,i)=>t+='<div class="tab'+(i==at?' on':'')+'">'+x+(cur=='electronics'&&x=='3D BOARD'?'<span class="dot"></span>':'')+'</div>');
+ t+='<div class="tab fin" style="margin-left:6px">'+w.fin+'</div>';
+ document.getElementById('tabs').innerHTML=t;
+ let p='';w.panels.forEach(([n,tools])=>{p+='<div class="pnl"><div class="row">';tools.forEach(([ic,l,on])=>p+='<div class="tool'+(on?' on':'')+'">'+I(ic)+'<span class="l">'+l+'</span></div>');p+='</div><div class="pname">'+n+'</div></div>'});
+ p+='<div class="pnl finish"><div class="row"><div class="tool">'+I('checkc')+'<span class="l" style="color:var(--grn)">Finish</span></div></div><div class="pname">'+w.fin+'</div></div>';
+ document.getElementById('panels').innerHTML=p;
+}
+const TL=[['sketch','f-sk','Arm profile'],['extrude','f-so','Plate 3 mm'],['wand','f-gen','Generative: outcome 7'],['fillet','f-so','Fillet 1.5 mm'],['hole','f-so','M3 holes x16'],['sketch','f-sk','Motor pads'],['pattern','f-so','Circular pattern x4'],['joint','f-as','Revolute joints x4'],['rigid','f-as','Rigid: FC stack'],['board3d','f-pcb stale','Board rev 195 (196 available)'],['flag','f-gen stale','Sim: obstacle course'],['brain','f-gen','Training: ES run 7'],['camera','f-so','Render: hero'],['printer','f-as','CAM setup']];
+function renderTL(){const w=WS[cur];let h='<div class="ctl">'+['first','prev','play','next','last'].map(i=>'<div class="tbtn">'+I(i,'','width:12px;height:12px')+'</div>').join('')+'</div><div class="vs"></div><span class="lane">HISTORY</span>';
+ TL.forEach((f,i)=>{h+='<div class="feat '+f[1]+(i==w.tl?' hl':'')+'" title="'+f[2]+'">'+I(f[0])+'</div>';if(i==9)h+='<div class="marker" title="History marker"></div>'});
+ h+='<div class="flex"></div><span class="mini fl">'+I('dep','dep')+'Board and Sim downstream of Frame</span><div class="tbtn">'+I('gear')+'</div>';
+ document.getElementById('tl').innerHTML=h}
+function renderMenu(){let h='<div class="mh">Workspace</div>';ORDER.forEach(k=>{const w=WS[k];h+='<div class="mi" data-w="'+k+'">'+I(w.icon)+w.name+(k=='simulation'?'<span class="st">stale</span>':'')+(k=='training'?'<span class="st" style="color:#5eb0ff">64%</span>':'')+'<span class="k">⌘'+w.key+'</span></div>'});
+ h+='<div class="msep"></div><div class="mi">'+I('dep')+'Show Flow Graph<span class="k">⌘G</span></div>';
+ const m=document.getElementById('wsMenu');m.innerHTML=h;m.querySelectorAll('.mi[data-w]').forEach(e=>e.onclick=ev=>{ev.stopPropagation();m.classList.remove('open');go(e.dataset.w)})}
+const VW=1046,VH=783;
+function mk(cx,cy,s){return (x,y,z)=>[cx+(x-y)*0.866*s,cy+(x+y)*0.5*s-(z||0)*s]}
+function pts(a){return a.map(p=>p[0].toFixed(1)+','+p[1].toFixed(1)).join(' ')}
+function seg(A,B,w){const dx=B[0]-A[0],dy=B[1]-A[1],L=Math.hypot(dx,dy),nx=-dy/L*w/2,ny=dx/L*w/2;return [[A[0]+nx,A[1]+ny],[B[0]+nx,B[1]+ny],[B[0]-nx,B[1]-ny],[A[0]-nx,A[1]-ny]]}
+function circ(c,r,n){n=n||20;const a=[];for(let i=0;i<n;i++){const t=i/n*6.283;a.push([c[0]+r*Math.cos(t),c[1]+r*Math.sin(t)])}return a}
+/* frame geometry in mm, variant v changes member widths */
+function frameShapes(v){v=v||{};const w=v.w||4.2,arm=v.arm||43,hub=v.hub||16,br=v.br==null?1:v.br;const S=[];
+ S.push([[-hub,-hub],[hub,-hub],[hub,hub],[-hub,hub]]);
+ [[1,1],[1,-1],[-1,1],[-1,-1]].forEach(([dx,dy])=>{const M=[dx*arm,dy*arm];
+  S.push(seg([dx*hub,dy*(hub*.35)],M,w));S.push(seg([dx*(hub*.35),dy*hub],M,w));
+  if(br){const a=[dx*hub*.9,dy*hub*.9];S.push(seg(a,[dx*arm*.62,dy*arm*.62],w*.8))}
+  S.push(circ(M,v.mr||9,22))});return S}
+function frameSVG(p,t,o){o=o||{};const S=frameShapes(o.v);let g='';const top=o.top||'url(#cf)',side=o.side||'#2b2e34';
+ for(let k=0;k<=t;k+=0.35){S.forEach(s=>g+='<polygon points="'+pts(s.map(q=>p(q[0],q[1],k)))+'" fill="'+side+'"/>')}
+ S.forEach(s=>g+='<polygon points="'+pts(s.map(q=>p(q[0],q[1],t)))+'" fill="'+top+'" stroke="'+(o.edge||'rgba(20,22,26,.55)')+'" stroke-width=".6"/>');
+ /* holes */
+ [[1,1],[1,-1],[-1,1],[-1,-1]].forEach(([dx,dy])=>{const a=o.v&&o.v.arm||43;g+='<polygon points="'+pts(circ([dx*a,dy*a],3,16).map(q=>p(q[0],q[1],t)))+'" fill="#1a1c20"/>';
+  [[10.6,10.6]].forEach(h=>g+='<polygon points="'+pts(circ([dx*h[0],dy*h[1]],1.6,12).map(q=>p(q[0],q[1],t)))+'" fill="#16181b"/>')});
+ return g}
+function cyl(p,c,r,z0,z1,top,side){let g='';const n=26;for(let z=z0;z<=z1;z+=0.5)g+='<polygon points="'+pts(circ(c,r,n).map(q=>p(q[0],q[1],z)))+'" fill="'+side+'"/>';g+='<polygon points="'+pts(circ(c,r,n).map(q=>p(q[0],q[1],z1)))+'" fill="'+top+'" stroke="rgba(0,0,0,.35)" stroke-width=".6"/>';return g}
+function box(p,x0,y0,x1,y1,z0,z1,top,s1,s2){const A=(x,y,z)=>p(x,y,z);return '<polygon points="'+pts([A(x1,y0,z0),A(x1,y1,z0),A(x1,y1,z1),A(x1,y0,z1)])+'" fill="'+s1+'"/><polygon points="'+pts([A(x0,y1,z0),A(x1,y1,z0),A(x1,y1,z1),A(x0,y1,z1)])+'" fill="'+s2+'"/><polygon points="'+pts([A(x0,y0,z1),A(x1,y0,z1),A(x1,y1,z1),A(x0,y1,z1)])+'" fill="'+top+'" stroke="rgba(0,0,0,.3)" stroke-width=".5"/>'}
+function drone(p,o){o=o||{};let g=frameSVG(p,3,o);const arm=43;
+ if(!o.noBoard){g+=cyl(p,[-10.6,-10.6],1.4,3,9,'#c9a227','#8a6d12');g+=cyl(p,[10.6,10.6],1.4,3,9,'#c9a227','#8a6d12');
+  g+=box(p,-15,-15,15,15,9,10.6,o.boardTop||'url(#pcb)','#0d3a22','#0a2e1b');
+  g+=box(p,-5,-5,5,5,10.6,12,'#22252a','#111','#0b0b0c');g+=box(p,7,-12,11,-6,10.6,11.6,'#d6d6d6','#888','#777');g+=box(p,-12,6,-7,11,10.6,11.4,'#2c2f35','#111','#0d0d0d');
+  if(o.boardHL)g+='<polygon points="'+pts([p(-15,-15,10.6),p(15,-15,10.6),p(15,15,10.6),p(-15,15,10.6)])+'" fill="none" stroke="#bf5af2" stroke-width="1.6" stroke-dasharray="4 3"/>'}
+ [[-1,-1],[1,-1],[-1,1],[1,1]].forEach(([dx,dy])=>{const c=[dx*arm,dy*arm];g+=cyl(p,c,8.6,3,15,'url(#mt)','#5d636d');g+=cyl(p,c,2,15,18,'#d0d4da','#888');
+  if(!o.noProp){const r=38;g+='<polygon points="'+pts(circ(c,r,40).map(q=>p(q[0],q[1],18.5)))+'" fill="rgba(200,215,235,.10)" stroke="rgba(220,230,245,.28)" stroke-width=".7"/>';
+   const a=o.pa||0.6;g+='<polygon points="'+pts([[c[0]+Math.cos(a)*r,c[1]+Math.sin(a)*r],[c[0]+Math.cos(a+.08)*r*.2,c[1]+Math.sin(a+.08)*r*.2],[c[0]-Math.cos(a)*r,c[1]-Math.sin(a)*r],[c[0]-Math.cos(a+.08)*r*.2,c[1]-Math.sin(a+.08)*r*.2]].map(q=>p(q[0],q[1],18.6)))+'" fill="rgba(230,236,245,.55)"/>'}});
+ return g}
+function gridFloor(p,n,st,col){let g='';for(let i=-n;i<=n;i+=st){const a=Math.abs(i)%(st*5)==0?.16:.07;g+='<line x1="'+p(i,-n,0)[0]+'" y1="'+p(i,-n,0)[1]+'" x2="'+p(i,n,0)[0]+'" y2="'+p(i,n,0)[1]+'" stroke="'+(col||'#fff')+'" stroke-opacity="'+a+'" stroke-width=".7"/><line x1="'+p(-n,i,0)[0]+'" y1="'+p(-n,i,0)[1]+'" x2="'+p(n,i,0)[0]+'" y2="'+p(n,i,0)[1]+'" stroke="'+(col||'#fff')+'" stroke-opacity="'+a+'" stroke-width=".7"/>'}
+ g+='<line x1="'+p(-n,0,0)[0]+'" y1="'+p(-n,0,0)[1]+'" x2="'+p(n,0,0)[0]+'" y2="'+p(n,0,0)[1]+'" stroke="#ff453a" stroke-opacity=".45"/><line x1="'+p(0,-n,0)[0]+'" y1="'+p(0,-n,0)[1]+'" x2="'+p(0,n,0)[0]+'" y2="'+p(0,n,0)[1]+'" stroke="#30d158" stroke-opacity=".45"/>';return g}
+const DEFS='<defs><linearGradient id="cf" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#8f96a2"/><stop offset=".55" stop-color="#6c727d"/><stop offset="1" stop-color="#585d67"/></linearGradient><linearGradient id="cfs" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#5aa5ff"/><stop offset="1" stop-color="#2f6fd0"/></linearGradient><linearGradient id="pcb" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#2f7d4f"/><stop offset="1" stop-color="#1d5a37"/></linearGradient><linearGradient id="mt" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#e6e9ee"/><stop offset="1" stop-color="#a8adb6"/></linearGradient><radialGradient id="shadow"><stop offset="0" stop-color="#000" stop-opacity=".45"/><stop offset="1" stop-color="#000" stop-opacity="0"/></radialGradient><linearGradient id="fade" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#4b5260" stop-opacity="1"/><stop offset=".35" stop-color="#4b5260" stop-opacity="0"/></linearGradient><filter id="soft"><feGaussianBlur stdDeviation="6"/></filter></defs>';
+function cube(){return '<svg class="ov cube" viewBox="0 0 112 120"><g font-family="-apple-system" font-size="9" font-weight="600" text-anchor="middle"><polygon points="56,14 96,36 56,58 16,36" fill="#5a5f69" stroke="#9aa0aa" stroke-width=".8"/><polygon points="16,36 56,58 56,104 16,82" fill="#4a4f58" stroke="#9aa0aa" stroke-width=".8"/><polygon points="56,58 96,36 96,82 56,104" fill="#40444c" stroke="#9aa0aa" stroke-width=".8"/><text x="56" y="39" fill="#e6e8ec" transform="rotate(0)">TOP</text><text x="36" y="74" fill="#d4d6da">FRONT</text><text x="76" y="74" fill="#d4d6da">RIGHT</text></g><g transform="translate(10,110)"><line x1="0" y1="0" x2="16" y2="-8" stroke="#ff453a" stroke-width="1.6"/><line x1="0" y1="0" x2="-1" y2="-17" stroke="#64d2ff" stroke-width="1.6"/><line x1="0" y1="0" x2="16" y2="7" stroke="#30d158" stroke-width="1.6"/></g></svg>'}
+function navbar(){return '<div class="ov glass navbar">'+['orbit','pan','zoom','fit'].map(i=>'<div class="tbtn">'+I(i)+'</div>').join('')+'<div class="vs"></div><div class="tbtn">'+I('display')+I('chevd','','width:9px;height:9px')+'</div><div class="tbtn">'+I('gridv')+I('chevd','','width:9px;height:9px')+'</div><div class="tbtn">'+I('section')+'</div></div>'}
+function triad(){return '<svg class="ov" style="left:14px;bottom:14px" width="56" height="56" viewBox="0 0 56 56"><g stroke-width="1.8" stroke-linecap="round"><line x1="20" y1="38" x2="44" y2="50" stroke="#ff453a"/><line x1="20" y1="38" x2="2" y2="48" stroke="#30d158"/><line x1="20" y1="38" x2="20" y2="10" stroke="#64d2ff"/></g><g font-size="9" font-family="-apple-system" font-weight="600"><text x="46" y="50" fill="#ff8a80">X</text><text x="0" y="44" fill="#7ee39a">Y</text><text x="23" y="12" fill="#9be3ff">Z</text></g></svg>'}
+function sceneSVG(inner,bg){return '<svg class="scene" viewBox="0 0 '+VW+' '+VH+'" preserveAspectRatio="xMidYMid slice">'+DEFS+(bg||'')+inner+'</svg>'}
+const V={};
+V.design=()=>{const p=mk(523,400,4.3);let g=gridFloor(p,110,10)+'<ellipse cx="523" cy="440" rx="300" ry="120" fill="url(#shadow)"/>'+drone(p,{boardTop:'url(#pcb)'});
+ /* sketch on motor pad */
+ const c=[43,43];g+='<polygon points="'+pts(circ(c,9,30).map(q=>p(q[0],q[1],3.05)))+'" fill="rgba(10,132,255,.18)" stroke="#4da3ff" stroke-width="1.3"/>';
+ [[0,1],[1,0]].forEach(()=>{});const d1=p(43-9,43,3.1),d2=p(43+9,43,3.1);
+ g+='<g stroke="#4da3ff" stroke-width="1"><line x1="'+d1[0]+'" y1="'+(d1[1]+40)+'" x2="'+d2[0]+'" y2="'+(d2[1]+40)+'"/><line x1="'+d1[0]+'" y1="'+d1[1]+'" x2="'+d1[0]+'" y2="'+(d1[1]+46)+'" stroke-dasharray="2 2"/><line x1="'+d2[0]+'" y1="'+d2[1]+'" x2="'+d2[0]+'" y2="'+(d2[1]+46)+'" stroke-dasharray="2 2"/></g><rect x="'+((d1[0]+d2[0])/2-22)+'" y="'+((d1[1]+d2[1])/2+31)+'" width="44" height="17" rx="4" fill="#0a84ff"/><text x="'+((d1[0]+d2[0])/2)+'" y="'+((d1[1]+d2[1])/2+43)+'" fill="#fff" font-size="11" font-family="-apple-system" text-anchor="middle">18 mm</text>';
+ const a=p(0,0,3),b=p(43,-43,3);g+='<text x="'+(b[0]+30)+'" y="'+(b[1]-28)+'" fill="#d8dbe0" font-size="11" font-family="-apple-system">Arm 60.2 mm . from Outcome 7</text><line x1="'+(b[0]+28)+'" y1="'+(b[1]-24)+'" x2="'+(b[0]+6)+'" y2="'+(b[1]-6)+'" stroke="#d8dbe0" stroke-opacity=".5"/>';
+ return sceneSVG(g)+cube()+triad()+navbar()+'<div class="ov glass ctx" style="left:'+(d2[0]+40)+'px;top:'+(d2[1]-10)+'px">'+['extrude','hole','fillet','mirror'].map(i=>'<div class="tbtn">'+I(i)+'</div>').join('')+'<div class="tbtn" style="color:var(--grn)">'+I('check')+'</div></div>'+hud('Sketch: motor pads','Plane on Frame top . 4 profiles . fully constrained',[['dep','Frame comes from Generative Outcome 7. Edit there, or break link.']])};
+function hud(t,s,rows){return '<div class="ov glass hud"><b>'+t+'</b><div class="mini">'+s+'</div>'+(rows||[]).map(r=>'<div class="r">'+I(r[0],'','width:13px;height:13px;color:'+(r[2]||'var(--pur)'))+'<span>'+r[1]+'</span></div>').join('')+'</div>'}
+V.assembly=()=>{const p=mk(523,420,3.4);let g=gridFloor(p,110,10)+'<ellipse cx="523" cy="430" rx="300" ry="120" fill="url(#shadow)"/>';
+ g+=frameSVG(p,3,{});const arm=43;[[-1,-1],[1,-1],[-1,1],[1,1]].forEach(([dx,dy],i)=>{const c=[dx*arm,dy*arm],lift=i==3?14:0;g+=cyl(p,c,8.6,3+lift,15+lift,i==3?'url(#cfs)':'url(#mt)',i==3?'#2c64bb':'#5d636d');g+=cyl(p,c,2,15+lift,18+lift,'#d0d4da','#888');
+  if(i==3){const q=p(c[0],c[1],24+lift);g+='<g transform="translate('+q[0]+','+(q[1]-20)+')"><circle r="13" fill="#ff9f0a" fill-opacity=".9"/><circle r="5" fill="none" stroke="#1c1c1e" stroke-width="1.6"/><path d="M-9 -16a18 18 0 0 1 18 0" stroke="#ff9f0a" stroke-width="2" fill="none" marker-end=""/></g><path d="M'+(q[0]-40)+' '+(q[1]-10)+'a42 16 0 1 0 80 0" fill="none" stroke="#ff9f0a" stroke-width="1.5" stroke-dasharray="4 3"/>'}});
+ g+=cyl(p,[-10.6,-10.6],1.4,3,9,'#c9a227','#8a6d12')+box(p,-15,-15,15,15,9,10.6,'url(#pcb)','#0d3a22','#0a2e1b')+box(p,-5,-5,5,5,10.6,12,'#22252a','#111','#0b0b0c');
+ g+='<g font-family="-apple-system" font-size="11"><rect x="610" y="190" width="150" height="22" rx="6" fill="rgba(30,30,34,.85)" stroke="rgba(255,255,255,.12)"/><text x="620" y="205" fill="#ffbf5a">Revolute . 0 to 360 deg</text></g>';
+ return sceneSVG(g)+cube()+triad()+navbar()+hud('Joint: Motor 1 shaft','Revolute about Z . driven by Sim motor command',[['dep','Joint limits feed Simulation rigid body model'],['link','FC stack held by Rigid group (Electronics mount)','var(--grn)']])};
+V.render=()=>{const p=mk(523,450,4.2);let bg='<rect width="'+VW+'" height="'+VH+'" fill="#0f1013"/><radialGradient id="st" cx=".5" cy=".38" r=".7"><stop offset="0" stop-color="#3d4350"/><stop offset=".6" stop-color="#181a1f"/><stop offset="1" stop-color="#0b0c0e"/></radialGradient><rect width="'+VW+'" height="'+VH+'" fill="url(#st)"/><ellipse cx="523" cy="470" rx="330" ry="110" fill="#000" opacity=".55" filter="url(#soft)"/>';
+ let g=drone(p,{pa:1.1})+'<rect x="0" y="0" width="'+VW+'" height="'+VH+'" fill="url(#st)" opacity=".18"/>';
+ const frame='<rect x="150" y="96" width="746" height="520" fill="none" stroke="rgba(255,255,255,.35)" stroke-dasharray="6 5"/><text x="156" y="90" fill="#9aa0aa" font-size="11" font-family="-apple-system">Camera: Hero 50 mm . 3840 x 2160</text>';
+ const tiles=[['Hero . Studio','Rendering . 412 / 1024 spp',40,'#0a84ff'],['Arm detail . Macro','Queued . after Sim',0],['Flight clip . Course','Waits for Training run 7',0],['Exploded . White','Done 2 min ago',100,'#30d158']];
+ let q='<div class="ov glass" style="left:12px;right:12px;bottom:58px;height:96px;display:flex;gap:10px;padding:10px">'+tiles.map((t,i)=>'<div style="flex:1;display:flex;gap:9px;align-items:center;padding:6px;border-radius:7px;'+(i==0?'background:rgba(10,132,255,.14);box-shadow:inset 0 0 0 1px rgba(10,132,255,.5)':'background:rgba(255,255,255,.04)')+'"><div style="width:84px;height:62px;border-radius:5px;background:radial-gradient(circle at 50% 40%,#4a505c,#15171a);flex:none;overflow:hidden">'+'<svg viewBox="-60 -40 120 80" width="84" height="62">'+drone(mk(0,4,.55),{noBoard:i==2,pa:i})+'</svg></div><div style="min-width:0"><div style="font-size:12px;font-weight:500">'+t[0]+'</div><div class="mini">'+t[1]+'</div>'+(t[2]?'<div class="bar" style="width:120px"><i style="width:'+t[2]+'%;background:'+t[3]+'"></i></div>':'')+'</div></div>').join('')+'</div>';
+ return sceneSVG(g+frame,bg)+navbar()+q+hud('Hero . Studio','Path traced . 412 / 1024 samples . 2 min left',[['material','Frame: Carbon twill 3K (from Manufacture stock)'],['dep','Board appearance synced from PCB rev 195','var(--org)']])};
+V.generative=()=>{const vs=[{w:3.2,arm:44,br:1},{w:4.6,arm:42,br:0},{w:3.8,arm:43,br:1,hub:14},{w:5,arm:41,br:1},{w:3,arm:45,br:0,hub:18},{w:4.2,arm:43,br:1},{w:4,arm:43,br:1},{w:3.4,arm:46,br:1,hub:15},{w:5.4,arm:40,br:0},{w:3.6,arm:44,br:0,hub:13},{w:4.4,arm:42,br:1,hub:17},{w:3.1,arm:47,br:1}];
+ const m=[9.8,12.4,10.6,13.1,9.2,11.3,11.0,10.1,14.0,9.6,12.0,10.4],sf=[1.6,2.4,1.9,2.6,1.4,2.1,2.2,1.7,2.9,1.5,2.3,1.6];
+ let h='<div style="position:absolute;inset:0;background:#1f2023;padding:14px 16px 64px;display:flex;gap:14px">';
+ h+='<div style="flex:1;display:flex;flex-direction:column;gap:10px"><div class="fl" style="font-size:12px;color:var(--tx2)"><b style="color:var(--tx)">Frame study</b>. 24 outcomes . 12 shown . sorted by mass<div class="flex"></div><div class="seg"><div class="on">'+I('grid','','width:12px;height:12px')+'</div><div>'+I('compare','','width:12px;height:12px')+'</div></div></div><div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;flex:1">';
+ vs.forEach((v,i)=>{const on=i==6,p=mk(70,58,0.82);h+='<div style="border-radius:9px;background:'+(on?'rgba(10,132,255,.13)':'#2a2b2f')+';box-shadow:inset 0 0 0 '+(on?'1.5px #0a84ff':'.5px rgba(255,255,255,.08)')+';padding:8px;position:relative;display:flex;flex-direction:column"><svg viewBox="0 0 140 110" style="flex:1;width:100%">'+DEFS+'<ellipse cx="70" cy="62" rx="60" ry="22" fill="url(#shadow)"/>'+frameSVG(p,3,{v:v,top:on?'url(#cfs)':'url(#cf)',side:on?'#204c8c':'#2b2e34'})+'</svg><div class="fl" style="font-size:11.5px"><b style="font-weight:600">Outcome '+(i+1)+'</b>'+(on?'<span class="pill p-link" style="margin-left:auto">in Design</span>':(i==4?'<span class="pill p-stale" style="margin-left:auto">SF &lt; 1.5</span>':''))+'</div><div class="mini" style="font-variant-numeric:tabular-nums">'+m[i].toFixed(1)+' g . SF '+sf[i].toFixed(1)+' . '+(v.arm*1.4).toFixed(1)+' mm</div></div>'});
+ h+='</div></div>';
+ /* scatter */
+ let sc='<svg viewBox="0 0 250 230" width="250" height="230"><rect x="30" y="10" width="210" height="190" fill="rgba(255,255,255,.02)" stroke="rgba(255,255,255,.08)"/>';
+ for(let i=1;i<5;i++)sc+='<line x1="30" x2="240" y1="'+(10+i*38)+'" y2="'+(10+i*38)+'" stroke="rgba(255,255,255,.05)"/>';
+ sc+='<rect x="30" y="10" width="210" height="'+(190-((1.5-1)/2*190))+'" fill="none"/><line x1="30" x2="240" y1="152" y2="152" stroke="#ff9f0a" stroke-dasharray="3 3" stroke-opacity=".7"/><text x="236" y="148" fill="#ff9f0a" font-size="9" text-anchor="end" font-family="-apple-system">SF 1.5</text>';
+ for(let i=0;i<24;i++){const x=i<12?m[i]:9+((i*37)%50)/10,y=i<12?sf[i]:1.3+((i*53)%17)/10;const X=30+(x-8.5)/6*210,Y=200-(y-1)/2.2*190;sc+='<circle cx="'+X.toFixed(1)+'" cy="'+Y.toFixed(1)+'" r="'+(i==6?6:3.6)+'" fill="'+(i==6?'#0a84ff':'rgba(160,170,190,.6)')+'" '+(i==6?'stroke="#fff" stroke-width="1.5"':'')+'/>'}
+ sc+='<path d="M41 158 L60 140 L88 110 L130 70 L200 40" fill="none" stroke="#bf5af2" stroke-width="1.3" stroke-opacity=".8"/><g font-size="9.5" fill="#8e8e93" font-family="-apple-system"><text x="135" y="222" text-anchor="middle">Mass (g)</text><text x="12" y="110" transform="rotate(-90 12 110)" text-anchor="middle">Safety factor</text></g></svg>';
+ h+='<div style="width:270px;display:flex;flex-direction:column;gap:10px"><div class="glass" style="padding:10px"><div style="font-size:11px;font-weight:600;color:var(--tx3);margin-bottom:6px">TRADE-OFF . PARETO</div>'+sc+'</div><div class="glass" style="padding:10px;font-size:12px"><div style="font-size:11px;font-weight:600;color:var(--tx3);margin-bottom:6px">LOAD CASES</div>'+[['Hover 4 x 0.6 N','ok'],['Punch-out 4 x 3.2 N','ok'],['Crash 6 g corner','from Sim'],['Prop strike','ok']].map(r=>'<div class="fl" style="height:22px">'+I('load','','width:13px;height:13px;color:var(--tx2)')+r[0]+'<span class="pill '+(r[1]=='ok'?'p-ok':'p-link')+'" style="margin-left:auto">'+r[1]+'</span></div>').join('')+'</div></div></div>';
+ return h+'<div class="ov glass toast">'+I('dep','','width:14px;height:14px;color:var(--pur)')+'Outcome 7 drives Frame in Design. Switching outcomes re-runs Sim and marks Training stale.<span class="btn p" style="height:22px">Use Outcome 7</span></div>'};
+V.electronics=()=>{const ox=250,oy=110,s=15;let g='<rect width="'+VW+'" height="'+VH+'" fill="#17191c"/>';
+ for(let x=0;x<VW;x+=20)g+='<line x1="'+x+'" x2="'+x+'" y1="0" y2="'+VH+'" stroke="rgba(255,255,255,'+(x%100?'.025':'.05')+')"/>';for(let y=0;y<VH;y+=20)g+='<line y1="'+y+'" y2="'+y+'" x1="0" x2="'+VW+'" stroke="rgba(255,255,255,'+(y%100?'.025':'.05')+')"/>';
+ const B=(x,y)=>[ox+x*s,oy+y*s];const bw=30*s;
+ g+='<rect x="'+ox+'" y="'+oy+'" width="'+bw+'" height="'+bw+'" rx="22" fill="#123d27" stroke="#d6c35a" stroke-width="1.3"/>';
+ g+='<rect x="'+(ox+6)+'" y="'+(oy+6)+'" width="'+(bw-12)+'" height="'+(bw-12)+'" rx="18" fill="#164a2f" opacity=".7"/>';
+ [[4.4,4.4],[25.6,4.4],[4.4,25.6],[25.6,25.6]].forEach(([x,y])=>{const c=B(x,y);g+='<circle cx="'+c[0]+'" cy="'+c[1]+'" r="26" fill="#c9a227"/><circle cx="'+c[0]+'" cy="'+c[1]+'" r="12" fill="#17191c"/>'});
+ const tr=[[[15,15],[15,9],[22,4]],[[15,15],[9,15],[4,22]],[[11,12],[6,12],[2,8]],[[19,12],[24,12],[28,8]],[[11,18],[6,18],[2,22]],[[19,18],[24,18],[28,22]],[[13,20],[13,27]],[[17,20],[17,27]],[[15,10],[15,3]],[[20,15],[27,15]]];
+ tr.forEach((t,i)=>g+='<polyline points="'+pts(t.map(q=>B(q[0],q[1])))+'" fill="none" stroke="'+(i<6?'#c0392b':'#2f6fd0')+'" stroke-opacity=".9" stroke-width="'+(i<2?7:4)+'" stroke-linejoin="round" stroke-linecap="round"/>');
+ const u=B(11,11);g+='<rect x="'+u[0]+'" y="'+u[1]+'" width="'+8*s+'" height="'+8*s+'" rx="3" fill="#222428" stroke="#9aa0aa"/><text x="'+(u[0]+60)+'" y="'+(u[1]+64)+'" fill="#e6e6e6" font-size="13" font-family="SF Mono,Menlo,monospace" text-anchor="middle">U1</text><text x="'+(u[0]+60)+'" y="'+(u[1]+80)+'" fill="#8e8e93" font-size="10" font-family="-apple-system" text-anchor="middle">STM32F405</text>';
+ for(let i=0;i<8;i++){[[11-0.6,11.5+i],[19.1,11.5+i],[11.5+i,11-0.6],[11.5+i,19.1]].forEach(([x,y])=>{const c=B(x,y);g+='<rect x="'+(c[0]-4)+'" y="'+(c[1]-3)+'" width="8" height="6" fill="#d4b25a"/>'})}
+ [['C1',6,6],['C2',22,6],['R3',6,24],['Y1',22,23],['J1',13,26.5],['IMU',22.5,10]].forEach(([n,x,y])=>{const c=B(x,y);g+='<rect x="'+c[0]+'" y="'+c[1]+'" width="'+(n=='IMU'?50:n=='J1'?60:30)+'" height="'+(n=='IMU'?50:18)+'" rx="2" fill="#2b2d31" stroke="#8e939c" stroke-width=".8"/><text x="'+(c[0]+(n=='IMU'?25:n=='J1'?30:15))+'" y="'+(c[1]+(n=='IMU'?29:13))+'" fill="#d0d0d0" font-size="9.5" font-family="SF Mono,Menlo,monospace" text-anchor="middle">'+n+'</text>'});
+ for(let i=0;i<14;i++){const c=B(4+((i*7)%22),8+((i*5)%17));g+='<circle cx="'+c[0]+'" cy="'+c[1]+'" r="5" fill="#c9a227"/><circle cx="'+c[0]+'" cy="'+c[1]+'" r="2" fill="#17191c"/>'}
+ /* ratsnest + cursor route */
+ const a=B(19,13),b=B(27,4);g+='<line x1="'+a[0]+'" y1="'+a[1]+'" x2="'+b[0]+'" y2="'+b[1]+'" stroke="#fff" stroke-opacity=".5" stroke-dasharray="3 3"/><polyline points="'+pts([a,[a[0]+50,a[1]],[a[0]+80,a[1]-30]])+'" fill="none" stroke="#ff6b5a" stroke-width="5" stroke-linecap="round" opacity=".8"/>';
+ g+='<text x="'+ox+'" y="'+(oy-14)+'" fill="#9aa0aa" font-size="11" font-family="-apple-system">FC 30x30 . 4 layers . 1.6 mm . top copper</text><text x="'+(ox+bw)+'" y="'+(oy-14)+'" fill="#9aa0aa" font-size="11" text-anchor="end" font-family="-apple-system">30.5 mm hole pattern from Frame</text>';
+ /* 3D inset */
+ const p=mk(118,92,1.05);const ins='<div class="ov glass" style="right:14px;top:14px;width:250px;padding:8px"><div class="fl" style="font-size:11px;font-weight:600;color:var(--tx3)">MOUNTED IN FRAME<span class="pill p-stale" style="margin-left:auto">rev 195 &lt; 196</span></div><svg viewBox="0 0 236 150" width="234" height="150">'+DEFS+drone(p,{boardHL:1,noProp:1})+'</svg><div class="btns" style="margin-top:2px"><span class="btn p">Push rev 196 to 3D</span><span class="btn">Diff</span></div></div>';
+ const layers='<div class="ov glass" style="left:14px;top:14px;padding:8px 10px;font-size:12px;width:170px"><div style="font-size:11px;font-weight:600;color:var(--tx3);margin-bottom:4px">LAYERS</div>'+[['#c0392b','F.Cu',1],['#d4a72c','In1 GND',0],['#8e44ad','In2 PWR',0],['#2f6fd0','B.Cu',1],['#d6c35a','Edge.Cuts',1]].map(l=>'<div class="fl" style="height:21px"><span style="width:10px;height:10px;border-radius:2px;background:'+l[0]+'"></span>'+l[1]+'<span style="margin-left:auto">'+I('eye','','width:13px;height:13px;opacity:'+(l[2]?1:.35))+'</span></div>').join('')+'</div>';
+ return sceneSVG(g)+layers+ins+'<div class="ov glass toast">'+I('route','','width:14px;height:14px;color:#ff6b5a')+'Routing MOTOR4 . 0.4 mm . F.Cu . 2 unrouted . DRC clean<span class="mini">Esc ends</span></div>'+navbar()};
+V.simulation=()=>{let bg='<linearGradient id="sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#7f9fc4"/><stop offset=".42" stop-color="#c3d3e2"/><stop offset=".42" stop-color="#6d8f4f"/><stop offset="1" stop-color="#3f6a33"/></linearGradient><rect width="'+VW+'" height="'+VH+'" fill="url(#sky)"/>';
+ let g='';for(let i=0;i<26;i++){const y=330+i*i*1.3;g+='<rect x="0" y="'+y+'" width="'+VW+'" height="'+(2+i*.6)+'" fill="#000" opacity=".045"/>'}
+ const trees=[[80,300,60],[170,290,48],[860,296,64],[950,306,50],[720,288,36],[300,292,30],[40,380,90],[990,400,88]];
+ trees.forEach(([x,y,h])=>g+='<ellipse cx="'+(x+h*.3)+'" cy="'+(y+h*.05)+'" rx="'+h*.4+'" ry="'+h*.1+'" fill="#000" opacity=".2"/><rect x="'+(x-2)+'" y="'+(y-h*.15)+'" width="4" height="'+h*.2+'" fill="#3b2a1a"/><polygon points="'+x+','+(y-h)+' '+(x-h*.32)+','+(y-h*.1)+' '+(x+h*.32)+','+(y-h*.1)+'" fill="#2f5a34"/><polygon points="'+x+','+(y-h)+' '+(x+h*.32)+','+(y-h*.1)+' '+(x+h*.05)+','+(y-h*.1)+'" fill="#1f4426"/>');
+ const gate=(x,y,s,c)=>'<g transform="translate('+x+','+y+') scale('+s+')"><rect x="-40" y="-90" width="80" height="80" fill="none" stroke="'+c+'" stroke-width="9"/><rect x="-40" y="-90" width="80" height="80" fill="none" stroke="#fff" stroke-width="2" stroke-opacity=".35"/><rect x="-44" y="-10" width="8" height="12" fill="#333"/><rect x="36" y="-10" width="8" height="12" fill="#333"/></g>';
+ g+=gate(640,330,.5,'#ff7a1a')+gate(420,372,.7,'#ff7a1a')+gate(760,430,1,'#0a84ff');
+ [[300,420],[340,430],[380,440]].forEach(([x,y])=>g+='<rect x="'+x+'" y="'+(y-90)+'" width="14" height="90" fill="#eee"/>'+[0,1,2,3].map(k=>'<rect x="'+x+'" y="'+(y-80+k*22)+'" width="14" height="8" fill="#e0453a"/>').join('')+'<ellipse cx="'+(x+7)+'" cy="'+y+'" rx="10" ry="3" fill="#000" opacity=".25"/>');
+ g+='<polygon points="560,300 600,292 600,350 560,362" fill="#7b8494"/><polygon points="600,292 612,296 612,352 600,350" fill="#5a6270"/>';
+ g+='<path d="M140 640 C 260 560, 330 470, 420 330 S 600 250, 640 290 S 760 380, 760 360" fill="none" stroke="#64d2ff" stroke-width="2.5" stroke-dasharray="1 0"/><path d="M760 360 C 780 330, 860 330, 900 300" fill="none" stroke="#fff" stroke-width="1.5" stroke-dasharray="4 4" opacity=".7"/>';
+ [[420,330],[640,290],[760,360],[900,300]].forEach(([x,y],i)=>g+='<circle cx="'+x+'" cy="'+y+'" r="5" fill="'+(i<2?'#30d158':'#fff')+'" stroke="#0b0b0b" stroke-opacity=".3"/>');
+ const p=mk(760,352,1.15);g+='<g transform="rotate(-8 760 352)">'+drone(p,{noProp:0,pa:2})+'</g>';
+ for(let i=0;i<14;i++){g+='<line x1="'+(60+i*70)+'" y1="'+(120+(i%4)*40)+'" x2="'+(90+i*70)+'" y2="'+(114+(i%4)*40)+'" stroke="#fff" stroke-opacity=".35" stroke-width="1.2"/>'}
+ const tel='<div class="ov glass" style="right:14px;top:14px;width:228px;padding:10px 12px;font-size:12px;font-variant-numeric:tabular-nums"><div class="fl"><b style="font-size:20px;font-weight:600">19.7 s</b><span class="pill p-ok" style="margin-left:auto">FLYING</span></div>'+[['Speed','6.4 m/s'],['Altitude','1.69 m'],['Wind','4.1 m/s gusting 7'],['All-up mass','153 g'],['Thrust / weight','4.5'],['Battery','15.2 V . 71%'],['Gates','3 / 6'],['NN residual','2.94 m/s2']].map(r=>'<div class="fl" style="height:21px;color:var(--tx2)">'+r[0]+'<span style="margin-left:auto;color:var(--tx)">'+r[1]+'</span></div>').join('')+'</div>';
+ const cmp='<div class="ov glass" style="left:12px;right:12px;bottom:58px;height:62px;padding:8px 12px;display:flex;gap:14px;align-items:center;font-size:12px"><div class="tbtn" style="color:var(--tx)">'+I('pause')+'</div><svg width="540" height="40" viewBox="0 0 540 40"><rect width="540" height="40" rx="4" fill="rgba(0,0,0,.25)"/><polyline points="'+Array.from({length:60},(_,i)=>(i*9)+','+(20+Math.sin(i*.5)*8*Math.exp(-i/40)+Math.sin(i*1.7)*2).toFixed(1)).join(' ')+'" fill="none" stroke="#64d2ff" stroke-width="1.4"/><polyline points="'+Array.from({length:60},(_,i)=>(i*9)+','+(22+Math.sin(i*.4+1)*12*Math.exp(-i/60)).toFixed(1)).join(' ')+'" fill="none" stroke="#ff9f0a" stroke-width="1.2" stroke-dasharray="3 2"/><line x1="354" x2="354" y1="0" y2="40" stroke="#fff" stroke-opacity=".6"/></svg><div class="mini" style="line-height:1.5"><span style="color:#64d2ff">Tracking error, policy run 7</span><br><span style="color:#ff9f0a">PID only baseline</span></div><div class="flex"></div><span class="btn">'+I('episode','','width:13px;height:13px')+'Record</span><span class="btn p">Send to Training</span></div>';
+ return sceneSVG(g,bg)+'<div class="ov glass hud" style="background:rgba(30,30,34,.78)"><b>Obstacle course . Breezy afternoon</b><div class="mini">Seed 1 . PID + NN residual run 7 . 24 C . 1.174 kg/m3</div><div class="r">'+I('dep','','width:13px;height:13px;color:var(--pur)')+'Vehicle from Design: Frame o7 11.0 g, all-up 153 g</div><div class="r" style="color:var(--org)">'+I('warn','','width:13px;height:13px;color:var(--org)')+'Stale: FC board rev 196 adds 1.2 g. Re-sync vehicle</div></div>'+tel+cmp+navbar()};
+V.training=()=>{const W=600,H=260;let c='<svg viewBox="0 0 '+W+' '+H+'" width="100%" height="'+H+'"><rect width="'+W+'" height="'+H+'" fill="none"/>';
+ for(let i=0;i<=5;i++){const y=20+i*40;c+='<line x1="44" x2="'+(W-10)+'" y1="'+y+'" y2="'+y+'" stroke="rgba(255,255,255,.06)"/><text x="36" y="'+(y+4)+'" fill="#8e8e93" font-size="10" text-anchor="end" font-family="-apple-system">'+(8-i*1.5).toFixed(1)+'</text>'}
+ const f=(i,a,b,k,n)=>a+(b-a)*(1-Math.exp(-i/k))+Math.sin(i*1.9+n)*.12+Math.sin(i*.7)*.08;
+ let pid=[],nn=[],band=[],band2=[];for(let i=0;i<=60;i++){const x=44+i*(W-54)/90;pid.push([x,20+(8-f(i,7.53,3.4,12,0)*1)/1.5*40*1.5/1.5]);}
+ pid=[];for(let i=0;i<=30;i++){const x=44+i*(W-54)/90,v=f(i,7.53,3.4,8,0);pid.push([x,20+(8-v)/1.5*40])}
+ for(let i=30;i<=58;i++){const x=44+i*(W-54)/90,v=f(i-30,3.4,2.38,9,2);nn.push([x,20+(8-v)/1.5*40]);band.push([x,20+(8-v-.35)/1.5*40]);band2.unshift([x,20+(8-v+.35)/1.5*40])}
+ c+='<polygon points="'+pts(band.concat(band2))+'" fill="rgba(191,90,242,.15)"/><polyline points="'+pts(pid)+'" fill="none" stroke="#64d2ff" stroke-width="2"/><polyline points="'+pts(nn)+'" fill="none" stroke="#bf5af2" stroke-width="2"/>';
+ const xe=nn[nn.length-1][0];c+='<line x1="'+xe+'" x2="'+(W-10)+'" y1="'+nn[nn.length-1][1]+'" y2="'+(nn[nn.length-1][1]+4)+'" stroke="#bf5af2" stroke-dasharray="3 3" opacity=".6"/><line x1="'+pid[30][0]+'" x2="'+pid[30][0]+'" y1="14" y2="'+(H-30)+'" stroke="rgba(255,255,255,.25)" stroke-dasharray="2 3"/><text x="'+(pid[30][0]+6)+'" y="30" fill="#bfbfc4" font-size="10" font-family="-apple-system">Stage 2: NN residual (ES)</text><text x="52" y="'+(H-36)+'" fill="#bfbfc4" font-size="10" font-family="-apple-system">Stage 1: PID gains (CEM)</text><text x="'+(W/2)+'" y="'+(H-6)+'" fill="#8e8e93" font-size="10" text-anchor="middle" font-family="-apple-system">Iteration (of 90)</text>';
+ c+='<circle cx="'+xe+'" cy="'+nn[nn.length-1][1]+'" r="4" fill="#bf5af2" stroke="#fff" stroke-width="1.5"/><text x="'+(xe+8)+'" y="'+(nn[nn.length-1][1]-8)+'" fill="#fff" font-size="11" font-family="-apple-system">2.38</text></svg>';
+ const eps=[['412','Gust 7 m/s . prop damaged','2.1','ok'],['411','Snow . -6 C . 2.1 km','2.6','ok'],['410','Kick + flip recovery','3.9','warn'],['409','Calm . payload +20 g','1.7','ok'],['408','Rain 18 mm/h . fog','2.4','ok'],['407','Crash at 4.2 s','9.0','bad']];
+ let h='<div style="position:absolute;inset:0;background:#1f2023;padding:14px 16px 60px;display:grid;grid-template-columns:1fr 300px;grid-template-rows:auto 1fr;gap:12px">';
+ h+='<div class="glass" style="padding:12px 14px;grid-column:1"><div class="fl" style="font-size:12px"><b>Tracking cost</b><span class="mini">lower is better . 64 randomized episodes per iteration . common random numbers</span><div class="flex"></div><span class="fl mini"><i style="width:10px;height:2px;background:#64d2ff;display:inline-block"></i>PID</span><span class="fl mini"><i style="width:10px;height:2px;background:#bf5af2;display:inline-block"></i>NN</span></div>'+c+'</div>';
+ h+='<div class="glass" style="padding:10px 12px;grid-row:1/3;grid-column:2;font-size:12px"><div style="font-size:11px;font-weight:600;color:var(--tx3);margin-bottom:6px">EPISODES . ITERATION 58</div>'+eps.map((e,i)=>'<div class="fl" style="height:46px;border-bottom:1px solid var(--sep);'+(i==2?'background:rgba(10,132,255,.14);margin:0 -6px;padding:0 6px;border-radius:6px':'')+'"><div style="width:44px;height:32px;border-radius:4px;background:linear-gradient(#89a7c9 45%,#5a7d45 45%);flex:none;position:relative"><svg viewBox="0 0 44 32" width="44" height="32"><path d="M2 28 C 12 20, 20 8, 42 6" stroke="'+(e[3]=='bad'?'#ff453a':'#64d2ff')+'" stroke-width="1.4" fill="none"/></svg></div><div style="min-width:0;flex:1"><div>Episode '+e[0]+'</div><div class="mini" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+e[1]+'</div></div><span class="pill '+(e[3]=='ok'?'p-ok':e[3]=='warn'?'p-stale':'p-gray')+'" style="'+(e[3]=='bad'?'background:rgba(255,69,58,.2);color:#ff6b60':'')+'">'+e[2]+'</span></div>').join('')+'<div class="btns"><span class="btn">'+I('episode','','width:13px;height:13px')+'Replay in Sim</span></div></div>';
+ const hm=[];for(let r=0;r<6;r++)for(let k=0;k<16;k++){const v=(Math.sin(r*1.3+k*.6)+1)/2;hm.push('<rect x="'+(k*17)+'" y="'+(r*13)+'" width="16" height="12" rx="2" fill="rgba(191,90,242,'+(.15+v*.75).toFixed(2)+')"/>')}
+ h+='<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px"><div class="glass" style="padding:10px 12px;font-size:12px"><div style="font-size:11px;font-weight:600;color:var(--tx3);margin-bottom:8px">GAINS . CEM RUN 3</div>'+[['Rate P roll/pitch','0.084'],['Rate I','0.31'],['Rate D','0.0021'],['Angle P','6.2'],['Velocity P','1.9']].map(r=>'<div class="fl" style="height:22px;color:var(--tx2)">'+r[0]+'<span style="margin-left:auto;color:var(--tx);font-variant-numeric:tabular-nums">'+r[1]+'</span></div>').join('')+'</div><div class="glass" style="padding:10px 12px;font-size:12px"><div style="font-size:11px;font-weight:600;color:var(--tx3);margin-bottom:8px">DOMAIN RANDOMIZATION COVERAGE</div><svg width="272" height="78" viewBox="0 0 272 78">'+hm.join('')+'</svg><div class="mini" style="margin-top:6px">Wind 0 to 9 m/s . -10 to 38 C . 0 to 2.5 km . mass 150 to 175 g</div></div></div></div>';
+ return h+'<div class="ov glass toast">'+I('warn','','width:14px;height:14px;color:var(--org)')+'Plant changed upstream (board rev 196, +1.2 g). Run 7 keeps training on rev 195 vehicle.<span class="btn">Fork run on new vehicle</span></div>'};
+V.manufacture=()=>{const p=mk(523,420,3.2);let g='<rect width="'+VW+'" height="'+VH+'" fill="url(#bgm)"/>';
+ g+=gridFloor(p,130,10);g+=box(p,-110,-110,110,110,0,3,'rgba(60,64,72,.55)','#2c2f35','#25282d');
+ const offs=[[-52,-52],[52,-52],[-52,52],[52,52]];offs.forEach(([x,y],i)=>{const pp=(a,b,c)=>p(a*.55+x,b*.55+y,c);g+=frameSVG(pp,3.2,{top:i==0?'url(#cfs)':'url(#cf)',side:i==0?'#204c8c':'#2b2e34'});
+  const r=circ([0,0],52,40).map(q=>pp(q[0],q[1],3.3));g+='<polygon points="'+pts(r)+'" fill="none" stroke="'+(i==0?'#30d158':'rgba(48,209,88,.4)')+'" stroke-width="1.1" stroke-dasharray="'+(i==0?'0':'4 3')+'"/>'});
+ const tool=p(-52+28,-52-20,3.3);g+='<g><rect x="'+(tool[0]-5)+'" y="'+(tool[1]-90)+'" width="10" height="70" fill="#c9ccd2"/><rect x="'+(tool[0]-3)+'" y="'+(tool[1]-22)+'" width="6" height="22" fill="#8f949c"/><rect x="'+(tool[0]-12)+'" y="'+(tool[1]-130)+'" width="24" height="44" rx="3" fill="#6d727b"/></g>';
+ const ops=[['Face . 0.2 mm','done'],['Drill M3 x16','done'],['2D contour . 1.5 mm end mill','63%'],['Arm truss pockets','queued']];
+ return sceneSVG(g,'<linearGradient id="bgm" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#454b57"/><stop offset="1" stop-color="#22252b"/></linearGradient>')+cube()+triad()+navbar()+'<div class="ov glass" style="right:14px;bottom:58px;width:250px;padding:10px 12px;font-size:12px"><div style="font-size:11px;font-weight:600;color:var(--tx3);margin-bottom:6px">OPERATIONS . SETUP 1</div>'+ops.map(o=>'<div class="fl" style="height:24px">'+I(o[1]=='done'?'checkc':'cam','','width:14px;height:14px;color:'+(o[1]=='done'?'var(--grn)':'var(--tx2)'))+o[0]+'<span class="pill '+(o[1]=='done'?'p-ok':o[1]=='queued'?'p-gray':'p-run')+'" style="margin-left:auto">'+o[1]+'</span></div>').join('')+'<div class="mini" style="margin-top:6px">Est. 14 min . 4 frames per 220 x 220 sheet</div></div>'+hud('CF plate 3 mm . 4-up nest','Stock 220 x 220 x 3 . 3K twill . WCS top-left',[['dep','Toolpaths follow Frame o7. Regenerate if outcome changes.'],['export','Also exports STEP + KiCad + BOM (9 parts) bundle','var(--teal)']])};
+const COL={generative:['#bf5af2','rgba(191,90,242,.18)'],design:['#0a84ff','rgba(10,132,255,.18)'],electronics:['#30d158','rgba(48,209,88,.16)'],simulation:['#64d2ff','rgba(100,210,255,.16)'],training:['#bf5af2','rgba(191,90,242,.18)'],assembly:['#ff9f0a','rgba(255,159,10,.16)'],render:['#ffd60a','rgba(255,214,10,.14)'],manufacture:['#8e8e93','rgba(142,142,147,.2)']};
+function fl(ws,t,s,pill){const c=COL[ws];return '<div class="flow" data-go="'+ws+'"><div class="fi" style="background:'+c[1]+';color:'+c[0]+'">'+I(WS[ws].icon)+'</div><div class="d"><b style="font-weight:500">'+t+'</b><span>'+s+'</span></div>'+(pill||'')+'</div>'}
+const ar='<div class="arrow"></div>';
+function flowSec(up,down){return '<div class="sec"><h4>'+I('dep','','width:12px;height:12px;color:var(--pur)')+'UPSTREAM</h4>'+up+'</div><div class="sec"><h4>'+I('dep','','width:12px;height:12px;color:var(--pur);transform:scaleX(-1)')+'FEEDS</h4>'+down+'</div>'}
+function kv(k,v,u,pop){return '<div class="kv"><span class="k">'+k+'</span>'+(pop?'<div class="pop">'+v+'</div>':'<div class="fld">'+v+(u?'<span class="u">'+u+'</span>':'')+'</div>')+'</div>'}
+const S='<span class="pill p-stale">stale</span>',OK='<span class="pill p-ok">current</span>',RUN=x=>'<span class="pill p-run">'+x+'</span>';
+const INS={
+design:()=>'<div class="sec"><h4>EXTRUDE . MOTOR PADS<span class="x">'+I('chevd','','width:10px;height:10px')+'</span></h4>'+kv('Profiles','4 selected','',0)+kv('Direction','One side','',1)+kv('Distance','1.2','mm')+kv('Operation','Join','',1)+kv('Taper','0','deg')+'<div class="btns"><span class="btn">Cancel</span><span class="btn p">OK</span></div></div>'+flowSec(fl('generative','Frame study . Outcome 7','arm 60.2 mm . 3 mm CF . 11.0 g',OK),fl('electronics','FC board hole pattern','30.5 mm from motor pads',S)+ar+fl('simulation','Obstacle course','mass, inertia, arm length',S)+ar+fl('manufacture','CF plate nest','toolpaths regenerate',OK))+'<div class="sec mini">Editing a feature downstream of a generated body adds a design override. The study keeps its outcome.</div>',
+generative:()=>'<div class="sec"><h4>OUTCOME 7</h4>'+kv('Mass','11.0','g')+kv('Safety factor','2.2','')+kv('Max stress','200','MPa')+kv('Deflection','0.079','mm')+kv('Material','Carbon plate 3 mm','',1)+kv('Method','Frame (truss)','',1)+'<div class="btns"><span class="btn p">Create Design</span><span class="btn">Compare</span></div></div>'+flowSec(fl('simulation','Crash 6 g corner','load case pulled from flight peaks',RUN('auto')),fl('design','Frame component','linked body . overrides 1',OK)+ar+fl('simulation','Flight vehicle','re-run queued on change','<span class="pill p-gray">queued</span>')+ar+fl('training','NN residual run 7','plant updated next iteration',S))+'<div class="sec"><h4>STUDY</h4><div class="mini">24 outcomes in 38 s . topology + frame solvers . deterministic seed 7</div><div class="bar"><i style="width:100%;background:var(--grn)"></i></div></div>',
+assembly:()=>'<div class="sec"><h4>JOINT . REVOLUTE</h4>'+kv('Component 1','Motor 1404 . 1','',1)+kv('Component 2','Frame','',1)+kv('Axis','Z (shaft)','',1)+kv('Limits','None','',1)+kv('Friction','0.002','N m s')+'<div class="btns"><span class="btn">Animate</span><span class="btn p">OK</span></div></div>'+flowSec(fl('design','Frame motor pads','joint origin snaps to pad centre',OK)+fl('electronics','FC rigid group','standoffs 9 mm',S),fl('simulation','Rigid body model','4 rotors . inertia 1.9e-4 kg m2',S)+ar+fl('render','Exploded . White','motion study clip','<span class="pill p-gray">done</span>')),
+electronics:()=>'<div class="sec"><h4>BOARD . FC 30x30</h4>'+kv('Revision','196 (unpushed)','',0)+kv('Layers','4','')+kv('Thickness','1.6','mm')+kv('Outline','From Frame hub','',1)+'<div class="kv"><span class="k">Live 3D link</span><div class="sw"></div></div><div class="btns"><span class="btn p">Push to 3D</span><span class="btn">Mount on face</span></div></div><div class="sec"><h4>'+I('drc','','width:12px;height:12px;color:var(--grn)')+'CHECKS<span class="x">2 unrouted</span></h4><div class="fl mini" style="height:20px">'+I('warn','','width:12px;height:12px;color:var(--org)')+'MOTOR4 not routed</div><div class="fl mini" style="height:20px">'+I('warn','','width:12px;height:12px;color:var(--org)')+'VBAT pour island</div></div>'+flowSec(fl('design','Frame hub + pads','outline and 30.5 mm holes',OK),fl('design','Flight controller component','rev 195 in 3D',S)+ar+fl('simulation','Vehicle mass','+1.2 g on push',S)+ar+fl('manufacture','KiCad + Gerber export','rev 196 on export',OK)),
+simulation:()=>'<div class="sec"><h4>SCENARIO</h4>'+kv('Course','Obstacle course','',1)+kv('Weather','Breezy afternoon','',1)+kv('Controller','PID + NN run 7','',1)+kv('Seeds','1 to 32','')+kv('Speed','1x','',1)+'<div class="btns"><span class="btn p">Fly</span><span class="btn">Batch 32</span></div></div><div class="sec"><h4>RESULT . SEED 1</h4><div class="kv"><span class="k">Min clearance</span><div class="fld">0.21<span class="u">m</span></div></div><div class="kv"><span class="k">Energy</span><div class="fld">0.94<span class="u">Wh</span></div></div><div class="kv"><span class="k">Peak load</span><div class="fld">5.8<span class="u">g</span></div></div></div>'+flowSec(fl('generative','Frame o7','11.0 g . arm 60.2 mm',OK)+fl('electronics','FC board','rev 195 . 6.8 g',S)+fl('training','Policy run 7','checkpoint it 58',RUN('64%')),fl('training','Episodes','failures sent as hard cases','<span class="pill p-link">12 new</span>')+ar+fl('generative','Crash 6 g load case','peak loads back to study',OK)),
+training:()=>'<div class="sec"><h4>RUN 7 . NN RESIDUAL</h4>'+kv('Method','Evolution strategies','',1)+kv('Pairs','32 mirrored','')+kv('Sigma','0.05','')+kv('Learning rate','0.02','')+kv('Network','16-32-32-4','')+'<div class="kv"><span class="k">Progress</span><div style="flex:1"><div class="bar" style="margin:0"><i style="width:64%"></i></div><div class="mini" style="margin-top:3px">it 58 / 90 . 11 min left . 8 cores</div></div></div><div class="btns"><span class="btn">Pause</span><span class="btn g">Promote to Sim</span></div></div>'+flowSec(fl('simulation','Plant + scenarios','vehicle rev 195 . 64 episodes',S)+fl('training','PID gains . CEM run 3','frozen base controller',OK),fl('simulation','Controller in flight','checkpoint on promote',OK)+ar+fl('render','Flight clip','renders after promote','<span class="pill p-gray">waiting</span>')),
+render:()=>'<div class="sec"><h4>APPEARANCE . FRAME</h4><div class="fl" style="gap:8px;margin-bottom:8px">'+['#3a3d44','#d9dce1','#1c1f24','#b8862b','#2d6a43'].map((c,i)=>'<span style="width:34px;height:34px;border-radius:7px;background:radial-gradient(circle at 35% 30%,#fff3,'+c+' 55%);box-shadow:'+(i==0?'0 0 0 2px #0a84ff':'inset 0 0 0 .5px #fff2')+'"></span>').join('')+'</div>'+kv('Material','Carbon twill 3K','',1)+kv('Environment','Soft studio','',1)+kv('Exposure','0.4','EV')+kv('Samples','1024','')+'<div class="btns"><span class="btn p">Render</span><span class="btn">Add to Queue</span></div></div>'+flowSec(fl('manufacture','Stock material','CF 3K twill',OK)+fl('electronics','Board finish','matte green . ENIG',S),fl('render','Gallery','4 images . 1 clip','<span class="pill p-gray">4</span>')),
+manufacture:()=>'<div class="sec"><h4>SETUP 1 . MILLING</h4>'+kv('Machine','Desktop CNC 3-axis','',1)+kv('Stock','220 x 220 x 3','mm')+kv('Tool','1.5 mm end mill','',1)+kv('Feed','600','mm/min')+kv('Spindle','24000','rpm')+'<div class="btns"><span class="btn p">Post Process</span><span class="btn">Simulate</span></div></div><div class="sec"><h4>EXPORT BUNDLE</h4>'+[['STEP . assembly','ok'],['KiCad project . rev 196','ok'],['Gerber + drill','ok'],['3MF . canopy','ok'],['BOM . 9 parts','ok']].map(r=>'<div class="fl" style="height:22px;font-size:12px">'+I('doc','','width:13px;height:13px;color:var(--tx2)')+r[0]+'<span style="margin-left:auto">'+I('check','','width:12px;height:12px;color:var(--grn)')+'</span></div>').join('')+'</div>'+flowSec(fl('design','Frame o7 + overrides','4-up nest',OK)+fl('electronics','FC rev 196','fab outputs',OK),'<div class="mini">End of the chain. Exports are stamped with every upstream revision.</div>')
+};
+const JOBS=[['brain','NN residual . ES run 7','Training . it 58 of 90 . 11 min',64,'#bf5af2'],['stress','Crash load 6 g . FEA','Simulation . 12k tets',58,'#64d2ff'],['camera','Hero shot . Studio','Render . 412 of 1024 spp',40,'#ffd60a'],['wand','Frame study re-run','Generative . waits on FEA',0,'#8e8e93']];
+function renderJobs(){document.getElementById('jpop').innerHTML='<div class="fl" style="font-size:11px;font-weight:600;color:var(--tx3);padding:0 4px 4px">BACKGROUND JOBS . RUST CORE<span style="margin-left:auto;font-weight:400">8 cores</span></div>'+JOBS.map(j=>'<div class="jrow">'+I(j[0],'','width:16px;height:16px;color:'+j[4])+'<div class="d">'+j[1]+'<span>'+j[2]+'</span><div class="bar"><i style="width:'+j[3]+'%;background:'+j[4]+'"></i></div></div><div class="tbtn">'+I(j[3]?'pause':'clock','','width:13px;height:13px')+'</div></div>').join('')}
+function go(k){cur=k;const w=WS[k];document.getElementById('wsName').textContent=w.name;document.getElementById('wsIcon').innerHTML=I(w.icon);
+ renderRibbon();renderTree();renderTL();document.getElementById('vp').innerHTML=V[k]();
+ document.getElementById('insp').innerHTML=INS[k]();
+ document.querySelectorAll('.flow[data-go]').forEach(e=>e.onclick=()=>go(e.dataset.go));
+ document.getElementById('status').innerHTML='<span class="fl"><span class="dotg"></span>Rust core idle on main thread</span><span>'+w.name+' workspace</span><span class="fl">'+I('dep','','width:11px;height:11px;color:var(--pur)')+'Flow: Generative > Design > Electronics > Simulation > Training > Render > Manufacture</span><span style="margin-left:auto">3 stale . 3 running</span><span>mm . g . N</span>'}
+document.getElementById('wsBtn').onclick=e=>{e.stopPropagation();document.getElementById('wsMenu').classList.toggle('open')};
+document.getElementById('jobsBtn').onclick=e=>{e.stopPropagation();document.getElementById('jpop').classList.toggle('open')};
+document.addEventListener('click',()=>{document.getElementById('wsMenu').classList.remove('open');document.getElementById('jpop').classList.remove('open')});
+document.addEventListener('keydown',e=>{if(e.metaKey||e.ctrlKey){const i=+e.key;if(i>=1&&i<=8){e.preventDefault();go(ORDER[i-1])}}});
+renderMenu();renderJobs();
+const h=location.hash.slice(1);go(WS[h]?h:'design');
+</script></body></html>
