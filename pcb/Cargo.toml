@@ -9,3 +9,5 @@ publish = false
 [dependencies]
 serde.workspace = true
 serde_json.workspace = true
+rstar = "0.14"
+i_overlay = "9.2"
