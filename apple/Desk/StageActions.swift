@@ -36,6 +36,8 @@ struct StageActions {
         case "train.stop": sim.training.running
         case "train.fly_policy": sim.training.brainJSON != nil
         case "electronics.send_to_3d", "make.kicad": pcb.project != nil
+        // No hardware link before phase 7 (robot-protocol, task P7-2).
+        case _ where id.hasPrefix("robot."): false
         case _ where id.hasPrefix("simulate.") && flow.isHandProduct: false
         case "simulate.rerun": sim.generatedFrame != nil || flow.node("generate.frame")?.revision ?? 0 > 0
         default: true
@@ -150,7 +152,7 @@ struct StageActions {
         case .train: "train.start"
         case .render: "render.shots"
         case .assemble: "assemble.rebuild"
-        case .design, .electronics, .make: nil
+        case .design, .electronics, .make, .robot: nil
         }
     }
 

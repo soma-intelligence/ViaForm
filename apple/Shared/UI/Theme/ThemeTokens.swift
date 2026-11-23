@@ -92,10 +92,10 @@ enum ThemeVariant: String, CaseIterable, Sendable {
 
 // MARK: - Stages
 
-/// The 8 pipeline stages, keyed by the Rust core's stage ids (core/src/flow.rs).
+/// The 9 pipeline stages, keyed by the Rust core's stage ids (core/src/flow.rs).
 /// Each has one chip accent, used only on its active PipelineBar chip and its status dot.
 enum VFStage: String, CaseIterable, Sendable {
-    case design, generate, assemble, electronics, simulate, train, render, make
+    case design, generate, assemble, electronics, simulate, train, render, make, robot
 }
 
 /// A stage's chip colours in one variant.
@@ -232,6 +232,7 @@ struct VFPalette: Sendable {
                 .train: tone(0x4A7A0C),
                 .render: tone(0xCC3B2E),
                 .make: tone(0xB4500A),
+                .robot: tone(0x0E7490),
             ])
     }()
 
@@ -277,6 +278,7 @@ struct VFPalette: Sendable {
                 .train: tone(0x84CC16),
                 .render: tone(0xFF6B5A),
                 .make: tone(0xF97316),
+                .robot: tone(0x22D3EE),
             ])
     }()
 }

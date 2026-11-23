@@ -19,9 +19,10 @@ struct CommandInfo: Decodable, Identifiable, Hashable {
     let params: String
 }
 
-/// The engine's flattened scene, copied into Swift arrays so it outlives the Rust buffers.
-struct SceneData {
-    struct Mesh {
+/// The engine's flattened scene, copied into Swift arrays so it outlives the Rust buffers. Plain
+/// values only, so a scene built on the scene worker can be handed to the main thread.
+struct SceneData: Sendable {
+    struct Mesh: Sendable {
         var positions: [SIMD3<Float>]
         var normals: [SIMD3<Float>]
         var indices: [UInt32]
@@ -36,7 +37,7 @@ struct SceneData {
         var hi = SIMD3<Float>(repeating: -.infinity)
     }
 
-    struct Line {
+    struct Line: Sendable {
         var points: [SIMD3<Float>]
         var color: SIMD4<Float>
         var width: Float
@@ -52,7 +53,13 @@ struct SceneData {
     /// (another viewport, a workspace switched back to) reuses its GPU buffers.
     var serial = 0
     nonisolated(unsafe) private static var lastSerial = 0
-    static func nextSerial() -> Int { lastSerial += 1; return lastSerial }
+    private static let serialLock = NSLock()
+    static func nextSerial() -> Int {
+        serialLock.lock()
+        defer { serialLock.unlock() }
+        lastSerial += 1
+        return lastSerial
+    }
 }
 
 /// A sketch plane in world coordinates.
@@ -71,15 +78,45 @@ struct SketchPlane: Equatable {
 }
 
 /// The SolidCraft engine behind the C ABI: one open design.
-final class CADEngine {
-    let session: OpaquePointer
+///
+/// The session is not thread safe, so every call holds `lock`. The main thread runs commands;
+/// the scene worker (`DesignModel.rebuildScene`) builds big scenes off the main thread under the
+/// same lock. Code outside this class that takes `session` for its own C calls (the board link,
+/// the BOM, the generative engine) gets it on the main thread, which then holds the lock until
+/// the end of the current run loop turn, so a background build never overlaps those calls.
+final class CADEngine: @unchecked Sendable {
+    private let raw: OpaquePointer
+    private let lock = NSRecursiveLock()
+    /// The main thread holds the lock for the rest of this run loop turn.
+    private var mainHold = false
+
+    /// The session pointer for direct C calls. On the main thread, blocks until a scene build
+    /// on the worker is done and keeps the worker out until the run loop turns.
+    var session: OpaquePointer {
+        if Thread.isMainThread && !mainHold {
+            lock.lock()
+            mainHold = true
+            DispatchQueue.main.async { [self] in
+                mainHold = false
+                lock.unlock()
+            }
+        }
+        return raw
+    }
 
     init() {
         guard let s = sc_session_new() else { fatalError("SolidCraft engine could not start") }
-        session = s
+        raw = s
     }
 
-    deinit { sc_session_free(session) }
+    deinit { sc_session_free(raw) }
+
+    /// Runs `body` with the session to itself.
+    private func locked<T>(_ body: (OpaquePointer) throws -> T) rethrows -> T {
+        lock.lock()
+        defer { lock.unlock() }
+        return try body(raw)
+    }
 
     private static func take(_ p: UnsafeMutablePointer<CChar>?) -> String {
         guard let p else { return "null" }
@@ -106,14 +143,15 @@ final class CADEngine {
     /// Runs one command with parameters given as JSON text (the generic command dialog).
     @discardableResult
     func executeJSON(_ id: String, _ params: String) throws -> Any {
-        let reply = Self.take(sc_execute(session, id, params))
+        let reply = locked { Self.take(sc_execute($0, id, params)) }
         guard let obj = Self.parse(reply) as? [String: Any] else { throw EngineError(message: "No reply from \(id)") }
         if let error = obj["error"] as? String { throw EngineError(message: error) }
         return obj["ok"] ?? NSNull()
     }
 
     func runScript(_ script: Data) throws {
-        let reply = Self.take(sc_run_script(session, String(decoding: script, as: UTF8.self)))
+        let text = String(decoding: script, as: UTF8.self)
+        let reply = locked { Self.take(sc_run_script($0, text)) }
         if let obj = Self.parse(reply) as? [String: Any], let error = obj["error"] as? String {
             throw EngineError(message: error)
         }
@@ -125,18 +163,18 @@ final class CADEngine {
     }()
 
     func homeCamera() -> OrbitCamera? {
-        let text = Self.take(sc_home_camera(session))
+        let text = locked { Self.take(sc_home_camera($0)) }
         return try? JSONDecoder().decode(OrbitCamera.self, from: Data(text.utf8))
     }
 
     func bounds() -> (min: SIMD3<Double>, max: SIMD3<Double>)? {
-        guard let obj = Self.parse(Self.take(sc_bounds(session))) as? [String: [Double]],
+        guard let obj = Self.parse(locked { Self.take(sc_bounds($0)) }) as? [String: [Double]],
               let lo = obj["min"], let hi = obj["max"], lo.count == 3, hi.count == 3 else { return nil }
         return (SIMD3(lo[0], lo[1], lo[2]), SIMD3(hi[0], hi[1], hi[2]))
     }
 
     func sketchPlane() -> SketchPlane? {
-        guard let obj = Self.parse(Self.take(sc_sketch_plane(session))) as? [String: [Double]],
+        guard let obj = Self.parse(locked { Self.take(sc_sketch_plane($0)) }) as? [String: [Double]],
               let o = obj["origin"], let x = obj["x_dir"], let y = obj["y_dir"] else { return nil }
         return SketchPlane(origin: SIMD3(o[0], o[1], o[2]), x: SIMD3(x[0], x[1], x[2]), y: SIMD3(y[0], y[1], y[2]))
     }
@@ -160,8 +198,11 @@ final class CADEngine {
         }
     }
 
+    /// The whole scene. Safe from any thread (the scene worker calls it); `Perf` timings are
+    /// only taken on the main thread.
     func scene(camera: OrbitCamera) -> SceneData {
-        Perf.measure("scene.build") { buildScene(camera: camera, meshes: true) }
+        if Thread.isMainThread { return Perf.measure("scene.build") { buildScene(camera: camera, meshes: true) } }
+        return buildScene(camera: camera, meshes: true)
     }
 
     /// The camera-dependent part of the scene only (grid, axes and lines, the view radius): what
@@ -170,9 +211,21 @@ final class CADEngine {
         Perf.measure("scene.guides") { buildScene(camera: camera, meshes: false) }
     }
 
+    /// The guides, unless the scene worker holds the session (nil): a camera move never waits
+    /// for a build, the build brings its own guides.
+    func guidesIfFree(camera: OrbitCamera) -> SceneData? {
+        guard lock.try() else { return nil }
+        defer { lock.unlock() }
+        return guides(camera: camera)
+    }
+
     private func buildScene(camera: OrbitCamera, meshes: Bool) -> SceneData {
         let camText = (try? String(decoding: JSONEncoder().encode(camera), as: UTF8.self)) ?? "null"
-        guard let sc = Perf.measure("scene.ffi", { sc_scene_build(session, camText) }) else { return SceneData() }
+        lock.lock()
+        defer { lock.unlock() }
+        let built: OpaquePointer?
+        if Thread.isMainThread { built = Perf.measure("scene.ffi", { sc_scene_build(raw, camText) }) } else { built = sc_scene_build(raw, camText) }
+        guard let sc = built else { return SceneData() }
         defer { sc_scene_free(sc) }
         var out = SceneData()
         out.radius = sc_scene_radius(sc)

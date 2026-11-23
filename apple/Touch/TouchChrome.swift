@@ -1,8 +1,9 @@
 #if os(iOS)
 import SwiftUI
 
-// The iPad's top capsule: menu, title and revision, undo and redo, the pipeline strip, the
-// Items | History switch, the jobs and share buttons. Every target is 44 points or more.
+// The iPad's top capsule: the workspace dropdown button, title and revision, undo and redo, the
+// Items | History switch, the jobs and share buttons (VIAFORM-SPEC 6.2, no pipeline strip).
+// Every target is 44 points or more.
 
 /// The name a tool shows on touch screens (no other product's command names).
 extension Tool {
@@ -60,28 +61,27 @@ struct TouchTopCapsule: View {
     let showBrowser: () -> Void
     let showPalette: () -> Void
     let share: AnyView
+    /// The workspace dropdown is open (tap, or Command-0 on a hardware keyboard).
+    @Binding var workspacesOpen: Bool
 
     var body: some View {
-        // Wide first, then three stages in the strip, then Items | History in a menu.
+        // Wide first, then Items | History in a menu.
         ViewThatFits(in: .horizontal) {
-            row(visible: compact ? 3 : 8, switchInline: true)
-            row(visible: compact ? 3 : 5, switchInline: true)
-            row(visible: 3, switchInline: true)
-            row(visible: 3, switchInline: false)
+            row(switchInline: true)
+            row(switchInline: false)
         }
         .padding(.horizontal, 6)
         .frame(minHeight: 56)
         .vfSurface(.floating, radius: 28)
     }
 
-    private func row(visible: Int, switchInline: Bool) -> some View {
+    private func row(switchInline: Bool) -> some View {
         HStack(spacing: 4) {
+            TouchWorkspaceButton(flow: flow, stage: stage, compact: compact, isOpen: $workspacesOpen, open: open)
             TouchBarButton(symbol: "sidebar.left", label: "Browser", action: showBrowser)
             titleBlock
             TouchBarButton(symbol: "arrow.uturn.backward", label: "Undo", action: undo).disabled(!canUndo)
             TouchBarButton(symbol: "arrow.uturn.forward", label: "Redo", action: redo).disabled(!canRedo)
-            Spacer(minLength: 4)
-            TouchPipelineStrip(flow: flow, current: stage, visible: visible, open: open).fixedSize()
             Spacer(minLength: 4)
             if showsSideSwitch {
                 if switchInline { sideSwitch.fixedSize() } else { sideMenu }
@@ -138,99 +138,82 @@ struct TouchTopCapsule: View {
     }
 }
 
-/// The eight stages as icon chips joined by a line, five in view and the rest under More; the
-/// open stage is labelled in its accent, the others carry their status dot.
-struct TouchPipelineStrip: View {
+/// The workspace dropdown on touch: the open stage's icon in its accent, its name, a chevron and
+/// the attention badge. It opens the same rows as the Mac (VIAFORM-SPEC 6.0) as a popover on the
+/// iPad and a sheet on the iPhone.
+struct TouchWorkspaceButton: View {
     @Environment(\.viaFormTheme) private var theme
     let flow: FlowModel
-    let current: Workspace
-    var visible = 5
+    let stage: Workspace
+    var compact = false
+    @Binding var isOpen: Bool
     let open: (Workspace) -> Void
-
-    /// Pipeline order, always. Design, where the product starts, stays first; the rest is a
-    /// window around the open stage, so the open stage is always in view.
-    var shown: [Workspace] {
-        let all = Workspace.allCases
-        let n = min(visible, all.count)
-        if n >= all.count { return all }
-        let rest = Array(all.dropFirst())
-        let k = n - 1
-        let i = max(0, (rest.firstIndex(of: current) ?? 0))
-        let start = max(0, min(i - k / 2, rest.count - k))
-        return [all[0]] + Array(rest[start..<(start + k)])
-    }
+    @State private var showGraph = false
 
     var body: some View {
-        HStack(spacing: 0) {
-            ForEach(Array(shown.enumerated()), id: \.element) { i, w in
-                if i > 0 { Rectangle().fill(theme.hairline).frame(width: 10, height: 1.5) }
-                chip(w)
-            }
-            let rest = Workspace.allCases.filter { !shown.contains($0) }
-            if !rest.isEmpty {
-                Menu {
-                    ForEach(Workspace.allCases) { w in
-                        Button { open(w) } label: {
-                            Label("\(w.title), \(PipelineWords.describe(flow.stage(w)?.status ?? .empty))", systemImage: w.symbol)
-                        }
-                    }
-                } label: {
-                    let stale = rest.filter { [.stale, .failed].contains(flow.stage($0)?.status ?? .empty) }.count
-                    Image(systemName: "ellipsis").font(.system(size: 15, weight: .semibold))
-                        .foregroundStyle(theme.ink)
-                        .frame(width: 36, height: 36)
-                        .background(Circle().fill(theme.well))
-                        .overlay(alignment: .topTrailing) {
-                            if stale > 0 {
-                                Text("\(stale)").font(.system(size: 10, weight: .bold)).monospacedDigit()
-                                    .foregroundStyle(.black)
-                                    .frame(minWidth: 15, minHeight: 15)
-                                    .background(Circle().fill(theme.status(.stale)))
-                                    .offset(x: 4, y: -4)
-                            }
-                        }
-                        .frame(width: VFSize.touchTarget, height: VFSize.touchTarget)
-                        .contentShape(Rectangle())
+        let badge = WorkspaceMenu.badge(flow, current: stage)
+        Button { isOpen = true } label: {
+            HStack(spacing: 6) {
+                Image(systemName: stage.symbol).font(.system(size: 17, weight: .medium))
+                    .foregroundStyle(theme.stageFill(stage.vfStage))
+                if !compact {
+                    Text(stage.title.uppercased()).font(.system(size: 13, weight: .semibold)).tracking(VFTypeScale.capsTracking)
+                        .foregroundStyle(theme.ink).fixedSize()
                 }
-                .accessibilityLabel("More stages")
+                Image(systemName: "chevron.down").font(.system(size: 10, weight: .bold)).foregroundStyle(theme.inkSecondary)
+            }
+            .padding(.horizontal, 12)
+            .frame(minWidth: VFSize.touchTarget, minHeight: VFSize.touchTarget)
+            .background(Capsule().fill(theme.well))
+            .overlay(alignment: .topTrailing) { WorkspaceBadgeView(badge: badge, size: 17).offset(x: 4, y: -2) }
+            .contentShape(Capsule())
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(WorkspaceMenu.spoken(current: stage, badge: badge))
+        .accessibilityHint("Opens the list of stages")
+        .modifier(TouchWorkspacePresenter(compact: compact, isOpen: $isOpen) { menu })
+        .sheet(isPresented: $showGraph) {
+            NavigationStack {
+                ScrollView([.horizontal, .vertical]) {
+                    FlowGraphView(flow: flow, current: stage, open: { w in showGraph = false; open(w) })
+                }
+                .toolbar { ToolbarItem(placement: .confirmationAction) { Button("Done") { showGraph = false } } }
             }
         }
     }
 
-    private func chip(_ w: Workspace) -> some View {
-        let on = w == current
-        let status = (flow.stage(w)?.status ?? .empty)
-        let tone = VFStage(stageID: w.stage) ?? .design
-        return Button { open(w) } label: {
-            VStack(spacing: 2) {
-                HStack(spacing: 6) {
-                    Image(systemName: w.symbol).font(.system(size: 15, weight: .medium))
-                    if on { Text(w.title).font(.system(size: 14, weight: .semibold)).fixedSize() }
-                }
-                .foregroundStyle(theme.stageChipForeground(tone, active: on))
-                .fixedSize()
-                .padding(.horizontal, on ? 12 : 0)
-                .frame(minWidth: 36, minHeight: 36)
-                .background(Capsule().fill(on ? theme.stageFill(tone) : theme.well))
-                // The status inside the chip, at its bottom-trailing corner, as on the Mac.
-                .overlay(alignment: .bottomTrailing) {
-                    Group {
-                        if status == .empty {
-                            Circle().strokeBorder(theme.inkTertiary, lineWidth: 1.2).background(Circle().fill(theme.panel))
-                        } else {
-                            Circle().fill(theme.color(status)).overlay(Circle().strokeBorder(theme.panel, lineWidth: 1))
-                        }
-                    }
-                    .frame(width: 8, height: 8)
-                    .offset(x: on ? -4 : 1, y: 1)
-                }
-            }
-            .frame(minWidth: VFSize.touchTarget, minHeight: VFSize.touchTarget)
-            .contentShape(Rectangle())
+    private var menu: some View {
+        ScrollView {
+            WorkspaceMenuList(flow: flow, current: stage, touch: true,
+                              open: { w in isOpen = false; open(w) },
+                              updateAll: nil,
+                              showFlow: {
+                                  isOpen = false
+                                  DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) { showGraph = true }
+                              },
+                              close: { isOpen = false })
         }
-        .buttonStyle(.plain)
-        .accessibilityLabel("\(w.title), \(PipelineWords.describe(status))")
-        .accessibilityAddTraits(on ? .isSelected : [])
+        .frame(minWidth: compact ? nil : 380, idealWidth: compact ? nil : 380)
+        .background(theme.panel)
+    }
+}
+
+/// A popover on the iPad, a sheet with detents on the iPhone.
+private struct TouchWorkspacePresenter<Menu: View>: ViewModifier {
+    let compact: Bool
+    @Binding var isOpen: Bool
+    @ViewBuilder var menu: () -> Menu
+
+    func body(content: Content) -> some View {
+        if compact {
+            content.sheet(isPresented: $isOpen) {
+                menu().presentationDetents([.medium, .large]).presentationDragIndicator(.visible)
+            }
+        } else {
+            content.popover(isPresented: $isOpen, arrowEdge: .top) {
+                menu().frame(width: 380, height: 640)
+            }
+        }
     }
 }
 
@@ -327,7 +310,7 @@ struct TouchShareMenu: View {
 #endif
 
 #if os(iOS)
-/// Hardware keyboard on the iPad (Magic Keyboard): Command-K commands, Command-1 to Command-8
+/// Hardware keyboard on the iPad (Magic Keyboard): Command-0 workspaces, Command-K commands, Command-1 to Command-9
 /// stages, Command-] and Command-[ through them, Command-Z and Shift-Command-Z. Hidden buttons:
 /// holding Command lists them in the system's shortcut overlay.
 struct TouchKeyCommands: View {
@@ -336,9 +319,11 @@ struct TouchKeyCommands: View {
     var palette: () -> Void
     var undo: () -> Void
     var redo: () -> Void
+    var workspaces: () -> Void = {}
 
     var body: some View {
         ZStack {
+            Button("Show Workspaces", action: workspaces).keyboardShortcut("0", modifiers: .command)
             Button("Search Commands", action: palette).keyboardShortcut("k", modifiers: .command)
             Button("Undo", action: undo).keyboardShortcut("z", modifiers: .command)
             Button("Redo", action: redo).keyboardShortcut("z", modifiers: [.command, .shift])

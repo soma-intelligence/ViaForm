@@ -6,6 +6,10 @@ struct DeskFocus {
     var workspace: Workspace
     var open: (Workspace) -> Void
     var search: () -> Void
+    /// Opens or closes the workspace dropdown (Command-0).
+    var openWorkspaces: () -> Void = {}
+    /// Shows the project start (templates and recent projects).
+    var start: () -> Void = {}
     var toggleInspector: () -> Void = {}
     var toggleBottom: () -> Void = {}
     var shortcuts: () -> Void = {}
@@ -23,7 +27,7 @@ extension FocusedValues {
     }
 }
 
-/// The Workspace menu: Command-1 to Command-8 open the stages (the only Command-digit shortcuts
+/// The Workspace menu: Command-0 opens the workspace dropdown, Command-1 to Command-9 open the stages (the only Command-digit shortcuts
 /// in the app, so they never collide), Command-] and Command-[ step through them, Command-Return
 /// runs the stage's main action, Command-K searches every command, the panel toggles, and the
 /// keyboard sheet (Command-/).
@@ -31,7 +35,16 @@ struct DeskWorkspaceCommands: Commands {
     @FocusedValue(\.vfDesk) private var desk
 
     var body: some Commands {
+        CommandGroup(after: .newItem) {
+            Button("New from Template\u{2026}") { desk?.start() }
+                .keyboardShortcut("n", modifiers: [.command, .shift])
+                .disabled(desk == nil)
+        }
         CommandMenu("Workspace") {
+            Button("Show Workspaces") { desk?.openWorkspaces() }
+                .keyboardShortcut("0", modifiers: .command)
+                .disabled(desk == nil)
+            Divider()
             ForEach(Workspace.allCases) { w in
                 Button {
                     desk?.open(w)
@@ -77,6 +90,15 @@ struct DeskWorkspaceCommands: Commands {
         let all = Workspace.allCases
         let i = (desk.workspace.index + d + all.count) % all.count
         desk.open(all[i])
+    }
+}
+
+/// When the window opens on the project start: `--start`, or a launch with no flags at all
+/// (opened from the Finder or the Dock, not from a script).
+enum StartLaunch {
+    static var atLaunch: Bool {
+        let args = ProcessInfo.processInfo.arguments.dropFirst()
+        return args.contains("--start") || !args.contains { $0.hasPrefix("-") }
     }
 }
 

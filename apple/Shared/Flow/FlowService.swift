@@ -44,8 +44,25 @@ final class RustFlow: FlowService {
         return Self.take(vf_flow_tick(handle))
     }
 
-    /// The command catalog of the eight stages, no project needed.
+    /// The command catalog of the nine stages, no project needed.
     static func catalog() -> String { take(vf_flow_commands()) }
+
+    /// The graph presets the core knows among `names` ("drone", "hand", "arm"), each with its
+    /// artifact count, asked of a throwaway pipeline. The start window lists its templates from
+    /// this, so a preset the core does not have yet never shows.
+    static func presets(_ names: [String]) -> [String: Int] {
+        let probe = RustFlow()
+        var out: [String: Int] = [:]
+        for name in names {
+            let reply = probe.command(#"{"op":"set_graph","preset":"\#(name)"}"#)
+            guard !reply.contains("\"error\""),
+                  let data = probe.state().data(using: .utf8),
+                  let state = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+                  let nodes = state["nodes"] as? [Any] else { continue }
+            out[name] = nodes.count
+        }
+        return out
+    }
 
     static func take(_ p: UnsafeMutablePointer<CChar>?) -> String {
         guard let p else { return "{}" }
@@ -65,7 +82,7 @@ final class MockFlow: FlowService {
 
     private static let stages: [(String, String)] = [
         ("design", "Design"), ("generate", "Generate"), ("assemble", "Assemble"), ("electronics", "Electronics"),
-        ("simulate", "Simulate"), ("train", "Train"), ("render", "Render"), ("make", "Make"),
+        ("simulate", "Simulate"), ("train", "Train"), ("render", "Render"), ("make", "Make"), ("robot", "Robot"),
     ]
 
     /// id, stage, name, label, revision, revision name, status, summary, reason, inputs

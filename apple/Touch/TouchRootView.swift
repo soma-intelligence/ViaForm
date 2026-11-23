@@ -53,6 +53,8 @@ struct TouchShell: View {
     @State private var isolated: [String] = []
     /// The product pipeline, shared with the Mac window's (see `FlowModel`).
     @State private var flow = FlowModel()
+    /// The workspace dropdown (popover on iPad, sheet on iPhone).
+    @State private var showWorkspaces = ProcessInfo.processInfo.arguments.contains("--show-workspaces")
     @Environment(\.horizontalSizeClass) private var hSize
 
     private var compact: Bool { hSize == .compact }
@@ -79,7 +81,8 @@ struct TouchShell: View {
         stageView
             .safeAreaInset(edge: .top, spacing: 0) { topCapsule }
             .background(TwoFingerTapUndo { undo() }.allowsHitTesting(false))
-            .background(TouchKeyCommands(stage: stage, open: open, palette: { showPalette = true }, undo: undo, redo: redo))
+            .background(TouchKeyCommands(stage: stage, open: open, palette: { showPalette = true }, undo: undo, redo: redo,
+                                         workspaces: { showWorkspaces.toggle() }))
             .animation(.snappy(duration: VFMotion.standard), value: side)
             .animation(.snappy(duration: VFMotion.fast), value: model.tool)
             .pencilDoubleTapTogglesTool(model)
@@ -181,6 +184,8 @@ struct TouchShell: View {
                         .padding(.trailing, 12).padding(.bottom, 84)
                 }
             }
+        case .robot:
+            TouchRobotStage(flow: flow)
         case .design, .assemble, .render, .make:
             if compact { compactDesign } else { designStage }
         }
@@ -308,7 +313,8 @@ struct TouchShell: View {
                 compact: compact, side: $side, showsSideSwitch: onDesign,
                 open: open, undo: undo, redo: redo,
                 showBrowser: { showBrowser = true }, showPalette: { showPalette = true },
-                share: AnyView(TouchShareMenu(export: { exporting = $0 }, showBom: { showBom = true }, showLibrary: { showLibrary = true }))
+                share: AnyView(TouchShareMenu(export: { exporting = $0 }, showBom: { showBom = true }, showLibrary: { showLibrary = true })),
+                workspacesOpen: $showWorkspaces
             )
             if onDesign, !compact { viewCluster }
         }

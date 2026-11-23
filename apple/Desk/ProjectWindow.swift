@@ -2,10 +2,11 @@
 import AppKit
 import SwiftUI
 
-/// The Mac project window: one product, its eight stages in the toolbar's pipeline bar.
+/// The Mac project window: one product and its nine stages, switched from the workspace dropdown
+/// at the far left of the ribbon (decision D-10).
 ///
-/// Toolbar: the product and the open stage's revision, undo and redo, the pipeline bar, command
-/// search (Command-K), jobs, BOM, libraries and the inspector toggle. Sidebar: BROWSER over
+/// Toolbar: the product and the open stage's revision, undo and redo, the job capsule while a job
+/// runs, command search (Command-K), the flow graph, jobs, BOM, libraries and the inspector toggle. Sidebar: BROWSER over
 /// PIPELINE OUTPUTS. Detail: the stage's ribbon, its workspace (3D model, generative study,
 /// board, flight), its bottom panel and the status bar. Inspector: the selection, its flow and
 /// the stage's section, or the libraries. Every workspace of the old window is embedded as is.
@@ -31,7 +32,14 @@ struct ProjectWindow: View {
     @State private var showBottom = true
     @State private var showBom = BomModel.launchRequested
     @State private var showData = false
-    @State private var flowCard: Workspace?
+    /// The workspace dropdown is open (click or Command-0).
+    @State private var showWorkspaces = ProcessInfo.processInfo.arguments.contains("--show-workspaces")
+    /// The flow graph popover (dropdown footer, toolbar button, "Show Flow").
+    @State private var showGraph = false
+    /// The project start (templates, recent projects) instead of the project.
+    @State private var showStart = StartLaunch.atLaunch
+    /// Stale banners hidden for this session, by stage and reason.
+    @State private var dismissedBanners: Set<String> = []
     @State private var tabs: [Workspace: String] = [:]
     @State private var detailWidth: CGFloat = 900
     @State private var hiddenLayers: Set<String> = []
@@ -44,7 +52,7 @@ struct ProjectWindow: View {
                              openTab: { w, t in tabs[w] = t },
                              showBom: { showBom = true },
                              showLibrary: { inspectorMode = .library; showInspector = true },
-                             showFlow: { flowCard = $0 })
+                             showFlow: { _ in showGraph = true })
         a.current = workspace
         return a
     }
@@ -56,15 +64,75 @@ struct ProjectWindow: View {
     }
 
     var body: some View {
+        if showStart {
+            startScreen
+        } else {
+            project
+        }
+    }
+
+    // MARK: Start
+
+    private var startScreen: some View {
+        StartWindow(start: start, open: { url in
+            if let url { FileActions.open(url, model) } else { FileActions.open(model) }
+            showStart = false
+        })
+        .navigationTitle("ViaForm")
+        .navigationSubtitle("Start")
+        .toolbar {
+            ToolbarItem(placement: .primaryAction) {
+                Button { showStart = false } label: { Label("Close Start", systemImage: "xmark") }
+                    .help("Back to the open project")
+            }
+        }
+        .focusedSceneValue(\.vfDesk, DeskFocus(workspace: workspace, open: { showStart = false; workspace = $0 }, search: {},
+                                                start: { showStart = false }))
+        .projectFilesContext(design: model, pcb: pcb, bom: bom, flow: flow)
+        .background(WindowSizer())
+    }
+
+    /// Opens a template or a blank start: the product's design and its pipeline graph.
+    private func start(_ t: StartTemplate) {
+        let ctx = ProjectFiles.Context(design: model, pcb: pcb, bom: bom, flow: flow)
+        if t.kind == .importFile {
+            FileActions.open(model)
+            showStart = false
+            return
+        }
+        switch t.preset {
+        case "drone":
+            if pcb.project?.components.isEmpty ?? true { pcb.loadSample() }
+            DeskSamples.drone(model, pcb: pcb)
+            flow.newDocument(product: t.product)
+            generate.openSample("drone")
+        case "hand":
+            DeskSampleHand.build(into: model)
+            flow.newDocument(product: t.product, graph: "hand")
+            generate.openSample("hand")
+        case let preset?:
+            // A preset with no sample model yet (the arm until phase 2): its graph and name.
+            model.newDesign()
+            flow.newDocument(product: t.product, graph: preset)
+        case nil:
+            ProjectFiles.newDesign(model, in: ctx)
+            if t.kind == .board { pcb.newProject() }
+        }
+        workspace = t.stage
+        showStart = false
+    }
+
+    private var project: some View {
         let actions = actions
         let screen = screen
-        NavigationSplitView(columnVisibility: $columns) {
+        return NavigationSplitView(columnVisibility: $columns) {
             BrowserSidebar(workspace: workspace, model: model, flow: flow, actions: actions)
                 .navigationSplitViewColumnWidth(min: VFSize.sidebarMin, ideal: 256, max: VFSize.sidebarMax)
         } detail: {
             VStack(spacing: 0) {
                 content(actions)
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .overlay(alignment: .top) { staleBanner(actions) }
                     .overlay(alignment: .leading) {
                         if showData { DataPanel(model: model, shown: $showData).transition(.move(edge: .leading)) }
                     }
@@ -89,11 +157,20 @@ struct ProjectWindow: View {
                                trailing: AnyView(bottomToggle), status: screen.status)
             }
             .safeAreaInset(edge: .top, spacing: 0) {
-                // Electronics has one ribbon: the board editor's own (with CHECK and 3D groups).
+                // The workspace dropdown at the far left, then the stage's ribbon. Electronics has
+                // one ribbon, the board editor's own (with CHECK and 3D groups): the dropdown rides
+                // at its left edge instead.
                 if workspace != .electronics {
-                    StageRibbon(workspace: workspace, model: model, flow: flow, tab: tabBinding, actions: actions, primary: screen.primary,
-                                dialogDocked: showInspector && inspectorMode == .inspector)
-                        .disabled(EngineGate.shared.shut)
+                    HStack(spacing: 0) {
+                        dropdown(actions)
+                        VFHairline(vertical: true)
+                        StageRibbon(workspace: workspace, model: model, flow: flow, tab: tabBinding, actions: actions, primary: screen.primary,
+                                    dialogDocked: showInspector && inspectorMode == .inspector)
+                            .disabled(EngineGate.shared.shut)
+                    }
+                    .fixedSize(horizontal: false, vertical: true)
+                    .vfSurface(.ribbon)
+                    .overlay(alignment: .bottom) { VFHairline() }
                 }
             }
             .background(theme.chrome)
@@ -157,6 +234,8 @@ struct ProjectWindow: View {
             if w == .render { tabs[.render] = "RENDER" }
         }
         .focusedSceneValue(\.vfDesk, DeskFocus(workspace: workspace, open: { workspace = $0 }, search: { showPalette = true },
+                                                openWorkspaces: { showWorkspaces.toggle() },
+                                                start: { showStart = true },
                                                 toggleInspector: { inspectorMode = .inspector; showInspector.toggle() },
                                                 toggleBottom: { showBottom.toggle() },
                                                 shortcuts: { showShortcuts.toggle() },
@@ -289,19 +368,6 @@ struct ProjectWindow: View {
     /// The toolbar is narrow: icon-only search and jobs.
     private var compactToolbar: Bool { detailWidth < 1150 }
 
-    /// The width the pipeline bar gets in the toolbar: the detail column less the title, the
-    /// navigation buttons and the trailing items. ViewThatFits then picks the fold that fits.
-    private var pipelineWidth: CGFloat {
-        let sub = (screen.revision.map { "\(workspace.title) · \($0)" } ?? workspace.title)
-        let titleWidth = CGFloat(max(title.count * 8, sub.count * 7)) + 24
-        let leading: CGFloat = 3 * 34 + 16
-        let jobs: CGFloat = flow.jobs.isEmpty || compactToolbar || detailWidth < 1500 ? 34 : 280
-        let trailing: CGFloat = (compactToolbar ? 34 : 190) + jobs + 3 * 34
-        // The toolbar spans the detail column and the inspector.
-        let width = detailWidth + (showInspector ? VFSize.inspector : 0)
-        return max(150, width - titleWidth - leading - trailing - 110)
-    }
-
     private func statusLine(_ screen: StageScreen) -> String {
         // The 3D stages name what is picked in the viewport itself ("Face of Middle Distal"),
         // the same words as the selection card, never a stale flow selection.
@@ -334,7 +400,7 @@ struct ProjectWindow: View {
         }
     }
 
-    private var hasBottom: Bool { [.design, .assemble, .electronics, .train].contains(workspace) }
+    private var hasBottom: Bool { [.design, .assemble, .electronics, .train, .robot].contains(workspace) }
 
     private var bottomToggle: some View {
         Button { showBottom.toggle() } label: {
@@ -358,7 +424,8 @@ struct ProjectWindow: View {
             GenerateView(model: generate, design: model, theme: theme.viewportTheme, compact: embeddedCompact)
         case .electronics:
             DeskPCBView(model: pcb, design: model, embedded: true, hiddenLayers: hiddenLayers,
-                        runChecks: { actions.run("electronics.drc") }) { workspace = .assemble }
+                        runChecks: { actions.run("electronics.drc") },
+                        ribbonLeading: AnyView(dropdown(actions))) { workspace = .assemble }
         case .simulation where flow.isHandProduct:
             // The hand flies nothing: its Simulation stage is the grasp test.
             HandGraspView(generate: generate, design: model, theme: theme.viewportTheme, compact: embeddedCompact)
@@ -366,6 +433,29 @@ struct ProjectWindow: View {
             SimulationView(model: sim, compact: embeddedCompact)
         case .make:
             MakeStage(flow: flow, actions: actions)
+        case .robot:
+            RobotStage(flow: flow, actions: actions)
+        }
+    }
+
+    /// The workspace dropdown, sized to the ribbon beside it.
+    private func dropdown(_ actions: StageActions) -> some View {
+        WorkspaceDropdown(flow: flow, workspace: $workspace, isOpen: $showWorkspaces, showGraph: $showGraph,
+                          short: !StageActions.designLike.contains(workspace) && workspace != .electronics,
+                          updateAll: { actions.updateAll() })
+            .padding(.leading, VFSpace.s)
+            .padding(.trailing, VFSpace.xs)
+            .disabled(EngineGate.shared.shut)
+    }
+
+    /// The canvas banner of a stale or failed stage, until dismissed for the session.
+    @ViewBuilder private func staleBanner(_ actions: StageActions) -> some View {
+        if let c = StaleBanner.content(flow, workspace), !dismissedBanners.contains(workspace.stage + "|" + c.text) {
+            StaleBanner(flow: flow, workspace: workspace, update: { actions.update($0) },
+                        dismiss: { dismissedBanners.insert(workspace.stage + "|" + c.text) })
+                .padding(.top, VFSpace.l)
+                .padding(.horizontal, 80)
+                .transition(.move(edge: .top).combined(with: .opacity))
         }
     }
 
@@ -380,6 +470,9 @@ struct ProjectWindow: View {
         case .train:
             VFHairline()
             TrainingCurve(training: sim.training)
+        case .robot:
+            VFHairline()
+            RobotTelemetryPanel()
         default:
             EmptyView()
         }
@@ -398,15 +491,16 @@ struct ProjectWindow: View {
                 .disabled(model.snapshot.redo == 0 || EngineGate.shared.shut)
                 .help("Redo (\u{21E7}\u{2318}Z), \(model.snapshot.redo) step\(model.snapshot.redo == 1 ? "" : "s") ahead")
         }
+        // No stage chips in the toolbar (D-10): the principal slot holds the job capsule while a
+        // job runs, and nothing otherwise.
         ToolbarItem(placement: .principal) {
-            PipelineBar(flow: flow, workspace: $workspace, card: $flowCard, update: { actions.update($0) })
-                .frame(width: pipelineWidth)
-                .disabled(EngineGate.shared.shut)
+            ToolbarJobCapsule(flow: flow)
         }
         ToolbarItemGroup(placement: .primaryAction) {
             CommandSearchField(compact: compactToolbar) { showPalette = true }
-            // A ring with a badge unless the window is wide: the pipeline bar keeps its labels.
-            JobsButton(flow: flow, compact: compactToolbar || detailWidth < 1500)
+            Button { showGraph.toggle() } label: { Label("Flow Graph", systemImage: "point.3.connected.trianglepath.dotted") }
+                .help("Show the flow graph: what each stage builds from")
+            JobsButton(flow: flow, compact: true)
             Button { showBom.toggle() } label: { Label("BOM", systemImage: "list.bullet.rectangle") }
                 .help("Bill of materials (Shift-Command-B)")
                 .keyboardShortcut("b", modifiers: [.command, .shift])
@@ -472,7 +566,14 @@ struct ProjectWindow: View {
         if args.contains("--show-palette") { showPalette = true }
         if args.contains("--show-marking") { model.markingMenu = CGPoint(x: 620, y: 300) }
         if args.contains("--show-data") { showData = true }
-        if args.contains("--show-flow-card") { flowCard = workspace }
+        if args.contains("--show-flow-card") || args.contains("--show-flow-graph") {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) { showGraph = true }
+        }
+        if showWorkspaces {
+            // The popover needs its anchor on screen: open it once the window has laid out.
+            showWorkspaces = false
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) { showWorkspaces = true }
+        }
         if args.contains("--no-sidebar") { columns = .detailOnly }
         if args.contains("--pcb-3d") {
             model.newDesign()

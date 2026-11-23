@@ -71,7 +71,7 @@ final class ThemeContrastTests: XCTestCase {
                 check(tone.fill, on: p.chrome, min: nonTextAA, "\(variant) \(stage) chip on chrome")
                 check(tone.fill, on: p.chromeDeep, min: nonTextAA, "\(variant) \(stage) chip on chromeDeep")
             }
-            // Eight distinct accents.
+            // Nine distinct accents.
             XCTAssertEqual(Set(p.stageTones.values.map(\.fill)).count, VFStage.allCases.count, "\(variant): distinct tones")
         }
     }
@@ -79,7 +79,7 @@ final class ThemeContrastTests: XCTestCase {
     func testStageIDsMatchTheFlowCore() {
         // core/src/flow.rs stage ids, in pipeline order.
         XCTAssertEqual(VFStage.allCases.map(\.rawValue),
-                       ["design", "generate", "assemble", "electronics", "simulate", "train", "render", "make"])
+                       ["design", "generate", "assemble", "electronics", "simulate", "train", "render", "make", "robot"])
         XCTAssertEqual(VFStatus.allCases.map(\.rawValue), ["current", "empty", "stale", "running", "failed"])
     }
 

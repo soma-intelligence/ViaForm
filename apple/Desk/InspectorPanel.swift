@@ -276,6 +276,24 @@ struct InspectorPanel: View {
                        warn: o.status == .stale || o.status == .failed)
                 }
             }
+        case .robot:
+            section("Device") {
+                kv("Robot", "Not connected")
+                kv("Link", "USB bus adapter or ViaForm bridge")
+                kv("Latency", "n/a")
+            }
+            section("Safety") {
+                RobotEStopButton(enabled: false)
+                kv("Torque limit", "60 %")
+                kv("Workspace fence", "From Assemble joint limits")
+                kv("Teleop speed cap", "30 %")
+            }
+            section("Policy") {
+                kv("Policy", flow.revisionName(of: "train") ?? "not trained")
+                Button {} label: { Label("Run on Robot", systemImage: "lock.fill").frame(maxWidth: .infinity) }
+                    .disabled(true)
+                    .help("Locked until a robot is connected and the run is confirmed")
+            }
         }
     }
 

@@ -16,6 +16,8 @@ struct DeskPCBView: View {
     var hiddenLayers: Set<String> = []
     /// Runs the rule checks the way the stage verb does (embedded only).
     var runChecks: (() -> Void)?
+    /// The window's workspace dropdown, at the far left of the board ribbon (embedded only).
+    var ribbonLeading: AnyView?
     let openDesign: () -> Void
     @State private var transform: PCBCanvasTransform?
     @State private var cardFrame: CGRect?
@@ -195,6 +197,18 @@ struct DeskPCBView: View {
     // MARK: Toolbar
 
     private var toolbar: some View {
+        HStack(spacing: 0) {
+            if let ribbonLeading {
+                ribbonLeading
+                VFHairline(vertical: true)
+            }
+            ribbonRows
+        }
+        .fixedSize(horizontal: false, vertical: true)
+        .background(Color(nsColor: .windowBackgroundColor))
+    }
+
+    private var ribbonRows: some View {
         VStack(spacing: 0) {
             HStack(spacing: 0) {
                 ForEach(PCBModel.Sheet.allCases, id: \.self) { s in

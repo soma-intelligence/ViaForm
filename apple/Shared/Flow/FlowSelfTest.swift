@@ -15,7 +15,7 @@ enum FlowSelfTest {
     static func run() -> Never {
         let f = FlowModel.sample()
         check("sample product", f.product == "Racer 3in", f.product)
-        check("eight stages", f.stages.count == 8)
+        check("nine stages", f.stages.count == 9)
         check("frame revision name", f.node("generate.frame")?.revisionName == "Frame v12", "\(String(describing: f.node("generate.frame")?.revisionName))")
         check("board revision name", f.node("electronics.board")?.revisionName == "Board rev C")
         check("stale reason", f.node("assemble.assembly")?.reason == "Frame v12 replaced v11", f.node("assemble.assembly")?.reason ?? "")
@@ -74,7 +74,7 @@ enum FlowSelfTest {
 
         // The canned project decodes like the real one.
         let m = FlowModel.preview()
-        check("mock decodes", m.stages.count == 8 && m.jobs.count == 1 && m.outputs().count == 8)
+        check("mock decodes", m.stages.count == 9 && m.jobs.count == 1 && m.outputs().count == 8)
         let screen = StageScreen.make(.assemble, flow: f)
         check("stage screen", screen.primary.first?.label == "Re-run on Frame v12" && !screen.ribbon.isEmpty, "\(screen.primary)")
 

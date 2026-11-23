@@ -26,6 +26,13 @@ enum AnchorLayout {
     @MainActor
     static func anchor(_ model: DesignModel, size: CGSize) -> Anchor? {
         let scene = model.scene
+        // Extrude hangs from the centre of the profiles it takes, on the sketch plane.
+        if model.tool == .extrude, let axis = model.handleAxis {
+            let p = model.camera.project(axis.point, size: size)
+            let n = model.extrudedProfiles.count
+            return Anchor(point: axis.point, normal: axis.normal, screen: p,
+                          rect: CGRect(x: p.x - 36, y: p.y - 36, width: 72, height: 72), title: n == 1 ? "Profile" : "\(n) profiles")
+        }
         if let pick = model.selection.last {
             let p = model.camera.project(pick.point, size: size)
             var normal: SIMD3<Double>?

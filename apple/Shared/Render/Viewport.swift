@@ -15,7 +15,9 @@ struct Viewport: View {
     var body: some View {
         ZStack {
             MetalViewport(model: model, theme: theme)
+            SketchProfileLayer(model: model, color: Color(theme.highlight)).allowsHitTesting(false)
             SketchOverlay(model: model, color: Color(theme.highlight)).allowsHitTesting(false)
+            SketchDimensionLayer(model: model)
         }
     }
 }
@@ -133,10 +135,19 @@ final class CADView: MTKView {
 
     override func mouseMoved(with e: NSEvent) { coordinator?.model.hover(at: point(e)) }
 
+    /// A sketch point is being dragged (Select in an open sketch), and whether it moved.
+    private var sketchDragging = false
+    private var sketchMoved = false
+
     override func mouseDown(with e: NSEvent) {
         window?.makeFirstResponder(self)
         last = point(e)
         guard !e.modifierFlags.contains(.option), !e.modifierFlags.contains(.command) else { return }
+        if e.clickCount == 1, coordinator?.model.beginSketchDrag(at: last) == true {
+            sketchDragging = true
+            sketchMoved = false
+            return
+        }
         if e.clickCount == 2 {
             coordinator?.model.doubleClick(at: last)
         } else {
@@ -146,11 +157,24 @@ final class CADView: MTKView {
 
     override func mouseDragged(with e: NSEvent) {
         let p = point(e)
+        if sketchDragging {
+            sketchMoved = true
+            coordinator?.model.dragSketch(to: p)
+            last = p
+            return
+        }
         if e.modifierFlags.contains(.option) { orbit(p) } else if e.modifierFlags.contains(.command) { pan(p) }
         last = p
     }
 
-    override func mouseUp(with e: NSEvent) { coordinator?.moved(final: true) }
+    override func mouseUp(with e: NSEvent) {
+        if sketchDragging {
+            sketchDragging = false
+            if sketchMoved { coordinator?.model.endSketchDrag() } else { coordinator?.model.sketchDrag = nil }
+            return
+        }
+        coordinator?.moved(final: true)
+    }
 
     private var rightDragged = false
 

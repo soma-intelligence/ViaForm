@@ -88,6 +88,9 @@ enum StageLabels {
         case "footprint": "square.dashed"
         case "wire": "point.topleft.down.to.point.bottomright.curvepath"
         case "track": "scribble"
+        case "calibrate": "scope"
+        case "teleop": "gamecontroller"
+        case "path": "point.bottomleft.forward.to.point.topright.scurvepath"
         default: "command"
         }
     }

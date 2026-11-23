@@ -294,6 +294,11 @@ struct DesignAnchorLayer: View {
             let actions = pillActions
             ZStack(alignment: .topLeading) {
                 Color.clear
+                // The distance handle: on the picked face from Select, on the face or the
+                // extrude profile while the tool is armed. 44 point grip.
+                if let axis = model.handleAxis, model.tool == .select || model.tool.value?.unit == "mm" {
+                    DesignDistanceHandle(model: model, point: axis.point, normal: axis.normal, size: size, touch: true)
+                }
                 if let anchor, let v = model.tool.value, model.tool != .select {
                     let bubble = CGPoint(x: anchor.x + 120, y: anchor.y - 70)
                     DottedArc(from: anchor, to: bubble)

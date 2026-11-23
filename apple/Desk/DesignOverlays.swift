@@ -169,16 +169,29 @@ struct DesignAnchorOverlay: View {
                     if let v = model.tool.value, model.tool != .select, !model.tool.isSketchTool {
                         gizmo(a, value: v, size: size)
                     } else if model.tool == .select, model.facePick == nil {
+                        // The picked face's Push / Pull handle, kept clear of the pill.
+                        let handle = model.showsFaceHandle ? model.handleAxis : nil
+                        let keepClear = avoid + (handle.map { [handleRect($0, a, size: size)] } ?? [])
+                        if let axis = handle {
+                            DesignDistanceHandle(model: model, point: axis.point, normal: axis.normal, size: size)
+                        }
                         let list = pillActions(a)
                         if !list.isEmpty {
                             let w = CGFloat(list.count) * 56 + 18, h: CGFloat = 78
                             StageContextPill(title: a.title, actions: list, dismiss: clear)
-                                .position(AnchorLayout.place(CGSize(width: w, height: h), near: a.rect, in: size, avoid: avoid, prefer: .above))
+                                .position(AnchorLayout.place(CGSize(width: w, height: h), near: a.rect, in: size, avoid: keepClear, prefer: .above))
                         }
                     }
                 }
             }
         }
+    }
+
+    /// The screen box of a face handle, from its anchor to its grip.
+    private func handleRect(_ axis: (point: SIMD3<Double>, normal: SIMD3<Double>), _ a: AnchorLayout.Anchor, size: CGSize) -> CGRect {
+        let tip = DesignDistanceHandle.tip(model: model, point: axis.point, normal: axis.normal, size: size)
+        return CGRect(x: min(tip.x, a.screen.x) - 18, y: min(tip.y, a.screen.y) - 18,
+                      width: abs(tip.x - a.screen.x) + 36, height: abs(tip.y - a.screen.y) + 36)
     }
 
     /// The viewport's own pieces: the view cube (and the command dialog under it), the triad
@@ -203,6 +216,14 @@ struct DesignAnchorOverlay: View {
             let tip = CGPoint(x: a.screen.x + cos(-.pi / 2 + sweep) * r, y: a.screen.y + sin(-.pi / 2 + sweep) * r)
             GizmoArc(kind: .arc(center: a.screen, radius: r, start: -.pi / 2, sweep: sweep))
             ValueBadge(text: text).position(x: tip.x + 34, y: tip.y - 14)
+        } else if let axis = model.handleAxis {
+            // A draggable handle along the face or profile normal.
+            let tip = DesignDistanceHandle.tip(model: model, point: axis.point, normal: axis.normal, size: size)
+            let base = model.camera.project(axis.point, size: size)
+            DesignDistanceHandle(model: model, point: axis.point, normal: axis.normal, size: size)
+            let dx = tip.x - base.x, dy = tip.y - base.y, len = max(hypot(dx, dy), 1)
+            ValueBadge(text: text).position(x: (base.x + tip.x) / 2 - dy / len * 46, y: (base.y + tip.y) / 2 + dx / len * 24)
+                .allowsHitTesting(false)
         } else {
             let tip = linearTip(a, size: size)
             GizmoArc(kind: .linear(a.screen, tip))

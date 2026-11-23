@@ -7,8 +7,8 @@ import Foundation
 /// views from it, so a stage looks the same wherever it opens, and a preview or a check can
 /// make one from `FlowModel.preview()` with no engine.
 struct StageScreen: Equatable {
-    enum Inspector: String { case design, study, joints, component, scenario, training, render, manufacture }
-    enum Viewport: String { case model, outcomes, assembly, board, flight, curves, renders, overview }
+    enum Inspector: String { case design, study, joints, component, scenario, training, render, manufacture, robot }
+    enum Viewport: String { case model, outcomes, assembly, board, flight, curves, renders, overview, twin }
     enum Bottom: String { case timeline, outcomes, telemetry, layers, none }
 
     struct RibbonGroup: Equatable, Identifiable {
@@ -52,6 +52,7 @@ struct StageScreen: Equatable {
         case .render: PrimaryAction(label: "Render Shots", command: "render.shots")
         case .make: PrimaryAction(label: "Export Design", command: "make.export")
         case .electronics: PrimaryAction(label: "Send Board to 3D", command: "electronics.send_to_3d")
+        case .robot: PrimaryAction(label: "Connect Robot", command: "robot.connect")
         case .design, .assemble: nil
         }
     }
@@ -66,6 +67,7 @@ struct StageScreen: Equatable {
         case .train: (.training, .curves, .telemetry)
         case .render: (.render, .renders, .none)
         case .make: (.manufacture, .overview, .none)
+        case .robot: (.robot, .twin, .telemetry)
         }
     }
 

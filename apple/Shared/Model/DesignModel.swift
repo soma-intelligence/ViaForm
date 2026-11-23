@@ -68,6 +68,21 @@ final class DesignModel {
     private var previewCheckpoint: Int?
     private var previewApplied = false
 
+    /// The open sketch (or, while Extrude is armed, the sketch it extrudes) as the canvas draws
+    /// it: points to drag, profiles to pick, dimensions to edit.
+    var sketchInfo: SketchInfo?
+    /// The profiles Extrude takes (indices of `sketchInfo.profiles`); empty takes them all.
+    var extrudeProfiles: Set<Int> = []
+    /// The profile under the pointer while Extrude is armed.
+    var hoverProfile: Int?
+    /// A sketch point being dragged: its id and where it was grabbed (sketch coordinates).
+    @ObservationIgnored var sketchDrag: (entity: String, from: SIMD2<Double>)?
+    /// A distance handle being dragged: the value it started from, and whether the drag armed
+    /// Push / Pull itself (then releasing commits it).
+    @ObservationIgnored var handleDrag: (start: Double, implicit: Bool)?
+    /// Set while a tool is armed by a handle drag, so arming runs no preview of its own.
+    @ObservationIgnored var armingQuietly = false
+
     init() {
         Perf.watchMainThread()
         Perf.milestone("design model init")
@@ -75,6 +90,10 @@ final class DesignModel {
         if let home = engine.homeCamera() { camera = home }
         // `--sample hand` and `--sample drone` open a generative project, not the sample design.
         if ProcessInfo.processInfo.arguments.contains("--sample") && GenerateProject.launchSample == nil { loadSample() }
+        if ProcessInfo.processInfo.arguments.contains(where: { $0.hasPrefix("--design-demo=") }) {
+            let me = UncheckedWeak(self)
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1.2) { me.value?.applyDesignDemoFlag() }
+        }
     }
 
     // MARK: Engine
@@ -119,6 +138,7 @@ final class DesignModel {
         Perf.measure("refresh") {
             snapshot = Perf.measure("refresh.inspect") { engine.inspect() }
             sketchPlane = engine.sketchPlane()
+            reloadSketchInfo()
             Perf.measure("refresh.assembly") { refreshAssembly() }
             rebuildScene()
         }
@@ -129,8 +149,48 @@ final class DesignModel {
     }
 
     private func rebuildSceneNow() {
-        scene = engine.scene(camera: camera)
-        scene.revision = snapshot.revision
+        sceneRequest += 1
+        // Small scenes build here, so a click sees its result at once (picking, the selection
+        // flags, the self tests). A scene that took long last time builds on the worker while
+        // the old one keeps drawing (double buffered), and only the latest request lands.
+        if !SceneWorker.wantsBackground(lastSeconds: sceneSeconds) {
+            let t0 = Perf.now()
+            var built = engine.scene(camera: camera)
+            sceneSeconds = Perf.now() - t0
+            built.revision = snapshot.revision
+            publish(built)
+            return
+        }
+        let request = sceneRequest
+        let revision = snapshot.revision
+        let cam = camera
+        let engine = engine
+        let me = UncheckedWeak(self)
+        let ticket = sceneTicket
+        ticket.note(request)
+        sceneBuilding = true
+        SceneWorker.queue.async {
+            // A newer request is queued behind this one: skip, it builds the latest design.
+            guard ticket.isLatest(request) else { return }
+            let t0 = Perf.now()
+            var built = engine.scene(camera: cam)
+            built.revision = revision
+            let seconds = Perf.now() - t0
+            let box = SceneBox(scene: built)
+            DispatchQueue.main.async {
+                guard let m = me.value, m.sceneRequest == request else { return }
+                m.sceneSeconds = seconds
+                m.sceneBuilding = false
+                m.publish(box.scene)
+                // The camera moved while building: the guides follow it now.
+                if m.camera != cam { m.cameraChanged(final: true) }
+            }
+        }
+    }
+
+    /// Swaps the drawn scene for a new one (the front buffer changes only here).
+    private func publish(_ built: SceneData) {
+        scene = built
         // Drop picks that no longer exist. Only written when something went: every write of an
         // observed property invalidates the views that read it.
         let kept = selection.filter { $0.mesh < scene.meshes.count }
@@ -138,6 +198,14 @@ final class DesignModel {
         onSceneChange?(scene)
         pushHighlight()
     }
+
+    /// The scene is being built on the worker; the old one is still on screen.
+    private(set) var sceneBuilding = false
+    @ObservationIgnored private var sceneRequest = 0
+    @ObservationIgnored private let sceneTicket = SceneTicket()
+    /// How long the last scene build took: past `SceneWorker.threshold`, the next one goes to
+    /// the worker.
+    @ObservationIgnored private(set) var sceneSeconds = 0.0
 
     /// Called with the camera-dependent lines (grid, axes, edges) after an orbit, pan or zoom.
     @ObservationIgnored var onGuidesChange: ((SceneData) -> Void)?
@@ -174,7 +242,8 @@ final class DesignModel {
 
     private func layOutGuides() {
         let t0 = Perf.now()
-        let g = engine.guides(camera: camera)
+        // The scene worker holds the engine: its scene brings the guides when it lands.
+        guard let g = engine.guidesIfFree(camera: camera) else { return }
         guidesSeconds = Perf.now() - t0
         lastGuides = Perf.now()
         onGuidesChange?(g)
@@ -231,6 +300,12 @@ final class DesignModel {
             hover = nil
             return
         }
+        if tool == .extrude, let info = sketchInfo {
+            let q = ScenePicker.onPlane(info.plane, camera: camera, at: p, size: viewSize)
+            let i = q.flatMap { info.profile(at: $0)?.index }
+            if i != hoverProfile { hoverProfile = i }
+            return
+        }
         hover = ScenePicker.pick(scene, camera: camera, at: p, size: viewSize, edges: wantsEdges)
     }
 
@@ -241,6 +316,12 @@ final class DesignModel {
         if tool.isSketchTool {
             guard let plane = sketchPlane, let q = ScenePicker.onPlane(plane, camera: camera, at: p, size: viewSize) else { return }
             sketchClick(snap(q).0, raw: q)
+            return
+        }
+        if tool == .extrude, let info = sketchInfo, info.profiles.count > 1 {
+            if let q = ScenePicker.onPlane(info.plane, camera: camera, at: p, size: viewSize), let prof = info.profile(at: q) {
+                toggleProfile(prof.index)
+            }
             return
         }
         let hit = ScenePicker.pick(scene, camera: camera, at: p, size: viewSize, edges: wantsEdges)
@@ -451,6 +532,12 @@ final class DesignModel {
         if previewCheckpoint != nil { cancelPreview() }
         clicks = []
         cursor = nil
+        extrudeProfiles = []
+        hoverProfile = nil
+        if armingQuietly {
+            toolValue = 0
+            return
+        }
         if let v = tool.value { toolValue = v.initial }
         if tool == .extrude || tool == .revolve {
             // An open sketch is finished first: its profiles are what the feature takes.
@@ -459,6 +546,7 @@ final class DesignModel {
         } else if tool == .pressPull || tool == .fillet || tool == .chamfer || tool == .shell {
             applyPreview()
         }
+        if tool == .extrude || old == .extrude { reloadSketchInfo() }
     }
 
     private func valueChanged() {
@@ -476,6 +564,7 @@ final class DesignModel {
         case .extrude:
             var p: [String: Any] = ["distance": toolValue]
             if toolOperation != "auto" { p["operation"] = toolOperation }
+            if !extrudeProfiles.isEmpty { p["profiles"] = extrudeProfiles.sorted() }
             return ("solid.extrude", p)
         case .revolve:
             var p: [String: Any] = ["axis": revolveAxis, "angle": "\(toolValue) deg"]
@@ -500,7 +589,18 @@ final class DesignModel {
 
     /// Runs the tool's command on a checkpoint, so each new value replaces the last preview.
     func applyPreview() {
-        guard let (id, params) = pendingCommand, toolValue != 0 || tool == .revolve else { return }
+        guard let (id, params) = pendingCommand, toolValue != 0 || tool == .revolve else {
+            // A value of zero shows no feature: take the last preview back.
+            if previewApplied, let cp = previewCheckpoint {
+                _ = try? engine.execute("edit.restore_checkpoint", ["checkpoint": cp])
+                previewApplied = false
+                previewCheckpoint = nil
+                let keep = selection
+                refresh()
+                selection = keep.filter { $0.mesh < scene.meshes.count }
+            }
+            return
+        }
         do {
             // Restoring a checkpoint uses it up: take a fresh one for the next value.
             if previewApplied, let cp = previewCheckpoint {
@@ -722,6 +822,41 @@ final class DesignModel {
         refresh()
         zoomToFit()
     }
+}
+
+/// Where big scenes are built: one serial queue, latest request wins.
+enum SceneWorker {
+    static let queue = DispatchQueue(label: "me.somalabs.viaform.scene", qos: .userInitiated)
+    /// A build slower than this (seconds) moves the next ones off the main thread: past a
+    /// quarter of a 60 Hz frame the UI would stutter.
+    static let threshold = 0.004
+
+    static func wantsBackground(lastSeconds: Double) -> Bool {
+        if ProcessInfo.processInfo.arguments.contains("--sync-scene") { return false }
+        if ProcessInfo.processInfo.arguments.contains("--async-scene") { return true }
+        return lastSeconds > threshold
+    }
+}
+
+/// One model's newest scene request, read by the worker to drop stale builds.
+final class SceneTicket: @unchecked Sendable {
+    private var latest = 0
+    private let lock = NSLock()
+
+    func note(_ request: Int) {
+        lock.lock(); defer { lock.unlock() }
+        latest = max(latest, request)
+    }
+
+    func isLatest(_ request: Int) -> Bool {
+        lock.lock(); defer { lock.unlock() }
+        return request >= latest
+    }
+}
+
+/// A built scene crossing from the worker to the main thread.
+private struct SceneBox: @unchecked Sendable {
+    let scene: SceneData
 }
 
 /// A weak reference handed to a main-queue callback. The model lives on the main thread; the

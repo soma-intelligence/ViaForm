@@ -1,10 +1,10 @@
 import SwiftUI
 
-/// The eight workspaces in pipeline order, shared by the Mac and the iPad apps. Each one is a
+/// The nine workspaces in pipeline order, shared by the Mac and the iPad apps. Each one is a
 /// stage of the product flow (`FlowModel`); the case names are the ones the Mac window used
 /// before the enum moved here, so `--simulation` and the other launch flags keep their meaning.
 enum Workspace: String, CaseIterable, Identifiable, Codable {
-    case design, generate, assemble, electronics, simulation, train, render, make
+    case design, generate, assemble, electronics, simulation, train, render, make, robot
 
     var id: String { rawValue }
 
@@ -25,6 +25,7 @@ enum Workspace: String, CaseIterable, Identifiable, Codable {
         case .train: "brain"
         case .render: "camera.aperture"
         case .make: "shippingbox"
+        case .robot: "figure.arms.open"
         }
     }
 
@@ -39,6 +40,7 @@ enum Workspace: String, CaseIterable, Identifiable, Codable {
         case .train: "Train"
         case .render: "Rndr"
         case .make: "Make"
+        case .robot: "Robot"
         }
     }
 
@@ -47,7 +49,7 @@ enum Workspace: String, CaseIterable, Identifiable, Codable {
 
     var index: Int { Self.allCases.firstIndex(of: self) ?? 0 }
 
-    /// Command-1 to Command-8.
+    /// Command-1 to Command-9.
     var shortcut: KeyEquivalent { KeyEquivalent(Character("\(index + 1)")) }
 
     init?(stage: String) {
@@ -67,6 +69,7 @@ enum Workspace: String, CaseIterable, Identifiable, Codable {
         case .train: Color(red: 0.95, green: 0.70, blue: 0.15)
         case .render: Color(red: 0.40, green: 0.70, blue: 0.95)
         case .make: Color(red: 0.55, green: 0.62, blue: 0.70)
+        case .robot: Color(red: 0.13, green: 0.71, blue: 0.83)
         }
     }
 

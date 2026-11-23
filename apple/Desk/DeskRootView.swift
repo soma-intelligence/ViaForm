@@ -79,6 +79,10 @@ struct DeskRootView: View {
                     Button("Export Design…") { FileActions.export(model) }
                     Button("Bill of Materials") { showBom = true }
                 }
+            case .robot:
+                StageOverview(flow: flow, stage: "robot", note: "The robot stage connects the real robot, records demonstrations and runs a trained policy. No robot is connected.", open: openStage) {
+                    EmptyView()
+                }
             case .design, .assemble, .render:
                 designBody
             }
@@ -516,7 +520,7 @@ struct CommandDialog: View {
     @ViewBuilder private var rows: some View {
         switch model.tool {
         case .extrude, .revolve:
-            selectionRow("Profile", model.sketchOpen ? "open sketch" : "last sketch, all profiles")
+            selectionRow("Profile", model.sketchOpen ? "open sketch" : model.extrudeProfileSummary)
         case .pressPull, .shell:
             selectionRow("Faces", "\(model.selection.filter(\.isFace).count) selected")
         case .fillet, .chamfer:
