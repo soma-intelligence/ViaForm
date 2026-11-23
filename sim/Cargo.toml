@@ -1,0 +1,11 @@
+[package]
+name = "viaform-sim"
+description = "ViaForm's drone flight simulation: 6-DOF quad, weather, realistic plant and sensors, cascaded PID or INDI with a neural residual, occupancy mapping and planning, training"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish = false
+
+[dependencies]
+serde.workspace = true
+serde_json.workspace = true
