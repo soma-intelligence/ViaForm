@@ -6,7 +6,11 @@
 //! returns is freed with `sc_string_free`. A panic inside the engine never unwinds into Swift:
 //! each entry point catches it and answers with an error.
 
+mod bom;
 mod flow;
+mod generate;
+mod library;
+mod sim;
 
 use std::ffi::{CStr, CString, c_char};
 use std::panic::{AssertUnwindSafe, catch_unwind};
@@ -459,4 +463,56 @@ pub unsafe extern "C" fn vf_link_revision(sc: *mut ScSession, pcb: *const PcbSes
     // SAFETY: the caller passes live sessions.
     let (Some(sc), Some(pcb)) = (unsafe { sc.as_mut() }, unsafe { pcb.as_ref() }) else { return -1 };
     guard(None, || viaform_core::link::linked_revision(&mut sc.session, &pcb.session)).map_or(-1, |r| r as i64)
+}
+
+// MARK: Generative design (viaform-core), the same code the Electron app runs
+
+/// Runs a generative study (`spec` as JSON). Answers `{"ok": outcome}` or `{"error": message}`.
+///
+/// # Safety
+/// `spec` is a NUL-terminated string.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn sc_generate_study(spec: *const c_char) -> *mut c_char {
+    // SAFETY: NUL-terminated string, per the contract above.
+    let spec = unsafe { text(spec) };
+    link_reply(guard(Err("the engine stopped on this study".into()), || {
+        let spec: Value = serde_json::from_str(spec.ok_or("no spec")?).map_err(|e| format!("spec: {e}"))?;
+        viaform_core::generative::study(&spec)
+    }))
+}
+
+/// Builds candidate `candidate` (-1: the study's best) of the study `spec` into the design `s`, as
+/// one undo step. Answers `{"ok": {candidate, body, commands}}` or `{"error": message}`.
+///
+/// # Safety
+/// `s` is a live session; `spec` is a NUL-terminated string.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn sc_generate(s: *mut ScSession, spec: *const c_char, candidate: i64) -> *mut c_char {
+    // SAFETY: the caller passes a live session.
+    let Some(s) = (unsafe { s.as_mut() }) else { return out(&json!({"error": "no session"})) };
+    // SAFETY: NUL-terminated string, per the contract above.
+    let spec = unsafe { text(spec) };
+    link_reply(guard(Err("the engine stopped while building the candidate".into()), || {
+        let spec: Value = serde_json::from_str(spec.ok_or("no spec")?).map_err(|e| format!("spec: {e}"))?;
+        let pick = usize::try_from(candidate).ok();
+        viaform_core::generative::build(&mut s.session, &spec, pick)
+    }))
+}
+
+/// Inserts a generated assembly (`assembly` as JSON: parts with mesh files and placements,
+/// joints) into the design `s` as one undo step. Answers `{"ok": {parts, joints, occurrences}}`
+/// or `{"error": message}`.
+///
+/// # Safety
+/// `s` is a live session; `assembly` is a NUL-terminated string.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn sc_generate_assembly(s: *mut ScSession, assembly: *const c_char) -> *mut c_char {
+    // SAFETY: the caller passes a live session.
+    let Some(s) = (unsafe { s.as_mut() }) else { return out(&json!({"error": "no session"})) };
+    // SAFETY: NUL-terminated string, per the contract above.
+    let text = unsafe { text(assembly) };
+    link_reply(guard(Err("the engine stopped while inserting the assembly".into()), || {
+        let spec: Value = serde_json::from_str(text.ok_or("no assembly")?).map_err(|e| format!("assembly: {e}"))?;
+        viaform_core::generative::assemble(&mut s.session, &spec)
+    }))
 }

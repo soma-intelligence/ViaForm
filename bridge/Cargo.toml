@@ -1,5 +1,5 @@
 [package]
-name = "solidcraft-ffi"
+name = "viaform-ffi"
 description = "C ABI over the ViaForm core (SolidCraft CAD and PCBCraft PCB) for the native Swift front ends"
 version.workspace = true
 edition.workspace = true
@@ -11,6 +11,9 @@ crate-type = ["staticlib"]
 
 [dependencies]
 viaform-core.workspace = true
+viaform-library.workspace = true
+viaform-sim.workspace = true
+viaform-bom.workspace = true
 solidcraft-engine.workspace = true
 pcbcraft-engine.workspace = true
 serde_json.workspace = true

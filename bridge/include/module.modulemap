@@ -1,6 +1,10 @@
-module SolidCraftFFI {
-    header "solidcraft.h"
+module ViaFormFFI {
+    header "viaform.h"
+    header "viaform_library.h"
+    header "viaform_sim.h"
+    header "viaform_bom.h"
     header "viaform_flow.h"
-    link "solidcraft_ffi"
+    header "viaform_generate.h"
+    link "viaform_ffi"
     export *
 }
