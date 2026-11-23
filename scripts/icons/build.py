@@ -2,8 +2,11 @@
 
 usage (from the repo root):  python3 scripts/icons/build.py
                              -> apple/Resources/ToolIcons/<name>.png (128 px, shown at 28 pt in the ribbon)
+                             python3 scripts/icons/build.py --direction A
+                             -> reads scripts/icons/raw-A/, writes scripts/icons/out-A/<name>.png (same size and
+                                format as apple/Resources/ToolIcons, nothing installed)
 """
-import pathlib
+import pathlib, sys
 from PIL import Image, ImageFilter
 
 HERE = pathlib.Path(__file__).resolve().parent
@@ -25,8 +28,12 @@ def build(src: pathlib.Path) -> None:
 
 
 if __name__ == "__main__":
+    if "--direction" in sys.argv:
+        d = sys.argv[sys.argv.index("--direction") + 1]
+        RAW, DST = HERE / f"raw-{d}", HERE / f"out-{d}"
     DST.mkdir(parents=True, exist_ok=True)
-    names = sorted(p.stem for p in RAW.glob("*.png"))
+    # renders only: skip kept retakes (<name>.try1.png) and in-flight files (<name>.new.png)
+    names = sorted(p.stem for p in RAW.glob("*.png") if "." not in p.stem and not p.stem.startswith("_"))
     for n in names:
         build(RAW / f"{n}.png")
     print(len(names), "icons ->", DST)
