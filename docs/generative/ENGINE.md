@@ -60,9 +60,9 @@ Notes.
 - The FEM error at the finest mesh is under 1 %; the remaining -0.8 % (Richardson extrapolation
   gives -0.82 %) is the 3D clamp: beam theory lets the root section warp, the clamped face does
   not.
-- The reference OC optimiser (written from the method's description, not from top3d's code) reproduces the published compliance to 0.03 %. It runs to the 200-iteration
-  cap where top3d stopped at 155 on its 0.01 change criterion (top3d solves directly, the port
-  iteratively to 1e-8, so the last design changes are not identical); the compliance matches.
+- The reference OC optimiser (written from the method's description, not from top3d's code) reproduces the published compliance to 0.03 %. It stops after 198
+  iterations where top3d stopped at 155 on the same 0.01 change criterion (top3d solves directly,
+  ours iteratively to 1e-8, so the last design changes are not identical); the compliance matches.
 - Projection lowers the compliance by 28 % because a crisp design no longer pays the SIMP
   penalty on grey voxels. Same volume, same filter, the structure is the same truss family
   (91.8 % voxel agreement).
