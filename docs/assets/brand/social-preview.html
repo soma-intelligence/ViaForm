@@ -1,0 +1,23 @@
+<!doctype html><html><head><meta charset="utf-8"><style>
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{width:1280px;height:640px;overflow:hidden}
+body{background:radial-gradient(110% 130% at 0% 0%,#123a7a 0%,#0a1a3a 50%,#060b18 100%);font-family:-apple-system,"SF Pro Display",system-ui,sans-serif;color:#fff;position:relative}
+.text{position:absolute;left:80px;top:0;bottom:0;width:500px;display:flex;flex-direction:column;justify-content:center}
+.icon{width:104px;height:104px;border-radius:24px;overflow:hidden;box-shadow:0 16px 40px rgba(0,0,0,.5),0 0 0 1px rgba(120,170,255,.18);margin-bottom:36px}
+.icon img{width:100%;height:100%;display:block}
+h1{font-size:92px;font-weight:700;letter-spacing:-3px;line-height:1}
+p{margin-top:22px;font-size:31px;line-height:1.25;color:#c4d8ff;font-weight:500;letter-spacing:-.3px}
+.tag{margin-top:34px;font-size:21px;color:#7f9fd6;letter-spacing:.2px;white-space:nowrap}
+.shot{position:absolute;filter:drop-shadow(0 26px 44px rgba(0,0,0,.6))}
+.design{left:630px;top:60px;width:590px}
+.board{left:820px;top:318px;width:400px}
+</style></head><body>
+<!-- GitHub social preview, 1280 x 640. Render from the repo root:
+chrome-headless-shell --headless --hide-scrollbars --allow-file-access-from-files --window-size=1280,640 --screenshot="$PWD/docs/assets/brand/social-preview.png" "file://$PWD/docs/assets/brand/social-preview.html" -->
+<img class="shot design" src="../../macos-pcb-3d.png" alt=""><img class="shot board" src="../../macos-board.png" alt="">
+<div class="text">
+<div class="icon"><img src="icon.png" alt=""></div>
+<h1>ViaForm</h1>
+<p>Open source 3D CAD and PCB design, together in one app.</p>
+<div class="tag">Free · GPL-3.0 · github.com/soma-intelligence/ViaForm</div>
+</div></body></html>

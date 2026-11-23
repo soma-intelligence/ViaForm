@@ -8,6 +8,23 @@ native SwiftUI apps on macOS, iPad and iPhone, and is built on two open source R
 SolidCraft (parametric 3D CAD) and PCBCraft (PCB design). Status: early, version 0.2.0, built
 from source (no published release yet).
 
+## Quick start
+
+There's no published release yet, so you build ViaForm from source. You need Git, Rust and Node 22.
+
+1. Get the code and its two engines: `git clone --recursive https://github.com/soma-intelligence/ViaForm.git`
+2. Build and open the desktop app (Windows, Linux or macOS): `cd ViaForm/electron && npm ci && npm start`. The first build compiles both engines, so give it a few minutes.
+3. Choose File > Open Sample, then press Send to 3D in the right panel. The sample circuit board shows up in the 3D view.
+
+For developers, the core's tests cover the board to 3D link and the `.viaform` file:
+
+```bash
+git clone --recursive https://github.com/soma-intelligence/ViaForm.git && cd ViaForm
+cargo test --release -p viaform-core
+```
+
+The Apple apps, prerequisites and every script: [Build ViaForm from source](docs/guides/build-from-source.md).
+
 3D design and electronics as one app, on open source Rust engines (SolidCraft for CAD,
 PCBCraft for PCB).
 
