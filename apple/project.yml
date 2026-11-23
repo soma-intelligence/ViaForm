@@ -1,4 +1,4 @@
-name: SolidCraftNative
+name: ViaForm
 options:
   bundleIdPrefix: me.somalabs
   deploymentTarget:
@@ -10,31 +10,30 @@ settings:
     SWIFT_VERSION: "6.0"
     SWIFT_STRICT_CONCURRENCY: minimal
     SWIFT_INCLUDE_PATHS: $(SRCROOT)/../bridge/include
-    OTHER_LDFLAGS: ["-lsolidcraft_ffi", "-lc++"]
+    OTHER_LDFLAGS: ["-lviaform_ffi", "-lc++"]
     DEAD_CODE_STRIPPING: YES
     MARKETING_VERSION: "0.1.0"
     CURRENT_PROJECT_VERSION: "1"
     GENERATE_INFOPLIST_FILE: YES
-    INFOPLIST_KEY_CFBundleDisplayName: SolidCraft
+    INFOPLIST_KEY_CFBundleDisplayName: ViaForm
     ENABLE_USER_SCRIPT_SANDBOXING: NO
 targets:
-  SolidCraft-iOS:
+  ViaForm-iOS:
     type: application
     platform: iOS
     sources:
       - path: Shared
+        excludes:
+          - "UI/Theme/Tests/**"
       - path: Touch
-      - path: Resources/viaform-sim.js
+      - path: Resources/ToolIcons
+        type: folder
         optional: true
         buildPhase: resources
-    preBuildScripts:
-      - name: Bundle the simulation
-        script: cd "$SRCROOT/.." && sh scripts/build-sim.sh
-        basedOnDependencyAnalysis: false
     settings:
       base:
-        PRODUCT_NAME: SolidCraft
-        PRODUCT_BUNDLE_IDENTIFIER: me.somalabs.solidcraft
+        PRODUCT_NAME: ViaForm
+        PRODUCT_BUNDLE_IDENTIFIER: me.somalabs.viaform
         TARGETED_DEVICE_FAMILY: "1,2"
         INFOPLIST_KEY_UILaunchScreen_Generation: YES
         INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad: "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight"
@@ -44,25 +43,45 @@ targets:
         "LIBRARY_SEARCH_PATHS[sdk=iphoneos*]": $(SRCROOT)/../target/aarch64-apple-ios/release
         "LIBRARY_SEARCH_PATHS[sdk=iphonesimulator*]": $(SRCROOT)/../target/aarch64-apple-ios-sim/release
         "EXCLUDED_ARCHS[sdk=iphonesimulator*]": x86_64
-  SolidCraft-macOS:
+  ViaForm-macOS:
     type: application
     platform: macOS
     sources:
       - path: Shared
+        excludes:
+          - "UI/Theme/Tests/**"
       - path: Desk
-      - path: Resources/viaform-sim.js
+      - path: Resources/ToolIcons
+        type: folder
         optional: true
         buildPhase: resources
-    preBuildScripts:
-      - name: Bundle the simulation
-        script: cd "$SRCROOT/.." && sh scripts/build-sim.sh
-        basedOnDependencyAnalysis: false
     settings:
       base:
-        PRODUCT_NAME: SolidCraft
-        PRODUCT_BUNDLE_IDENTIFIER: me.somalabs.solidcraft.mac
+        PRODUCT_NAME: ViaForm
+        PRODUCT_BUNDLE_IDENTIFIER: me.somalabs.viaform.mac
         LIBRARY_SEARCH_PATHS: $(SRCROOT)/../target/aarch64-apple-darwin/release
         ARCHS: arm64
         CODE_SIGN_IDENTITY: "-"
         ENABLE_HARDENED_RUNTIME: NO
         INFOPLIST_KEY_LSApplicationCategoryType: public.app-category.graphics-design
+  ViaFormThemeTests:
+    type: bundle.unit-test
+    platform: macOS
+    sources:
+      - path: Shared/UI/Theme/ThemeTokens.swift
+      - path: Shared/UI/Theme/Tests
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: me.somalabs.viaform.themetests
+        OTHER_LDFLAGS: []
+        ARCHS: arm64
+        CODE_SIGN_IDENTITY: "-"
+        GENERATE_INFOPLIST_FILE: YES
+schemes:
+  ViaFormThemeTests:
+    build:
+      targets:
+        ViaFormThemeTests: [test]
+    test:
+      targets:
+        - ViaFormThemeTests

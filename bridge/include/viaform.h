@@ -1,7 +1,7 @@
 // C ABI of the SolidCraft (CAD) and PCBCraft (PCB) engines for the native Swift front end (bridge/src/lib.rs).
 // Every char* this library returns is freed with sc_string_free.
-#ifndef SOLIDCRAFT_H
-#define SOLIDCRAFT_H
+#ifndef VIAFORM_H
+#define VIAFORM_H
 
 #include <stdbool.h>
 #include <stdint.h>
@@ -64,5 +64,12 @@ char *pcb_commands(void);
 char *vf_link_push(ScSession *sc, const PcbSession *pcb);
 char *vf_link_mount(ScSession *sc, const PcbSession *pcb, const char *body, const double *point3, const double *normal3);
 int64_t vf_link_revision(ScSession *sc, const PcbSession *pcb);
+
+// Generative design (viaform-core): replies {"ok": ...} or {"error": ...}
+char *sc_generate_study(const char *spec_json);
+// candidate: index into the study's candidates, -1 for its best
+char *sc_generate(ScSession *s, const char *spec_json, int64_t candidate);
+// A generated assembly (parts as mesh files, placements, revolute joints), one undo step
+char *sc_generate_assembly(ScSession *s, const char *assembly_json);
 
 #endif
