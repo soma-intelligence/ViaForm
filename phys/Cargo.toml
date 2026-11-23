@@ -9,3 +9,13 @@ publish = false
 [dependencies]
 serde.workspace = true
 serde_json.workspace = true
+viaform-kin.workspace = true
+# Same nalgebra as viaform-kin (one copy in the build).
+nalgebra = "0.34"
+# Collision geometry only (E-2). 0.25 is the last line on nalgebra 0.34; pure Rust, Apache-2.0.
+parry3d-f64 = { version = "0.25.3", default-features = false, features = ["required-features", "std", "alloc"] }
+rayon = "1.12"
+
+[dev-dependencies]
+# Parity test of the drone port against today's sim (PH5). Test-only.
+viaform-sim.workspace = true
