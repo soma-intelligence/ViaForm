@@ -7,7 +7,7 @@ PCBCraft for PCB).
   workspaces of one project, saved together as a `.viaform` file. It updates itself from this
   repository's GitHub Releases.
 - **macOS**: a desktop layout with a ribbon of tabs and panels, a browser tree, a timeline,
-  a right-click marking menu, command search on S and a ViewCube.
+  a right-click marking menu, command search on S and a view cube.
 - **iPad and iPhone**: a touch-first layout with a project sidebar, items and history
   sidebars, a tool column (a bottom row on iPhone) and tools suggested from the selection.
 
@@ -30,7 +30,7 @@ the two engines, so the board to 3D link behaves the same everywhere.
 engines/solidcraft   submodule: tangency-labs/solidcraft, parametric 3D CAD in Rust
 engines/pcbcraft     submodule: tangency-labs/pcbcraft, KiCad-compatible PCB engine in Rust
 core/                viaform-core: one workspace over both engines, the board to 3D link, the .viaform file
-bridge/              solidcraft-ffi: a C ABI static library over the core, for the Swift apps
+bridge/              viaform-ffi: a C ABI static library over the core, for the Swift apps
 node/                viaform-node: a Node addon (N-API) over the core, for the Electron app
 electron/            the cross-platform app: main process, preload, renderer (TypeScript, three.js)
 apple/               XcodeGen project: Shared (engine, renderer, model), Desk (macOS), Touch (iOS)
@@ -52,7 +52,7 @@ cd electron && npm ci && npm start
 ```
 
 `npm test` runs the app's end-to-end tests on the addon; `cargo test -p viaform-core` runs the
-core's. `npm run test:ui` starts the app and drives its interface (toolbar, browser, ViewCube,
+core's. `npm run test:ui` starts the app and drives its interface (toolbar, browser, view cube,
 timeline, sketch, electronics); it needs a display. `npm run dist` packages for the current platform.
 
 `npm test` includes a flying drone built end to end (`electron/src/test/drone.ts`): a 5-inch X
@@ -68,8 +68,10 @@ the propellers spun through a full turn against the airframe, with STEP and KiCa
 ### Drone simulation
 
 The Simulation workspace (Ctrl+3) flies a small 3-inch drone through an obstacle course, or holds
-it in a hover, in hard weather. The same code (`electron/src/shared/sim`) runs the app, the tests
-and the training:
+it in a hover, in hard weather. The simulation is the Rust crate `sim/`: the SwiftUI apps call it
+through the bridge (`bridge/src/sim.rs`, `vf_sim_*` and `vf_train_*`), and the same crate runs the
+tests (`cargo test -p viaform-sim`) and the training. The TypeScript in `electron/src/shared/sim`
+is the reference it was ported from:
 
 - **Physics.** Rigid-body X quad: motor lag, thrust and torque against the air, drag, ground
   effect, and crash and collision detection.
@@ -166,10 +168,10 @@ scripts/build-bridge.sh
 ```
 
 ```bash
-cd apple && xcodegen generate && open SolidCraftNative.xcodeproj
+cd apple && xcodegen generate && open ViaForm.xcodeproj
 ```
 
-`SolidCraft --selftest` runs the tool paths end to end (sketch, extrude, press pull, fillet,
+`ViaForm --selftest` runs the tool paths end to end (sketch, extrude, press pull, fillet,
 undo, primitives, scene) and exits. `--sample` opens the bracket sample.
 
 ## Libraries
@@ -193,6 +195,15 @@ Saved parts, attached files and settings live in `<userData>/library`. The code 
 `electron/src/renderer/library.ts`, the tests in `electron/src/test/library.test.ts`.
 
 ![Electron: Libraries](docs/electron-library.png)
+
+In the Apple apps the same Rust crate (`library/`) runs behind the C bridge (`vf_library_*`,
+`bridge/src/library.rs`), with the panel in `apple/Shared/Library`. Saved parts live in
+`~/Library/Application Support/ViaForm/Library`; API keys go to the macOS or iOS Keychain
+(service `me.somalabs.viaform.library`, this device only) and are passed with each search, never
+written to the library folder. Mac: the Libraries button in the toolbar, or `--library` /
+`--library=M3x12` at launch. iPad and iPhone: Libraries in the top bar.
+
+![macOS: Libraries](docs/macos-library.png)
 
 ## Notes
 
