@@ -90,7 +90,8 @@ fn art(id: &str, stage: &str, name: &str, label: &str, scheme: Scheme, inputs: &
 }
 
 impl Graph {
-    /// The eight stages in pipeline order, the chain every ViaForm product starts from.
+    /// The nine stages in pipeline order, the chain every ViaForm product starts from. The
+    /// name stays `stages8` for the callers written before `robot` joined as the ninth.
     pub fn stages8() -> Vec<StageDef> {
         vec![
             stage("design", "Design"),
@@ -101,6 +102,7 @@ impl Graph {
             stage("train", "Train"),
             stage("render", "Render"),
             stage("make", "Make"),
+            stage("robot", "Robot"),
         ]
     }
 
@@ -144,11 +146,53 @@ impl Graph {
         }
     }
 
+    /// A robot arm (VIAFORM-SPEC 5.2): the design, a generated gripper and forearm, the servo
+    /// board, the assembly of them all, reach and pick tests, demonstrations recorded on the
+    /// robot, the policy trained from them, renders, the manufacturing bundle and the robot
+    /// session that runs the policy. `robot.demos` feeds the policy and the policy feeds
+    /// `robot.session`: two artifacts, no cycle.
+    pub fn arm() -> Self {
+        use Scheme::{Letter, Version};
+        Self {
+            product: "Untitled".into(),
+            stages: Self::stages8(),
+            artifacts: vec![
+                art("design.model", "design", "Design model", "Model", Version, &[]),
+                art("generate.gripper", "generate", "Generated gripper", "Gripper", Version, &["design.model"]),
+                art("generate.forearm", "generate", "Generated forearm", "Forearm", Version, &["design.model"]),
+                art("electronics.board", "electronics", "Servo bus board", "Board", Letter, &[]),
+                art(
+                    "assemble.assembly",
+                    "assemble",
+                    "Assembly",
+                    "Assembly",
+                    Version,
+                    &["design.model", "generate.gripper", "generate.forearm", "electronics.board"],
+                ),
+                art("simulate.reach", "simulate", "Reach test", "Reach", Version, &["assemble.assembly"]),
+                art("simulate.pick", "simulate", "Pick test", "Pick", Version, &["assemble.assembly"]),
+                art("robot.demos", "robot", "Demonstrations", "Demos", Version, &[]),
+                art("train.policy", "train", "Pick policy", "Policy", Version, &["robot.demos", "simulate.pick", "simulate.reach"]),
+                art("render.shots", "render", "Renders", "Renders", Version, &["assemble.assembly"]),
+                art(
+                    "make.bundle",
+                    "make",
+                    "Manufacturing bundle",
+                    "Bundle",
+                    Version,
+                    &["design.model", "generate.gripper", "generate.forearm", "electronics.board", "assemble.assembly"],
+                ),
+                art("robot.session", "robot", "Robot session", "Session", Version, &["train.policy", "assemble.assembly"]),
+            ],
+        }
+    }
+
     /// A graph by name: "drone" or "hand".
     pub fn preset(name: &str) -> Option<Self> {
         match name {
             "drone" => Some(Self::drone()),
             "hand" => Some(Self::hand()),
+            "arm" => Some(Self::arm()),
             _ => None,
         }
     }

@@ -86,6 +86,8 @@ const APP: &[AppVerb] = &[
     ("make.export", "Export Design", "make", "EXPORT", "export", None),
     ("make.bom", "Bill of Materials", "make", "EXPORT", "bom", None),
     ("make.kicad", "Export KiCad Board", "make", "EXPORT", "board", None),
+    ("robot.connect", "Connect Robot", "robot", "CONNECT", "link", None),
+    ("robot.estop", "Emergency Stop", "robot", "SAFETY", "stop", None),
     ("electronics.drc", "Design Rule Check", "electronics", "CHECK", "check", None),
     ("electronics.send_to_3d", "Send Board to 3D", "electronics", "LINK", "link", None),
     ("library.open", "Libraries", "design", "INSERT", "library", None),

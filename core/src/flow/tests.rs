@@ -87,7 +87,7 @@ fn commands_answer_json() {
     assert!(f.command(&json!({"op": "job_progress", "artifact": "design.model", "progress": 0.5}))["error"].is_string());
     assert!(f.command(&json!({"op": "fly"}))["error"].is_string());
     let s = f.state();
-    assert_eq!(s["stages"].as_array().unwrap().len(), 8);
+    assert_eq!(s["stages"].as_array().unwrap().len(), 9);
     assert_eq!(s["stages"][0]["status"], "current");
     // The old way of ending work with no job (a plain build by artifact) still works.
     assert_eq!(f.command(&json!({"op": "job_end", "artifact": "electronics.board", "summary": "rev"}))["revision"], 1);

@@ -51,10 +51,14 @@ pub fn from_doc(doc: &Value) -> Result<Flow, String> {
     if version > VERSION {
         return Err(format!("this pipeline was saved by a newer ViaForm (format {version}); update ViaForm to open it"));
     }
-    let graph: Graph = match doc.get("graph").filter(|g| !g.is_null()) {
+    let mut graph: Graph = match doc.get("graph").filter(|g| !g.is_null()) {
         Some(g) => serde_json::from_value(g.clone()).map_err(|e| format!("graph: {e}"))?,
         None => Graph::drone(),
     };
+    // Projects saved with eight stages gain the ninth, `robot`, empty until it builds.
+    if graph.stage("robot").is_none() && graph.stage("make").is_some() {
+        graph.stages.push(super::StageDef { id: "robot".into(), name: "Robot".into() });
+    }
     let mut f = Flow::with_graph(graph)?;
     if let Some(nodes) = doc["nodes"].as_object() {
         for (id, n) in nodes {

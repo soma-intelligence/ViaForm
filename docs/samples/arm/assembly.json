@@ -1,0 +1,467 @@
+{
+  "components": [
+    {
+      "id": "base",
+      "name": "Base",
+      "parts": [
+        {
+          "at_mm": [
+            0.0,
+            0.0,
+            20.0
+          ],
+          "bom_line": "arm:M1",
+          "dims_mm": [
+            45.2,
+            24.7,
+            35.0
+          ],
+          "part": "lib:feetech/STS3215",
+          "qty": 1
+        }
+      ],
+      "proxy": {
+        "mass_kg": 0.25,
+        "max_mm": [
+          50.0,
+          50.0,
+          40.0
+        ],
+        "min_mm": [
+          -50.0,
+          -50.0,
+          0.0
+        ]
+      }
+    },
+    {
+      "id": "shoulder",
+      "name": "Shoulder",
+      "parts": [
+        {
+          "at_mm": [
+            0.0,
+            0.0,
+            70.0
+          ],
+          "bom_line": "arm:M1",
+          "dims_mm": [
+            45.2,
+            24.7,
+            35.0
+          ],
+          "part": "lib:feetech/STS3215",
+          "qty": 1
+        }
+      ],
+      "proxy": {
+        "mass_kg": 0.06,
+        "max_mm": [
+          25.0,
+          25.0,
+          90.0
+        ],
+        "min_mm": [
+          -25.0,
+          -25.0,
+          40.0
+        ]
+      }
+    },
+    {
+      "id": "upper_arm",
+      "name": "Upper arm",
+      "parts": [
+        {
+          "at_mm": [
+            0.0,
+            0.0,
+            165.0
+          ],
+          "bom_line": "arm:M1",
+          "dims_mm": [
+            45.2,
+            24.7,
+            35.0
+          ],
+          "part": "lib:feetech/STS3215",
+          "qty": 1
+        }
+      ],
+      "proxy": {
+        "mass_kg": 0.05,
+        "max_mm": [
+          15.0,
+          20.0,
+          188.0
+        ],
+        "min_mm": [
+          -15.0,
+          -20.0,
+          90.0
+        ]
+      }
+    },
+    {
+      "id": "forearm",
+      "name": "Forearm",
+      "parts": [
+        {
+          "at_mm": [
+            0.0,
+            0.0,
+            265.0
+          ],
+          "bom_line": "arm:M1",
+          "dims_mm": [
+            45.2,
+            24.7,
+            35.0
+          ],
+          "part": "lib:feetech/STS3215",
+          "qty": 1
+        }
+      ],
+      "proxy": {
+        "mass_kg": 0.04,
+        "max_mm": [
+          15.0,
+          15.0,
+          288.0
+        ],
+        "min_mm": [
+          -15.0,
+          -15.0,
+          188.0
+        ]
+      }
+    },
+    {
+      "id": "wrist",
+      "name": "Wrist",
+      "parts": [
+        {
+          "at_mm": [
+            0.0,
+            0.0,
+            308.0
+          ],
+          "bom_line": "arm:M1",
+          "dims_mm": [
+            45.2,
+            24.7,
+            35.0
+          ],
+          "part": "lib:feetech/STS3215",
+          "qty": 1
+        }
+      ],
+      "proxy": {
+        "mass_kg": 0.03,
+        "max_mm": [
+          12.0,
+          15.0,
+          328.0
+        ],
+        "min_mm": [
+          -12.0,
+          -15.0,
+          288.0
+        ]
+      }
+    },
+    {
+      "id": "gripper",
+      "name": "Gripper",
+      "parts": [
+        {
+          "at_mm": [
+            0.0,
+            0.0,
+            350.0
+          ],
+          "bom_line": "arm:M1",
+          "dims_mm": [
+            45.2,
+            24.7,
+            35.0
+          ],
+          "part": "lib:feetech/STS3215",
+          "qty": 1
+        }
+      ],
+      "proxy": {
+        "mass_kg": 0.035,
+        "max_mm": [
+          20.0,
+          15.0,
+          378.0
+        ],
+        "min_mm": [
+          -20.0,
+          -15.0,
+          328.0
+        ]
+      }
+    },
+    {
+      "id": "jaw",
+      "name": "Moving jaw",
+      "proxy": {
+        "mass_kg": 0.012,
+        "max_mm": [
+          20.0,
+          10.0,
+          420.0
+        ],
+        "min_mm": [
+          5.0,
+          -10.0,
+          378.0
+        ]
+      }
+    }
+  ],
+  "format": "viaform-asm",
+  "ground": "base",
+  "joints": [
+    {
+      "axis": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "child": "shoulder",
+      "damping": 0.02,
+      "friction": 0.05,
+      "id": "shoulder_pan",
+      "limits": {
+        "effort_nm": 2.94,
+        "lower_deg": -110.0,
+        "upper_deg": 110.0,
+        "velocity_dps": 270.0
+      },
+      "motor": {
+        "backlash_deg": 0.3,
+        "bom_line": "arm:M1",
+        "bus_id": 1,
+        "gear_ratio": 345.0,
+        "kp": 20.0,
+        "no_load_speed_dps": 270.0,
+        "part": "lib:feetech/STS3215",
+        "stall_torque_nm": 2.94,
+        "voltage_v": 12.0
+      },
+      "origin": [
+        0.0,
+        0.0,
+        40.0
+      ],
+      "parent": "base",
+      "type": "revolute"
+    },
+    {
+      "axis": [
+        0.0,
+        1.0,
+        0.0
+      ],
+      "child": "upper_arm",
+      "damping": 0.02,
+      "friction": 0.05,
+      "id": "shoulder_lift",
+      "limits": {
+        "effort_nm": 2.94,
+        "lower_deg": -100.0,
+        "upper_deg": 100.0,
+        "velocity_dps": 270.0
+      },
+      "motor": {
+        "backlash_deg": 0.3,
+        "bom_line": "arm:M1",
+        "bus_id": 2,
+        "gear_ratio": 345.0,
+        "kp": 20.0,
+        "no_load_speed_dps": 270.0,
+        "part": "lib:feetech/STS3215",
+        "stall_torque_nm": 2.94,
+        "voltage_v": 12.0
+      },
+      "origin": [
+        0.0,
+        0.0,
+        90.0
+      ],
+      "parent": "shoulder",
+      "type": "revolute"
+    },
+    {
+      "axis": [
+        0.0,
+        1.0,
+        0.0
+      ],
+      "child": "forearm",
+      "damping": 0.02,
+      "friction": 0.05,
+      "id": "elbow",
+      "limits": {
+        "effort_nm": 2.94,
+        "lower_deg": -10.0,
+        "upper_deg": 135.0,
+        "velocity_dps": 270.0
+      },
+      "motor": {
+        "backlash_deg": 0.3,
+        "bom_line": "arm:M1",
+        "bus_id": 3,
+        "gear_ratio": 345.0,
+        "kp": 20.0,
+        "no_load_speed_dps": 270.0,
+        "part": "lib:feetech/STS3215",
+        "stall_torque_nm": 2.94,
+        "voltage_v": 12.0
+      },
+      "origin": [
+        0.0,
+        0.0,
+        188.0
+      ],
+      "parent": "upper_arm",
+      "type": "revolute"
+    },
+    {
+      "axis": [
+        0.0,
+        1.0,
+        0.0
+      ],
+      "child": "wrist",
+      "damping": 0.02,
+      "friction": 0.05,
+      "id": "wrist_pitch",
+      "limits": {
+        "effort_nm": 2.94,
+        "lower_deg": -100.0,
+        "upper_deg": 100.0,
+        "velocity_dps": 270.0
+      },
+      "motor": {
+        "backlash_deg": 0.3,
+        "bom_line": "arm:M1",
+        "bus_id": 4,
+        "gear_ratio": 345.0,
+        "kp": 20.0,
+        "no_load_speed_dps": 270.0,
+        "part": "lib:feetech/STS3215",
+        "stall_torque_nm": 2.94,
+        "voltage_v": 12.0
+      },
+      "origin": [
+        0.0,
+        0.0,
+        288.0
+      ],
+      "parent": "forearm",
+      "type": "revolute"
+    },
+    {
+      "axis": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "child": "gripper",
+      "damping": 0.02,
+      "friction": 0.05,
+      "id": "wrist_roll",
+      "limits": {
+        "effort_nm": 2.94,
+        "lower_deg": -160.0,
+        "upper_deg": 160.0,
+        "velocity_dps": 270.0
+      },
+      "motor": {
+        "backlash_deg": 0.3,
+        "bom_line": "arm:M1",
+        "bus_id": 5,
+        "gear_ratio": 345.0,
+        "kp": 20.0,
+        "no_load_speed_dps": 270.0,
+        "part": "lib:feetech/STS3215",
+        "stall_torque_nm": 2.94,
+        "voltage_v": 12.0
+      },
+      "origin": [
+        0.0,
+        0.0,
+        328.0
+      ],
+      "parent": "wrist",
+      "type": "revolute"
+    },
+    {
+      "axis": [
+        0.0,
+        1.0,
+        0.0
+      ],
+      "child": "jaw",
+      "damping": 0.02,
+      "friction": 0.05,
+      "id": "gripper",
+      "limits": {
+        "effort_nm": 2.94,
+        "lower_deg": -10.0,
+        "upper_deg": 100.0,
+        "velocity_dps": 270.0
+      },
+      "motor": {
+        "backlash_deg": 0.3,
+        "bom_line": "arm:M1",
+        "bus_id": 6,
+        "gear_ratio": 345.0,
+        "kp": 20.0,
+        "no_load_speed_dps": 270.0,
+        "part": "lib:feetech/STS3215",
+        "stall_torque_nm": 2.94,
+        "voltage_v": 12.0
+      },
+      "origin": [
+        12.0,
+        0.0,
+        378.0
+      ],
+      "parent": "gripper",
+      "type": "revolute"
+    }
+  ],
+  "motion_studies": [
+    {
+      "duration_s": 2.0,
+      "id": "elbow_sweep",
+      "joint": "elbow",
+      "pose": "home",
+      "steps": 24
+    }
+  ],
+  "name": "arm",
+  "poses": [
+    {
+      "id": "home",
+      "q_deg": {}
+    },
+    {
+      "id": "ready",
+      "q_deg": {
+        "elbow": 90.0,
+        "gripper": 0.0,
+        "shoulder_lift": -30.0,
+        "shoulder_pan": 0.0,
+        "wrist_pitch": -60.0,
+        "wrist_roll": 0.0
+      }
+    }
+  ],
+  "version": 1
+}

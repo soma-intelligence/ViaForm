@@ -9,6 +9,7 @@
 
 use serde_json::{Value, json};
 
+pub mod asm;
 pub mod flow;
 pub mod generative;
 pub mod link;

@@ -1,0 +1,93 @@
+{
+  "builds": 1,
+  "currency": "USD",
+  "format": "viaform-bom",
+  "lines": [
+    {
+      "category": "Servo",
+      "description": "Serial bus servo, 12 V, 1:345, magnetic encoder 4096 steps",
+      "dims_mm": [
+        45.2,
+        24.7,
+        35.0
+      ],
+      "id": "arm:M1",
+      "key_specs": {
+        "bus": "TTL half duplex, 1 Mbps",
+        "gear_ratio": "1:345",
+        "speed_s_per_60deg": 0.222,
+        "stall_torque_kgcm": 30,
+        "voltage_v": 12
+      },
+      "manufacturer": "Feetech",
+      "mass_g": 55.0,
+      "mpn": "STS3215",
+      "origin": "arm",
+      "qty": 6,
+      "reference": "M1",
+      "subassembly": "Arm"
+    },
+    {
+      "category": "Controller",
+      "description": "USB to serial bus servo adapter",
+      "id": "arm:U1",
+      "manufacturer": "Feetech",
+      "mass_g": 8.0,
+      "mpn": "FE-URT-1",
+      "origin": "arm",
+      "qty": 1,
+      "reference": "U1",
+      "subassembly": "Arm"
+    },
+    {
+      "category": "Power",
+      "description": "12 V 5 A power supply, 5.5 x 2.1 mm barrel",
+      "id": "arm:PS1",
+      "manufacturer": "Generic",
+      "mass_g": 250.0,
+      "mpn": "12V5A",
+      "origin": "arm",
+      "qty": 1,
+      "reference": "PS1",
+      "subassembly": "Arm"
+    },
+    {
+      "category": "Cable",
+      "description": "3-pin servo bus cable, 150 mm",
+      "id": "arm:W1",
+      "manufacturer": "Feetech",
+      "mass_g": 3.0,
+      "mpn": "STS-3P-150",
+      "origin": "arm",
+      "qty": 6,
+      "reference": "W1",
+      "subassembly": "Arm"
+    },
+    {
+      "category": "Hardware",
+      "description": "M2 x 6 self-tapping screw (servo horns and covers)",
+      "id": "arm:H1",
+      "manufacturer": "Generic",
+      "mass_g": 0.25,
+      "mpn": "M2x6-ST",
+      "origin": "arm",
+      "qty": 48,
+      "reference": "H1",
+      "subassembly": "Arm"
+    },
+    {
+      "category": "Hardware",
+      "description": "M3 x 12 socket head screw (base to table clamp)",
+      "id": "arm:H2",
+      "manufacturer": "Generic",
+      "mass_g": 1.1,
+      "mpn": "M3x12-ISO4762",
+      "origin": "arm",
+      "qty": 4,
+      "reference": "H2",
+      "subassembly": "Arm"
+    }
+  ],
+  "name": "Arm",
+  "version": 1
+}

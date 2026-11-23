@@ -1,0 +1,179 @@
+{
+  "flags": {},
+  "format": "viaform-flow",
+  "graph": {
+    "artifacts": [
+      {
+        "id": "design.model",
+        "inputs": [],
+        "label": "Model",
+        "name": "Design model",
+        "scheme": "version",
+        "stage": "design"
+      },
+      {
+        "id": "generate.gripper",
+        "inputs": [
+          "design.model"
+        ],
+        "label": "Gripper",
+        "name": "Generated gripper",
+        "scheme": "version",
+        "stage": "generate"
+      },
+      {
+        "id": "generate.forearm",
+        "inputs": [
+          "design.model"
+        ],
+        "label": "Forearm",
+        "name": "Generated forearm",
+        "scheme": "version",
+        "stage": "generate"
+      },
+      {
+        "id": "electronics.board",
+        "inputs": [],
+        "label": "Board",
+        "name": "Servo bus board",
+        "scheme": "letter",
+        "stage": "electronics"
+      },
+      {
+        "id": "assemble.assembly",
+        "inputs": [
+          "design.model",
+          "generate.gripper",
+          "generate.forearm",
+          "electronics.board"
+        ],
+        "label": "Assembly",
+        "name": "Assembly",
+        "scheme": "version",
+        "stage": "assemble"
+      },
+      {
+        "id": "simulate.reach",
+        "inputs": [
+          "assemble.assembly"
+        ],
+        "label": "Reach",
+        "name": "Reach test",
+        "scheme": "version",
+        "stage": "simulate"
+      },
+      {
+        "id": "simulate.pick",
+        "inputs": [
+          "assemble.assembly"
+        ],
+        "label": "Pick",
+        "name": "Pick test",
+        "scheme": "version",
+        "stage": "simulate"
+      },
+      {
+        "id": "robot.demos",
+        "inputs": [],
+        "label": "Demos",
+        "name": "Demonstrations",
+        "scheme": "version",
+        "stage": "robot"
+      },
+      {
+        "id": "train.policy",
+        "inputs": [
+          "robot.demos",
+          "simulate.pick",
+          "simulate.reach"
+        ],
+        "label": "Policy",
+        "name": "Pick policy",
+        "scheme": "version",
+        "stage": "train"
+      },
+      {
+        "id": "render.shots",
+        "inputs": [
+          "assemble.assembly"
+        ],
+        "label": "Renders",
+        "name": "Renders",
+        "scheme": "version",
+        "stage": "render"
+      },
+      {
+        "id": "make.bundle",
+        "inputs": [
+          "design.model",
+          "generate.gripper",
+          "generate.forearm",
+          "electronics.board",
+          "assemble.assembly"
+        ],
+        "label": "Bundle",
+        "name": "Manufacturing bundle",
+        "scheme": "version",
+        "stage": "make"
+      },
+      {
+        "id": "robot.session",
+        "inputs": [
+          "train.policy",
+          "assemble.assembly"
+        ],
+        "label": "Session",
+        "name": "Robot session",
+        "scheme": "version",
+        "stage": "robot"
+      }
+    ],
+    "product": "Untitled",
+    "stages": [
+      {
+        "id": "design",
+        "name": "Design"
+      },
+      {
+        "id": "generate",
+        "name": "Generate"
+      },
+      {
+        "id": "assemble",
+        "name": "Assemble"
+      },
+      {
+        "id": "electronics",
+        "name": "Electronics"
+      },
+      {
+        "id": "simulate",
+        "name": "Simulate"
+      },
+      {
+        "id": "train",
+        "name": "Train"
+      },
+      {
+        "id": "render",
+        "name": "Render"
+      },
+      {
+        "id": "make",
+        "name": "Make"
+      },
+      {
+        "id": "robot",
+        "name": "Robot"
+      }
+    ]
+  },
+  "interrupted": [],
+  "items": {},
+  "nodes": {},
+  "selection": {
+    "ids": [],
+    "stage": ""
+  },
+  "version": 1
+}

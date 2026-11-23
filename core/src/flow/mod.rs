@@ -35,8 +35,8 @@ pub use tree::{Flags, Selection, TreeItem};
 use jobs::Workers;
 use tree::Trees;
 
-/// The eight stages, in pipeline order (the default graph's).
-pub const STAGES: [(&str, &str); 8] = [
+/// The nine stages, in pipeline order (the default graph's).
+pub const STAGES: [(&str, &str); 9] = [
     ("design", "Design"),
     ("generate", "Generate"),
     ("assemble", "Assemble"),
@@ -45,6 +45,7 @@ pub const STAGES: [(&str, &str); 8] = [
     ("train", "Train"),
     ("render", "Render"),
     ("make", "Make"),
+    ("robot", "Robot"),
 ];
 
 /// How current an artifact or a stage is. Ordered from best to worst, so a stage reads as its
