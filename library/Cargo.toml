@@ -1,0 +1,17 @@
+[package]
+name = "viaform-library"
+description = "Side libraries for ViaForm: KiCad on this machine, standard hardware, distributor and marketplace APIs, and the user's saved parts"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish = false
+
+[dependencies]
+solidcraft-engine.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+ureq = { version = "3", default-features = false, features = ["rustls", "gzip"] }
+hmac = "0.12"
+sha2 = "0.10"
+hex = "0.4"
+base64 = "0.22"

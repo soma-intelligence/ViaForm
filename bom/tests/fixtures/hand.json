@@ -1,0 +1,81 @@
+{
+  "assembly": "hand",
+  "version": 1,
+  "checked_on": "2026-11-01",
+  "currency": "USD",
+  "components": [
+    {
+      "ref": "M1", "qty": 5, "category": "motor",
+      "mpn": "2378", "manufacturer": "Pololu",
+      "description": "Test fixture: 1000:1 micro metal gearmotor HP 6V",
+      "key_specs": {"voltage_v": 6, "stall_torque_nm": 0.88, "no_load_rpm": 32},
+      "dims_mm": [10, 12, 34], "mass_g": 10.5,
+      "datasheet_url": "https://www.pololu.com/product/2378", "cad_source": null,
+      "offers": [
+        {"supplier": "Pololu", "sku": "2378", "url": "https://www.pololu.com/product/2378", "unit_price_usd": 24.95, "moq": 1, "stock_note": "In stock", "checked_on": "2026-11-01",
+         "price_breaks": [{"qty": 1, "unit_price_usd": 24.95}, {"qty": 10, "unit_price_usd": 22.46}, {"qty": 100, "unit_price_usd": 19.96}]}
+      ],
+      "alternates": ["2373"], "used_by": ["finger/flexion", "thumb/flexion"], "notes": ""
+    },
+    {
+      "ref": "U1", "qty": 3, "category": "driver",
+      "mpn": "DRV8833PWPR", "manufacturer": "Texas Instruments",
+      "description": "Test fixture: dual H-bridge motor driver",
+      "key_specs": {"voltage_v": 10.8, "current_a": 1.5},
+      "dims_mm": [5, 6.4, 1.2], "mass_g": 0.1,
+      "offers": [
+        {"supplier": "DigiKey", "sku": "296-27581-1-ND", "url": "https://www.digikey.com/", "unit_price_usd": 2.12, "moq": 1, "checked_on": "2026-11-01",
+         "price_breaks": [{"qty": 1, "unit_price_usd": 2.12}, {"qty": 10, "unit_price_usd": 1.53}, {"qty": 25, "unit_price_usd": 1.38}]},
+        {"supplier": "Mouser", "sku": "595-DRV8833PWPR", "url": "https://www.mouser.com/", "unit_price_usd": 2.20, "moq": 1, "checked_on": "2026-11-01"}
+      ],
+      "alternates": ["DRV8833PWP"], "used_by": ["palm/electronics"], "notes": ""
+    },
+    {
+      "ref": "B1", "qty": 10, "category": "bearing",
+      "mpn": "MR63ZZ", "manufacturer": "Generic",
+      "description": "Test fixture: 3 x 6 x 2.5 mm ball bearing",
+      "key_specs": {"bore_mm": 3, "od_mm": 6, "width_mm": 2.5},
+      "dims_mm": [6, 6, 2.5], "mass_g": 0.3,
+      "offers": [
+        {"supplier": "AliExpress", "sku": "", "url": "https://www.aliexpress.com/", "unit_price_usd": 0.35, "moq": 20, "stock_note": "Ships in 2 weeks", "checked_on": "2026-06-01"}
+      ],
+      "used_by": ["finger/joints"], "notes": ""
+    },
+    {
+      "ref": "F1", "qty": 24, "category": "fastener",
+      "mpn": "91292A831", "manufacturer": "McMaster-Carr",
+      "description": "Test fixture: M2 x 6 mm socket head screw, A2",
+      "key_specs": {"thread": "M2x0.4", "length_mm": 6},
+      "mass_g": 0.25,
+      "offers": [
+        {"supplier": "McMaster-Carr", "sku": "91292A831", "url": "https://www.mcmaster.com/91292A831/", "unit_price_usd": 0.1176, "moq": 100, "stock_note": "Pack of 100", "checked_on": "2026-11-01"}
+      ],
+      "used_by": ["palm"], "notes": ""
+    },
+    {
+      "ref": "T1", "qty": 1, "category": "tendon",
+      "mpn": "", "manufacturer": "",
+      "description": "Test fixture: 0.4 mm UHMWPE braided line, 10 m",
+      "mass_g": 2.0,
+      "offers": [], "used_by": ["finger/tendons"], "notes": "No supplier chosen yet"
+    },
+    {
+      "ref": "S1", "qty": 5, "category": "sensor",
+      "mpn": "AS5600-ASOM", "manufacturer": "ams OSRAM",
+      "description": "Test fixture: 12-bit magnetic rotary position sensor",
+      "mass_g": 0.08,
+      "offers": [
+        {"supplier": "Mouser", "sku": "985-AS5600-ASOM", "url": "https://www.mouser.com/", "moq": 1, "stock_note": "NRND, last time buy 2027", "checked_on": "2026-11-01"}
+      ],
+      "used_by": ["finger/encoders"], "notes": ""
+    },
+    {
+      "ref": "P1", "qty": 5, "category": "other",
+      "mpn": "", "manufacturer": "",
+      "description": "Test fixture: printed finger phalanx",
+      "mass_g": 3.2,
+      "made": {"material": "PA12", "process": "SLS", "unit_cost_usd": 4.5},
+      "used_by": ["finger/structure"], "notes": ""
+    }
+  ]
+}

@@ -1,0 +1,57 @@
+{
+  "assembly": "drone",
+  "version": 1,
+  "checked_on": "2026-11-02",
+  "currency": "USD",
+  "components": [
+    {
+      "ref": "M1", "qty": 4, "category": "motor",
+      "mpn": "F1404 3800KV", "manufacturer": "T-Motor",
+      "description": "Test fixture: 1404 brushless motor, 3800 KV",
+      "key_specs": {"kv": 3800, "voltage_v": 14.8},
+      "dims_mm": [18, 18, 15], "mass_g": 9.6,
+      "offers": [
+        {"supplier": "GetFPV", "sku": "TM-F1404-3800", "url": "https://www.getfpv.com/", "unit_price_usd": 19.99, "moq": 1, "stock_note": "In stock", "checked_on": "2026-11-02"},
+        {"supplier": "RaceDayQuads", "sku": "RDQ-F1404", "url": "https://www.racedayquads.com/", "unit_price_usd": 18.99, "moq": 1, "stock_note": "Out of stock", "checked_on": "2026-11-02"}
+      ],
+      "used_by": ["propulsion"], "notes": ""
+    },
+    {
+      "ref": "P1", "qty": 4, "category": "propeller",
+      "mpn": "T3X3X3", "manufacturer": "HQProp",
+      "description": "Test fixture: 3 inch tri-blade propeller (pair = 2)",
+      "mass_g": 1.4,
+      "offers": [
+        {"supplier": "GetFPV", "sku": "HQ-T3X3X3", "url": "https://www.getfpv.com/", "unit_price_usd": 0.90, "moq": 4, "checked_on": "2026-11-02"}
+      ],
+      "used_by": ["propulsion"], "notes": ""
+    },
+    {
+      "ref": "FC1", "qty": 1, "category": "mcu",
+      "mpn": "F722 AIO 20x20", "manufacturer": "SpeedyBee",
+      "description": "Test fixture: F7 flight controller with 4-in-1 ESC",
+      "mass_g": 8.0,
+      "offers": [
+        {"supplier": "Amazon", "sku": "B0EXAMPLE1", "url": "https://www.amazon.com/", "unit_price_usd": 69.99, "moq": 1, "checked_on": "2026-11-02"}
+      ],
+      "used_by": ["avionics"], "notes": ""
+    },
+    {
+      "ref": "BAT1", "qty": 1, "category": "battery",
+      "mpn": "4S 650mAh 75C", "manufacturer": "CNHL",
+      "description": "Test fixture: 4S LiPo 650 mAh",
+      "mass_g": 78,
+      "offers": [
+        {"supplier": "RaceDayQuads", "sku": "CNHL-650-4S", "url": "https://www.racedayquads.com/", "unit_price_usd": 14.99, "moq": 1, "checked_on": "2026-11-02"}
+      ],
+      "used_by": ["power"], "notes": ""
+    },
+    {
+      "ref": "FR1", "qty": 1, "category": "other",
+      "description": "Test fixture: generative 3 inch frame",
+      "mass_g": 22,
+      "made": {"material": "Carbon fibre PA", "process": "FDM"},
+      "used_by": ["frame"], "notes": ""
+    }
+  ]
+}
