@@ -3,4 +3,5 @@
 	url = https://github.com/tangency-labs/solidcraft.git
 [submodule "engines/pcbcraft"]
 	path = engines/pcbcraft
-	url = https://github.com/tangency-labs/pcbcraft.git
+	url = https://github.com/soma-intelligence/pcbcraft.git
+	branch = viaform
