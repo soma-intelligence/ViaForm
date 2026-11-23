@@ -11,13 +11,16 @@ struct BrowserSidebar: View {
     let model: DesignModel
     let flow: FlowModel
     let actions: StageActions
+    var assemble: AssembleModel?
 
     var body: some View {
         VStack(spacing: 0) {
             header("Browser")
             ScrollView {
                 VStack(alignment: .leading, spacing: 1) {
-                    if StageActions.designLike.contains(workspace) {
+                    if let assemble {
+                        AssembleOutline(model: assemble, title: ProjectTitle.of(flow: flow, design: model))
+                    } else if StageActions.designLike.contains(workspace) {
                         DesignOutline(model: model, title: ProjectTitle.of(flow: flow, design: model))
                     } else {
                         FlowOutline(flow: flow, stage: workspace.stage)

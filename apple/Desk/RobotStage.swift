@@ -10,9 +10,12 @@ struct RobotStage: View {
     let flow: FlowModel
     let actions: StageActions
 
+    @State private var safety = RobotSafety.shared
+
     var body: some View {
         VStack(spacing: VFSpace.l) {
             RobotSafetyBar(connected: false)
+            if safety.stopped { RobotStoppedBanner() }
             HStack(spacing: VFSpace.l) {
                 pane(title: "Digital twin", symbol: "figure.arms.open",
                      line: "Measured pose as a solid, commanded pose as a ghost, at 50 Hz once a robot is connected.")
@@ -74,7 +77,7 @@ struct RobotSafetyBar: View {
 
     var body: some View {
         HStack(spacing: VFSpace.xl) {
-            RobotEStopButton(enabled: connected)
+            RobotEStopButton(enabled: true) { RobotSafety.shared.stop(source: "Button") }
                 .frame(width: 168)
             item("Torque limit", "60 %")
             item("Fence", connected ? "Armed" : "Joint limits from Assemble")
@@ -100,8 +103,9 @@ struct RobotSafetyBar: View {
     }
 }
 
-/// The software e-stop: red, 44 points high, always visible in the Robot stage. Space and Esc
-/// twice reach it once a robot is connected.
+/// The software e-stop: red, 44 points high, always visible in the Robot stage and always live:
+/// Space and Esc twice press it too. It latches `RobotSafety`; with a robot connected the
+/// latch turns torque off on every motor.
 struct RobotEStopButton: View {
     @Environment(\.viaFormTheme) private var theme
     var enabled: Bool

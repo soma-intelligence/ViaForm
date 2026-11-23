@@ -617,6 +617,10 @@ final class FlowModel {
 
     // MARK: Plumbing
 
+    /// A command built elsewhere (the assembly engine's `produce`), sent as is.
+    @discardableResult
+    func sendCommand(_ command: [String: Any?]) -> [String: Any]? { send(command) }
+
     @discardableResult
     private func send(_ command: [String: Any?], save: Bool = true) -> [String: Any]? {
         let r = call(command)

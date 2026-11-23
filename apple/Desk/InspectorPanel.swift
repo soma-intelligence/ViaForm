@@ -14,6 +14,9 @@ struct InspectorPanel: View {
     let sim: SimModel
     let generate: GenerateModel
     let actions: StageActions
+    var assemble: AssembleModel?
+    var armSim: ArmSimModel?
+    var testInSimulation: (() -> Void)?
     @State private var linkedOpen = false
     @State private var revisionsOf: String?
 
@@ -33,6 +36,12 @@ struct InspectorPanel: View {
     // MARK: Selection
 
     private var selectionTitle: (String, String)? {
+        if workspace == .assemble, let a = assemble {
+            if a.tool == .grasp { return ("Grasp", "Object \(a.grasp.shape), \(a.grasp.fingers.count) fingertips") }
+            if a.tool == .dragTip { return ("Tool tip", "Drag tip, \(a.ik.solver.lowercased()) solver") }
+            if let j = a.selected { return (j.title + " joint", j.kind.capitalized + String(format: ", %.1f %@", a.q[j.id] ?? 0, j.unit)) }
+            return nil
+        }
         if StageActions.designLike.contains(workspace) {
             let bodies = model.selectedBodies.sorted()
             if let b = bodies.first, let info = model.snapshot.bodies.first(where: { $0.name == b }) {
@@ -179,6 +188,10 @@ struct InspectorPanel: View {
 
     @ViewBuilder private var stageSection: some View {
         switch workspace {
+        case .assemble where assemble != nil:
+            AssembleInspector(model: assemble!, testInSimulation: testInSimulation)
+        case .simulation where armSim != nil:
+            ArmSimInspector(sim: armSim!, flow: flow)
         case .design, .assemble, .render:
             let s = model.snapshot
             section(workspace == .assemble ? "Assembly" : "Document") {
@@ -283,7 +296,7 @@ struct InspectorPanel: View {
                 kv("Latency", "n/a")
             }
             section("Safety") {
-                RobotEStopButton(enabled: false)
+                RobotEStopButton(enabled: true) { RobotSafety.shared.stop(source: "Button") }
                 kv("Torque limit", "60 %")
                 kv("Workspace fence", "From Assemble joint limits")
                 kv("Teleop speed cap", "30 %")

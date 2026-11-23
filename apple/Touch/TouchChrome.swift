@@ -209,6 +209,17 @@ private struct TouchWorkspacePresenter<Menu: View>: ViewModifier {
             content.sheet(isPresented: $isOpen) {
                 menu().presentationDetents([.medium, .large]).presentationDragIndicator(.visible)
             }
+        } else if ProcessInfo.processInfo.arguments.contains("--landscape-render") {
+            // The screenshot harness turns the shell a quarter; a popover lives in its own
+            // window and would not turn with it, so the menu is drawn in place.
+            content.overlay(alignment: .topLeading) {
+                if isOpen {
+                    menu().frame(width: 380, height: 640)
+                        .vfSurface(.floating, radius: VFRadius.floating)
+                        .offset(y: 56)
+                        .fixedSize()
+                }
+            }
         } else {
             content.popover(isPresented: $isOpen, arrowEdge: .top) {
                 menu().frame(width: 380, height: 640)

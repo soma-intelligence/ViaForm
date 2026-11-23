@@ -20,6 +20,9 @@ struct ProjectWindow: View {
     @State private var library = LibraryModel()
     @State private var bom = BomModel()
     @State private var flow = FlowModel()
+    @State private var assemble = AssembleModel()
+    @State private var armSim = ArmSimModel()
+    @State private var safety = RobotSafety.shared
     @State private var columns = NavigationSplitViewVisibility.all
     @State private var showInspector = !ProcessInfo.processInfo.arguments.contains("--no-inspector")
     @State private var inspectorMode = InspectorMode.inspector
@@ -110,6 +113,12 @@ struct ProjectWindow: View {
             DeskSampleHand.build(into: model)
             flow.newDocument(product: t.product, graph: "hand")
             generate.openSample("hand")
+            assemble.openHand(flow: flow)
+        case "arm":
+            // The Desk robot arm: graph arm(), the six-joint assembly and its BOM lines.
+            model.newDesign()
+            flow.newDocument(product: t.product, graph: "arm")
+            assemble.openArm(flow: flow)
         case let preset?:
             // A preset with no sample model yet (the arm until phase 2): its graph and name.
             model.newDesign()
@@ -118,6 +127,7 @@ struct ProjectWindow: View {
             ProjectFiles.newDesign(model, in: ctx)
             if t.kind == .board { pcb.newProject() }
         }
+        if t.preset != "arm" && t.preset != "hand" { assemble.close() }
         workspace = t.stage
         showStart = false
     }
@@ -126,7 +136,8 @@ struct ProjectWindow: View {
         let actions = actions
         let screen = screen
         return NavigationSplitView(columnVisibility: $columns) {
-            BrowserSidebar(workspace: workspace, model: model, flow: flow, actions: actions)
+            BrowserSidebar(workspace: workspace, model: model, flow: flow, actions: actions,
+                           assemble: workspace == .assemble && assemble.isActive ? assemble : nil)
                 .navigationSplitViewColumnWidth(min: VFSize.sidebarMin, ideal: 256, max: VFSize.sidebarMax)
         } detail: {
             VStack(spacing: 0) {
@@ -160,7 +171,17 @@ struct ProjectWindow: View {
                 // The workspace dropdown at the far left, then the stage's ribbon. Electronics has
                 // one ribbon, the board editor's own (with CHECK and 3D groups): the dropdown rides
                 // at its left edge instead.
-                if workspace != .electronics {
+                if workspace == .assemble && assemble.isActive {
+                    HStack(spacing: 0) {
+                        dropdown(actions)
+                        VFHairline(vertical: true)
+                        AssembleRibbon(model: assemble, flow: flow, showBottom: { showBottom = true })
+                            .disabled(EngineGate.shared.shut)
+                    }
+                    .fixedSize(horizontal: false, vertical: true)
+                    .vfSurface(.ribbon)
+                    .overlay(alignment: .bottom) { VFHairline() }
+                } else if workspace != .electronics {
                     HStack(spacing: 0) {
                         dropdown(actions)
                         VFHairline(vertical: true)
@@ -193,7 +214,9 @@ struct ProjectWindow: View {
                         ScrollView { CommandDialog(model: model).padding(VFSpace.l) }
                             .background(theme.panel)
                     } else {
-                        InspectorPanel(workspace: workspace, flow: flow, model: model, pcb: pcb, sim: sim, generate: generate, actions: actions)
+                        InspectorPanel(workspace: workspace, flow: flow, model: model, pcb: pcb, sim: sim, generate: generate, actions: actions,
+                                       assemble: assemble.isActive ? assemble : nil, armSim: armSimActive ? armSim : nil,
+                                       testInSimulation: { workspace = .simulation })
                     }
                 case .library:
                     LibraryView(model: library, design: model, pcb: pcb) { inspectorMode = .inspector }
@@ -270,6 +293,24 @@ struct ProjectWindow: View {
         }
         if showPalette { return false }
         if ch == "?" && mods.isSubset(of: [.shift]) { showShortcuts = true; return true }
+        // Robot stage: Space, or Esc twice within 0.6 s, is the e-stop (VIAFORM-SPEC 6.4).
+        if workspace == .robot, mods.isEmpty {
+            if e.keyCode == 49 { safety.stop(source: "Space"); return true }
+            if e.keyCode == 53 { return safety.escape() }
+        }
+        if workspace == .assemble && assemble.isActive {
+            if e.window?.firstResponder is NSTextView { return false }
+            if mods.isEmpty {
+                switch ch.uppercased() {
+                case "T" where assemble.product == .arm: assemble.tab = .motion; assemble.tool = .dragTip; return true
+                case "G" where assemble.product == .hand: assemble.tab = .motion; assemble.tool = .grasp; return true
+                case "J": assemble.tab = .joints; assemble.tool = .rotateJoint; return true
+                default: break
+                }
+                if e.keyCode == 53, !assemble.ik.dragging, assemble.tool != .select { assemble.tool = .select; return true }
+            }
+            return false
+        }
         guard StageActions.designLike.contains(workspace), !EngineGate.shared.shut else { return false }
         if mods == .control, let d = Int(ch), let v = DeskKeymap.view(d) { model.setView(v); return true }
         if e.keyCode == 97, mods.isEmpty { model.zoomToFit(); return true }
@@ -371,6 +412,12 @@ struct ProjectWindow: View {
     private func statusLine(_ screen: StageScreen) -> String {
         // The 3D stages name what is picked in the viewport itself ("Face of Middle Distal"),
         // the same words as the selection card, never a stale flow selection.
+        if workspace == .assemble && assemble.isActive {
+            var parts = [flow.node("assemble.assembly")?.revisionName ?? "Assembly", "\(assemble.joints.count) joints"]
+            if let i = assemble.interference { parts.append(i.isEmpty ? "no interference" : "\(i.count) interfering pairs") }
+            if assemble.tool == .dragTip { parts.append(assemble.ik.reached ? "tip on target" : String(format: "%.0f mm out of reach", assemble.ik.shortBy)) }
+            return parts.joined(separator: " · ")
+        }
         if StageActions.designLike.contains(workspace) {
             let size = CGSize(width: max(detailWidth, 1), height: 600)
             if let a = AnchorLayout.anchor(model, size: size) {
@@ -400,6 +447,12 @@ struct ProjectWindow: View {
         }
     }
 
+    /// Undo and redo go to the assembly document in Assemble.
+    private var asmUndo: Bool { workspace == .assemble && assemble.isActive }
+
+    /// Simulate shows the articulated simulation for an arm assembly.
+    private var armSimActive: Bool { assemble.isActive && assemble.product == .arm }
+
     private var hasBottom: Bool { [.design, .assemble, .electronics, .train, .robot].contains(workspace) }
 
     private var bottomToggle: some View {
@@ -416,6 +469,12 @@ struct ProjectWindow: View {
 
     @ViewBuilder private func content(_ actions: StageActions) -> some View {
         switch workspace {
+        case .assemble where assemble.isActive:
+            AssembleCanvas(model: assemble)
+        case .simulation where armSimActive:
+            ArmSimulationView(sim: armSim, assemble: assemble, flow: flow,
+                              openGenerate: { workspace = .generate },
+                              addLoadCases: { generate.addSimulatedCases($0) })
         case .design, .assemble, .render:
             DesignCanvas(model: model, pcb: pcb, flow: flow, workspace: workspace, actions: actions,
                          dialogInInspector: showInspector && inspectorMode == .inspector)
@@ -461,6 +520,9 @@ struct ProjectWindow: View {
 
     @ViewBuilder private var bottom: some View {
         switch workspace {
+        case .assemble where assemble.isActive:
+            VFHairline()
+            MotionStudyPanel(model: assemble)
         case .design, .assemble:
             VFHairline()
             FeatureTimeline(model: model)
@@ -484,11 +546,11 @@ struct ProjectWindow: View {
         ToolbarItemGroup(placement: .navigation) {
             Button { showData.toggle() } label: { Label("Data", systemImage: "square.grid.3x3") }
                 .help("Designs, samples and recent files")
-            Button { model.undo() } label: { Label("Undo", systemImage: "arrow.uturn.backward") }
-                .disabled(model.snapshot.undo == 0 || EngineGate.shared.shut)
+            Button { if asmUndo { assemble.undo() } else { model.undo() } } label: { Label("Undo", systemImage: "arrow.uturn.backward") }
+                .disabled((asmUndo ? !assemble.canUndo : model.snapshot.undo == 0) || EngineGate.shared.shut)
                 .help("Undo (\u{2318}Z), \(model.snapshot.undo) step\(model.snapshot.undo == 1 ? "" : "s") back")
-            Button { model.redo() } label: { Label("Redo", systemImage: "arrow.uturn.forward") }
-                .disabled(model.snapshot.redo == 0 || EngineGate.shared.shut)
+            Button { if asmUndo { assemble.redo() } else { model.redo() } } label: { Label("Redo", systemImage: "arrow.uturn.forward") }
+                .disabled((asmUndo ? !assemble.canRedo : model.snapshot.redo == 0) || EngineGate.shared.shut)
                 .help("Redo (\u{21E7}\u{2318}Z), \(model.snapshot.redo) step\(model.snapshot.redo == 1 ? "" : "s") ahead")
         }
         // No stage chips in the toolbar (D-10): the principal slot holds the job capsule while a
@@ -536,6 +598,13 @@ struct ProjectWindow: View {
             if GenerateProject.launchSample == nil, generate.project?.name != "drone" { generate.openSample("drone") }
         }
         if args.contains("--board") { workspace = .electronics; pcb.sheet = .board }
+        if args.contains("--hand") { assemble.openHand(flow: flow) }
+        if args.contains("--sample=arm") || args.contains("--arm") {
+            model.newDesign()
+            flow.newDocument(product: "Desk Arm", graph: "arm")
+            assemble.openArm(flow: flow)
+        }
+        AssembleLaunch.apply(args, assemble: assemble, sim: armSim, flow: flow, open: { workspace = $0 }, showBottom: { showBottom = $0 })
         if args.contains(where: { $0.hasPrefix("--select=") || $0.hasPrefix("--pick-top=") || $0.hasPrefix("--tool=") }) {
             DispatchQueue.main.async { DeskSamples.applySelectionFlags(model) }
         }

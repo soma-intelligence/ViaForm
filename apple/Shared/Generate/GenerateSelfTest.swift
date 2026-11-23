@@ -149,10 +149,14 @@ enum GenerateSelfTest {
                             "\(name) assembly inserted: \(d.assembly.count) components, \(tagged) of \(summary.components) real parts carry their component_ref, \(listed.count) joints"))
                 if let j = joints.first(where: { $0.limits.upperBound - $0.limits.lowerBound > 10 }) {
                     let target = j.fistValue == 0 ? j.limits.upperBound : j.fistValue
-                    let before = d.scene.meshes.map { m in m.positions.first.map { [Double($0.x), Double($0.y), Double($0.z)] } ?? [] }
+                    // The scene is built here, not read from d.scene: a large design (the hand's 153
+                    // components) builds its drawn scene on the worker, so d.scene right after
+                    // refresh() is still the one from before the drive.
+                    let firsts = { d.engine.scene(camera: d.camera).meshes.map { m in m.positions.first.map { [Double($0.x), Double($0.y), Double($0.z)] } ?? [] } }
+                    let before = firsts()
                     _ = try d.engine.execute("joint.drive", ["joint": j.name, "values": [String(format: "%.3f deg", target)]])
                     d.refresh()
-                    let after = d.scene.meshes.map { m in m.positions.first.map { [Double($0.x), Double($0.y), Double($0.z)] } ?? [] }
+                    let after = firsts()
                     out.append((before != after, "\(name): joint \(j.name) drives to \(Int(target)) deg and the part moves"))
                 }
             } catch {

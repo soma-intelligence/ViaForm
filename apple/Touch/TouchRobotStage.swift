@@ -7,17 +7,23 @@ import SwiftUI
 struct TouchRobotStage: View {
     @Environment(\.viaFormTheme) private var theme
     let flow: FlowModel
+    @State private var safety = RobotSafety.shared
 
     var body: some View {
         VStack(spacing: 16) {
             HStack(spacing: 16) {
-                Label("E-STOP", systemImage: "stop.circle.fill")
-                    .font(.system(size: 15, weight: .bold))
-                    .foregroundStyle(.white)
-                    .frame(minWidth: 150, minHeight: VFSize.touchTarget)
-                    .background(RoundedRectangle(cornerRadius: VFRadius.card).fill(theme.danger))
-                    .opacity(0.55)
-                    .accessibilityLabel("Emergency stop, no robot connected")
+                Button { safety.stop(source: "Button") } label: {
+                    Label("E-STOP", systemImage: "stop.circle.fill")
+                        .font(.system(size: 15, weight: .bold))
+                        .foregroundStyle(.white)
+                        .frame(minWidth: 150, minHeight: VFSize.touchTarget)
+                        .background(RoundedRectangle(cornerRadius: VFRadius.card).fill(theme.danger))
+                }
+                .buttonStyle(.plain)
+                // A hardware keyboard: Space presses it, Esc twice within 0.6 s too.
+                .keyboardShortcut(.space, modifiers: [])
+                .accessibilityLabel("Emergency stop")
+                .accessibilityHint("Turns torque off on every motor")
                 VStack(alignment: .leading, spacing: 2) {
                     VFCaption("Torque limit")
                     Text("60 %").foregroundStyle(theme.ink)
@@ -31,6 +37,7 @@ struct TouchRobotStage: View {
             }
             .padding(12)
             .vfSurface(.floating, radius: VFRadius.floating)
+            if safety.stopped { RobotStoppedBanner() }
             Spacer(minLength: 0)
             Image(systemName: "figure.arms.open").font(.system(size: 48, weight: .light)).foregroundStyle(theme.inkTertiary)
             Text("No robot connected").font(.title3.weight(.semibold)).foregroundStyle(theme.ink)
@@ -43,6 +50,8 @@ struct TouchRobotStage: View {
         .padding(.top, 76)
         .padding(.bottom, 24)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .focusable()
+        .onKeyPress(.escape) { safety.escape() ? .handled : .ignored }
         .background(
             LinearGradient(colors: [Color(vf: theme.palette.viewportTop), Color(vf: theme.palette.viewportBottom)],
                            startPoint: .top, endPoint: .bottom)

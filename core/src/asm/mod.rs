@@ -14,6 +14,7 @@
 //!   (its joints go with it), `set_ground {component | null}`
 //! - `joints`, `add_joint {joint}`, `set_joint {id, ...fields}`, `remove_joint {id}`
 //! - `drive {joint, value}` or `drive {q}` -> current values and component poses; `fk {q?, pose?}`
+//! - `kin_model {tool?, tip_mm?}` -> the assembly as a `viaform-kin` model for IK and grasps
 //! - `mass_props {q?, pose?, geometry?, bom?}`, `interference {q?, pose?, cell_mm?, include_adjacent?}`
 //! - `motion_study {study} | {joint, from?, to?, steps?, pose?, duration_s?}`, `add_study {study}`
 //! - `export_mjcf`, `export_urdf` -> `{text, warnings, check}`; `import_mjcf {text}`,
@@ -292,6 +293,13 @@ impl Asm {
                 }
                 self.q.extend(q);
                 ok(json!({"state": self.state(), "held": held}))
+            }
+            "kin_model" => {
+                let tip = match p.get("tip_mm") {
+                    Some(v) if !v.is_null() => Some(serde_json::from_value::<[f64; 3]>(v.clone()).map_err(|e| format!("tip_mm: {e}"))?),
+                    _ => None,
+                };
+                kin::kin_model(&self.doc, p.get("tool").and_then(Value::as_str), tip)
             }
             "fk" => {
                 let q = self.q_for(p)?;

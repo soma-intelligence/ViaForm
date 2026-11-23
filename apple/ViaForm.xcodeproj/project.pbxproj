@@ -7,14 +7,22 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		0015181F02F6FAB988132525 /* AssembleModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5193B22542D7E3A58A4F9758 /* AssembleModel.swift */; };
 		02CBAA42D91DAF234B5F3CFF /* WorkspaceDropdown.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8CF96691C3875966F13A13B2 /* WorkspaceDropdown.swift */; };
 		049CA90E23489C8966F04948 /* ToolIcons in Resources */ = {isa = PBXBuildFile; fileRef = 812579DC75498AA5D6AB6F9A /* ToolIcons */; };
+		04AC02723FEAD9064EA4CD4A /* PhysService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55521679B4C4AE4DA2FA5599 /* PhysService.swift */; };
+		0543BE7177CBE3FC85E571D6 /* RobotSafety.swift in Sources */ = {isa = PBXBuildFile; fileRef = 65085BBD229CB770B45F114C /* RobotSafety.swift */; };
+		0796659B2AAA50F8D11A2F38 /* AssembleHand.swift in Sources */ = {isa = PBXBuildFile; fileRef = C35ABFFBB4159AA7329E6AEC /* AssembleHand.swift */; };
+		0830A61B80419B43FE637086 /* AssembleCanvas.swift in Sources */ = {isa = PBXBuildFile; fileRef = D54D03BA238A53AEC7C1B5BB /* AssembleCanvas.swift */; };
 		0883DB09BC2AB9C7DF969B78 /* ViaFormApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = BCCC7ECED1451E6038404754 /* ViaFormApp.swift */; };
 		08F9063B02BC6C637D02A80F /* GenerateModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4B73B87698BA8F6AB6B165B0 /* GenerateModel.swift */; };
 		0A070437A55B8646C3034E0A /* Perf.swift in Sources */ = {isa = PBXBuildFile; fileRef = 843278380E916BA0AC9A02F4 /* Perf.swift */; };
+		0B01CCC3955AD722DD6EE6D6 /* AssembleOutline.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0C81CE6BDCE7075F2D6E9C2 /* AssembleOutline.swift */; };
 		0C60ABAA25C1A07FAE590D57 /* AnchorLayout.swift in Sources */ = {isa = PBXBuildFile; fileRef = B2D59B958F7312691F78BF6B /* AnchorLayout.swift */; };
 		0E2D89CAEC17653086292D2E /* TouchSimulation.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3D4FD2C46FE16D31DB60B3BB /* TouchSimulation.swift */; };
+		0F727BBB486E975515C01CC0 /* AssembleModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5193B22542D7E3A58A4F9758 /* AssembleModel.swift */; };
 		0F74FDFC8AF32599E4450DFD /* CommandIcon.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3534FE6374783A2D84121C16 /* CommandIcon.swift */; };
+		101ACC0EE675B18F876649D9 /* AssembleInspector.swift in Sources */ = {isa = PBXBuildFile; fileRef = 997DD891040219AF1DB1EADE /* AssembleInspector.swift */; };
 		11DAAEFA2967528EDDB2F725 /* RobotStage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00ACB60D5FFC225C8B39DAED /* RobotStage.swift */; };
 		1216BB38EE3DD4D764E3391E /* ProjectFiles.swift in Sources */ = {isa = PBXBuildFile; fileRef = 78DB719F7DDC7037F40641A3 /* ProjectFiles.swift */; };
 		157C41A1B0C953468D868872 /* FlowGraphView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9C0EA3A033635B3AF0D33E7C /* FlowGraphView.swift */; };
@@ -25,10 +33,12 @@
 		21038DFAFD4479B579FB7046 /* DesignInteractions.swift in Sources */ = {isa = PBXBuildFile; fileRef = AC71EA0E9ACCEFAD1EEB0E21 /* DesignInteractions.swift */; };
 		216D3AAC05F99BFCDBFEDE38 /* Tools.swift in Sources */ = {isa = PBXBuildFile; fileRef = F07451B8B7CEC74F78569709 /* Tools.swift */; };
 		237F60565A0E5766D3FAEAD4 /* DeskKeys.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6BFFF50C2C5A3DA39AC1B52D /* DeskKeys.swift */; };
+		248F08F3776E38C4DEF796E2 /* AssembleScene.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6521408DCC9EB4E95F5402BD /* AssembleScene.swift */; };
 		276B9F58652CD6E29B45FEF5 /* LibraryEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = F6F39F931A750D8FB4424A5A /* LibraryEngine.swift */; };
 		2A71EFAE8D6A065F8254FF84 /* ThemeSwiftUI.swift in Sources */ = {isa = PBXBuildFile; fileRef = 11EF93C933E6DDAE430B1887 /* ThemeSwiftUI.swift */; };
 		2AC24A9DE10FF353404B9640 /* SimulationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8E7A7342C5CF91D1D030B88A /* SimulationView.swift */; };
 		2B46C834278D5E319F225141 /* BomEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = FE87EDD189629AF434131B00 /* BomEngine.swift */; };
+		2B78476C40DE05BFC4B8E76D /* AssembleInspector.swift in Sources */ = {isa = PBXBuildFile; fileRef = 997DD891040219AF1DB1EADE /* AssembleInspector.swift */; };
 		309C8017D33629E131A35496 /* DeskPanels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6CEDFFDD0B0AD9CE8D7E2D74 /* DeskPanels.swift */; };
 		31FE9DB52F581F2CBFACF645 /* Engine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 340F971B7B7DB71EFE71A3AC /* Engine.swift */; };
 		32C4D60A21AAFAEBD9EF3FA6 /* GenerateResults.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5081B9918AFD67128783EE03 /* GenerateResults.swift */; };
@@ -37,15 +47,21 @@
 		41D9885A228D29746933D829 /* Shaders.metal in Sources */ = {isa = PBXBuildFile; fileRef = D27D89BE87A01C0D5E2FDD5A /* Shaders.metal */; };
 		42BD4E4F4A31B489447A5D16 /* DeskSamples.swift in Sources */ = {isa = PBXBuildFile; fileRef = 158F7142E1B8372A403569DA /* DeskSamples.swift */; };
 		43A0CDB29EEE0447E55D3914 /* GenerateProject.swift in Sources */ = {isa = PBXBuildFile; fileRef = 87277DE0D5BC3B1308EEE679 /* GenerateProject.swift */; };
+		44792EAF51683E6E735D7001 /* MotionStudyPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 19150837D68FE717C60EC679 /* MotionStudyPanel.swift */; };
 		452206F39BC5AE7468D8F9C5 /* FlowModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A395958B23240FC0BA75D3E1 /* FlowModel.swift */; };
 		455205CE334BD19D66A463AE /* SimModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0ECB311A23317BC6EF253428 /* SimModel.swift */; };
+		45F0E6435A6E3B762DA4F125 /* ArmSimModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 449F6407A04E701EC32C49EC /* ArmSimModel.swift */; };
+		46C1DB38A9F51329175BADF8 /* LoadsFromSimSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = A8D785FFB0E4EE5F6A3639B1 /* LoadsFromSimSheet.swift */; };
 		48A74062EE124C639C8C90B7 /* FlowService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 052C11AA1216987342D09563 /* FlowService.swift */; };
 		4C880C8656395089578F7A2B /* DeskPCBView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E82DD3CDC34A46978E781EFF /* DeskPCBView.swift */; };
 		4C90E84F9AF1FAAE9ED95046 /* GenerateEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = F6C2CDB912FA87CF32180DC7 /* GenerateEngine.swift */; };
 		4CF6824021EEAC6C84D5AC1E /* GenerateSelfTest.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6CD8D4940B52AE54BF44CF8B /* GenerateSelfTest.swift */; };
+		4F76E648E2FF890B7659A319 /* ArmSimulationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B55EB5D7758815C16FA0ED11 /* ArmSimulationView.swift */; };
 		5012C7534658AA8F4BE7C0E0 /* GenerateResults.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5081B9918AFD67128783EE03 /* GenerateResults.swift */; };
 		523A1FD658E25A06C07445F8 /* PCBEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 91C036D6015EFE2DDF1E3A0F /* PCBEngine.swift */; };
 		5433BD75576A4347947609E2 /* BrowserSidebar.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3221D3949448C54E17400A3B /* BrowserSidebar.swift */; };
+		547CEAD638381918CA515B94 /* RobotSafety.swift in Sources */ = {isa = PBXBuildFile; fileRef = 65085BBD229CB770B45F114C /* RobotSafety.swift */; };
+		55E39564F57C47C482622312 /* AssembleLaunch.swift in Sources */ = {isa = PBXBuildFile; fileRef = 361475A1A35AE6C5467B4A5D /* AssembleLaunch.swift */; };
 		560381D584487BF1199B68CA /* StageRibbon.swift in Sources */ = {isa = PBXBuildFile; fileRef = 50C74BB9B87AFB97285FACA5 /* StageRibbon.swift */; };
 		56E6752C031A4190C6AC2143 /* OrbitCamera.swift in Sources */ = {isa = PBXBuildFile; fileRef = 466A997B860A8133F0D40F16 /* OrbitCamera.swift */; };
 		58477E389B51B128FE25FB7A /* StageLeaves.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1D55A82506873CC48785050D /* StageLeaves.swift */; };
@@ -54,6 +70,7 @@
 		5CD25CEBAA72E372201BF803 /* PCBModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 473F2F992C7761C7C9AD43FD /* PCBModel.swift */; };
 		5E21203224CEE2558532413E /* Shaders.metal in Sources */ = {isa = PBXBuildFile; fileRef = D27D89BE87A01C0D5E2FDD5A /* Shaders.metal */; };
 		5E702E91D6071985364AEBDE /* ThemeTokens.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4E5F62431967C8A466E2EEB3 /* ThemeTokens.swift */; };
+		61653D2E7A6F9751899F0D7B /* AssembleHand.swift in Sources */ = {isa = PBXBuildFile; fileRef = C35ABFFBB4159AA7329E6AEC /* AssembleHand.swift */; };
 		62A9140FC49EC507611B0744 /* Renderer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8F4CB49F555B9AB7E2A36188 /* Renderer.swift */; };
 		63F59E9C12B9AB951DDB1EA9 /* StageDetail.swift in Sources */ = {isa = PBXBuildFile; fileRef = F9540445BAD1E9E04CEA3584 /* StageDetail.swift */; };
 		64CD2BBD8D38E7BE142B57D7 /* TouchPCBView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D08BF28BFF34B87DB2D1D583 /* TouchPCBView.swift */; };
@@ -69,7 +86,9 @@
 		6F7DB3A8705EDBE93DF5A3B7 /* SketchCanvasLayers.swift in Sources */ = {isa = PBXBuildFile; fileRef = 09A9A24E545B427E7B42B3F0 /* SketchCanvasLayers.swift */; };
 		71501DBADB89BB557729B4CB /* FlowSelfTest.swift in Sources */ = {isa = PBXBuildFile; fileRef = 53C5402D0D3498EFB386796E /* FlowSelfTest.swift */; };
 		72BA9E56E2CC811842301347 /* FlowGraphView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9C0EA3A033635B3AF0D33E7C /* FlowGraphView.swift */; };
+		757A31B03775E6E3035CE714 /* MotionStudyPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 19150837D68FE717C60EC679 /* MotionStudyPanel.swift */; };
 		774C7B24030D74AAE42A9A30 /* GenerateProject.swift in Sources */ = {isa = PBXBuildFile; fileRef = 87277DE0D5BC3B1308EEE679 /* GenerateProject.swift */; };
+		7795ECB74DEFAF895DA3AB93 /* PhysService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55521679B4C4AE4DA2FA5599 /* PhysService.swift */; };
 		7845F1B66C2771ACB258D95B /* ElectronicsOverlays.swift in Sources */ = {isa = PBXBuildFile; fileRef = E325639CD6C7A3355D3C095C /* ElectronicsOverlays.swift */; };
 		79F2C41C22C219AD3E396B05 /* ThemeTokens.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4E5F62431967C8A466E2EEB3 /* ThemeTokens.swift */; };
 		7A0CE3B249B415CE959A23A4 /* ProjectWindow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F05F4DB6823381A05553073 /* ProjectWindow.swift */; };
@@ -93,7 +112,9 @@
 		894268853E1C683D84B0CCAC /* ToolIcons in Resources */ = {isa = PBXBuildFile; fileRef = 812579DC75498AA5D6AB6F9A /* ToolIcons */; };
 		89B3159D830DE25DADF25FA4 /* DesignOverlays.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE05A3B1F7FF42A5FBB5397F /* DesignOverlays.swift */; };
 		8A9FD46674AE39C280D95ACF /* ThemeSwiftUI.swift in Sources */ = {isa = PBXBuildFile; fileRef = 11EF93C933E6DDAE430B1887 /* ThemeSwiftUI.swift */; };
+		8B2DC20ABF9AB71E2C3A125E /* LoadsFromSimSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = A8D785FFB0E4EE5F6A3639B1 /* LoadsFromSimSheet.swift */; };
 		8B9AF8C706C97D9970BF2D55 /* BomSnapshot.swift in Sources */ = {isa = PBXBuildFile; fileRef = 17DA5977B196459CB15CA2C8 /* BomSnapshot.swift */; };
+		8D71342AFC3DDA8640431E22 /* AssembleEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 93C6434F2D02EE837A6FD50E /* AssembleEngine.swift */; };
 		8DB44EC6B2450897226E575D /* TouchRootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2F18CF1ADA30DC3F5AE17EC9 /* TouchRootView.swift */; };
 		8E286D5B9193A00CC9E023B9 /* Picking.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9D5B9200588F1683B899BA62 /* Picking.swift */; };
 		90F4C0E682FF9F6DEC351641 /* LibraryEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = F6F39F931A750D8FB4424A5A /* LibraryEngine.swift */; };
@@ -122,29 +143,36 @@
 		AE2C5F4944F396DEC00D73CB /* ViewCube.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3A8178DF7AA3953AC62B3368 /* ViewCube.swift */; };
 		AEF348860BE8B94BC21DF5E4 /* SimScene.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0EBA50B4861A124854F6CAAD /* SimScene.swift */; };
 		AF93592C235F6C30A5DF832C /* GenerateInspector.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0BEF2BD0A83AFB3FE69C41F /* GenerateInspector.swift */; };
+		B2C2F93881D1428FDAE6F2DD /* AssembleRibbon.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49E4EB1E7224E801CD93B176 /* AssembleRibbon.swift */; };
 		B3715CBEAB9163413A0E107E /* GenerateView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BF6F7F2C2210DB9F6EA962AC /* GenerateView.swift */; };
 		B3C9EC5BAE5C5154AA50EC60 /* DesignHandleView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C41AA0C5BFAF525D50C1171A /* DesignHandleView.swift */; };
 		B528E1EB9750966F89CA877E /* StageScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = 82C736CF5517A6097BC26B67 /* StageScreen.swift */; };
+		B5544FF71536C6613615D198 /* AssembleOutline.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0C81CE6BDCE7075F2D6E9C2 /* AssembleOutline.swift */; };
 		B5742B7C66065580FB5DF417 /* FlowReporting.swift in Sources */ = {isa = PBXBuildFile; fileRef = 81C44FC197697E742BFD9D38 /* FlowReporting.swift */; };
+		B64EDB7680AA12AC9BE7004D /* ArmSimModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 449F6407A04E701EC32C49EC /* ArmSimModel.swift */; };
 		B66C3DFEFCEC8F2C0D5BE9DF /* StageActions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 063ED932271FC5FC038C41B6 /* StageActions.swift */; };
 		BADBE7D1F3A6D69AC9DF4CB3 /* FlowService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 052C11AA1216987342D09563 /* FlowService.swift */; };
 		BB77E2C2BBA049AFC2C7058C /* TouchSampleHand.swift in Sources */ = {isa = PBXBuildFile; fileRef = C6391142B61A977BCE7E1C8F /* TouchSampleHand.swift */; };
+		BBEB7489283B0F45CEAFC75E /* AssembleEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 93C6434F2D02EE837A6FD50E /* AssembleEngine.swift */; };
 		BFA0E8F0E78E0AE49D4C1709 /* LibraryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2918A7B44F606A1261C0D339 /* LibraryView.swift */; };
 		C15F2A6622C1F54919E1ADA7 /* TouchRobotStage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 30A581FD8803976EB9B39F2B /* TouchRobotStage.swift */; };
 		C2A12C521604BC84D27CC1D9 /* HandGraspView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9D60F52861857361263E5E97 /* HandGraspView.swift */; };
 		C494C9850D8737558072DAEE /* StartWindow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7EA0945B1956AF40BCDFADBE /* StartWindow.swift */; };
 		C497B70C6FD1FF26DD5E40B1 /* GenerateScene.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1472B60FE780629A7156623F /* GenerateScene.swift */; };
 		C52938F6E84C7AAB62E98FDA /* FlowModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A395958B23240FC0BA75D3E1 /* FlowModel.swift */; };
+		C7B30362F37569E89CB042C1 /* AssembleLaunch.swift in Sources */ = {isa = PBXBuildFile; fileRef = 361475A1A35AE6C5467B4A5D /* AssembleLaunch.swift */; };
 		C88032382B462CC4BEA5228A /* PCBLink.swift in Sources */ = {isa = PBXBuildFile; fileRef = B937F795CB3634310244CC31 /* PCBLink.swift */; };
 		CA69B2EDAA55DC2C38FA8620 /* BomModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = E1C6E78CCAA984C21A0C131E /* BomModel.swift */; };
 		CAAB038B4DF0E0656E698D23 /* ThemeIcons.swift in Sources */ = {isa = PBXBuildFile; fileRef = 09C1CC6ED285A89FDDD8D4BD /* ThemeIcons.swift */; };
 		CC48BF0C8C3EFFEF79979660 /* GenerateViewport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 234592B9F6248DFDC2C45FC1 /* GenerateViewport.swift */; };
 		CCBF1660D9B277AEC20F8DF5 /* GenerateSelfTest.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6CD8D4940B52AE54BF44CF8B /* GenerateSelfTest.swift */; };
+		CCDF0557F2A1E03C6D1F3398 /* AssembleCanvas.swift in Sources */ = {isa = PBXBuildFile; fileRef = D54D03BA238A53AEC7C1B5BB /* AssembleCanvas.swift */; };
 		CE06B5F275D92DBDF932234E /* GenerateLive.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6B939933A9E0F62B0A7AE880 /* GenerateLive.swift */; };
 		D080A405F4FC979B1884E382 /* PCBPanels.swift in Sources */ = {isa = PBXBuildFile; fileRef = C81FE9B08BAC2FE15C4782C9 /* PCBPanels.swift */; };
 		D175689D645D1D3D294F3048 /* GenerateModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4B73B87698BA8F6AB6B165B0 /* GenerateModel.swift */; };
 		D3EE8A3C3C6BF6D6CED784E0 /* InspectorPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3C631454225F4CE5F91F2235 /* InspectorPanel.swift */; };
 		D5A19D201868F9BD3E45426E /* DeskRootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4703D95C4A9E63AA156A562F /* DeskRootView.swift */; };
+		D5FEAF7C926A04FD3586CBCC /* AssembleScene.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6521408DCC9EB4E95F5402BD /* AssembleScene.swift */; };
 		D8675E5AC73086D322BF07C9 /* CommonViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3AF8D32DFF65087A948E5F3E /* CommonViews.swift */; };
 		D887F12A11676184B51AEF8F /* SimulationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8E7A7342C5CF91D1D030B88A /* SimulationView.swift */; };
 		D8F29C4200E236CB2085B008 /* SimModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0ECB311A23317BC6EF253428 /* SimModel.swift */; };
@@ -158,6 +186,7 @@
 		E752D1AE69D6B00D26043C74 /* PCBLink.swift in Sources */ = {isa = PBXBuildFile; fileRef = B937F795CB3634310244CC31 /* PCBLink.swift */; };
 		E7B21467520187C902468296 /* TouchTools.swift in Sources */ = {isa = PBXBuildFile; fileRef = D3348CCBF6EC8201DB8C834A /* TouchTools.swift */; };
 		EB90358ADA7188FD24C3AE48 /* SimEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 67E99099D00DED4DA1E6373D /* SimEngine.swift */; };
+		EC49288D9603B709FCD08FA5 /* ArmSimulationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B55EB5D7758815C16FA0ED11 /* ArmSimulationView.swift */; };
 		F343613AD107424661B185C8 /* TouchChrome.swift in Sources */ = {isa = PBXBuildFile; fileRef = 036AE9C7561FD5F04F4EA6E3 /* TouchChrome.swift */; };
 		F437ABD9342C83057AE58899 /* PCBEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 91C036D6015EFE2DDF1E3A0F /* PCBEngine.swift */; };
 		F482F6BE6603B99E23193703 /* WorkspaceMenu.swift in Sources */ = {isa = PBXBuildFile; fileRef = 30C8517A3E37CC7D5C50C5FA /* WorkspaceMenu.swift */; };
@@ -187,6 +216,7 @@
 		1472B60FE780629A7156623F /* GenerateScene.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GenerateScene.swift; sourceTree = "<group>"; };
 		158F7142E1B8372A403569DA /* DeskSamples.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeskSamples.swift; sourceTree = "<group>"; };
 		17DA5977B196459CB15CA2C8 /* BomSnapshot.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BomSnapshot.swift; sourceTree = "<group>"; };
+		19150837D68FE717C60EC679 /* MotionStudyPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MotionStudyPanel.swift; sourceTree = "<group>"; };
 		1D1F18AE0D526C526FF07AB4 /* PCBCanvas.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PCBCanvas.swift; sourceTree = "<group>"; };
 		1D55A82506873CC48785050D /* StageLeaves.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StageLeaves.swift; sourceTree = "<group>"; };
 		1E5D5350203B9FB4524480A8 /* BomView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BomView.swift; sourceTree = "<group>"; };
@@ -199,6 +229,7 @@
 		3221D3949448C54E17400A3B /* BrowserSidebar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrowserSidebar.swift; sourceTree = "<group>"; };
 		340F971B7B7DB71EFE71A3AC /* Engine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Engine.swift; sourceTree = "<group>"; };
 		3534FE6374783A2D84121C16 /* CommandIcon.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CommandIcon.swift; sourceTree = "<group>"; };
+		361475A1A35AE6C5467B4A5D /* AssembleLaunch.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AssembleLaunch.swift; sourceTree = "<group>"; };
 		3891112F94DFE17B5406D2A9 /* TouchSampleDrone.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TouchSampleDrone.swift; sourceTree = "<group>"; };
 		3A8178DF7AA3953AC62B3368 /* ViewCube.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ViewCube.swift; sourceTree = "<group>"; };
 		3AF8D32DFF65087A948E5F3E /* CommonViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CommonViews.swift; sourceTree = "<group>"; };
@@ -206,17 +237,23 @@
 		3C8952B94A6BD068EA734518 /* ThemeBridges.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ThemeBridges.swift; sourceTree = "<group>"; };
 		3D4FD2C46FE16D31DB60B3BB /* TouchSimulation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TouchSimulation.swift; sourceTree = "<group>"; };
 		3E47F1ACDD894F23C4C24EB5 /* Viewport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Viewport.swift; sourceTree = "<group>"; };
+		449F6407A04E701EC32C49EC /* ArmSimModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ArmSimModel.swift; sourceTree = "<group>"; };
 		466A997B860A8133F0D40F16 /* OrbitCamera.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OrbitCamera.swift; sourceTree = "<group>"; };
 		4703D95C4A9E63AA156A562F /* DeskRootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeskRootView.swift; sourceTree = "<group>"; };
 		473F2F992C7761C7C9AD43FD /* PCBModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PCBModel.swift; sourceTree = "<group>"; };
 		4926299BF5FC4A31B688C27E /* TouchStages.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TouchStages.swift; sourceTree = "<group>"; };
+		49E4EB1E7224E801CD93B176 /* AssembleRibbon.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AssembleRibbon.swift; sourceTree = "<group>"; };
 		4B73B87698BA8F6AB6B165B0 /* GenerateModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GenerateModel.swift; sourceTree = "<group>"; };
 		4E5F62431967C8A466E2EEB3 /* ThemeTokens.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ThemeTokens.swift; sourceTree = "<group>"; };
 		5081B9918AFD67128783EE03 /* GenerateResults.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GenerateResults.swift; sourceTree = "<group>"; };
 		50C74BB9B87AFB97285FACA5 /* StageRibbon.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StageRibbon.swift; sourceTree = "<group>"; };
+		5193B22542D7E3A58A4F9758 /* AssembleModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AssembleModel.swift; sourceTree = "<group>"; };
 		53C5402D0D3498EFB386796E /* FlowSelfTest.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FlowSelfTest.swift; sourceTree = "<group>"; };
+		55521679B4C4AE4DA2FA5599 /* PhysService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhysService.swift; sourceTree = "<group>"; };
 		5907100BEAAE876FD18D1BBA /* SketchInfo.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SketchInfo.swift; sourceTree = "<group>"; };
 		5A4371F4E1DDDCB1BAC2C62E /* GenerateStudy.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GenerateStudy.swift; sourceTree = "<group>"; };
+		65085BBD229CB770B45F114C /* RobotSafety.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RobotSafety.swift; sourceTree = "<group>"; };
+		6521408DCC9EB4E95F5402BD /* AssembleScene.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AssembleScene.swift; sourceTree = "<group>"; };
 		67A03FD333CE4FF231237DE9 /* CommandPalette.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CommandPalette.swift; sourceTree = "<group>"; };
 		67E99099D00DED4DA1E6373D /* SimEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SimEngine.swift; sourceTree = "<group>"; };
 		6B939933A9E0F62B0A7AE880 /* GenerateLive.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GenerateLive.swift; sourceTree = "<group>"; };
@@ -241,20 +278,26 @@
 		8E7A7342C5CF91D1D030B88A /* SimulationView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SimulationView.swift; sourceTree = "<group>"; };
 		8F4CB49F555B9AB7E2A36188 /* Renderer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Renderer.swift; sourceTree = "<group>"; };
 		91C036D6015EFE2DDF1E3A0F /* PCBEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PCBEngine.swift; sourceTree = "<group>"; };
+		93C6434F2D02EE837A6FD50E /* AssembleEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AssembleEngine.swift; sourceTree = "<group>"; };
+		997DD891040219AF1DB1EADE /* AssembleInspector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AssembleInspector.swift; sourceTree = "<group>"; };
 		9C0EA3A033635B3AF0D33E7C /* FlowGraphView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FlowGraphView.swift; sourceTree = "<group>"; };
 		9D5B9200588F1683B899BA62 /* Picking.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Picking.swift; sourceTree = "<group>"; };
 		9D60F52861857361263E5E97 /* HandGraspView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HandGraspView.swift; sourceTree = "<group>"; };
 		9E8E7AEF7C51418121D1A24C /* ViaForm-iOS.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = "ViaForm-iOS.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		A0BEF2BD0A83AFB3FE69C41F /* GenerateInspector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GenerateInspector.swift; sourceTree = "<group>"; };
+		A0C81CE6BDCE7075F2D6E9C2 /* AssembleOutline.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AssembleOutline.swift; sourceTree = "<group>"; };
 		A395958B23240FC0BA75D3E1 /* FlowModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FlowModel.swift; sourceTree = "<group>"; };
+		A8D785FFB0E4EE5F6A3639B1 /* LoadsFromSimSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoadsFromSimSheet.swift; sourceTree = "<group>"; };
 		AB1FBA106ED4B32C213038A7 /* DesignModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DesignModel.swift; sourceTree = "<group>"; };
 		AC71EA0E9ACCEFAD1EEB0E21 /* DesignInteractions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DesignInteractions.swift; sourceTree = "<group>"; };
 		ACC0CDE5BDE79E39F0433B99 /* ViaFormThemeTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = ViaFormThemeTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		B2D59B958F7312691F78BF6B /* AnchorLayout.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnchorLayout.swift; sourceTree = "<group>"; };
+		B55EB5D7758815C16FA0ED11 /* ArmSimulationView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ArmSimulationView.swift; sourceTree = "<group>"; };
 		B937F795CB3634310244CC31 /* PCBLink.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PCBLink.swift; sourceTree = "<group>"; };
 		BBE5A9FD6E7926576EAF8115 /* DeskCommands.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeskCommands.swift; sourceTree = "<group>"; };
 		BCCC7ECED1451E6038404754 /* ViaFormApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ViaFormApp.swift; sourceTree = "<group>"; };
 		BF6F7F2C2210DB9F6EA962AC /* GenerateView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GenerateView.swift; sourceTree = "<group>"; };
+		C35ABFFBB4159AA7329E6AEC /* AssembleHand.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AssembleHand.swift; sourceTree = "<group>"; };
 		C41AA0C5BFAF525D50C1171A /* DesignHandleView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DesignHandleView.swift; sourceTree = "<group>"; };
 		C6391142B61A977BCE7E1C8F /* TouchSampleHand.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TouchSampleHand.swift; sourceTree = "<group>"; };
 		C81FE9B08BAC2FE15C4782C9 /* PCBPanels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PCBPanels.swift; sourceTree = "<group>"; };
@@ -262,6 +305,7 @@
 		D08BF28BFF34B87DB2D1D583 /* TouchPCBView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TouchPCBView.swift; sourceTree = "<group>"; };
 		D27D89BE87A01C0D5E2FDD5A /* Shaders.metal */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.metal; path = Shaders.metal; sourceTree = "<group>"; };
 		D3348CCBF6EC8201DB8C834A /* TouchTools.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TouchTools.swift; sourceTree = "<group>"; };
+		D54D03BA238A53AEC7C1B5BB /* AssembleCanvas.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AssembleCanvas.swift; sourceTree = "<group>"; };
 		DF0007C33A406D97992E697F /* SelfTest.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SelfTest.swift; sourceTree = "<group>"; };
 		E1C6E78CCAA984C21A0C131E /* BomModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BomModel.swift; sourceTree = "<group>"; };
 		E325639CD6C7A3355D3C095C /* ElectronicsOverlays.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ElectronicsOverlays.swift; sourceTree = "<group>"; };
@@ -275,6 +319,22 @@
 /* End PBXFileReference section */
 
 /* Begin PBXGroup section */
+		0B829EF7E922FCBE9F343600 /* Assemble */ = {
+			isa = PBXGroup;
+			children = (
+				D54D03BA238A53AEC7C1B5BB /* AssembleCanvas.swift */,
+				93C6434F2D02EE837A6FD50E /* AssembleEngine.swift */,
+				C35ABFFBB4159AA7329E6AEC /* AssembleHand.swift */,
+				997DD891040219AF1DB1EADE /* AssembleInspector.swift */,
+				361475A1A35AE6C5467B4A5D /* AssembleLaunch.swift */,
+				5193B22542D7E3A58A4F9758 /* AssembleModel.swift */,
+				A0C81CE6BDCE7075F2D6E9C2 /* AssembleOutline.swift */,
+				6521408DCC9EB4E95F5402BD /* AssembleScene.swift */,
+				19150837D68FE717C60EC679 /* MotionStudyPanel.swift */,
+			);
+			path = Assemble;
+			sourceTree = "<group>";
+		};
 		1A8CE982DC38B1FAD1F87C21 /* Generate */ = {
 			isa = PBXGroup;
 			children = (
@@ -291,6 +351,7 @@
 				5A4371F4E1DDDCB1BAC2C62E /* GenerateStudy.swift */,
 				BF6F7F2C2210DB9F6EA962AC /* GenerateView.swift */,
 				234592B9F6248DFDC2C45FC1 /* GenerateViewport.swift */,
+				A8D785FFB0E4EE5F6A3639B1 /* LoadsFromSimSheet.swift */,
 			);
 			path = Generate;
 			sourceTree = "<group>";
@@ -298,6 +359,7 @@
 		2E2BB86202B52F0837C52025 /* Desk */ = {
 			isa = PBXGroup;
 			children = (
+				49E4EB1E7224E801CD93B176 /* AssembleRibbon.swift */,
 				3221D3949448C54E17400A3B /* BrowserSidebar.swift */,
 				67A03FD333CE4FF231237DE9 /* CommandPalette.swift */,
 				CE05A3B1F7FF42A5FBB5397F /* DesignOverlays.swift */,
@@ -405,7 +467,10 @@
 		821A252079DEDC77631B7397 /* Sim */ = {
 			isa = PBXGroup;
 			children = (
+				449F6407A04E701EC32C49EC /* ArmSimModel.swift */,
+				B55EB5D7758815C16FA0ED11 /* ArmSimulationView.swift */,
 				9D60F52861857361263E5E97 /* HandGraspView.swift */,
+				55521679B4C4AE4DA2FA5599 /* PhysService.swift */,
 				67E99099D00DED4DA1E6373D /* SimEngine.swift */,
 				0ECB311A23317BC6EF253428 /* SimModel.swift */,
 				0EBA50B4861A124854F6CAAD /* SimScene.swift */,
@@ -418,6 +483,7 @@
 			isa = PBXGroup;
 			children = (
 				BCCC7ECED1451E6038404754 /* ViaFormApp.swift */,
+				0B829EF7E922FCBE9F343600 /* Assemble */,
 				E8E91DF040A9B535135FF021 /* Bom */,
 				3F3FCFFFF0D69D1FBCD78325 /* Engine */,
 				D83DD96D7278DFF85A3A55F1 /* Flow */,
@@ -425,10 +491,19 @@
 				2F1132444800ACF80304E3B8 /* Library */,
 				D7810C224D88BED3FE789EBF /* Model */,
 				CEE610296CE6341CA9A9C302 /* Render */,
+				C6A3F4054C18844DD030AC3F /* Robot */,
 				821A252079DEDC77631B7397 /* Sim */,
 				DFF34BD71ABF0C09E25583E5 /* UI */,
 			);
 			path = Shared;
+			sourceTree = "<group>";
+		};
+		C6A3F4054C18844DD030AC3F /* Robot */ = {
+			isa = PBXGroup;
+			children = (
+				65085BBD229CB770B45F114C /* RobotSafety.swift */,
+			);
+			path = Robot;
 			sourceTree = "<group>";
 		};
 		CEE610296CE6341CA9A9C302 /* Render */ = {
@@ -629,6 +704,16 @@
 			buildActionMask = 2147483647;
 			files = (
 				5B23C20D2850D1010E987552 /* AnchorLayout.swift in Sources */,
+				45F0E6435A6E3B762DA4F125 /* ArmSimModel.swift in Sources */,
+				4F76E648E2FF890B7659A319 /* ArmSimulationView.swift in Sources */,
+				CCDF0557F2A1E03C6D1F3398 /* AssembleCanvas.swift in Sources */,
+				8D71342AFC3DDA8640431E22 /* AssembleEngine.swift in Sources */,
+				0796659B2AAA50F8D11A2F38 /* AssembleHand.swift in Sources */,
+				101ACC0EE675B18F876649D9 /* AssembleInspector.swift in Sources */,
+				C7B30362F37569E89CB042C1 /* AssembleLaunch.swift in Sources */,
+				0F727BBB486E975515C01CC0 /* AssembleModel.swift in Sources */,
+				B5544FF71536C6613615D198 /* AssembleOutline.swift in Sources */,
+				248F08F3776E38C4DEF796E2 /* AssembleScene.swift in Sources */,
 				DD2FA4C6042B2644D1BDECAD /* BoardLink.swift in Sources */,
 				997DA648626DB8408AEB1EA0 /* BomEngine.swift in Sources */,
 				69925C02D3FA537217239D41 /* BomModel.swift in Sources */,
@@ -663,6 +748,8 @@
 				90F4C0E682FF9F6DEC351641 /* LibraryEngine.swift in Sources */,
 				813C9AED6DAA470BE4552921 /* LibraryModel.swift in Sources */,
 				BFA0E8F0E78E0AE49D4C1709 /* LibraryView.swift in Sources */,
+				8B2DC20ABF9AB71E2C3A125E /* LoadsFromSimSheet.swift in Sources */,
+				44792EAF51683E6E735D7001 /* MotionStudyPanel.swift in Sources */,
 				6E4C01EB90C94781960CD1C0 /* OrbitCamera.swift in Sources */,
 				DA36BC0BA62D364D98387319 /* PCBCanvas.swift in Sources */,
 				F437ABD9342C83057AE58899 /* PCBEngine.swift in Sources */,
@@ -670,9 +757,11 @@
 				5CD25CEBAA72E372201BF803 /* PCBModel.swift in Sources */,
 				199656EF98DFFAA027FDB4D9 /* PCBPanels.swift in Sources */,
 				0A070437A55B8646C3034E0A /* Perf.swift in Sources */,
+				7795ECB74DEFAF895DA3AB93 /* PhysService.swift in Sources */,
 				AD976AE3DFB40817F035D4D5 /* Picking.swift in Sources */,
 				1216BB38EE3DD4D764E3391E /* ProjectFiles.swift in Sources */,
 				62A9140FC49EC507611B0744 /* Renderer.swift in Sources */,
+				0543BE7177CBE3FC85E571D6 /* RobotSafety.swift in Sources */,
 				F752B643B9D84441CE8ECF3B /* SelfTest.swift in Sources */,
 				41D9885A228D29746933D829 /* Shaders.metal in Sources */,
 				EB90358ADA7188FD24C3AE48 /* SimEngine.swift in Sources */,
@@ -720,6 +809,17 @@
 			buildActionMask = 2147483647;
 			files = (
 				0C60ABAA25C1A07FAE590D57 /* AnchorLayout.swift in Sources */,
+				B64EDB7680AA12AC9BE7004D /* ArmSimModel.swift in Sources */,
+				EC49288D9603B709FCD08FA5 /* ArmSimulationView.swift in Sources */,
+				0830A61B80419B43FE637086 /* AssembleCanvas.swift in Sources */,
+				BBEB7489283B0F45CEAFC75E /* AssembleEngine.swift in Sources */,
+				61653D2E7A6F9751899F0D7B /* AssembleHand.swift in Sources */,
+				2B78476C40DE05BFC4B8E76D /* AssembleInspector.swift in Sources */,
+				55E39564F57C47C482622312 /* AssembleLaunch.swift in Sources */,
+				0015181F02F6FAB988132525 /* AssembleModel.swift in Sources */,
+				0B01CCC3955AD722DD6EE6D6 /* AssembleOutline.swift in Sources */,
+				B2C2F93881D1428FDAE6F2DD /* AssembleRibbon.swift in Sources */,
+				D5FEAF7C926A04FD3586CBCC /* AssembleScene.swift in Sources */,
 				1EFE7E99307E806B3F8EDC3C /* BoardLink.swift in Sources */,
 				2B46C834278D5E319F225141 /* BomEngine.swift in Sources */,
 				CA69B2EDAA55DC2C38FA8620 /* BomModel.swift in Sources */,
@@ -765,6 +865,8 @@
 				276B9F58652CD6E29B45FEF5 /* LibraryEngine.swift in Sources */,
 				AD2C822CE217E03F05C7642C /* LibraryModel.swift in Sources */,
 				847CA8F0C8D8A8F3B5D9D565 /* LibraryView.swift in Sources */,
+				46C1DB38A9F51329175BADF8 /* LoadsFromSimSheet.swift in Sources */,
+				757A31B03775E6E3035CE714 /* MotionStudyPanel.swift in Sources */,
 				56E6752C031A4190C6AC2143 /* OrbitCamera.swift in Sources */,
 				FF0E13BDCDAD76FAAD39B097 /* PCBCanvas.swift in Sources */,
 				523A1FD658E25A06C07445F8 /* PCBEngine.swift in Sources */,
@@ -772,11 +874,13 @@
 				92AECE06E677A27E9B966915 /* PCBModel.swift in Sources */,
 				D080A405F4FC979B1884E382 /* PCBPanels.swift in Sources */,
 				969E96439CB773E0CCAFBFED /* Perf.swift in Sources */,
+				04AC02723FEAD9064EA4CD4A /* PhysService.swift in Sources */,
 				8E286D5B9193A00CC9E023B9 /* Picking.swift in Sources */,
 				7A48C2AE297A6F18F5DE4019 /* PipelineBar.swift in Sources */,
 				ABB33B6E4704EABC8013EA36 /* ProjectFiles.swift in Sources */,
 				7A0CE3B249B415CE959A23A4 /* ProjectWindow.swift in Sources */,
 				6A0908119113F7C48838249C /* Renderer.swift in Sources */,
+				547CEAD638381918CA515B94 /* RobotSafety.swift in Sources */,
 				11DAAEFA2967528EDDB2F725 /* RobotStage.swift in Sources */,
 				94383F35D21671DD3A6D569A /* SelfTest.swift in Sources */,
 				5E21203224CEE2558532413E /* Shaders.metal in Sources */,

@@ -27,6 +27,7 @@ void vf_asm_free(VfAsm *asm_handle);
 //  add_joint {joint}, set_joint {id, ...fields}, remove_joint {id}
 //  drive {joint, value} | {q: {joint: value}} -> {state, held: [{joint, requested, value, why}]}
 //  fk {q?, pose?} -> {q, poses}
+//  kin_model {tool?, tip_mm?} -> {model (viaform-kin JSON, SI), links, joints, tool}
 //  mass_props {q?, pose?, geometry?, bom?} -> {components: [{component, mass_kg,
 //    center_of_mass_mm, inertia_kg_mm2, sources}], total, bought_mass_kg, warnings}
 //  interference {q?, pose?, cell_mm?, include_adjacent?} -> {pairs: [{a, b, volume_mm3,
