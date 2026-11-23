@@ -30,6 +30,7 @@ targets:
         type: folder
         optional: true
         buildPhase: resources
+      - path: Resources/AppIcons.xcassets
     settings:
       base:
         PRODUCT_NAME: ViaForm
@@ -39,6 +40,8 @@ targets:
         INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad: "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight"
         INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone: "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight"
         INFOPLIST_KEY_UIFileSharingEnabled: YES
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        ASSETCATALOG_COMPILER_ALTERNATE_APPICON_NAMES: AppIcon-Graphite
         INFOPLIST_KEY_LSSupportsOpeningDocumentsInPlace: YES
         "LIBRARY_SEARCH_PATHS[sdk=iphoneos*]": $(SRCROOT)/../target/aarch64-apple-ios/release
         "LIBRARY_SEARCH_PATHS[sdk=iphonesimulator*]": $(SRCROOT)/../target/aarch64-apple-ios-sim/release
@@ -55,6 +58,7 @@ targets:
         type: folder
         optional: true
         buildPhase: resources
+      - path: Resources/AppIcons.xcassets
     settings:
       base:
         PRODUCT_NAME: ViaForm
@@ -64,6 +68,7 @@ targets:
         CODE_SIGN_IDENTITY: "-"
         ENABLE_HARDENED_RUNTIME: NO
         INFOPLIST_KEY_LSApplicationCategoryType: public.app-category.graphics-design
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
   ViaFormThemeTests:
     type: bundle.unit-test
     platform: macOS

@@ -162,6 +162,7 @@
 		C52938F6E84C7AAB62E98FDA /* FlowModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A395958B23240FC0BA75D3E1 /* FlowModel.swift */; };
 		C7B30362F37569E89CB042C1 /* AssembleLaunch.swift in Sources */ = {isa = PBXBuildFile; fileRef = 361475A1A35AE6C5467B4A5D /* AssembleLaunch.swift */; };
 		C88032382B462CC4BEA5228A /* PCBLink.swift in Sources */ = {isa = PBXBuildFile; fileRef = B937F795CB3634310244CC31 /* PCBLink.swift */; };
+		C9FA4E10B382746CC2042A4F /* AppIcons.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 02026A9A70D2DC6A10CC60AC /* AppIcons.xcassets */; };
 		CA69B2EDAA55DC2C38FA8620 /* BomModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = E1C6E78CCAA984C21A0C131E /* BomModel.swift */; };
 		CAAB038B4DF0E0656E698D23 /* ThemeIcons.swift in Sources */ = {isa = PBXBuildFile; fileRef = 09C1CC6ED285A89FDDD8D4BD /* ThemeIcons.swift */; };
 		CC48BF0C8C3EFFEF79979660 /* GenerateViewport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 234592B9F6248DFDC2C45FC1 /* GenerateViewport.swift */; };
@@ -173,6 +174,7 @@
 		D3EE8A3C3C6BF6D6CED784E0 /* InspectorPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3C631454225F4CE5F91F2235 /* InspectorPanel.swift */; };
 		D5A19D201868F9BD3E45426E /* DeskRootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4703D95C4A9E63AA156A562F /* DeskRootView.swift */; };
 		D5FEAF7C926A04FD3586CBCC /* AssembleScene.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6521408DCC9EB4E95F5402BD /* AssembleScene.swift */; };
+		D75C2AAD771D48AF6D7F0628 /* AppIcons.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 02026A9A70D2DC6A10CC60AC /* AppIcons.xcassets */; };
 		D8675E5AC73086D322BF07C9 /* CommonViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3AF8D32DFF65087A948E5F3E /* CommonViews.swift */; };
 		D887F12A11676184B51AEF8F /* SimulationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8E7A7342C5CF91D1D030B88A /* SimulationView.swift */; };
 		D8F29C4200E236CB2085B008 /* SimModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0ECB311A23317BC6EF253428 /* SimModel.swift */; };
@@ -203,6 +205,7 @@
 
 /* Begin PBXFileReference section */
 		00ACB60D5FFC225C8B39DAED /* RobotStage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RobotStage.swift; sourceTree = "<group>"; };
+		02026A9A70D2DC6A10CC60AC /* AppIcons.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = AppIcons.xcassets; sourceTree = "<group>"; };
 		036AE9C7561FD5F04F4EA6E3 /* TouchChrome.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TouchChrome.swift; sourceTree = "<group>"; };
 		052C11AA1216987342D09563 /* FlowService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FlowService.swift; sourceTree = "<group>"; };
 		063ED932271FC5FC038C41B6 /* StageActions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StageActions.swift; sourceTree = "<group>"; };
@@ -575,6 +578,7 @@
 		E357811CE99E0F92EDD9814B /* Resources */ = {
 			isa = PBXGroup;
 			children = (
+				02026A9A70D2DC6A10CC60AC /* AppIcons.xcassets */,
 				812579DC75498AA5D6AB6F9A /* ToolIcons */,
 			);
 			path = Resources;
@@ -684,6 +688,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				D75C2AAD771D48AF6D7F0628 /* AppIcons.xcassets in Resources */,
 				894268853E1C683D84B0CCAC /* ToolIcons in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -692,6 +697,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				C9FA4E10B382746CC2042A4F /* AppIcons.xcassets in Resources */,
 				049CA90E23489C8966F04948 /* ToolIcons in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -1099,6 +1105,7 @@
 		882D812405976EE7BFBD40FA /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				ASSETCATALOG_COMPILER_ALTERNATE_APPICON_NAMES = "AppIcon-Graphite";
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				"EXCLUDED_ARCHS[sdk=iphonesimulator*]" = x86_64;
@@ -1163,6 +1170,7 @@
 		DBF7A70F4245A0995B644E88 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				ASSETCATALOG_COMPILER_ALTERNATE_APPICON_NAMES = "AppIcon-Graphite";
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				"EXCLUDED_ARCHS[sdk=iphonesimulator*]" = x86_64;
