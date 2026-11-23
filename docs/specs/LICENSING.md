@@ -209,4 +209,7 @@ bot, and no dependency other than PCBCraft is copyleft. What blocks it today:
   not translated from his MATLAB code. No longer a blocker.
 - Copyright holder: **Soma Labs**. Quentin Caron's contributions are assigned to Soma Labs; the new
   `LICENSE-*` files, `CITATION.cff` and `electron-builder.yml` name Soma Labs.
-- Still open: the `top3d` port in `generative/examples/validate.rs` (item 3) and counsel (item 5).
+- `generative/examples/validate.rs`: the `top3d` port was replaced on 2026-11-22 by a reference
+  optimality criteria optimiser written from Bendsoe and Sigmund (2003) and Liu and Tovar (2014);
+  it gives C = 2416.80 against the published 2417.5352 (-0.03 %). No longer a blocker.
+- Still open: counsel (item 5) and the PCBCraft swap.

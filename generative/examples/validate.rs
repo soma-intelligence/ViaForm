@@ -6,8 +6,8 @@
 //! 2. Modes: first bending frequency of a slender cantilever against Euler-Bernoulli.
 //! 3. MMA: Svanberg's two-ball toy problem and his five-variable cantilever.
 //! 4. Multigrid: PCG iterations as the grid doubles (uniform and SIMP 0/1 contrast).
-//! 5. Topology: the top3d cantilever (Liu and Tovar 2014) by a line-for-line port of top3d's OC
-//!    loop on this FEM, and by the engine (MMA) at the same volume fraction, penalty and filter;
+//! 5. Topology: the top3d cantilever (Liu and Tovar 2014) by a reference optimality criteria
+//!    optimiser written from the papers (Bendsoe and Sigmund 2003; Liu and Tovar 2014) on this FEM, and by the engine (MMA) at the same volume fraction, penalty and filter;
 //!    a 3D MBB half beam the same way; the PETSc TopOpt default (Aage, Andreassen and Lazarov
 //!    2015) by the engine.
 //!
@@ -188,94 +188,110 @@ fn multigrid() {
     }
 }
 
-/// Density filter with top3d's weights `max(0, rmin - dist)`.
-struct Filter {
-    nbr: Vec<Vec<(usize, f64)>>,
-    hs: Vec<f64>,
+/// Linear cone density filter (Bruns and Tortorelli 2001): element `e` reads the weighted mean of
+/// the design variables within `rmin` (centre distance, in voxels), weight `rmin - distance`.
+struct ConeFilter {
+    /// For each element, its neighbours and their weights.
+    weights: Vec<Vec<(usize, f64)>>,
+    /// Sum of each element's weights.
+    total: Vec<f64>,
 }
 
-impl Filter {
+impl ConeFilter {
     fn new(g: &Grid, rmin: f64) -> Self {
-        let r = rmin.ceil() as isize - 1;
-        let nbr: Vec<Vec<(usize, f64)>> = (0..g.elements())
-            .map(|e| {
-                let [i, j, k] = g.element_ijk(e).map(|v| v as isize);
-                let mut out = Vec::new();
-                for dk in -r..=r {
-                    for dj in -r..=r {
-                        for di in -r..=r {
-                            let (a, b, c) = (i + di, j + dj, k + dk);
-                            if a < 0 || b < 0 || c < 0 || a >= g.n[0] as isize || b >= g.n[1] as isize || c >= g.n[2] as isize {
-                                continue;
-                            }
-                            let w = rmin - ((di * di + dj * dj + dk * dk) as f64).sqrt();
-                            if w > 0.0 {
-                                out.push((g.element(a as usize, b as usize, c as usize), w));
-                            }
+        let reach = rmin.ceil() as isize - 1;
+        let n = g.n.map(|v| v as isize);
+        let mut weights = Vec::with_capacity(g.elements());
+        for e in 0..g.elements() {
+            let c = g.element_ijk(e).map(|v| v as isize);
+            let mut near = Vec::new();
+            for dz in -reach..=reach {
+                for dy in -reach..=reach {
+                    for dx in -reach..=reach {
+                        let q = [c[0] + dx, c[1] + dy, c[2] + dz];
+                        if (0..3).any(|a| q[a] < 0 || q[a] >= n[a]) {
+                            continue;
+                        }
+                        let w = rmin - ((dx * dx + dy * dy + dz * dz) as f64).sqrt();
+                        if w > 0.0 {
+                            near.push((g.element(q[0] as usize, q[1] as usize, q[2] as usize), w));
                         }
                     }
                 }
-                out
-            })
-            .collect();
-        let hs = nbr.iter().map(|n| n.iter().map(|(_, w)| w).sum()).collect();
-        Self { nbr, hs }
+            }
+            weights.push(near);
+        }
+        let total = weights.iter().map(|near| near.iter().map(|&(_, w)| w).sum()).collect();
+        Self { weights, total }
     }
-    fn apply(&self, x: &[f64]) -> Vec<f64> {
-        self.nbr.iter().zip(&self.hs).map(|(n, h)| n.iter().map(|&(m, w)| w * x[m]).sum::<f64>() / h).collect()
+
+    /// Physical densities from design variables.
+    fn forward(&self, x: &[f64]) -> Vec<f64> {
+        self.weights.iter().zip(&self.total).map(|(near, t)| near.iter().map(|&(m, w)| w * x[m]).sum::<f64>() / t).collect()
     }
-    /// Hᵀ (d ./ Hs): the filter's chain rule (H is symmetric).
-    fn back(&self, d: &[f64]) -> Vec<f64> {
-        let s: Vec<f64> = d.iter().zip(&self.hs).map(|(d, h)| d / h).collect();
-        self.nbr.iter().map(|n| n.iter().map(|&(m, w)| w * s[m]).sum()).collect()
+
+    /// Chain rule: a sensitivity with respect to the physical densities, taken back to the design
+    /// variables (the weights are symmetric, so this is the transpose of `forward`).
+    fn backward(&self, g: &[f64]) -> Vec<f64> {
+        let scaled: Vec<f64> = g.iter().zip(&self.total).map(|(g, t)| g / t).collect();
+        self.weights.iter().map(|near| near.iter().map(|&(m, w)| w * scaled[m]).sum()).collect()
     }
 }
 
-/// top3d.m's loop, line for line: SIMP, density filter, optimality criteria, stop when no
-/// variable moves more than `tolx` or after `maxloop`.
-fn top3d_oc(g: Grid, fixed: Vec<bool>, f: &[f64], volfrac: f64, penal: f64, rmin: f64, maxloop: usize, tolx: f64) -> (f64, usize, Vec<f64>, f64) {
+/// Reference optimiser for the published benchmarks: minimum compliance at a volume fraction by
+/// the optimality criteria method, written from its description in Bendsoe and Sigmund,
+/// "Topology Optimization: Theory, Methods and Applications" (2003), section 1.2.1, with the
+/// modified SIMP law `E = Emin + x^p (E0 - Emin)` and density filter of Liu and Tovar (2014,
+/// section 2). Update per element: `x_new = clamp(x B^eta, x - move, x + move)` within [0, 1],
+/// `B = -dc / (lambda dv)`, `eta = 1/2`, `move = 0.2`; `lambda` found by bisection so the filtered
+/// volume meets the target. Stops when no variable moves more than `tolx` or after `maxloop`.
+/// Returns the compliance, the iteration count, the physical densities and the seconds taken.
+fn oc_reference(g: Grid, fixed: Vec<bool>, f: &[f64], volfrac: f64, penal: f64, rmin: f64, maxloop: usize, tolx: f64) -> (f64, usize, Vec<f64>, f64) {
+    const EMIN: f64 = 1e-9;
+    const MOVE: f64 = 0.2;
+    const ETA: f64 = 0.5;
     let ne = g.elements();
     let op = Operator::new(g, 0.3, fixed);
-    let filter = Filter::new(&g, rmin);
-    let emin = 1e-9;
+    let filter = ConeFilter::new(&g, rmin);
+    let target = volfrac * ne as f64;
+    let dv = filter.backward(&vec![1.0; ne]);
     let mut x = vec![volfrac; ne];
-    let mut phys = x.clone();
+    let mut rho = filter.forward(&x);
     let mut u = vec![0.0; g.dofs()];
-    let mut c = 0.0;
-    let mut its = 0;
-    let t = Instant::now();
-    for it in 1..=maxloop {
-        its = it;
-        let young: Vec<f64> = phys.iter().map(|r| emin + r.powf(penal) * (1.0 - emin)).collect();
-        Hierarchy::new(&op, &young).solve(f, &mut u, 1e-8, 1000).unwrap();
-        let mut ce = vec![0.0; ne];
-        op.energy(&u, &mut ce);
-        c = ce.iter().zip(&young).map(|(a, b)| a * b).sum();
-        let dc: Vec<f64> = phys.iter().zip(&ce).map(|(r, ce)| -penal * (1.0 - emin) * r.powf(penal - 1.0) * ce).collect();
-        let dc = filter.back(&dc);
-        let dv = filter.back(&vec![1.0; ne]);
-        let (mut l1, mut l2, mv) = (0.0, 1e9, 0.2);
-        let mut xnew = x.clone();
-        while (l2 - l1) / (l1 + l2) > 1e-3 {
-            let lmid = 0.5 * (l2 + l1);
-            for e in 0..ne {
-                let b = x[e] * (-dc[e] / dv[e] / lmid).max(0.0).sqrt();
-                xnew[e] = (x[e] - mv).max(0.0).max((x[e] + mv).min(1.0).min(b));
-            }
-            phys = filter.apply(&xnew);
-            if phys.iter().sum::<f64>() > volfrac * ne as f64 {
-                l1 = lmid;
-            } else {
-                l2 = lmid;
-            }
+    let mut energy = vec![0.0; ne];
+    let (mut compliance, mut iterations) = (0.0, 0);
+    let clock = Instant::now();
+    while iterations < maxloop {
+        iterations += 1;
+        // Analysis at the current physical densities.
+        let modulus: Vec<f64> = rho.iter().map(|r| EMIN + (1.0 - EMIN) * r.powf(penal)).collect();
+        Hierarchy::new(&op, &modulus).solve(f, &mut u, 1e-8, 1000).unwrap();
+        op.energy(&u, &mut energy);
+        compliance = energy.iter().zip(&modulus).map(|(e, m)| e * m).sum();
+        let dc_rho: Vec<f64> = rho.iter().zip(&energy).map(|(r, e)| -penal * (1.0 - EMIN) * r.powf(penal - 1.0) * e).collect();
+        let dc = filter.backward(&dc_rho);
+        // Bisection on the Lagrange multiplier of the volume constraint.
+        let step = |lambda: f64| -> Vec<f64> {
+            x.iter().zip(dc.iter().zip(&dv)).map(|(&xe, (&c, &v))| {
+                let grown = xe * (-c / (lambda * v)).max(0.0).powf(ETA);
+                grown.clamp((xe - MOVE).max(0.0), (xe + MOVE).min(1.0))
+            }).collect()
+        };
+        let (mut low, mut high) = (0.0_f64, 1e9_f64);
+        let mut next = step(0.5 * (low + high));
+        while (high - low) > 1e-3 * (high + low) {
+            let mid = 0.5 * (low + high);
+            next = step(mid);
+            if filter.forward(&next).iter().sum::<f64>() > target { low = mid } else { high = mid }
         }
-        let change = xnew.iter().zip(&x).map(|(a, b)| (a - b).abs()).fold(0.0, f64::max);
-        x = xnew;
+        let change = next.iter().zip(&x).map(|(a, b)| (a - b).abs()).fold(0.0, f64::max);
+        x = next;
+        rho = filter.forward(&x);
         if change <= tolx {
             break;
         }
     }
-    (c, its, phys, t.elapsed().as_secs_f64())
+    (compliance, iterations, rho, clock.elapsed().as_secs_f64())
 }
 
 /// The voxels at density 0.5 or more, as a z-column count per (x, y): a side view.
@@ -315,9 +331,9 @@ fn top3d_benchmarks(quick: bool) {
     let case = LoadCase { name: "tip".into(), loads: vec![load], acceleration: None, weight: 1.0 };
     let fixed = loads::fixed_dofs(&g, &supports);
     let f = loads::applied(&g, &case);
-    let (c_oc, it_oc, phys_oc, t_oc) = top3d_oc(g, fixed, &f, 0.3, 3.0, 1.5, 200, 0.01);
+    let (c_oc, it_oc, phys_oc, t_oc) = oc_reference(g, fixed, &f, 0.3, 3.0, 1.5, 200, 0.01);
     row(
-        "top3d cantilever 60x20x4, vf 0.3, p 3, rmin 1.5: top3d OC loop ported (density filter)",
+        "top3d cantilever 60x20x4, vf 0.3, p 3, rmin 1.5: reference OC from the papers (density filter)",
         "TOP3D printout (Gao et al. 2017, arXiv 1712.02919, Fig. 13): C = 2417.5352, It = 155",
         &format!("c = {c_oc:.2}, {it_oc} its, {:.1} s, grey {:.0} %", t_oc, 100.0 * grey(&phys_oc)),
         &format!("{:+.3} %", 100.0 * (c_oc / 2417.5352 - 1.0)),
@@ -339,7 +355,7 @@ fn top3d_benchmarks(quick: bool) {
     let (tr, phys_mma, t_mma) = engine(&base);
     row(
         "  same, engine: MMA, density filter, no projection, stop at change 0.01",
-        &format!("OC port c = {c_oc:.2}, {it_oc} its"),
+        &format!("reference OC c = {c_oc:.2}, {it_oc} its"),
         &format!("c = {:.2}, {} its, {:.1} s, grey {:.0} %, layout agreement with OC {:.1} %", tr.compliances[0], tr.iterations, t_mma, 100.0 * grey(&phys_mma), 100.0 * agreement(&phys_oc, &phys_mma)),
         &format!("{:+.2} % vs OC", 100.0 * (tr.compliances[0] / c_oc - 1.0)),
     );
@@ -347,11 +363,11 @@ fn top3d_benchmarks(quick: bool) {
     let (tr, phys_p, t_p) = engine(&proj);
     row(
         "  same, engine default: MMA + Heaviside β 1 to 16, 100 its",
-        &format!("OC port c = {c_oc:.2}"),
+        &format!("reference OC c = {c_oc:.2}"),
         &format!("c = {:.2}, {:.1} s, grey {:.1} %, agreement with OC {:.1} %", tr.compliances[0], t_p, 100.0 * grey(&phys_p), 100.0 * agreement(&phys_oc, &phys_p)),
         &format!("{:+.2} % vs OC (crisp 0/1)", 100.0 * (tr.compliances[0] / c_oc - 1.0)),
     );
-    println!("\nOC port, side view (# = solid through most of z):\n{}", side_view(&g, &phys_oc, 1));
+    println!("\nReference OC, side view (# = solid through most of z):\n{}", side_view(&g, &phys_oc, 1));
     println!("Engine MMA, side view:\n{}", side_view(&g, &phys_mma, 1));
     println!("Engine MMA + projection, side view:\n{}", side_view(&g, &phys_p, 1));
 
@@ -362,16 +378,16 @@ fn top3d_benchmarks(quick: bool) {
         Support { region: Region::Box { min: [nx as f64 - 0.1, -0.1, -0.1], max: [nx as f64 + 0.1, 0.1, nz as f64 + 0.1] }, fix: [false, true, true] },
     ];
     let mbb_case = LoadCase { name: "mid".into(), loads: vec![Load::Force { region: Region::Box { min: [-0.1, ny as f64 - 0.1, -0.1], max: [0.1, ny as f64 + 0.1, nz as f64 + 0.1] }, force: [0.0, -((nz + 1) as f64), 0.0] }], acceleration: None, weight: 1.0 };
-    let (c_oc, it_oc, phys_oc, _) = top3d_oc(g, loads::fixed_dofs(&g, &mbb_sup), &loads::applied(&g, &mbb_case), 0.3, 3.0, 1.5, 200, 0.01);
+    let (c_oc, it_oc, phys_oc, _) = oc_reference(g, loads::fixed_dofs(&g, &mbb_sup), &loads::applied(&g, &mbb_case), 0.3, 3.0, 1.5, 200, 0.01);
     let mbb = Study { supports: mbb_sup, cases: vec![mbb_case], ..base.clone() };
     let (tr, phys_mma, _) = engine(&mbb);
     row(
-        "3D MBB half beam 60x20x4, vf 0.3, p 3, rmin 1.5: top3d OC port vs engine MMA",
-        &format!("OC port c = {c_oc:.2}, {it_oc} its"),
+        "3D MBB half beam 60x20x4, vf 0.3, p 3, rmin 1.5: reference OC vs engine MMA",
+        &format!("reference OC c = {c_oc:.2}, {it_oc} its"),
         &format!("MMA c = {:.2}, {} its, agreement {:.1} %", tr.compliances[0], tr.iterations, 100.0 * agreement(&phys_oc, &phys_mma)),
         &format!("{:+.2} %", 100.0 * (tr.compliances[0] / c_oc - 1.0)),
     );
-    println!("\nMBB OC port, side view:\n{}", side_view(&g, &phys_oc, 1));
+    println!("\nMBB Reference OC, side view:\n{}", side_view(&g, &phys_oc, 1));
     println!("MBB engine MMA, side view:\n{}", side_view(&g, &phys_mma, 1));
 
     // PETSc TopOpt default (TopOpt.cc / LinearElasticity.cc): [0, 2] x [0, 1] x [0, 1], 64 x 32 x

@@ -48,10 +48,10 @@ below). Numbers from that run, 2026-11-05.
 | MMA, Svanberg 1987 five-segment cantilever | f* = 1.3400 (closed form) | 1.3400, 11 its | 0.0000 % |
 | Multigrid PCG to 1e-8, uniform, 8k / 66k / 524k elements | mesh-independent | 11 / 11 / 11 its | constant |
 | Multigrid PCG to 1e-8, random 0/1 SIMP field (E_min 1e-9) | mesh-independent | 39 / 36 / 50 its | bounded |
-| top3d cantilever 60x20x4, vf 0.3, p 3, rmin 1.5, top3d's OC loop ported line for line on this FEM | TOP3D printout C = 2417.5352, 155 its (Gao et al. 2017, Fig. 13) | 2416.61 (200 its, cap) | **-0.04 %** |
-| same, engine MMA, density filter, no projection | OC port 2416.61 | 2368.93, layout 95.9 % voxel agreement | -1.97 % |
-| same, engine default (MMA + Heaviside, β to 16, 100 its) | OC port 2416.61 (37 % grey) | 1727.78, 0.9 % grey | -28.5 % (crisp 0/1 design; Gao et al.'s crisp CDT design: 1877.09) |
-| 3D MBB half beam 60x20x4, vf 0.3, p 3, rmin 1.5 | top3d OC port 2406.60 | engine MMA 2422.11, 96.4 % agreement | +0.64 % |
+| top3d cantilever 60x20x4, vf 0.3, p 3, rmin 1.5, reference optimality criteria optimiser written from the papers (Bendsoe and Sigmund 2003; Liu and Tovar 2014) on this FEM | TOP3D printout C = 2417.5352, 155 its (Gao et al. 2017, Fig. 13) | 2416.80 (198 its) | **-0.03 %** |
+| same, engine MMA, density filter, no projection | reference OC 2416.80 | 2368.90, layout 95.9 % voxel agreement | -1.98 % |
+| same, engine default (MMA + Heaviside, β to 16, 100 its) | reference OC 2416.80 (37 % grey) | 1727.78, 0.9 % grey | -28.5 % (crisp 0/1 design; Gao et al.'s crisp CDT design: 1877.09) |
+| 3D MBB half beam 60x20x4, vf 0.3, p 3, rmin 1.5 | reference OC 2406.60 | engine MMA 2422.10, 96.4 % agreement | +0.64 % |
 | PETSc TopOpt default (Aage et al. 2015): 2:1:1, vf 0.12, p 3, rmin 0.08, density filter, MMA, 400 its, 64x32x32 | topology of the paper | c/F² = 613.4, 17 % grey, 98 s | topology matches |
 | same, 128x64x64 (524,288 hex8) | same | c/F² = 995.7, 186 s (0.46 s/it) | see note |
 
@@ -60,7 +60,7 @@ Notes.
 - The FEM error at the finest mesh is under 1 %; the remaining -0.8 % (Richardson extrapolation
   gives -0.82 %) is the 3D clamp: beam theory lets the root section warp, the clamped face does
   not.
-- The top3d OC port reproduces the published compliance to 0.04 %. It runs to the 200-iteration
+- The reference OC optimiser (written from the method's description, not from top3d's code) reproduces the published compliance to 0.03 %. It runs to the 200-iteration
   cap where top3d stopped at 155 on its 0.01 change criterion (top3d solves directly, the port
   iteratively to 1e-8, so the last design changes are not identical); the compliance matches.
 - Projection lowers the compliance by 28 % because a crisp design no longer pays the SIMP
@@ -127,7 +127,7 @@ alternations each:
 On one thread (`RAYON_NUM_THREADS=1`, 100k cantilever, 12 iterations), where load does not
 distort the ratio: 1.284 s to 0.717 s per iteration (**1.79x**). The compliance agreed to 3e-8
 relative (76.51332738 vs 76.51332494). The validate run after the change matches every table
-value above to the printed digits, except the top3d OC port, which moved from 2416.61 to 2416.77
+value above to the printed digits, except the OC reference, which moved from 2416.61 to 2416.77 (since rewritten from the papers: 2416.80)
 (+0.007 %; it uses the engine solver to 1e-8). Under load, the multi-threaded gain is held back
 by per-pass synchronisation. The 2x target at 1M is reached on one thread but not yet on 18
 loaded threads. Next steps: fuse the Chebyshev passes, store the coarse stencil as a symmetric
