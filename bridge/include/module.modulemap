@@ -5,6 +5,9 @@ module ViaFormFFI {
     header "viaform_bom.h"
     header "viaform_flow.h"
     header "viaform_generate.h"
+    header "viaform_asm.h"
+    header "viaform_kin.h"
+    header "viaform_phys.h"
     link "viaform_ffi"
     export *
 }

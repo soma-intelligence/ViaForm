@@ -1805,7 +1805,9 @@ dependencies = [
  "solidcraft-engine",
  "viaform-bom",
  "viaform-core",
+ "viaform-kin",
  "viaform-library",
+ "viaform-phys",
  "viaform-sim",
 ]
 
@@ -1826,6 +1828,14 @@ dependencies = [
  "serde",
  "serde_json",
  "solidcraft-engine",
+]
+
+[[package]]
+name = "viaform-kin"
+version = "0.2.0"
+dependencies = [
+ "serde",
+ "serde_json",
 ]
 
 [[package]]
@@ -1851,6 +1861,22 @@ dependencies = [
  "napi-derive",
  "serde_json",
  "viaform-core",
+]
+
+[[package]]
+name = "viaform-pcb"
+version = "0.2.0"
+dependencies = [
+ "serde",
+ "serde_json",
+]
+
+[[package]]
+name = "viaform-phys"
+version = "0.2.0"
+dependencies = [
+ "serde",
+ "serde_json",
 ]
 
 [[package]]

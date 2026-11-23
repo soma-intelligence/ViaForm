@@ -6,10 +6,13 @@
 //! returns is freed with `sc_string_free`. A panic inside the engine never unwinds into Swift:
 //! each entry point catches it and answers with an error.
 
+mod asm;
 mod bom;
 mod flow;
 mod generate;
+mod kin;
 mod library;
+mod phys;
 mod sim;
 
 use std::ffi::{CStr, CString, c_char};
