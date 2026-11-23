@@ -13,6 +13,9 @@ rayon = "1.12"
 
 [dev-dependencies]
 solidcraft-engine.workspace = true
+# The loads-from-simulation end-to-end test runs the sample arm scenario. Test-only: the
+# library reads phys records as plain JSON (solid::sim_loads), so there is no dependency.
+viaform-phys.workspace = true
 
 [[bin]]
 name = "viaform-gen"

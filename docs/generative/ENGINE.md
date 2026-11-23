@@ -327,6 +327,40 @@ and the app's candidate pipeline, a combined thermo-mechanical objective (weight
 sum) and thermal stress inside the optimisation (the coupling is analysis only today), mixed
 precision in the thermal V-cycle.
 
+## Loads from simulation (G3)
+
+Module `solid/sim_loads.rs`, end-to-end test `generative/tests/sim_loads_arm.rs`, C entry
+`vf_generate_loads_from_record` (`bridge/include/viaform_generate.h`). A part's recorded wrench
+history (phys `record.rs`: per interface `t`, `force` N, `torque` N·m about `at` m, link frame)
+becomes a few governing static load cases. Generative does not depend on phys: its
+`sim_loads::WrenchHistory` has phys's JSON shape, so the `wrench_history` op's answer is read as
+is (phys is a dev-dependency for the end-to-end test only).
+
+Method: each sample's wrench is rotated into the study by a `placement` (link origin mm, link to
+study quaternion) and its moment moved to the interface region's centre (`M_c = M_at + (at - c)
+x F`, then N·mm). Candidates are the samples of largest force norm, largest moment norm and the
+extreme of every force and moment component (each at least `min_share` of its family's peak).
+Samples are ranked by severity (force over peak force plus moment over peak moment, summed over
+interfaces) and merged greedily when their normalised wrench vectors are within `similarity`
+(cosine); the kept case is scaled to bound the norms of what it absorbs, so the set is a
+conservative envelope of the candidates. At most `max_cases` stay; every load is multiplied by
+`dynamic_factor` and `safety_factor` (the study's stress safety factor still applies on top).
+`gravity` (link frame) adds the body load `g - a` of the part's own mass. `at` gives one case at
+a time instead ("Stress here"). This is peak picking of a load time history in the spirit of the
+equivalent static load literature (Kang, Choi and Park 2001; Choi and Park 2002), written from
+first principles.
+
+Validation (`cargo test --release -p viaform-generative sim_loads -- --nocapture`): a 1 N sine
+with a 10 N spike gives exactly three cases at t = 0.5, 0.25 and 0.75 s; two samples within the
+cosine merge into one case scaled to bound both; units, the moment offset, rotation and factors
+against hand values; the sample arm swing in phys gives three elbow cases (peak 8.87 N, 953 N·mm
+before factors) and a 1 600-voxel study of the upper arm held at the shoulder drops its objective
+from 7.49 to 0.35 in 30 iterations.
+
+Left: the spec's k-medoids `Envelope` pick, the body-frame gravity per sample (phys records
+gravity in the world frame only, so `gravity` is a constant the caller gives), the angular
+acceleration's share of the body load, and the stale-run link the app keeps.
+
 ## References
 
 - K. Liu, A. Tovar, An efficient 3D topology optimization code written in Matlab, Struct.
@@ -354,5 +388,10 @@ precision in the thermal V-cycle.
   problems using the finite volume method, Struct. Multidisc. Optim. 31 (2006) 251-259.
 - A. Bejan, Constructal-theory network of conducting paths for cooling a heat generating
   volume, Int. J. Heat Mass Transfer 40 (1997) 799-816.
+- B. S. Kang, W. S. Choi, G. J. Park, Structural optimization under equivalent static loads
+  transformed from dynamic loads based on displacement, Computers and Structures 79 (2001)
+  145-154.
+- W. S. Choi, G. J. Park, Structural optimization using equivalent static loads at all time
+  intervals, Comput. Methods Appl. Mech. Engrg. 191 (2002) 2105-2122.
 - O. Amir, N. Aage, B. S. Lazarov, On multigrid-CG for efficient topology optimization, Struct.
   Multidisc. Optim. 49 (2014) 815-829.

@@ -227,6 +227,25 @@ pub unsafe extern "C" fn vf_generate_variant(base: *const c_char, variant: *cons
     }))
 }
 
+/// Loads from simulation (RUST-ENGINES G3), the JSON op `loads_from_record`: a phys wrench
+/// record (`wrench_history`'s answer, bare or as `{"ok": [...]}`, or a recorder) reduced to a
+/// few governing load cases. `request` is `{record, body, interfaces: [{source, region, center?}],
+/// placement?: {origin, rotation}, max_cases?, similarity?, min_share?, dynamic_factor?,
+/// safety_factor?, gravity?, at?, name?}`; answers `{"ok": {cases, samples, peak_force,
+/// peak_moment, dropped}}` or `{"error"}` (`viaform_generative::solid::sim_loads`).
+///
+/// # Safety
+/// `request` is a NUL-terminated string.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn vf_generate_loads_from_record(request: *const c_char) -> *mut c_char {
+    // SAFETY: NUL-terminated string, per the contract above.
+    let request = unsafe { text(request) };
+    link_reply(guard(Err("the engine stopped reading the record".into()), || {
+        let v: Value = serde_json::from_str(request.ok_or("no request")?).map_err(|e| format!("request: {e}"))?;
+        viaform_core::viaform_generative::solid::sim_loads::loads_from_record(&v)
+    }))
+}
+
 /// Frees the job; a study still running is cancelled and ends on its own.
 ///
 /// # Safety

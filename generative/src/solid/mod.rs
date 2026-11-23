@@ -30,6 +30,7 @@ pub mod loads;
 pub mod mg;
 pub mod mma;
 pub mod optimize;
+pub mod sim_loads;
 pub mod thermal;
 
 pub use grid::Grid;

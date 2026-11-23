@@ -58,6 +58,15 @@ void vf_generate_mesh_free(VfGenMesh *mesh);
 // ("fdm" | "sls" | "cnc3" | "as_is"), build [x,y,z], any other study field} laid over it, one
 // candidate, at least one mode. {"ok": study} or {"error"}. Run each as its own job.
 char *vf_generate_variant(const char *base_json, const char *variant_json);
+// Loads from simulation (G3, op loads_from_record): a phys wrench record (wrench_history's
+// answer, bare or {"ok": [...]}, or a recorder) reduced to governing load cases. Request:
+// {record, body, interfaces: [{source, region, center?}], placement?: {origin (mm), rotation
+// [w,x,y,z] link to study}, max_cases? (8), similarity? (0.95 cosine), min_share? (0.05),
+// dynamic_factor? (1), safety_factor? (1), gravity? (link frame m/s^2: adds the body load),
+// at? (s: one case at that time), name?}. Answers {"ok": {cases: [{case (a study load case,
+// mm/N), t, sample, governs, force, moment, scale}], samples, peak_force, peak_moment,
+// dropped}} or {"error"}.
+char *vf_generate_loads_from_record(const char *request_json);
 // Cancels a running study and frees the handle.
 void vf_generate_free(VfGenJob *job);
 
