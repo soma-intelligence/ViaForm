@@ -2,7 +2,9 @@ import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import { rng, type V3 } from "../shared/sim/math";
 import { MOTOR_ANGLES, MOTOR_SPIN } from "../shared/sim/physics";
-import { Flight, PID_ONLY, quad3, TRAINED, type Brain, type PilotMode, type Scenario } from "../shared/sim/sim";
+import { Flight, PID_ONLY, quad3, STABLE, TRAINED, type Brain, type Disturbance, type PilotMode, type Scenario } from "../shared/sim/sim";
+import { REALISTIC } from "../shared/sim/realism";
+import { randomDisturbance, stressBench } from "../shared/sim/train";
 import { bestTime, CONTROLS_HELP, saveBest, Sticks } from "./game";
 import { Race } from "../shared/sim/race";
 import { clearance, obstacleCourse, randomCourse, type Course, type Obstacle } from "../shared/sim/world";
@@ -10,15 +12,17 @@ import { airDensity, WEATHERS, type Weather } from "../shared/sim/weather";
 import { FRAME } from "../shared/sim/frame";
 import { MOTOR_THRUST_3S_N, PARTS, partsMassKg } from "../shared/sim/parts";
 import { TRAINED_SCORE } from "../shared/sim/trained";
+import { STABLE_SCORE } from "../shared/sim/stable";
 
 // The Simulation workspace: the generatively designed 3-inch drone flying the obstacle course (or
 // holding a hover) in the weather picked, drawn live from the same simulation the tests and the
 // training run (src/shared/sim). Rain, snow, fog and wind are particles and fog driven by the
 // weather model; the companion computer's view (its time-of-flight beams, occupancy map and plan)
-// can be shown over the scene.
+// can be shown over the scene. The stress test holds a point on the realistic plant (realism.ts)
+// while it is kicked, flipped, hit by gusts, loaded and has a prop damaged, on a timer or by key.
 
-export type Mission = "course" | "hover" | "random" | "pilot";
-export type BrainKind = "pid" | "tuned" | "nn";
+export type Mission = "course" | "hover" | "random" | "pilot" | "stress";
+export type BrainKind = "pid" | "tuned" | "nn" | "stable" | "indi";
 export type CameraMode = "chase" | "orbit" | "top" | "fpv" | "cinematic";
 export type SimSettings = {
   mission: Mission;
@@ -30,18 +34,32 @@ export type SimSettings = {
   show: { beams: boolean; map: boolean; path: boolean };
   /** For the game: how much the flight controller helps the pilot. */
   assist: PilotMode;
+  /** The realistic plant and sensors (realism.ts) instead of the rigid body alone. */
+  realism: boolean;
 };
 
 export const MISSIONS: { id: Mission; label: string }[] = [
   { id: "course", label: "Obstacle course" },
   { id: "pilot", label: "Fly it yourself (race)" },
   { id: "hover", label: "Hover in place" },
+  { id: "stress", label: "Stress test (kicks, gusts, flips)" },
   { id: "random", label: "Random course" },
 ];
 export const BRAINS: { id: BrainKind; label: string }[] = [
   { id: "pid", label: "PID, default gains" },
   { id: "tuned", label: "PID, trained gains" },
   { id: "nn", label: "PID + neural net" },
+  { id: "stable", label: "PID, tuned for disturbances" },
+  { id: "indi", label: "INDI rate loop" },
+];
+/** The stress test's keys, what each does to the drone. */
+export const STRESS_KEYS = [
+  ["K", "kick it"],
+  ["G", "gust"],
+  ["F", "flip it"],
+  ["L", "load a payload"],
+  ["P", "break a prop"],
+  ["T", "timed disturbances on, off"],
 ];
 export const CAMERAS: { id: CameraMode; label: string }[] = [
   { id: "chase", label: "Chase" },
@@ -57,7 +75,7 @@ export const ASSISTS: { id: PilotMode; label: string }[] = [
 
 const MASS = partsMassKg(FRAME.massG);
 const PARAMS = quad3(MASS, undefined, FRAME.arm / 1000);
-const brainOf = (b: BrainKind): Brain => (b === "pid" ? PID_ONLY() : TRAINED(b === "nn"));
+const brainOf = (b: BrainKind): Brain => (b === "pid" ? PID_ONLY() : b === "stable" ? STABLE("pid") : b === "indi" ? STABLE("indi") : TRAINED(b === "nn"));
 
 /** Koschmieder: the extinction that leaves 2 % contrast at the visibility distance. */
 const fogDensity = (w: Weather) => (Number.isFinite(w.fogVisibilityM) ? 3.0 / w.fogVisibilityM : w.sun === 0 && w.rainMmH === 0 && w.snowMmH === 0 && w.temperatureC > 15 ? 0.004 : 0.008);
@@ -299,7 +317,7 @@ class Precipitation {
 // MARK: The view
 
 export class SimView {
-  settings: SimSettings = { mission: "course", weather: 1, brain: "nn", seed: 1, speed: 1, camera: "chase", show: { beams: true, map: true, path: true }, assist: "position" };
+  settings: SimSettings = { mission: "course", weather: 1, brain: "nn", seed: 1, speed: 1, camera: "chase", show: { beams: true, map: true, path: true }, assist: "position", realism: true };
   playing = true;
   flight!: Flight;
   course: Course | null = null;
@@ -353,6 +371,13 @@ export class SimView {
   private newBest = false;
   /** While a recorder drives the frames, the render loop stays out of the way. */
   external = false;
+  // The stress test: its timer, the scope's history and the arrow on the last disturbance.
+  private stressTimed = true;
+  private stressNext = 2;
+  private stressRand = rng(1);
+  private scope: HTMLCanvasElement;
+  private scopeData: { t: number; w: V3; err: number; dev: number }[] = [];
+  private hitArrow = new THREE.ArrowHelper(new THREE.Vector3(1, 0, 0), new THREE.Vector3(), 0.5, 0xff5a36, 0.12, 0.07);
 
   constructor(private host: HTMLElement) {
     this.renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
@@ -439,7 +464,13 @@ export class SimView {
     this.help = document.createElement("div");
     this.help.className = "sim-help float";
     this.help.innerHTML = `<div class="title">Controls</div>${CONTROLS_HELP.map(([k, what]) => `<div><kbd>${esc(k)}</kbd><span>${esc(what)}</span></div>`).join("")}<div class="sub">or a gamepad, mode 2</div>`;
-    host.append(this.hud, this.card, this.banner, this.bench, this.gameEl, this.pointer, this.help);
+    this.scope = document.createElement("canvas");
+    this.scope.className = "sim-scope float";
+    this.scope.width = 600;
+    this.scope.height = 220;
+    host.append(this.hud, this.card, this.banner, this.bench, this.gameEl, this.pointer, this.help, this.scope);
+    this.hitArrow.visible = false;
+    this.scene.add(this.hitArrow);
     // The ghost: the trained autopilot, see-through.
     this.ghostModel.group.traverse((o) => {
       const m = (o as THREE.Mesh).material as THREE.Material | undefined;
@@ -485,12 +516,20 @@ export class SimView {
     if (nextSeed) this.settings.seed++;
     const S = this.settings, w = WEATHERS[S.weather];
     this.course = S.mission === "course" || S.mission === "pilot" ? obstacleCourse() : S.mission === "random" ? randomCourse(rng(S.seed * 7919)) : null;
+    const realism = S.realism || S.mission === "stress" ? REALISTIC : undefined;
     const sc: Scenario = S.mission === "pilot"
-      ? { weather: w, mission: { kind: "manual", course: this.course! }, duration: 600, seed: S.seed }
+      ? { weather: w, mission: { kind: "manual", course: this.course! }, duration: 600, seed: S.seed, realism }
       : this.course
-        ? { weather: w, mission: { kind: "waypoints", course: this.course }, duration: 90, seed: S.seed }
-        : { weather: w, mission: { kind: "hover", at: [0, 0, 1.6] }, duration: 40, seed: S.seed };
+        ? { weather: w, mission: { kind: "waypoints", course: this.course }, duration: 90, seed: S.seed, realism }
+        : S.mission === "stress"
+          ? { weather: w, mission: { kind: "stabilize", at: [0, 0, 2.5], events: [] }, duration: 600, seed: S.seed, realism }
+          : { weather: w, mission: { kind: "hover", at: [0, 0, 1.6] }, duration: 40, seed: S.seed, realism };
     this.flight = new Flight(PARAMS, brainOf(S.brain), sc);
+    this.stressNext = 2;
+    this.stressRand = rng(S.seed * 31 + 7);
+    this.scopeData = [];
+    this.scope.hidden = S.mission !== "stress";
+    this.hitArrow.visible = false;
     this.flight.pilotMode = S.assist;
     this.race = S.mission === "pilot" ? new Race(this.course!) : null;
     this.ghost = this.race ? new Flight(PARAMS, TRAINED(), { weather: w, mission: { kind: "waypoints", course: this.course! }, duration: 90, seed: S.seed + 1 }) : null;
@@ -685,12 +724,23 @@ export class SimView {
     this.acc += dt * this.settings.speed;
     const ticks = Math.floor(this.acc / 0.002);
     this.acc -= ticks * 0.002;
-    for (let i = 0; i < ticks && !f.finished; i++) f.tick();
+    for (let i = 0; i < ticks && !f.finished; i++) this.tick();
+    if (this.settings.mission === "stress") this.recordScope();
     if (f.finished) {
       this.playing = false;
       this.showResult();
       this.onChange();
     }
+  }
+
+  /** One physics step, with the stress test's timed disturbances. */
+  private tick(): void {
+    const f = this.flight;
+    if (this.settings.mission === "stress" && this.stressTimed && f.s.t >= this.stressNext) {
+      f.disturb(randomDisturbance(this.stressRand, f.s.t));
+      this.stressNext = f.s.t + this.stressRand.range(2.5, 4);
+    }
+    f.tick();
   }
 
   private advanceGame(dt: number): void {
@@ -725,8 +775,33 @@ export class SimView {
     return `${this.settings.weather}.${this.settings.assist}`;
   }
 
-  /** Flight keys for the game; true when the key was used. */
+  /** The stress test's disturbance from a key, sized like the timed ones. */
+  private stressKey(code: string): boolean {
+    const f = this.flight, r = this.stressRand, t = f.s.t;
+    const pick = (kind: Disturbance["kind"]) => {
+      for (let i = 0; i < 40; i++) {
+        const d = randomDisturbance(r, t);
+        if (d.kind === kind) return d;
+      }
+      return null;
+    };
+    const kinds: Record<string, Disturbance["kind"]> = { KeyK: "kick", KeyG: "gust", KeyF: "tumble", KeyL: "payload", KeyP: "prop" };
+    if (code === "KeyT") {
+      this.stressTimed = !this.stressTimed;
+      this.stressNext = t + 1.5;
+      this.onChange();
+      return true;
+    }
+    const kind = kinds[code];
+    if (!kind) return false;
+    const d = pick(kind);
+    if (d) f.disturb(kind === "payload" && d.kind === "payload" ? { ...d, kg: Math.abs(d.kg) + 0.01 } : d);
+    return true;
+  }
+
+  /** Flight keys for the game and the stress test; true when the key was used. */
   key(e: KeyboardEvent, down: boolean): boolean {
+    if (this.settings.mission === "stress" && !e.metaKey && !e.ctrlKey) return down ? this.stressKey(e.code) : e.code in { KeyK: 1, KeyG: 1, KeyF: 1, KeyL: 1, KeyP: 1, KeyT: 1 };
     if (!this.race) return false;
     if (e.code === "Enter") {
       if (down) this.restart();
@@ -931,7 +1006,80 @@ export class SimView {
     this.sun.target.position.set(p.x, p.y, 0);
     this.renderer.render(this.scene, this.camera);
     if (this.race) this.renderGame(time);
+    this.drawHit();
+    if (this.settings.mission === "stress") this.drawScope();
     if (this.frameNo % 6 === 0) this.renderHud();
+  }
+
+  /** An arrow on the drone along the last kick or gust, fading over a second. */
+  private drawHit(): void {
+    const h = this.flight.lastHit, f = this.flight;
+    const age = h ? f.s.t - h.t : Infinity;
+    if (!h || age > 1 || (h.kind !== "kick" && h.kind !== "gust")) {
+      this.hitArrow.visible = false;
+      return;
+    }
+    const d = new THREE.Vector3(...h.vec);
+    const len = h.kind === "kick" ? 0.25 + d.length() * 8 : 0.25 + d.length() * 0.08;
+    d.normalize();
+    const p = new THREE.Vector3(...f.s.p);
+    this.hitArrow.position.copy(p.clone().addScaledVector(d, -len - 0.08));
+    this.hitArrow.setDirection(d);
+    this.hitArrow.setLength(len, 0.12, 0.07);
+    this.hitArrow.setColor(h.kind === "kick" ? 0xff5a36 : 0x7fd3ff);
+    this.hitArrow.visible = true;
+  }
+
+  /** Body rates, attitude error and distance from the hold point, sampled each frame. */
+  private recordScope(): void {
+    const f = this.flight, s = f.s;
+    const q = s.q;
+    // Body z in the world (third column of the rotation matrix).
+    const z: V3 = [2 * (q[1] * q[3] + q[0] * q[2]), 2 * (q[2] * q[3] - q[0] * q[1]), 1 - 2 * (q[1] * q[1] + q[2] * q[2])];
+    const zd = f.ctl.zDes;
+    const err = Math.acos(Math.max(-1, Math.min(1, z[0] * zd[0] + z[1] * zd[1] + z[2] * zd[2])));
+    const at = f.sc.mission.kind === "stabilize" ? f.sc.mission.at : s.p;
+    const last = this.scopeData[this.scopeData.length - 1];
+    if (last && s.t - last.t < 0.01) return;
+    this.scopeData.push({ t: s.t, w: [...s.w] as V3, err, dev: Math.hypot(s.p[0] - at[0], s.p[1] - at[1], s.p[2] - at[2]) });
+    while (this.scopeData.length && s.t - this.scopeData[0].t > 8) this.scopeData.shift();
+  }
+
+  private drawScope(): void {
+    const c = this.scope.getContext("2d");
+    if (!c || !this.scopeData.length) return;
+    const W = this.scope.width, H = this.scope.height, d = this.scopeData, t1 = d[d.length - 1].t, t0 = t1 - 8;
+    c.clearRect(0, 0, W, H);
+    const x = (t: number) => ((t - t0) / 8) * W;
+    // Rates on top (±15 rad/s), attitude error and distance below.
+    const top = H * 0.58;
+    c.strokeStyle = "rgba(255,255,255,0.12)";
+    c.lineWidth = 1;
+    c.beginPath();
+    c.moveTo(0, top / 2); c.lineTo(W, top / 2);
+    c.moveTo(0, top + 0.5); c.lineTo(W, top + 0.5);
+    c.stroke();
+    const line = (color: string, y: (p: (typeof d)[number]) => number) => {
+      c.strokeStyle = color;
+      c.lineWidth = 2;
+      c.beginPath();
+      d.forEach((p, i) => (i ? c.lineTo(x(p.t), y(p)) : c.moveTo(x(p.t), y(p))));
+      c.stroke();
+    };
+    const rate = (v: number) => top / 2 - (Math.max(-15, Math.min(15, v)) / 15) * (top / 2 - 4);
+    line("#ff6b6b", (p) => rate(p.w[0]));
+    line("#5be08a", (p) => rate(p.w[1]));
+    line("#6aa8ff", (p) => rate(p.w[2]));
+    const low = (v: number, max: number) => H - 4 - (Math.min(v, max) / max) * (H - top - 8);
+    line("#ffd166", (p) => low(p.err, 0.8));
+    line("#e0e0e0", (p) => low(p.dev, 1.5));
+    // Disturbances as ticks.
+    c.fillStyle = "#ff5a36";
+    for (const r of this.flight.recoveries) if (r.t >= t0) c.fillRect(x(r.t) - 1, 0, 2, H);
+    c.font = "20px system-ui";
+    c.fillStyle = "rgba(255,255,255,0.75)";
+    c.fillText("roll · pitch · yaw rate  ±15 rad/s", 10, 22);
+    c.fillText("tilt error (0–45°) · distance (0–1.5 m)", 10, top + 24);
   }
 
   private renderHud(): void {
@@ -960,6 +1108,8 @@ export class SimView {
         <span>Battery</span><b>${f.battery.voltage.toFixed(2)} V ${bar(f.battery.soc * 100, f.battery.soc < 0.25 ? "low" : "")}</b>
         ${f.planner ? `<span>Waypoints</span><b>${Math.min(reached, total)} / ${total}</b>` : ""}
         ${f.brain.policy ? `<span>NN residual</span><b>${Math.hypot(...f.residual).toFixed(2)} m/s²</b>` : ""}
+        ${f.aero && f.aero.vrs > 0.2 ? `<span>Vortex ring</span><b class="warn">${(f.aero.vrs * 100).toFixed(0)} %</b>` : ""}
+        ${this.stressStats()}
       </div>
       <div class="motors">${motors.map((m, i) => `<div><span>M${i + 1}</span>${bar(m, m > 95 ? "low" : "")}</div>`).join("")}</div>`;
     const P = FRAME;
@@ -968,13 +1118,28 @@ export class SimView {
       <div class="sub">${esc(MISSIONS.find((m) => m.id === this.settings.mission)!.label)} · ${esc(BRAINS.find((b) => b.id === this.settings.brain)!.label)} · seed ${this.settings.seed}</div>
       <div class="sep"></div>
       <div class="sub">Generative frame: ${P.arm.toFixed(1)} mm arms, ${P.thickness} mm carbon, ${P.massG.toFixed(1)} g, ${P.stress.toFixed(0)} MPa, ${P.deflection.toFixed(3)} mm</div>
-      <div class="sub">All-up ${(MASS * 1000).toFixed(0)} g · ${PARTS.length} Amazon parts · tracking cost ${TRAINED_SCORE.defaultPid.toFixed(2)} → ${TRAINED_SCORE.tunedPidNn.toFixed(2)} trained</div>`;
+      <div class="sub">All-up ${(MASS * 1000).toFixed(0)} g · ${PARTS.length} Amazon parts · tracking cost ${TRAINED_SCORE.defaultPid.toFixed(2)} → ${TRAINED_SCORE.tunedPidNn.toFixed(2)} trained</div>
+      ${this.flight.realism ? `<div class="sub">Realistic plant: rotor drag, inflow and vortex ring, shear, motor spread, ${(Math.hypot(...(this.flight.aero?.build.cg ?? [0, 0, 0])) * 1000).toFixed(1)} mm CG offset, vibration, Mahony attitude · disturbance cost ${STABLE_SCORE.defaultPid.toFixed(2)} → ${Math.min(STABLE_SCORE.stablePid, STABLE_SCORE.stableIndi).toFixed(2)} retuned</div>` : ""}
+      ${this.settings.mission === "stress" ? `<div class="sep"></div><div class="keys">${STRESS_KEYS.map(([k, what]) => `<span><kbd>${k}</kbd>${esc(what)}</span>`).join("")}</div><div class="sub">Timed disturbances ${this.stressTimed ? "on" : "off"}</div>` : ""}`;
+  }
+
+  /** The stress test's tally: disturbances, recovered, mean time to recover, the last one. */
+  private stressStats(): string {
+    if (this.settings.mission !== "stress") return "";
+    const r = this.flight.recoveries, done = r.filter((x) => x.recoveredAfter !== null);
+    const mean = done.length ? done.reduce((a, x) => a + x.recoveredAfter!, 0) / done.length : 0;
+    const last = r[r.length - 1];
+    const label: Record<Disturbance["kind"], string> = { kick: "Kick", gust: "Gust", tumble: "Flip", payload: "Payload", prop: "Prop" };
+    const health = this.flight.aero?.build.kT.map((k) => Math.round(k * 100)).join(" · ") ?? "";
+    return `<span>Recovered</span><b>${done.length} / ${r.length}${done.length ? ` · ${mean.toFixed(2)} s` : ""}</b>
+      ${last ? `<span>Last</span><b>${label[last.kind]} · ${last.recoveredAfter !== null ? `${last.recoveredAfter.toFixed(2)} s` : "recovering"} · ${last.maxDeviation.toFixed(2)} m</b>` : ""}
+      <span>Motor thrust</span><b>${health} %</b>`;
   }
 
   private showResult(): void {
     const f = this.flight, s = f.s;
     const ok = f.planner ? !!f.plan?.done : !s.crashed;
-    const why = s.crashed ? "Crashed" : f.collided ? "Hit an obstacle" : f.planner ? (f.plan?.done ? "Course complete" : "Out of time") : "Hover held";
+    const why = s.crashed ? "Crashed" : f.collided ? "Hit an obstacle" : f.planner ? (f.plan?.done ? "Course complete" : "Out of time") : this.settings.mission === "stress" ? "Held through it all" : "Hover held";
     const err = f.errN ? Math.sqrt(f.errSq / f.errN) : 0;
     this.banner.className = `sim-banner ${ok ? "good" : "bad"}`;
     this.banner.innerHTML = `<b>${why}</b><span>${s.t.toFixed(1)} s · ${(f.energyJ / 3600).toFixed(2)} Wh${f.planner ? ` · closest ${f.minClearance.toFixed(2)} m` : ` · RMS ${err.toFixed(2)} m`}</span>`;
@@ -1007,7 +1172,10 @@ export class SimView {
     const { at = 0, ...rest } = o;
     Object.assign(this.settings, rest);
     this.restart();
-    while (!this.flight.finished && this.flight.s.t < at) this.flight.tick();
+    while (!this.flight.finished && this.flight.s.t < at) {
+      this.tick();
+      if (this.settings.mission === "stress" && this.flight.s.t > at - 8) this.recordScope();
+    }
     for (let i = 0; i < 4; i++) this.draw(0.5, at + i * 0.5);
     this.playing = !this.flight.finished;
     if (this.flight.finished) this.showResult();
@@ -1036,16 +1204,23 @@ export class SimView {
       const { wi, seed } = jobs[j];
       const w = WEATHERS[wi];
       const course = mission === "random" ? randomCourse(rng(seed * 7919)) : obstacleCourse();
+      const realism = this.settings.realism || mission === "stress" ? REALISTIC : undefined;
       const sc: Scenario = mission === "hover"
-        ? { weather: w, mission: { kind: "hover", at: [0, 0, 1.6] }, duration: 20, seed }
-        : { weather: w, mission: { kind: "waypoints", course }, duration: 90, seed };
+        ? { weather: w, mission: { kind: "hover", at: [0, 0, 1.6] }, duration: 20, seed, realism }
+        : mission === "stress"
+          ? { ...stressBench(seed, w), realism }
+          : { weather: w, mission: { kind: "waypoints", course }, duration: 90, seed, realism };
       const f = new Flight(PARAMS, brainOf(brain), sc);
       while (!f.finished) f.tick();
       const r = rows[wi];
       r.n++;
-      const ok = mission === "hover" ? !f.s.crashed : !!f.plan?.done;
+      const ok = mission === "hover" || mission === "stress" ? !f.s.crashed : !!f.plan?.done;
       if (ok) { r.ok++; r.time.push(f.s.t); } else r.note.push(f.s.crashed ? "crash" : f.collided ? "hit" : "timeout");
       if (mission === "hover" && f.errN) r.note.push(`${Math.sqrt(f.errSq / f.errN).toFixed(2)} m`);
+      if (mission === "stress") {
+        const done = f.recoveries.filter((x) => x.recoveredAfter !== null);
+        r.note.push(`${done.length}/${f.recoveries.length} back${done.length ? ` ${(done.reduce((a, x) => a + x.recoveredAfter!, 0) / done.length).toFixed(1)} s` : ""}`);
+      }
       j++;
       show();
       setTimeout(next, 0);

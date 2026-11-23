@@ -7,11 +7,16 @@
 //      Adam. Reinforcement learning without gradients through the simulator.
 // The score of a candidate is the cost of flying velocity steps in the same randomized episodes
 // (common random numbers): squared velocity error, a little for body rates, a lot for a crash.
+// For stabilization (scripts/train-stabilize.mjs) the episodes run on the realistic plant and
+// sensors of realism.ts, and half of them hold a point while the drone is kicked, flipped, hit by
+// gusts, loaded and has a prop damaged.
 
 import { rng, type Rng, type V3 } from "./math";
 import { DEFAULT_GAINS, GAIN_KEYS, type Gains } from "./control";
 import { Policy, POLICY_SIZE } from "./policy";
-import { runEpisode, type Brain, type Scenario } from "./sim";
+import { runEpisode, type Brain, type Disturbance, type Scenario } from "./sim";
+import type { Limits, RateLoop } from "./control";
+import { REALISTIC, type Realism } from "./realism";
 import type { QuadParams, WindSpec } from "./physics";
 import type { Weather } from "./weather";
 
@@ -44,27 +49,83 @@ export function trackingScenario(seed: number, duration = 7): Scenario {
   };
 }
 
+/** A random disturbance of each kind, at a random size. */
+export function randomDisturbance(r: Rng, t: number): Disturbance {
+  const dir = (): V3 => {
+    const a = r.range(0, 2 * Math.PI), z = r.range(-0.5, 0.5);
+    return [Math.cos(a) * Math.sqrt(1 - z * z), Math.sin(a) * Math.sqrt(1 - z * z), z];
+  };
+  const pick = r.next();
+  if (pick < 0.3) {
+    const d = dir(), j = r.range(0.01, 0.07);
+    return { t, kind: "kick", impulse: [d[0] * j, d[1] * j, d[2] * j], at: [r.range(-0.06, 0.06), r.range(-0.06, 0.06), r.range(-0.02, 0.03)] };
+  }
+  if (pick < 0.55) {
+    const d = dir(), s = r.range(2, 8);
+    return { t, kind: "gust", wind: [d[0] * s, d[1] * s, d[2] * s * 0.4], length: r.range(0.3, 2) };
+  }
+  if (pick < 0.75) return { t, kind: "tumble", rates: [r.range(-14, 14), r.range(-14, 14), r.range(-4, 4)] };
+  if (pick < 0.9) return { t, kind: "payload", kg: r.range(-0.01, 0.04), at: [r.range(-0.03, 0.03), r.range(-0.03, 0.03), 0] };
+  return { t, kind: "prop", motor: Math.floor(r.range(0, 4)), health: r.range(0.75, 0.95) };
+}
+
+/** Holding a point in random weather while random things happen to the drone, every 1.5 to 3 s. */
+export function stabilizeScenario(seed: number, duration = 9, realism: Realism = REALISTIC): Scenario {
+  const r = rng(seed);
+  const events: Disturbance[] = [];
+  for (let t = r.range(1, 2); t < duration - 1; t += r.range(1.5, 3)) events.push(randomDisturbance(r, t));
+  return {
+    weather: randomWeather(r), mission: { kind: "stabilize", at: [0, 0, 6], events }, duration, seed, realism,
+    massScale: r.range(0.9, 1.15), thrustScale: r.range(0.9, 1.08),
+  };
+}
+
+/** The fixed stress test (the app's benchmark and the tests): every kind of disturbance, 3 s apart. */
+export function stressBench(seed: number, weather: Weather, realism: Realism = REALISTIC): Scenario {
+  const events: Disturbance[] = [
+    { t: 2, kind: "kick", impulse: [0.05, 0, 0], at: [0, 0.04, 0.02] },
+    { t: 5, kind: "gust", wind: [0, 6, 0], length: 1.2 },
+    { t: 8, kind: "tumble", rates: [12, -5, 2] },
+    { t: 11, kind: "payload", kg: 0.03, at: [0.03, 0.01, 0] },
+    { t: 14, kind: "prop", motor: 1, health: 0.8 },
+    { t: 17, kind: "kick", impulse: [0, 0, -0.06], at: [0.05, 0, 0] },
+  ];
+  return { weather, mission: { kind: "stabilize", at: [0, 0, 2.5], events }, duration: 20, seed, realism };
+}
+
+/** Half tracking, half disturbance rejection, all on the realistic plant. */
+export const realisticScenario = (seed: number): Scenario =>
+  seed % 2 ? { ...trackingScenario(seed), realism: REALISTIC } : stabilizeScenario(seed);
+
 export function cost(P: QuadParams, brain: Brain, scenarios: Scenario[]): number {
   let total = 0;
   for (const sc of scenarios) {
     const r = runEpisode(P, brain, sc);
-    total += r.rmsError ** 2 + (r.crashed ? 50 : 0);
+    // Holding a point: position error, and the attitude error (rad) weighs as much as 0.5 m.
+    const err = sc.mission.kind === "stabilize" ? r.rmsError ** 2 + 4 * r.attitudeRms ** 2 : r.rmsError ** 2;
+    total += err + (r.crashed ? 50 : 0);
   }
   return total / scenarios.length;
 }
 
 export type TrainLog = { stage: "pid" | "rl"; iteration: number; cost: number; baseline?: number };
 
-export function tuneGains(P: QuadParams, opts: { iterations?: number; population?: number; episodes?: number; seed?: number; log?: (l: TrainLog) => void } = {}): Gains {
+export function tuneGains(P: QuadParams, opts: {
+  iterations?: number; population?: number; episodes?: number; seed?: number; log?: (l: TrainLog) => void;
+  /** Where to start (default gains), which rate loop, and which episodes (velocity steps). */
+  init?: Gains; rateLoop?: RateLoop; limits?: Partial<Limits>; scenario?: (seed: number) => Scenario;
+} = {}): Gains {
   const r = rng(opts.seed ?? 11);
   const N = opts.population ?? 24, elite = Math.max(2, Math.round(N / 6));
-  let mean = GAIN_KEYS.map((k) => Math.log(DEFAULT_GAINS[k]));
+  const make = opts.scenario ?? ((seed: number) => trackingScenario(seed));
+  const init = opts.init ?? DEFAULT_GAINS;
+  let mean = GAIN_KEYS.map((k) => Math.log(init[k]));
   let sd = GAIN_KEYS.map(() => 0.35);
   const toGains = (x: number[]) => Object.fromEntries(GAIN_KEYS.map((k, i) => [k, Math.exp(x[i])])) as Gains;
   for (let it = 0; it < (opts.iterations ?? 20); it++) {
-    const scs = Array.from({ length: opts.episodes ?? 6 }, (_, i) => trackingScenario(1000 * it + i + 1));
+    const scs = Array.from({ length: opts.episodes ?? 6 }, (_, i) => make(1000 * it + i + 1));
     const pop = Array.from({ length: N }, (_, i) => (i === 0 ? mean : mean.map((m, j) => m + sd[j] * r.gauss())))
-      .map((x) => ({ x, c: cost(P, { gains: toGains(x), policy: null }, scs) }))
+      .map((x) => ({ x, c: cost(P, { gains: toGains(x), policy: null, rateLoop: opts.rateLoop, limits: opts.limits }, scs) }))
       .sort((a, b) => a.c - b.c);
     const current = pop.find((p) => p.x === mean)!.c;
     const top = pop.slice(0, elite);

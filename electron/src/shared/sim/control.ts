@@ -2,6 +2,13 @@
 // velocity setpoint, velocity gives an acceleration (and so a thrust vector and an attitude),
 // attitude gives body rates, rates give torques, and the mixer turns thrust and torques into
 // four motor speeds. A learned residual (policy.ts) can add to the acceleration command.
+//
+// The rate loop is either a PID (as Betaflight) or INDI, incremental nonlinear dynamic inversion
+// (Smeur, Chu and de Croon 2016; Tal and Karaman 2021): it measures the angular acceleration the
+// drone has now and the torque the motors make now (from their RPM, which bidirectional DShot
+// reports), and asks only for the torque *change* that gives the wanted acceleration. Whatever
+// else pushes on the drone (a gust, a bent prop, an off-centre pack) is in the measurement, so it
+// is cancelled without the controller knowing what it is.
 
 import { add, clamp, clampLen, col, cross, dot, mtv, norm, qToM3, scale, sub, unit, type M3, type V3 } from "./math";
 import { G, MOTOR_SPIN, motorPositions, type QuadParams } from "./physics";
@@ -23,11 +30,16 @@ export type Gains = {
 export const DEFAULT_GAINS: Gains = { posP: 1.2, velP: 2.2, velI: 0.6, velD: 0.05, attP: 7, yawP: 3, rateP: 22, rateI: 30, rateD: 0.02, yawRateP: 10 };
 export const GAIN_KEYS = Object.keys(DEFAULT_GAINS) as (keyof Gains)[];
 
-export type Limits = { tiltMax: number; velMax: number; velUpMax: number; accMax: number; rateMax: number; yawRateMax: number };
-export const DEFAULT_LIMITS: Limits = { tiltMax: (40 * Math.PI) / 180, velMax: 5, velUpMax: 2.5, accMax: 12, rateMax: 8, yawRateMax: 3 };
+/** `rateIntMax` (rad/s²): how much the rate loop's integrator may hold. The first training ran
+ *  with 3; holding an off-centre pack (4 mm takes ~35 rad/s²) needs Betaflight's wider limit,
+ *  which the disturbance-tuned brains use (sim.ts STABLE). */
+export type Limits = { tiltMax: number; velMax: number; velUpMax: number; accMax: number; rateMax: number; yawRateMax: number; rateIntMax: number };
+export const DEFAULT_LIMITS: Limits = { tiltMax: (40 * Math.PI) / 180, velMax: 5, velUpMax: 2.5, accMax: 12, rateMax: 8, yawRateMax: 3, rateIntMax: 3 };
 
 /** What the controller knows about the drone: an estimate, not the true state. */
 export type Estimate = { p: V3; v: V3; R: M3; w: V3; accBody: V3 };
+
+export type RateLoop = "pid" | "indi";
 
 export type Setpoint =
   | { mode: "position"; p: V3; yaw: number }
@@ -42,9 +54,21 @@ export class Cascade {
   /** For the policy and the display: the last acceleration command and collective thrust. */
   accCmd: V3 = [0, 0, 0];
   thrustCmd = 0;
+  /** Thrust axis the attitude loop asks for (world), for the attitude error metric. */
+  zDes: V3 = [0, 0, 1];
+  rateLoop: RateLoop = "pid";
+  /** INDI: the low-pass on the gyro and RPM (Hz), and the gain on the rate error (1/s). */
+  indiHz = 50;
+  indiRateP = 0;
+  /** INDI state: filtered gyro, its derivative, and the filtered motor torque. */
+  private indiW: V3 = [0, 0, 0];
+  private indiLastW: V3 = [0, 0, 0];
+  private indiAlpha: V3 = [0, 0, 0];
+  private indiTau: V3 = [0, 0, 0];
   private mixInv: number[][];
 
   constructor(public P: QuadParams, public g: Gains = { ...DEFAULT_GAINS }, public lim: Limits = { ...DEFAULT_LIMITS }) {
+    this.lim = { ...lim };
     this.mixInv = mixerInverse(P);
   }
 
@@ -54,6 +78,10 @@ export class Cascade {
     this.lastVelErr = [0, 0, 0];
     this.wFilt = [0, 0, 0];
     this.lastW = [0, 0, 0];
+    this.indiW = [0, 0, 0];
+    this.indiLastW = [0, 0, 0];
+    this.indiAlpha = [0, 0, 0];
+    this.indiTau = [0, 0, 0];
   }
 
   /** The acceleration the outer loops ask for (before any learned residual). */
@@ -75,8 +103,9 @@ export class Cascade {
     return a;
   }
 
-  /** Motor speed commands from an acceleration command (world) and a yaw setpoint. */
-  inner(e: Estimate, acc: V3, yawSp: number, dt: number): number[] {
+  /** Motor speed commands from an acceleration command (world) and a yaw setpoint. `rpm`: the
+   *  motor speeds the ESCs report (rad/s), which INDI needs. */
+  inner(e: Estimate, acc: V3, yawSp: number, dt: number, rpm?: number[]): number[] {
     const P = this.P, g = this.g, L = this.lim;
     this.accCmd = acc;
     // Thrust vector: what must push against gravity plus the commanded acceleration, tilt limited.
@@ -84,6 +113,7 @@ export class Cascade {
     const horiz = Math.hypot(f[0], f[1]), maxH = f[2] * Math.tan(L.tiltMax);
     if (horiz > maxH) f = [(f[0] * maxH) / horiz, (f[1] * maxH) / horiz, f[2]];
     const zb = unit(f);
+    this.zDes = zb;
     const collective = P.mass * dot(f, col(e.R, 2));
     this.thrustCmd = collective;
 
@@ -108,8 +138,9 @@ export class Cascade {
     const dW = scale(sub(this.wFilt, this.lastW), 1 / dt);
     this.lastW = this.wFilt;
     const rErr = sub(wSp, e.w);
-    this.rateInt = clampLen(add(this.rateInt, scale(rErr, g.rateI * dt)), 3);
+    this.rateInt = clampLen(add(this.rateInt, scale(rErr, g.rateI * dt)), L.rateIntMax);
     const J = P.inertia;
+    if (this.rateLoop === "indi" && rpm) return this.mix(collective, this.indi(e.w, wSp, rpm, dt));
     const alpha: V3 = [
       g.rateP * rErr[0] + this.rateInt[0] - g.rateD * dW[0] * 100,
       g.rateP * rErr[1] + this.rateInt[1] - g.rateD * dW[1] * 100,
@@ -118,6 +149,29 @@ export class Cascade {
     const Jw: V3 = [J[0] * e.w[0], J[1] * e.w[1], J[2] * e.w[2]];
     const tau = add([J[0] * alpha[0], J[1] * alpha[1], J[2] * alpha[2]], cross(e.w, Jw));
     return this.mix(collective, tau);
+  }
+
+  /** INDI: torque now (from RPM) plus inertia times the missing angular acceleration. The gyro
+   *  and the RPM go through the same low-pass so the two stay in step. */
+  private indi(w: V3, wSp: V3, rpm: number[], dt: number): V3 {
+    const P = this.P, g = this.g, J = P.inertia;
+    const a = Math.min(1, dt * 2 * Math.PI * this.indiHz);
+    this.indiW = add(this.indiW, scale(sub(w, this.indiW), a));
+    const alphaRaw = scale(sub(this.indiW, this.indiLastW), 1 / dt);
+    this.indiLastW = this.indiW;
+    this.indiAlpha = add(this.indiAlpha, scale(sub(alphaRaw, this.indiAlpha), a));
+    const pos = motorPositions(P);
+    let tauNow: V3 = [0, 0, 0];
+    rpm.forEach((o, i) => {
+      const T = P.kT * o * o;
+      tauNow = add(tauNow, cross(pos[i], [0, 0, T]));
+      tauNow[2] += MOTOR_SPIN[i] * P.kQ * o * o;
+    });
+    this.indiTau = add(this.indiTau, scale(sub(tauNow, this.indiTau), a));
+    // Wanted angular acceleration: a proportional rate loop (INDI needs no integrator).
+    const kp = this.indiRateP || g.rateP;
+    const alphaRef: V3 = [kp * (wSp[0] - this.indiW[0]), kp * (wSp[1] - this.indiW[1]), g.yawRateP * (wSp[2] - this.indiW[2])];
+    return [0, 1, 2].map((i) => this.indiTau[i] + J[i] * (alphaRef[i] - this.indiAlpha[i])) as V3;
   }
 
   /** Thrust per motor from collective and torques; yaw gives way first when a motor saturates. */

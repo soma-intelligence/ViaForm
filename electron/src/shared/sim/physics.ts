@@ -4,6 +4,7 @@
 // x east, y north, z up; body frame is x forward, y left, z up. SI units throughout.
 
 import { add, cross, mtv, mv, qMul, qNormalize, qToM3, scale, sub, type Q, type Rng, type V3 } from "./math";
+import type { Aero } from "./realism";
 
 export type QuadParams = {
   mass: number; // kg, all-up
@@ -103,6 +104,7 @@ export type Env = {
   extraMass: number; // kg, snow load
   downForce: number; // N, rain on the rotor discs
   omegaScale: number; // loaded pack voltage over a full pack's
+  turbulence?: number; // m/s, for the shear across the rotors (realism.ts)
 };
 export const SEA_LEVEL: Env = { rho: RHO, thrustFactor: 1, extraMass: 0, downForce: 0, omegaScale: 1 };
 
@@ -113,31 +115,38 @@ export const groundEffect = (propRadius: number, z: number) => 1 / (1 - Math.min
  * Advances the state by dt toward the commanded motor speeds (rad/s), in the given wind.
  * Semi-implicit Euler: fine at the 1–2 ms steps the controller runs at.
  */
-export function step(P: QuadParams, s: QuadState, cmd: number[], wind: V3, dt: number, env: Env = SEA_LEVEL): void {
+export function step(P: QuadParams, s: QuadState, cmd: number[], wind: V3, dt: number, env: Env = SEA_LEVEL, aero: Aero | null = null): void {
   if (s.crashed) return;
   for (let i = 0; i < 4; i++) {
     const target = Math.min(Math.max(cmd[i], P.omegaIdle), P.omegaMax * env.omegaScale);
-    s.omega[i] += (target - s.omega[i]) * Math.min(1, dt / P.motorTau);
+    s.omega[i] += (target - s.omega[i]) * Math.min(1, dt / (P.motorTau * (aero?.build.tau[i] ?? 1)));
   }
   const R = qToM3(s.q);
   const air = env.rho / RHO;
   const ge = groundEffect(P.propRadius, s.p[2] + 0.02);
-  const T = thrusts(P, s).map((t) => t * air * env.thrustFactor * ge);
+  let T = thrusts(P, s).map((t) => t * air * env.thrustFactor * ge);
   const pos = motorPositions(P);
   const mass = P.mass + env.extraMass;
 
   // Forces in body axes: thrust along z, drag against the relative air.
   const rel = mtv(R, sub(s.v, wind));
+  let extraF: V3 = [0, 0, 0], extraTau: V3 = [0, 0, 0];
+  if (aero) {
+    const a = aero.forces(P, s, T, rel, env.rho, env.turbulence ?? 0, dt);
+    [T, extraF, extraTau] = [a.T, a.force, a.torque];
+  }
   const thrust = T[0] + T[1] + T[2] + T[3];
-  const drag: V3 = [0, 1, 2].map((i) => air * (-P.dragLinear[i] * rel[i] - P.dragQuad[i] * rel[i] * Math.abs(rel[i]))) as V3;
-  const fBody: V3 = [drag[0], drag[1], thrust + drag[2] - env.downForce * R[8]];
+  // dragLinear is mostly the rotors' edgewise drag; with realism.ts that is modelled per rotor.
+  const lin = (i: number) => (aero && aero.R.rotorDrag > 0 && i < 2 ? 0 : P.dragLinear[i]);
+  const drag: V3 = [0, 1, 2].map((i) => air * (-lin(i) * rel[i] - P.dragQuad[i] * rel[i] * Math.abs(rel[i]))) as V3;
+  const fBody: V3 = [drag[0] + extraF[0], drag[1] + extraF[1], thrust + drag[2] + extraF[2] - env.downForce * R[8]];
   s.accBody = scale(fBody, 1 / mass);
 
   // Torques: differential thrust, propeller drag reaction, gyroscopic coupling.
-  let tau: V3 = [0, 0, 0];
+  let tau: V3 = extraTau;
   for (let i = 0; i < 4; i++) {
     tau = add(tau, cross(pos[i], [0, 0, T[i]]));
-    tau[2] += MOTOR_SPIN[i] * P.kQ * air * s.omega[i] * s.omega[i];
+    tau[2] += MOTOR_SPIN[i] * P.kQ * (aero?.build.kQ[i] ?? 1) * air * s.omega[i] * s.omega[i];
   }
   const J = P.inertia;
   const Jw: V3 = [J[0] * s.w[0], J[1] * s.w[1], J[2] * s.w[2]];

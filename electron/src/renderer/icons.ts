@@ -170,6 +170,10 @@ const P: Record<string, string> = {
   link: "M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1",
   part: "M4 7l8-4 8 4v10l-8 4-8-4z",
   net: "M6 6a2 2 0 1 0 0.1 0M18 6a2 2 0 1 0 0.1 0M12 18a2 2 0 1 0 0.1 0M7.5 7.5l3.5 9M16.5 7.5l-3.5 9",
+  // Generative design
+  generate: "M3 19h18M4 19c0-7 3.5-12 8-12s8 5 8 12M8 19c0-4 1.8-7 4-7s4 3 4 7M12 7V4M9 4h6",
+  load: "M12 3v12M8 11l4 4 4-4M5 20h14",
+  support: "M4 15h16M7 15l-3 5M11 15l-3 5M15 15l-3 5M19 15l-3 5M12 4v11",
 };
 
 // Engine icon names that share a drawing with another one.

@@ -2,6 +2,7 @@ import type { DocState, Json, LinkState, UpdateStatus, ViaFormAPI } from "../sha
 import type { LibraryItem, Use } from "../shared/library/types";
 import { icon } from "./icons";
 import { LibraryPanel } from "./library";
+import { GenerativePanel, MATERIALS, PRESETS, type Method } from "./generative";
 import { PART_KINDS, PcbCanvas, PcbModel } from "./pcb";
 import { ASSISTS, BRAINS, CAMERAS, MISSIONS, SimView, type SimSettings } from "./simulation";
 import { WEATHERS } from "../shared/sim/weather";
@@ -80,6 +81,14 @@ const library = new LibraryPanel({
   },
 });
 $("stage").append(library.el);
+// The Generate tab's study panel; a build lands in the design like any other command.
+const generative = new GenerativePanel({
+  built: async () => { await refreshDesign(); viewport.fit(); },
+  flash: (text, error = false) => flash(text, error),
+  changed: () => { if (state.ws === "design" && state.tab === "GENERATE") renderToolbar(); },
+});
+$("stage").append(generative.el);
+let generateShown = false;
 let simView: SimView | null = null;
 /** Built on first use: the simulation has its own WebGL context and render loop. */
 function sim(): SimView {
@@ -111,7 +120,7 @@ async function cad(id: string, params: Record<string, unknown> = {}, quiet = fal
 let specs: Spec[] = [];
 const spec = (id: string) => specs.find((s) => s.id === id);
 
-const DESIGN_TABS = ["SOLID", "SURFACE", "SHEET METAL", "PLASTIC", "WELDMENTS"];
+const DESIGN_TABS = ["SOLID", "SURFACE", "SHEET METAL", "PLASTIC", "WELDMENTS", "GENERATE"];
 const PANEL_ORDER = ["FINISH SKETCH", "CREATE", "AUTOMATE", "MODIFY", "CONSTRAINTS", "PATTERN", "ASSEMBLE", "POSITION", "CONFIGURE", "CONSTRUCT", "INSPECT", "INSERT", "SETUP"];
 
 // The big buttons of a panel; the rest are in its dropdown. Panels not named here show their first three.
@@ -718,13 +727,30 @@ function choice<T extends string | number>(options: { id: T; label: string }[], 
   return f;
 }
 
+function generativePanels(): HTMLElement[] {
+  const g = generative;
+  return [
+    panel("SETUP", [
+      choice(PRESETS.map((p) => ({ id: p.id, label: p.label })), g.preset, (id) => { g.load(id); renderToolbar(); }, 170),
+      tool("settings", "Show the study panel: domain, supports, loads, regions", () => { g.toggle(); renderToolbar(); }, { on: g.open }),
+    ]),
+    panel("METHOD", [choice<Method>([{ id: "topology", label: "Topology" }, { id: "frame", label: "Frame" }], g.method, (m) => g.setMethod(m), 104)]),
+    panel("MATERIAL", [choice(MATERIALS.map((m, i) => ({ id: i, label: m.name })), g.material, (i) => g.setMaterial(i), 132)]),
+    panel("STUDY", [tool("play", g.running ? "Running the study" : "Run the study", () => { g.toggle(true); void g.run(); }, { on: g.running, disabled: g.running })]),
+    panel("RESULT", [tool("generate", g.outcome ? `Build candidate ${g.chosen + 1} into the design` : "Run the study first", () => void g.build(), { disabled: !g.outcome || g.building })]),
+  ];
+}
+
 function simulationPanels(): HTMLElement[] {
   const v = sim(), S = v.settings;
   const set = <K extends keyof SimSettings>(k: K) => (x: SimSettings[K]) => v.set(k, x);
   return [
     panel("MISSION", [choice(MISSIONS, S.mission, set("mission"), 140)]),
     panel("WEATHER", [choice(WEATHERS.map((w, i) => ({ id: i, label: w.name })), S.weather, set("weather"), 170)]),
-    panel("CONTROLLER", [choice(BRAINS, S.brain, set("brain"), 150)]),
+    panel("CONTROLLER", [
+      choice(BRAINS, S.brain, set("brain"), 150),
+      tool("warn", S.realism ? "Realistic plant and sensors: on" : "Realistic plant and sensors: off (rigid body)", () => v.set("realism", !S.realism), { on: S.realism || S.mission === "stress" }),
+    ]),
     ...(S.mission === "pilot"
       ? [panel("RACE", [
         choice(ASSISTS, S.assist, set("assist"), 160),
@@ -773,6 +799,7 @@ function renderToolbar(): void {
   bar.replaceChildren();
   if (state.ws === "simulation") return void bar.append(...simulationPanels());
   if (state.ws === "design") {
+    if (state.tab === "GENERATE") bar.append(...generativePanels());
     for (const p of panelsOf(state.tab)) {
       const featured = FEATURED[`${state.tab}/${p.name}`]?.map(spec).filter((s): s is Spec => !!s) ?? p.items.slice(0, 3);
       bar.append(panel(p.name, featured.map(specTool), () => p.items.map((s) => entry(s.id))));
@@ -1191,6 +1218,9 @@ function render(): void {
   $("sheet").hidden = state.ws !== "electronics";
   $("sim").hidden = state.ws !== "simulation";
   for (const id of ["browser", "navbar"]) $(id).style.display = state.ws === "simulation" ? "none" : "";
+  // The study panel opens with the Generate tab and closes when the tab is left.
+  const generating = state.ws === "design" && state.tab === "GENERATE";
+  if (generating !== generateShown) { generateShown = generating; generative.toggle(generating); }
   renderAppbar();
   renderToolbar();
   renderBrowser();

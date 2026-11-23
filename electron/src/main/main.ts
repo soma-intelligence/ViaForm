@@ -139,6 +139,12 @@ function ipc(): void {
     return r;
   });
   ipcMain.handle("linkState", () => ws.linkState());
+  ipcMain.handle("generate.study", (_e, spec: unknown) => reply(() => native.generateStudy(spec)));
+  ipcMain.handle("generate.build", (_e, spec: unknown, candidate?: number) => {
+    const r = reply(() => ws.generate(spec, candidate ?? undefined));
+    if ("ok" in r) touched();
+    return r;
+  });
   ipcMain.handle("file", (_e, action: string) => fileAction(action));
   ipcMain.handle("doc", () => doc);
   ipcMain.handle("versions", () => ({ ...native.versions(), app: app.getVersion(), electron: process.versions.electron }));

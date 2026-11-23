@@ -88,6 +88,10 @@ export interface ViaFormAPI {
   linkPush(): Promise<Reply>;
   linkMount(body: string, point: number[], normal: number[]): Promise<Reply>;
   linkState(): Promise<LinkState>;
+  /** Runs a generative study (a spec as JSON): `{candidates, best}`. */
+  generateStudy(spec: Json): Promise<Reply>;
+  /** Builds candidate `candidate` (else the best) of the study `spec` as one body, one undo step. */
+  generate(spec: Json, candidate?: number): Promise<Reply>;
   file(action: "new" | "open" | "save" | "saveAs" | "exportKicad" | "exportStep" | "sample"): Promise<Reply>;
   doc(): Promise<DocState>;
   versions(): Promise<Versions>;

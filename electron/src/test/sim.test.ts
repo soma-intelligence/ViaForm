@@ -1,8 +1,12 @@
 // The drone simulation (src/shared/sim): physics, weather, the generative frame, mapping, the
-// trained controller, and flights in hard weather that must hover and finish the obstacle course.
+// trained controller, flights in hard weather that must hover and finish the obstacle course, and
+// the realistic plant (realism.ts) on which the drone must ride out kicks, gusts, flips and damage.
 import { test } from "node:test";
 import * as assert from "node:assert/strict";
-import { DT, Flight, PID_ONLY, quad3, runEpisode, TRAINED, type Scenario } from "../shared/sim/sim";
+import { DT, Flight, PID_ONLY, quad3, runEpisode, STABLE, TRAINED, type Scenario } from "../shared/sim/sim";
+import { inflowFactor, Mahony, REALISTIC } from "../shared/sim/realism";
+import { qFromEuler, qToM3, type V3 } from "../shared/sim/math";
+import { STABLE_SCORE } from "../shared/sim/stable";
 import { Race } from "../shared/sim/race";
 import { newState, step } from "../shared/sim/physics";
 import { airDensity, Battery, Exposure, WEATHERS } from "../shared/sim/weather";
@@ -11,7 +15,7 @@ import { obstacleCourse } from "../shared/sim/world";
 import { LOADS, minimumArm } from "../shared/sim/generative";
 import { FRAME, FRAME_OUTCOMES } from "../shared/sim/frame";
 import { TRAINED_SCORE } from "../shared/sim/trained";
-import { cost, trackingScenario } from "../shared/sim/train";
+import { cost, stressBench, trackingScenario } from "../shared/sim/train";
 import { partsMassKg } from "../shared/sim/parts";
 
 const P = quad3(partsMassKg(FRAME.massG), undefined, FRAME.arm / 1000);
@@ -109,5 +113,49 @@ test("game: a pilot flying the sticks passes the gates in order and lands on the
     }
     assert.equal(race.state, "finished", `${w}: ${race.state}, ${race.next} gates, at ${f.s.p.map((x) => x.toFixed(1))}`);
     assert.equal(race.splits.length, 3);
+  }
+});
+
+test("realism: climbing and the vortex ring cost thrust, forward flight gives some back", () => {
+  const vi = 6;
+  assert.ok(inflowFactor(-3, 0, vi).factor < 0.8, "climb");
+  assert.ok(inflowFactor(6, 0, vi).factor < 0.8 && inflowFactor(6, 0, vi).vrs > 0.9, "descent into the wake");
+  assert.ok(inflowFactor(6, 8, vi).vrs < 0.1, "edgewise flow blows the ring away");
+  assert.ok(inflowFactor(0, 8, vi).factor > 1.05, "translational lift");
+});
+
+test("realism: the attitude filter finds the tilt from gravity and the gyro bias", () => {
+  const truth = qToM3(qFromEuler(0.2, -0.1, 0));
+  const g: V3 = [truth[6] * 9.81, truth[7] * 9.81, truth[8] * 9.81]; // gravity seen by a still IMU
+  const m = new Mahony([1, 0, 0, 0]);
+  // A minute: the bias is slow to observe (Betaflight calibrates it at arming instead).
+  for (let i = 0; i < 60 / DT; i++) m.update([0.01, -0.02, 0], g, 0, DT);
+  const R = qToM3(m.q);
+  assert.ok(Math.abs(R[6] - truth[6]) < 0.01 && Math.abs(R[7] - truth[7]) < 0.01, "tilt");
+  assert.ok(Math.abs(m.bias[0] - 0.01) < 0.001 && Math.abs(m.bias[1] + 0.02) < 0.001, `bias ${m.bias}`);
+});
+
+test("stabilization: rides out kicks, a gust, a flip, a payload and a broken prop, calm to gale", () => {
+  assert.ok(STABLE_SCORE.stablePid < STABLE_SCORE.defaultPid && STABLE_SCORE.stableIndi < STABLE_SCORE.defaultPid, "retuned beats default");
+  for (const brain of [STABLE("pid"), STABLE("indi")]) {
+    for (const w of ["Indoor", "Breezy", "Gale"]) {
+      const r = runEpisode(P, brain, stressBench(3, weather(w)));
+      const back = r.recoveries.filter((x) => x.recoveredAfter !== null).length;
+      const label = `${brain.rateLoop} in ${w}`;
+      assert.ok(!r.crashed, `${label}: crashed`);
+      assert.ok(r.recoveries.every((x) => x.maxDeviation < 1.6), `${label}: ${r.recoveries.map((x) => x.maxDeviation.toFixed(2))}`);
+      assert.ok(r.attitudeRms < 0.12, `${label}: attitude ${r.attitudeRms}`);
+      if (w !== "Gale") assert.ok(back >= 4, `${label}: ${back} of 6 recovered`);
+    }
+  }
+});
+
+test("stabilization: an off-centre pack on the realistic plant is held, not drifted with", () => {
+  const sc: Scenario = { weather: weather("Indoor"), mission: { kind: "stabilize", at: [0, 0, 2], events: [{ t: 1, kind: "payload", kg: 0.04, at: [0.04, 0.03, 0] }] }, duration: 6, seed: 9, realism: REALISTIC };
+  for (const brain of [STABLE("pid"), STABLE("indi")]) {
+    const f = new Flight(P, brain, sc);
+    while (!f.finished) f.tick();
+    const off = Math.hypot(f.s.p[0], f.s.p[1], f.s.p[2] - 2);
+    assert.ok(off < 0.15, `${brain.rateLoop}: ${off.toFixed(2)} m off after the load`);
   }
 });

@@ -4,13 +4,15 @@
 // 30 Hz and the planner at 20 Hz. The app draws a Flight frame by frame; tests and training run
 // whole episodes with runEpisode.
 
-import { add, col, norm, qFromEuler, qToM3, rng, scale, sub, type Rng, type V3 } from "./math";
-import { Cascade, DEFAULT_GAINS, headingOf, type Estimate, type Gains, type Setpoint } from "./control";
+import { add, col, dot, norm, qFromEuler, qToM3, rng, scale, sub, type Rng, type V3 } from "./math";
+import { Cascade, DEFAULT_GAINS, headingOf, type Estimate, type Gains, type Limits, type RateLoop, type Setpoint } from "./control";
+import { Aero, Imu, kick, Mahony, makeBuild, REALISTIC, type Realism } from "./realism";
 import { G, newState, step, thrusts, Wind, type Env, type QuadParams, type QuadState } from "./physics";
 import { Planner, DEFAULT_PLANNER, type PlanOut } from "./planner";
 import { Policy, policyInput } from "./policy";
 import { MOTOR_THRUST_3S_N } from "./parts";
 import { TRAINED_GAINS, TRAINED_POLICY } from "./trained";
+import { STABLE_INDI, STABLE_PID } from "./stable";
 import { airDensity, Battery, Exposure, motorCurrent, precipitationReturn, tofConditions, type Weather, WEATHERS } from "./weather";
 import { clearance, readTof, tofArray, type Course, type TofHit } from "./world";
 
@@ -29,10 +31,12 @@ export function quad3(mass = 0.175, inertia: V3 = [1.9e-4, 2.1e-4, 3.5e-4], arm 
   };
 }
 
-export type Brain = { gains: Gains; policy: Policy | null };
+export type Brain = { gains: Gains; policy: Policy | null; rateLoop?: RateLoop; limits?: Partial<Limits> };
 export const PID_ONLY = (gains: Gains = DEFAULT_GAINS): Brain => ({ gains: { ...gains }, policy: null });
 /** What scripts/train-drone.mjs learned: tuned gains, and with `nn` the neural residual on top. */
 export const TRAINED = (nn = true): Brain => ({ gains: { ...TRAINED_GAINS }, policy: nn ? new Policy(Float64Array.from(TRAINED_POLICY)) : null });
+/** What scripts/train-stabilize.mjs tuned on the realistic plant, with either rate loop. */
+export const STABLE = (rateLoop: RateLoop = "pid"): Brain => ({ gains: { ...(rateLoop === "indi" ? STABLE_INDI : STABLE_PID) }, policy: null, rateLoop, limits: { rateIntMax: 50 } });
 
 export type Mission =
   | { kind: "hover"; at: V3 }
@@ -40,9 +44,31 @@ export type Mission =
   /** Flown by a person (the game): `Flight.pilot` holds the sticks; the course is for collisions. */
   | { kind: "manual"; course: Course }
   /** Velocity steps (training): each entry holds from its time until the next. */
-  | { kind: "track"; at: V3; steps: { t: number; v: V3 }[] };
+  | { kind: "track"; at: V3; steps: { t: number; v: V3 }[] }
+  /** Hold a point while things are done to the drone (the stabilization bench). */
+  | { kind: "stabilize"; at: V3; events: Disturbance[] };
 
-export type Scenario = { weather: Weather; mission: Mission; duration: number; seed: number; tofRange?: number; massScale?: number; thrustScale?: number };
+/** Something done to the drone at time t. */
+export type Disturbance =
+  /** A blow: impulse (N·s, world) at a point (m from the centre of mass, body axes). */
+  | { t: number; kind: "kick"; impulse: V3; at: V3 }
+  /** A sharp-edged gust on top of the weather, for `length` seconds. */
+  | { t: number; kind: "gust"; wind: V3; length: number }
+  /** A damaged prop: that motor makes `health` of its thrust from now on. */
+  | { t: number; kind: "prop"; motor: number; health: number }
+  /** A payload picked up (kg > 0) or dropped (kg < 0), off-centre by `at` (m, body). */
+  | { t: number; kind: "payload"; kg: number; at: V3 }
+  /** Thrown or knocked into a tumble: body rates (rad/s) all at once. */
+  | { t: number; kind: "tumble"; rates: V3 };
+
+/** How the drone came back from one disturbance. */
+export type Recovery = { kind: Disturbance["kind"]; t: number; maxDeviation: number; maxTilt: number; recoveredAfter: number | null };
+
+export type Scenario = {
+  weather: Weather; mission: Mission; duration: number; seed: number; tofRange?: number; massScale?: number; thrustScale?: number;
+  /** The plant and sensor effects of realism.ts; without it, the rigid body and simple noise. */
+  realism?: Realism;
+};
 
 export type Frame = {
   t: number; p: V3; q: [number, number, number, number]; v: V3; omega: number[]; wind: V3;
@@ -89,6 +115,29 @@ export class Flight {
   pilotMode: PilotMode = "position";
   private pilotYaw = 0;
   private hold: V3 | null = null;
+  /** realism.ts state, when the scenario asks for it. */
+  realism: Realism | null;
+  aero: Aero | null = null;
+  imu: Imu | null = null;
+  ahrs: Mahony | null = null;
+  private wLp: V3 = [0, 0, 0];
+  private pErr: V3 = [0, 0, 0];
+  private pDrift: V3 = [0, 0, 0];
+  private vDrift: V3 = [0, 0, 0];
+  private vErr: V3 = [0, 0, 0];
+  private escQueue: number[][] = [];
+  /** Disturbances still to come, and gusts and payload now in effect. */
+  private pending: Disturbance[] = [];
+  private gusts: { until: number; wind: V3 }[] = [];
+  payloadKg = 0;
+  private payloadAt: V3 = [0, 0, 0];
+  recoveries: Recovery[] = [];
+  private calmSince = -1;
+  private zDesLp: V3 = [0, 0, 1];
+  attErrSq = 0;
+  attErrN = 0;
+  /** Last disturbance, for the app to draw (time and world impulse or wind). */
+  lastHit: { t: number; kind: Disturbance["kind"]; vec: V3 } | null = null;
 
   constructor(base: QuadParams, public brain: Brain, public sc: Scenario) {
     this.rand = rng(sc.seed);
@@ -102,6 +151,8 @@ export class Flight {
       this.s.omega = [hover, hover, hover, hover];
     }
     this.ctl = new Cascade(this.P, { ...brain.gains });
+    this.ctl.rateLoop = brain.rateLoop ?? "pid";
+    Object.assign(this.ctl.lim, brain.limits ?? {});
     this.ctl.P = { ...this.P }; // the controller knows the nominal parameters only
     this.ctl.P.mass = base.mass;
     this.ctl.P.kT = base.kT;
@@ -119,6 +170,46 @@ export class Flight {
       course.obstacles.forEach((o, i) => !course.hidden.includes(i) && this.planner!.map.know(o));
     }
     this.sp = { mode: "position", p: start, yaw: 0 };
+    this.realism = sc.realism ?? (sc.mission.kind === "stabilize" ? REALISTIC : null);
+    if (this.realism) {
+      // Its own random stream, so the rest of the flight draws the same numbers as without.
+      const r2 = rng(sc.seed * 7919 + 13);
+      this.aero = new Aero(this.realism, makeBuild(this.realism, r2), r2);
+      this.imu = new Imu(this.realism, r2, sc.weather.temperatureC);
+      this.ahrs = new Mahony(this.s.q);
+    }
+    if (sc.mission.kind === "stabilize") this.pending = [...sc.mission.events].sort((a, b) => a.t - b.t);
+  }
+
+  /** Does `d` to the drone now (the app's kick button; scheduled ones come through tick). */
+  disturb(d: Disturbance): void {
+    const s = this.s, R = qToM3(s.q);
+    let vec: V3 = [0, 0, 0];
+    if (d.kind === "kick") {
+      kick(s, this.P, R, d.impulse, d.at);
+      vec = d.impulse;
+    } else if (d.kind === "gust") {
+      this.gusts.push({ until: s.t + d.length, wind: d.wind });
+      vec = d.wind;
+    } else if (d.kind === "prop") {
+      if (this.aero) this.aero.build.kT[d.motor] *= d.health;
+    } else if (d.kind === "payload") {
+      const before = this.payloadKg;
+      this.payloadKg = Math.max(0, before + d.kg);
+      // The centre of mass moves toward the payload; the aero model keeps the offset.
+      if (this.aero) {
+        const m = this.P.mass + this.payloadKg, dm = this.payloadKg - before;
+        this.aero.build.cg = add(this.aero.build.cg, scale(d.at, dm / m));
+      }
+      this.payloadAt = d.at;
+      vec = [0, 0, -d.kg * G];
+    } else if (d.kind === "tumble") {
+      s.w = add(s.w, d.rates);
+      vec = d.rates;
+    }
+    this.lastHit = { t: s.t, kind: d.kind, vec };
+    this.recoveries.push({ kind: d.kind, t: s.t, maxDeviation: 0, maxTilt: 0, recoveredAfter: null });
+    this.calmSince = -1;
   }
 
   get course(): Course | null {
@@ -128,6 +219,29 @@ export class Flight {
   estimate(): Estimate {
     const r = this.rand, s = this.s;
     const n = (x: number) => x * r.gauss();
+    if (this.imu && this.ahrs) {
+      // The flight controller's view: its IMU, its attitude filter, the companion's position.
+      const m = this.imu.read(s, this.aero, this.P.mass + this.payloadKg, this.P.inertia, DT);
+      const heading = headingOf(qToM3(s.q)) + n(0.02);
+      this.ahrs.update(m.w, m.acc, heading, DT);
+      // Gyro low-pass (PT1 at ~80 Hz), as every flight controller runs before its loops.
+      this.wLp = add(this.wLp, scale(sub(m.w, this.wLp), 0.5));
+      // The companion's position and velocity come out of a filter (visual-inertial odometry,
+      // integrating the IMU between camera frames): their errors wander slowly and smoothly
+      // rather than jump every sample. A random walk pulled back (0.3 s), then smoothed (0.08 s).
+      const a = DT / 0.3, k = Math.sqrt(2 * a), b = DT / 0.08;
+      this.pDrift = this.pDrift.map((x, i) => x - a * x + k * (i === 2 ? 0.015 : 0.02) * r.gauss()) as V3;
+      this.vDrift = this.vDrift.map((x, i) => x - a * x + k * (i === 2 ? 0.03 : 0.04) * r.gauss()) as V3;
+      this.pErr = add(this.pErr, scale(sub(this.pDrift, this.pErr), b));
+      this.vErr = add(this.vErr, scale(sub(this.vDrift, this.vErr), b));
+      return {
+        p: add(add(s.p, this.pErr), [n(0.001), n(0.001), n(0.001)]),
+        v: add(add(s.v, this.vErr), [n(0.002), n(0.002), n(0.002)]),
+        R: qToM3(this.ahrs.q),
+        w: this.wLp,
+        accBody: m.acc,
+      };
+    }
     return {
       p: add(s.p, [n(0.02), n(0.02), n(0.015)]),
       v: add(s.v, [n(0.04), n(0.04), n(0.03)]),
@@ -142,6 +256,7 @@ export class Flight {
     const s = this.s, P = this.P;
     if (s.crashed || this.collided) return;
     const k = this.k++;
+    while (this.pending.length && this.pending[0].t <= s.t) this.disturb(this.pending.shift()!);
     const e = this.estimate();
 
     // 30 Hz ranging, 20 Hz planning.
@@ -213,11 +328,20 @@ export class Flight {
       }
       if (angleAcc) this.acc = [angleAcc[0], angleAcc[1], this.acc[2]];
     }
-    const cmd = this.ctl.inner(e, this.acc, this.sp.yaw, DT);
+    // The ESCs report each motor's speed (bidirectional DShot), with a little noise.
+    const rpm = s.omega.map((o) => o * (1 + 0.004 * this.rand.gauss()));
+    let cmd = this.ctl.inner(e, this.acc, this.sp.yaw, DT, rpm);
+    if (this.realism?.escDelay) {
+      // DShot frame and the ESC's own loop: the motors act on a command a step or two old.
+      this.escQueue.push(cmd);
+      cmd = this.escQueue.length > this.realism.escDelay ? this.escQueue.shift()! : this.escQueue[0];
+    }
 
     // Weather, battery and the step itself.
     this.exposure.update(DT);
     this.windNow = this.wind.at(s.t, DT, norm(s.v));
+    this.gusts = this.gusts.filter((g) => g.until > s.t);
+    for (const g of this.gusts) this.windNow = add(this.windNow, g.wind);
     const T = thrusts(P, s);
     const amps = T.reduce((a, t) => a + motorCurrent(t, MOTOR_THRUST_3S_N), 0) + 0.6; // + FC, VTX-free stack, ESP32, sensors
     const volts = this.battery.draw(amps, DT);
@@ -225,18 +349,20 @@ export class Flight {
     const env: Env = {
       rho: this.rho,
       thrustFactor: this.exposure.thrustFactor(),
-      extraMass: this.exposure.snowKg,
+      extraMass: this.exposure.snowKg + this.payloadKg,
       downForce: this.exposure.rainForce(P.propRadius),
       omegaScale: Math.min(1, volts / 11.4),
+      turbulence: this.sc.weather.wind.turbulence,
     };
-    step(P, s, cmd, this.windNow, DT, env);
+    step(P, s, cmd, this.windNow, DT, env, this.aero);
 
     if (this.course && k % 5 === 0) {
       const c = clearance(this.course.obstacles, s.p);
       this.minClearance = Math.min(this.minClearance, c);
       if (c < P.bodyRadius) this.collided = true;
     }
-    const target = this.sc.mission.kind === "hover" ? this.sc.mission.at : null;
+    const target = this.sc.mission.kind === "hover" || this.sc.mission.kind === "stabilize" ? this.sc.mission.at : null;
+    if (k % 5 === 0) this.measureAttitude(target);
     if (this.sc.mission.kind === "track" && k % 5 === 0 && this.sp.mode === "velocity") {
       const err = norm(sub(s.v, this.sp.v));
       this.errSq += err * err + 0.01 * (s.w[0] ** 2 + s.w[1] ** 2 + s.w[2] ** 2);
@@ -249,6 +375,30 @@ export class Flight {
       this.errN++;
       this.errMax = Math.max(this.errMax, err);
     }
+  }
+
+  /** Attitude error against what the controller asked for, and each disturbance's recovery:
+   *  back within 0.25 m of the point, below 1.5 rad/s and 10° of tilt error, for 0.5 s. */
+  private measureAttitude(target: V3 | null): void {
+    const s = this.s, R = qToM3(s.q);
+    // Against the command smoothed to what a drone can follow (~6 Hz): the raw one carries the
+    // position estimate's noise at 100 Hz.
+    this.zDesLp = add(this.zDesLp, scale(sub(this.ctl.zDes, this.zDesLp), 0.25));
+    const err = Math.acos(Math.max(-1, Math.min(1, dot(col(R, 2), this.zDesLp) / norm(this.zDesLp))));
+    if (s.t > 0.5) {
+      this.attErrSq += err * err;
+      this.attErrN++;
+    }
+    const rec = this.recoveries[this.recoveries.length - 1];
+    if (!rec || rec.recoveredAfter !== null) return;
+    const dev = target ? norm(sub(s.p, target)) : 0;
+    const tilt = Math.acos(Math.max(-1, Math.min(1, R[8])));
+    rec.maxDeviation = Math.max(rec.maxDeviation, dev);
+    rec.maxTilt = Math.max(rec.maxTilt, tilt);
+    const calm = dev < 0.25 && norm(s.w) < 1.5 && err < 0.17;
+    if (!calm) this.calmSince = -1;
+    else if (this.calmSince < 0) this.calmSince = s.t;
+    else if (s.t - this.calmSince >= 0.5) rec.recoveredAfter = this.calmSince - rec.t;
   }
 
   frame(): Frame {
@@ -275,6 +425,9 @@ export type Result = {
   minClearance: number;
   energyWh: number;
   waypointsReached: number;
+  /** RMS angle (rad) between the thrust axis and the one the controller asked for. */
+  attitudeRms: number;
+  recoveries: Recovery[];
   trace?: Frame[];
 };
 
@@ -297,6 +450,8 @@ export function runEpisode(P: QuadParams, brain: Brain, sc: Scenario, record = 0
     minClearance: f.minClearance,
     energyWh: f.energyJ / 3600,
     waypointsReached: f.plan?.index ?? 0,
+    attitudeRms: f.attErrN ? Math.sqrt(f.attErrSq / f.attErrN) : 0,
+    recoveries: f.recoveries,
     trace: record ? trace : undefined,
   };
 }
