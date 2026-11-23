@@ -1,0 +1,20 @@
+cff-version: 1.2.0
+message: "If you use ViaForm in your work, please cite it as below."
+title: "ViaForm"
+type: software
+authors:
+  - name: "Soma Labs"
+abstract: "ViaForm is an open source CAD and PCB design app that puts parametric 3D design and electronics in one project and links the board to the 3D model, on a shared Rust core over the SolidCraft and PCBCraft engines."
+version: "0.2.0"
+license: GPL-3.0-or-later
+repository-code: "https://github.com/soma-intelligence/ViaForm"
+url: "https://github.com/soma-intelligence/ViaForm"
+keywords:
+  - cad
+  - pcb-design
+  - ecad
+  - mcad
+  - rust
+  - swiftui
+  - electron
+  - kicad

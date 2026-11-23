@@ -1,0 +1,36 @@
+# ViaForm
+
+> ViaForm is an open source (GPL-3.0-or-later) CAD and PCB design app that puts parametric 3D design and electronics (schematic and board) in one project and links the board to the 3D model. It runs as an Electron app on Windows, Linux and macOS and as native SwiftUI apps on macOS, iPad and iPhone, on a shared Rust core over the SolidCraft (3D CAD) and PCBCraft (PCB) engines. Version 0.2.0, early, built from source.
+
+- Projects save as `.viaform`: a zip of `viaform.json`, `design.solidcraft` and `board.pcbcraft` (Electron app).
+- Boards export to KiCad as `.kicad_pcb`; designs export to STEP.
+- Electronics uses four built-in part kinds today (resistor, capacitor, LED, connector).
+- Not affiliated with Autodesk, Shapr3D or KiCad.
+
+## Docs
+
+- [README](https://github.com/soma-intelligence/ViaForm/blob/main/README.md): overview, features, build, architecture, comparison, FAQ
+- [AGENTS.md](https://github.com/soma-intelligence/ViaForm/blob/main/AGENTS.md): repository layout, build and test commands, rules for contributors and coding agents
+- [UI reference sheet](https://github.com/soma-intelligence/ViaForm/blob/main/docs/ui-reference.md): desktop and touch layouts zone by zone, mouse, keys and gestures
+- [IMPROVEMENTS.md](https://github.com/soma-intelligence/ViaForm/blob/main/IMPROVEMENTS.md): what is not done yet and could come next
+
+## Guides
+
+- [Open source Fusion 360 alternative with CAD and PCB](https://github.com/soma-intelligence/ViaForm/blob/main/docs/guides/open-source-fusion-360-alternative.md): what ViaForm covers next to Fusion, and its gaps
+- [Open source Shapr3D alternative for iPad](https://github.com/soma-intelligence/ViaForm/blob/main/docs/guides/open-source-shapr3d-alternative-ipad.md): the touch app's layout and tools
+- [Open source CAD for Mac](https://github.com/soma-intelligence/ViaForm/blob/main/docs/guides/open-source-cad-for-mac.md): native macOS app vs the Electron build
+- [PCB design on iPad](https://github.com/soma-intelligence/ViaForm/blob/main/docs/guides/pcb-design-on-ipad.md): schematic, routing, checks and KiCad export on iPad and iPhone
+- [ViaForm vs KiCad](https://github.com/soma-intelligence/ViaForm/blob/main/docs/guides/viaform-vs-kicad.md): side by side, and moving a board to KiCad
+- [The .viaform file format](https://github.com/soma-intelligence/ViaForm/blob/main/docs/guides/viaform-file-format.md): zip layout, manifest, versioning, reading from code
+- [Build ViaForm from source](https://github.com/soma-intelligence/ViaForm/blob/main/docs/guides/build-from-source.md): Electron, XcodeGen and Rust steps, tests, troubleshooting
+- [Architecture of the Rust core and FFI](https://github.com/soma-intelligence/ViaForm/blob/main/docs/guides/architecture-rust-core-ffi.md): viaform-core, the C ABI bridge and the N-API addon
+- [Link a PCB to the 3D model](https://github.com/soma-intelligence/ViaForm/blob/main/docs/guides/link-pcb-to-3d-model.md): Send to 3D, Mount on a Part, Update 3D
+
+## Optional
+
+- [C header](https://github.com/soma-intelligence/ViaForm/blob/main/bridge/include/solidcraft.h): the C ABI the Swift apps call
+- [Core library](https://github.com/soma-intelligence/ViaForm/blob/main/core/src/lib.rs): the Workspace holding both engines
+- [Renderer API](https://github.com/soma-intelligence/ViaForm/blob/main/electron/src/shared/api.ts): the window.viaform surface in the Electron app
+- [CI workflow](https://github.com/soma-intelligence/ViaForm/blob/main/.github/workflows/ci.yml): what runs on every push
+- [SolidCraft engine](https://github.com/tangency-labs/solidcraft): parametric 3D CAD in Rust
+- [PCBCraft engine](https://github.com/tangency-labs/pcbcraft): PCB engine in Rust
