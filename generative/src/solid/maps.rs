@@ -374,6 +374,28 @@ mod tests {
         assert!(r.summary.seconds < 2.0);
     }
 
+    /// A surfaced shape the same at every height (a C section with a pin), milled from the
+    /// top: the tool runs down every wall. Smoothing ripples the walls and rounds their edges,
+    /// which must not read as undercuts; only the rounded foot is (a few per cent).
+    #[test]
+    fn a_smoothed_extrusion_is_reached_from_the_top() {
+        let grid = super::super::Grid::new([0.0; 3], [120.0, 30.0, 40.0], 2.0);
+        let density: Vec<f32> = (0..grid.elements())
+            .map(|e| {
+                let c = grid.element_center(e);
+                let pin = (c[0] - 60.0).powi(2) + (c[1] - 15.0).powi(2) < 25.0;
+                if c[1] < 8.0 || c[1] > 22.0 || c[0] < 10.0 || pin { 1.0 } else { 0.0 }
+            })
+            .collect();
+        let mill = CheckRequest { process: "milling".into(), ..Default::default() };
+        for smoothing in [0, 4] {
+            let m = super::super::iso::surface(&grid, &density, 0.5, smoothing);
+            let r = maps(&m, &mill, Wanted { access: true, ..Default::default() });
+            let share = r.summary.access.as_ref().unwrap().unreachable_share;
+            assert!(share < 0.06, "smoothing {smoothing}: {share}");
+        }
+    }
+
     #[test]
     fn a_missed_ray_is_filled_from_its_neighbours() {
         let mut m = Mesh::default();

@@ -693,6 +693,10 @@ fn bounds(tris: &Tris, list: &[usize]) -> Option<Spot> {
 /// face lying on the table (within `table` mm of the part's lowest point along the axis) is the
 /// stock's base and counts as reached. With one axis (the default) that is a 3-axis machine
 /// cutting from the top; each further axis is another setup.
+/// Sine of the angle from the tool axis under which a face counts as a wall the tool runs
+/// down (20 degrees from vertical for a tool from the top).
+const WALL_SIN: f64 = 0.342;
+
 pub(super) fn access_faces(tris: &Tris, grid: &TriGrid, axes: &[V], tolerance: f64, table: f64, picks: &[usize]) -> Vec<Option<bool>> {
     let lean = -tolerance.clamp(0.0, 89.0).to_radians().sin();
     let lift = 1e-4 * grid.cell.max(1e-3);
@@ -708,7 +712,17 @@ pub(super) fn access_faces(tris: &Tris, grid: &TriGrid, axes: &[V], tolerance: f
             let o = add(tris.centroid(t), scale(n, lift));
             let reached = axes.iter().zip(&floors).any(|(a, floor)| {
                 let on_table = tris.corners[t].iter().all(|p| dot(*p, *a) - floor <= table.max(0.0));
-                on_table || (dot(n, *a) >= lean && !grid.blocked(tris, o, *a, t))
+                // A ray up a wall grazes the wall's own ripples and its rounded top edge (a
+                // smoothed surface is never flat). On a closed surface only material the ray goes
+                // into blocks it, and that is a face turned against the ray met before any face
+                // it leaves by; so for a wall, faces turned along the ray and the same wall's
+                // faces do not block. A ledge above still does: it faces down, not sideways.
+                let wall = dot(n, *a).abs() < WALL_SIN;
+                let passes = |h: usize| {
+                    let along = dot(tris.normal[h], *a);
+                    wall && (along >= 0.0 || (along.abs() < WALL_SIN && dot(tris.normal[h], n) > 0.0))
+                };
+                on_table || (dot(n, *a) >= lean && !grid.blocked_unless(tris, o, *a, t, passes))
             });
             (t, reached)
         })
@@ -891,10 +905,18 @@ impl TriGrid {
     /// True when a ray from `o` along `d` (unit) crosses any triangle but `skip` before it
     /// leaves the grid: the surface stands in the way.
     pub(super) fn blocked(&self, tris: &Tris, o: V, d: V, skip: usize) -> bool {
+        self.blocked_unless(tris, o, d, skip, |_| false)
+    }
+
+    /// As `blocked`, leaving out the triangles `pass` lets through.
+    pub(super) fn blocked_unless(&self, tris: &Tris, o: V, d: V, skip: usize, pass: impl Fn(usize) -> bool) -> bool {
         let eps = 1e-7 * self.cell.max(1.0);
         let mut found = false;
         self.walk(o, d, |items, _| {
-            found = items.iter().any(|&t| t as usize != skip && hit(tris.corners[t as usize], o, d).is_some_and(|h| h > eps));
+            found = items.iter().any(|&t| {
+                let t = t as usize;
+                t != skip && !pass(t) && hit(tris.corners[t], o, d).is_some_and(|h| h > eps)
+            });
             found
         });
         found
