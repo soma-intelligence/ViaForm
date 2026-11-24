@@ -69,6 +69,9 @@ struct ViewCube: View {
     var body: some View {
         let shown = visible()
         let faceFill = face, edgeLine = edge, label = ink, hoverFill = hover
+        // Fixed size from the cube, never Dynamic Type: a scaled label overflows its face and
+        // collides with the next one on the small iPad cube.
+        let labelSize = min(size * 0.13, 10)
         Canvas { ctx, _ in
             let back = model.camera.basis.back
             for (f, pts) in shown {
@@ -79,7 +82,16 @@ struct ViewCube: View {
                 let centre = pts.reduce(CGPoint.zero) { CGPoint(x: $0.x + $1.x / 4, y: $0.y + $1.y / 4) }
                 let facing = simd_dot(f.normal, back)
                 if facing > 0.42 {
-                    ctx.draw(Text(f.label).font(VFFont.glyph(size * 0.082, weight: .semibold)).foregroundStyle(label), at: centre)
+                    // Shrink the word to fit its face (FRONT and RIGHT sit side by side at the
+                    // home view); leave the face blank when it would be too small to read.
+                    let xs = pts.map(\.x)
+                    let room = ((xs.max() ?? 0) - (xs.min() ?? 0)) * 0.8
+                    let natural = ctx.resolve(Text(f.label).font(VFFont.icon(labelSize, weight: .semibold)))
+                        .measure(in: CGSize(width: 1000, height: 100)).width
+                    let fitted = natural > room ? labelSize * room / max(natural, 1) : labelSize
+                    if fitted >= 5 {
+                        ctx.draw(Text(f.label).font(VFFont.icon(fitted, weight: .semibold)).foregroundStyle(label), at: centre)
+                    }
                 }
             }
         }

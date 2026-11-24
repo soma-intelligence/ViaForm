@@ -369,22 +369,33 @@ struct OutcomesPanel: View {
                         .vfDisabled(o.candidates.count < 2, reason: String(localized: "Run at least two candidates to compare (Variants in Study)."))
                 }
                 .padding(.horizontal, VFSpace.l)
-                HStack(alignment: .top, spacing: VFSpace.l) {
+                // Side by side when the strip keeps room for two cards; stacked otherwise
+                // (iPad portrait, narrow Mac window), so a card is never cut by the chart.
+                let stacked = width > 0 && width < Self.chartWidth + Self.stripMinWidth + VFSpace.l * 3
+                let layout = stacked ? AnyLayout(VStackLayout(alignment: .leading, spacing: VFSpace.l))
+                                     : AnyLayout(HStackLayout(alignment: .top, spacing: VFSpace.l))
+                layout {
                     CandidateStrip(model: model, order: model.sortedOutcomes)
                         .frame(maxWidth: .infinity, alignment: .leading)
                     if o.candidates.count > 1 {
-                        Divider()
+                        if stacked { Divider().padding(.horizontal, VFSpace.l) } else { Divider() }
                         ParetoChart(candidates: o.candidates, study: s, front: model.paretoFront, selected: model.selected,
                                     hovered: model.hoveredOutcome,
                                     onSelect: { model.selected = $0; model.display = .result },
                                     onHover: { model.hoveredOutcome = $0 })
-                            .frame(width: 360, height: 190)
-                            .padding(.trailing, VFSpace.l)
+                            .frame(maxWidth: stacked ? .infinity : Self.chartWidth)
+                            .frame(height: 190)
+                            .padding(stacked ? .horizontal : .trailing, VFSpace.l)
                     }
                 }
             }
+            .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { width = $0 }
         }
     }
+
+    @State private var width: CGFloat = 0
+    private static let chartWidth: CGFloat = 360
+    private static let stripMinWidth: CGFloat = 320
 }
 
 // MARK: Pareto chart
