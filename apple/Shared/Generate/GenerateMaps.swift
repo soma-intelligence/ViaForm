@@ -797,6 +797,12 @@ enum MapsSelfTest {
         out.append((CandidateMap(check: "overhangs") == .overhang && CandidateMap(check: "min_wall") == .wall
                     && CandidateMap(check: "tool_access") == .access && CandidateMap(check: "voids") == nil,
                     "P1-33 Show on Model opens the overhang, wall thickness and tool access maps"))
+        // The request keys the cached maps: the same study must give the same text on every call,
+        // or the canvas maps again on every redraw and never shows.
+        var printed = GenerateModel.study(.cantilever)
+        printed.manufacturing.process = .additive
+        let requests = Set((0..<8).map { _ in GenerateModel.checkRequest(printed, route: nil) })
+        out.append((requests.count == 1, "P1-33 map request is the same text on every call (\(requests.count) seen)"))
         let wall = MeshCheckItem(id: "min_wall", name: "Thinnest wall", status: .pass, value: 1.234, limit: 0.8, unit: "mm", detail: "", spot: nil)
         out.append((wall.figure == "\(VFFormat.length(1.234, digits: 2)), at least \(VFFormat.length(0.8, digits: 1))" && wall.map == .wall,
                     "P1-33 check figures follow the length unit: \(wall.figure)"))

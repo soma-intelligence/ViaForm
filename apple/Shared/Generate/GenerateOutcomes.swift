@@ -272,7 +272,7 @@ extension GenerateModel {
         }
         r["process"] = process
         if process == "additive" || process == "fdm" { r["build"] = s.manufacturing.direction.array }
-        return (try? JSONSerialization.data(withJSONObject: r)).map { String(decoding: $0, as: UTF8.self) } ?? "{}"
+        return (try? JSONSerialization.data(withJSONObject: r, options: .sortedKeys)).map { String(decoding: $0, as: UTF8.self) } ?? "{}"
     }
 
     /// Checks every candidate's surface off the main actor, once per outcome; a newer outcome
