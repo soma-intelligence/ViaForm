@@ -11,6 +11,7 @@ import SwiftUI
 /// the Generate stage keeps its project, studies and setup as the user left them. When the
 /// Generate stage already has the hand open, the grasp test uses that one.
 struct HandGraspView: View {
+    @ObservedUnits private var units
     @Environment(\.viaFormTheme) private var palette
     @Bindable var generate: GenerateModel
     let design: DesignModel
@@ -34,6 +35,7 @@ struct HandGraspView: View {
     private var hand: GenerateProject? { model.project?.name == "hand" ? model.project : nil }
 
     var body: some View {
+        let _ = units
         Group {
             if let p = hand, p.assembly != nil {
                 if model.assemblyLoaded { scenario } else { insert(p) }

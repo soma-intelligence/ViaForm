@@ -937,7 +937,7 @@ final class GenerateModel {
                 design.refresh()
                 design.zoomToFit()
                 let mass = outcome?.candidates[safe: selected]?.massG ?? 0
-                design.flash(String(format: "Built %@ from candidate %d: %.1f g in %d commands", built.body, selected + 1, mass, built.commands))
+                design.flash(String(localized: "Built \(built.body) from candidate \(selected + 1): \(VFFormat.mass(mass)) in \(built.commands) commands"))
             case .failure(let e):
                 design.flash(e.localizedDescription, error: true)
             }

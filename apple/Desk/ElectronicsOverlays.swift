@@ -3,6 +3,7 @@ import SwiftUI
 
 /// Electronics' bottom panel: the layer bar with the board revision, over the dot rail.
 struct ElectronicsBottomPanel: View {
+    @ObservedUnits private var units
     @Environment(\.viaFormTheme) private var theme
     let pcb: PCBModel
     let design: DesignModel
@@ -11,6 +12,7 @@ struct ElectronicsBottomPanel: View {
     let actions: StageActions
 
     var body: some View {
+        let _ = units
         let info = BoardLinkInfo.read(design: design, pcb: pcb)
         VStack(spacing: VFSpace.xs) {
             HStack(spacing: VFSpace.l) {

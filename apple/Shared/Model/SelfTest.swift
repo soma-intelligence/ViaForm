@@ -125,6 +125,7 @@ enum SelfTest {
 
         // Generative design: a study as an engine job, and the sample projects' assemblies.
         for (ok, what) in MainActor.assumeIsolated({ GenerateSelfTest.checks() }) { check(ok, what) }
+        for (ok, what) in MainActor.assumeIsolated({ MapsSelfTest.checks() }) { check(ok, what) } // P1-33 canvas maps
 
         // UI-UX-AUDIT P0-11: project save and open, BOM part import and the joint list off the main actor.
         for (ok, what) in MainActor.assumeIsolated({ BomSelfTest.checks() }) { check(ok, what) }
@@ -133,6 +134,7 @@ enum SelfTest {
         // P1-5 typed command forms, P1-12 body rename (CommonViews.swift).
         for (ok, what) in MainActor.assumeIsolated({ CommandFormSelfTest.checks() }) { check(ok, what) }
         for (ok, what) in UnitSettingsSelfTest.checks() { check(ok, what) } // P2-23 display units
+        for (ok, what) in MainActor.assumeIsolated({ UnitStringsSelfTest.checks() }) { check(ok, what) } // P2-23 unit strings
         for (ok, what) in MainActor.assumeIsolated({ ViewportAccessibilitySelfTest.checks() }) { check(ok, what) }
         for (ok, what) in MainActor.assumeIsolated({ AboutCreditsSelfTest.checks() }) { check(ok, what) } // P3-14 credits
         #if os(macOS)

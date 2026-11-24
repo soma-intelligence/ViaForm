@@ -6,6 +6,7 @@ import SwiftUI
 /// the scenario card (what it was built on, "Re-run on Assembly vN"), the telemetry panel with
 /// a shared playhead, the episodes, demo replay and "Stress here".
 struct ArmSimulationView: View {
+    @ObservedUnits private var units
     @Environment(\.viaFormTheme) private var theme
     @Bindable var sim: ArmSimModel
     @Bindable var assemble: AssembleModel
@@ -19,6 +20,7 @@ struct ArmSimulationView: View {
     @State private var showLoads = false
 
     var body: some View {
+        let _ = units
         VStack(spacing: 0) {
             ZStack(alignment: .topLeading) {
                 if sim.available {
@@ -172,6 +174,7 @@ struct ArmSimulationView: View {
 
 /// Telemetry (joint positions or efforts over time, shared playhead) beside the episode list.
 struct SimTelemetryPanel: View {
+    @ObservedUnits private var units
     @Environment(\.viaFormTheme) private var theme
     @Bindable var sim: ArmSimModel
     var stressHere: (Double) -> Void
@@ -179,6 +182,7 @@ struct SimTelemetryPanel: View {
     private var position: Bool { sim.channel == .position }
 
     var body: some View {
+        let _ = units
         HStack(alignment: .top, spacing: VFSpace.l) {
             VStack(alignment: .leading, spacing: VFSpace.s) {
                 HStack(spacing: VFSpace.m) {
@@ -264,7 +268,7 @@ struct SimTelemetryPanel: View {
                 .chartLegend(position: .trailing, alignment: .center)
                 .chartYAxis { AxisMarks(position: .leading, values: .automatic(desiredCount: 4)) { v in
                     AxisGridLine().foregroundStyle(theme.hairline)
-                    AxisValueLabel { if let d = v.as(Double.self) { Text(position ? String(format: "%.0f°", d) : String(format: "%.1f", d)) } }
+                    AxisValueLabel { if let d = v.as(Double.self) { Text(position ? AsmFormat.deg(d) : String(format: "%.1f", d)) } }
                 } }
                 .chartXAxis { AxisMarks(values: .automatic(desiredCount: 6)) { v in
                     AxisGridLine().foregroundStyle(theme.hairline)
@@ -332,11 +336,13 @@ extension SimTelemetryPanel {
 
 /// The Simulate inspector for an articulated product: scenario, sim-to-real parameters.
 struct ArmSimInspector: View {
+    @ObservedUnits private var units
     @Environment(\.viaFormTheme) private var theme
     @Bindable var sim: ArmSimModel
     let flow: FlowModel
 
     var body: some View {
+        let _ = units
         VStack(alignment: .leading, spacing: VFSpace.l) {
             AsmSection("Scenario") {
                 AsmRow("Scenario", sim.scenario.title)

@@ -96,17 +96,26 @@ struct MeshCheckItem: Identifiable, Sendable, Equatable {
         a.id == b.id && a.status == b.status && a.value == b.value && a.limit == b.limit && a.detail == b.detail
     }
 
-    /// "0.82 mm, limit 0.8 mm"; counts without decimals.
+    /// "0.82 mm, at least 0.8 mm"; counts without decimals. Lengths and areas follow the
+    /// reader's length unit (`VFFormat`).
     var figure: String {
         guard let value else { return "–" }
-        let whole = unit != "mm" && unit != "mm²"
-        let text = whole ? value.formatted(.number.precision(.fractionLength(0))) : value.formatted(.number.precision(.fractionLength(unit == "mm" ? 2 : 0)))
+        func text(_ v: Double, limit: Bool) -> String {
+            switch unit {
+            case "mm": VFFormat.length(v, digits: limit ? 1 : 2)
+            case "mm²": VFFormat.area(v)
+            default: "\(v.formatted(.number.precision(.fractionLength(0)))) \(unit)"
+            }
+        }
         // "1 body", not "1 bodies".
-        let v = unit == "bodies" && value == 1 ? String(localized: "1 body") : "\(text) \(unit)"
+        let v = unit == "bodies" && value == 1 ? String(localized: "1 body") : text(value, limit: false)
         guard let limit, status != .skipped, id == "min_wall" || id == "bodies" else { return v }
-        let l = whole ? limit.formatted(.number.precision(.fractionLength(0))) : limit.formatted(.number.precision(.fractionLength(1)))
-        return id == "min_wall" ? String(localized: "\(v), at least \(l) \(unit)") : String(localized: "\(v), up to \(l)")
+        return id == "min_wall" ? String(localized: "\(v), at least \(text(limit, limit: true))")
+                                : String(localized: "\(v), up to \(limit.formatted(.number.precision(.fractionLength(0))))")
     }
+
+    /// The canvas map that shows this check on the model, when there is one and it applies.
+    var map: CandidateMap? { status == .skipped ? nil : CandidateMap(check: id) }
 }
 
 /// Every mesh check on one candidate's surface.
@@ -291,8 +300,13 @@ extension GenerateModel {
         }
     }
 
-    /// Frames a mesh check's problem in the preview, with some room around it.
+    /// Shows a mesh check on the model: its map on the canvas (overhang, wall thickness, tool
+    /// access) and its worst spot framed, with some room around it.
     func focus(_ item: MeshCheckItem) {
+        if let map = item.map {
+            CandidateMapState.of(self).map = map
+            display = .result
+        }
         guard let spot = item.spot else { return }
         let pad = Vec3(repeating: 4)
         display = .result
@@ -425,8 +439,8 @@ struct ParetoChart: View {
         let frequency: Double?
     }
 
-    static let frontName = String(localized: "Pareto front")
-    static let otherName = String(localized: "Dominated")
+    nonisolated static let frontName = String(localized: "Pareto front")
+    nonisolated static let otherName = String(localized: "Dominated")
 
     var points: [Point] {
         let finite = candidates.map(\.analysis.safetyFactor).filter(\.isFinite)
@@ -577,7 +591,7 @@ struct MeshChecksSection: View {
         } header: {
             Text("Mesh checks")
         } footer: {
-            Text("Walls are measured along the surface normal; the limit is the process minimum.")
+            Text("Walls are measured along the surface normal; the limit is the process minimum. Show on Model colours the candidate by the check.")
         }
     }
 }
@@ -594,7 +608,13 @@ struct MeshCheckRow: View {
                 Spacer(minLength: VFSpace.s)
                 Text(item.figure).font(VFFont.row).monospacedDigit().foregroundStyle(theme.inkSecondary).lineLimit(1)
                 CheckStatusLabel(status: item.status)
-                if item.spot != nil, item.status == .warning || item.status == .fail || item.id == "min_wall" {
+                if item.map != nil {
+                    Button("Show on Model") { onShow(item) }
+                        .buttonStyle(.borderless)
+                        .font(VFFont.small)
+                        .help("Colour the model by this check and frame its worst spot")
+                        .accessibilityLabel(Text("Show \(item.name) on the model"))
+                } else if item.spot != nil, item.status == .warning || item.status == .fail {
                     Button("Show") { onShow(item) }
                         .buttonStyle(.borderless)
                         .font(VFFont.small)
@@ -836,13 +856,13 @@ struct CompareSheet: View {
             Row(id: "stress", label: String(localized: "Peak stress"), a: a.analysis.worstStress, b: b.analysis.worstStress,
                 format: { "\(Int($0.rounded())) MPa" }, better: -1, unit: "MPa"),
             Row(id: "disp", label: String(localized: "Displacement"), a: a.analysis.worstDisplacement, b: b.analysis.worstDisplacement,
-                format: { String(format: "%.3g mm", $0) }, better: -1, unit: "mm"),
+                format: { VFFormat.lengthSignificant($0) }, better: -1, unit: "mm"),
             Row(id: "f1", label: String(localized: "First mode"), a: a.analysis.firstFrequency, b: b.analysis.firstFrequency,
                 format: { VFFormat.value($0, .frequency) }, better: 1, unit: "Hz"),
             Row(id: "cost", label: String(localized: "Cost index"), a: a.cost, b: b.cost, format: { VFFormat.money($0) }, better: -1, unit: "USD"),
             Row(id: "iter", label: String(localized: "Iterations"), a: Double(a.keptIteration ?? a.history.count), b: Double(b.keptIteration ?? b.history.count),
                 format: { "\(Int($0))" }, better: 0, unit: ""),
-            Row(id: "wall", label: String(localized: "Thinnest wall"), a: ra?.minWall, b: rb?.minWall, format: { String(format: "%.2f mm", $0) }, better: 1, unit: "mm"),
+            Row(id: "wall", label: String(localized: "Thinnest wall"), a: ra?.minWall, b: rb?.minWall, format: { VFFormat.length($0, digits: 2) }, better: 1, unit: "mm"),
             Row(id: "checks", label: String(localized: "Mesh check problems"), a: ra.map { Double($0.warnings + $0.failures) }, b: rb.map { Double($0.warnings + $0.failures) },
                 format: { "\(Int($0))" }, better: -1, unit: ""),
         ]
@@ -898,8 +918,12 @@ struct CompareSheet: View {
         if abs(delta) <= scale * 1e-4 { return (String(localized: "same"), 0) }
         let sign = delta > 0 ? "+" : "−"
         let unit = r.unit.isEmpty || r.unit == "%" ? (r.unit == "%" ? " pt" : "") : " \(r.unit)"
-        let magnitude: String = r.unit == "USD" ? VFFormat.money(abs(delta)) : (abs(delta) >= 100 ? String(format: "%.0f", abs(delta)) : String(format: "%.3g", abs(delta)))
-        let value = r.unit == "USD" ? "\(sign)\(magnitude)" : "\(sign)\(magnitude)\(unit)"
+        let magnitude: String = switch r.unit {
+        case "USD": VFFormat.money(abs(delta))
+        case "mm": VFFormat.lengthSignificant(abs(delta))
+        default: abs(delta) >= 100 ? String(format: "%.0f", abs(delta)) : String(format: "%.3g", abs(delta))
+        }
+        let value = r.unit == "USD" || r.unit == "mm" ? "\(sign)\(magnitude)" : "\(sign)\(magnitude)\(unit)"
         let pct = abs(a) > 1e-12 && r.unit != "%" ? String(format: " (%@%.0f %%)", sign, abs(delta / a) * 100) : ""
         guard r.better != 0 else { return (value + pct, 0) }
         let improves = (delta > 0) == (r.better > 0)

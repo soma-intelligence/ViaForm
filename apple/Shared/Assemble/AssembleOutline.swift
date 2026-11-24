@@ -3,11 +3,13 @@ import SwiftUI
 /// The BROWSER of the Assemble stage: the product, its components as a tree along the joints,
 /// the joints, saved poses and grasps. A component or a joint row selects the joint.
 struct AssembleOutline: View {
+    @ObservedUnits private var units
     @Environment(\.viaFormTheme) private var theme
     @Bindable var model: AssembleModel
     var title: String
 
     var body: some View {
+        let _ = units
         row(0, "cube.transparent", title, bold: true)
             .accessibilityAddTraits(.isHeader)
         folder("components", String(localized: "Components (\(model.components.count))"), "square.stack.3d.up") {

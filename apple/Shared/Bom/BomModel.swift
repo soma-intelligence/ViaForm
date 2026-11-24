@@ -1088,6 +1088,8 @@ enum BomFormat {
 
     static func mass(_ g: Double?) -> String {
         guard let g, g >= 0 else { return String(localized: "No mass") }
+        // The reader's mass unit (P2-23); grams keep the BOM's own short form.
+        guard UnitSettings.current == .base else { return VFFormat.mass(g) }
         return g >= 1000 ? "\((g / 1000).formatted(.number.precision(.fractionLength(2)))) kg" : "\(g.formatted(.number.precision(.fractionLength(0...1)))) g"
     }
 

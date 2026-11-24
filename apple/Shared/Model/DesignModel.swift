@@ -725,7 +725,7 @@ final class DesignModel {
             let v = body["volume_mm3"] as? Double ?? 0
             let a = body["area_mm2"] as? Double ?? 0
             let m = body["mass_g"] as? Double ?? 0
-            return String(format: "%@  V %.1f mm³  A %.1f mm²  %.1f g", name, v, a, m)
+            return "\(name)  V \(VFFormat.volume(v))  A \(VFFormat.area(a))  \(VFFormat.mass(m))"
         }
         flash(lines.joined(separator: "\n"))
     }

@@ -229,10 +229,12 @@ struct VariantLegend: View {
 /// Every variant's figures with their units; the lightest feasible and the cheapest are
 /// marked (with words for VoiceOver), and a tap pushes one to the results.
 struct VariantTable: View {
+    @ObservedUnits private var units
     @Environment(\.viaFormTheme) private var theme
     @Bindable var model: GenerateModel
 
     var body: some View {
+        let _ = units
         let done = model.variants.compactMap { v in v.candidate.map { (v.id, $0) } }
         let feasible = done.filter { $0.1.feasible }
         let lightest = feasible.min { $0.1.massG < $1.1.massG }?.0
@@ -264,7 +266,7 @@ struct VariantTable: View {
                 LazyVGrid(columns: [GridItem(.adaptive(minimum: 80), alignment: .leading)], alignment: .leading, spacing: VFSpace.xs) {
                     figure(String(localized: "Mass"), VFFormat.mass(c.massG))
                     figure(String(localized: "Safety factor"), formatFactor(c.analysis.safetyFactor), warn: !c.feasible)
-                    figure(String(localized: "Max displacement"), "\(String(format: "%.3g", c.analysis.worstDisplacement)) mm")
+                    figure(String(localized: "Max displacement"), VFFormat.lengthSignificant(c.analysis.worstDisplacement))
                     figure(String(localized: "First mode"), c.analysis.firstFrequency.map { VFFormat.value($0, .frequency) } ?? "–")
                     figure(String(localized: "Cost estimate"), VFFormat.money(c.cost, currency: "USD"))
                 }

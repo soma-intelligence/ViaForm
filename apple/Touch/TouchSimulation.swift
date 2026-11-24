@@ -85,6 +85,7 @@ struct TouchScenarioCard: View {
 
 /// Attitude, speed and battery against time, one chart a quantity, one playhead for all.
 struct TouchTelemetryPanel: View {
+    @ObservedUnits private var units
     @Environment(\.viaFormTheme) private var theme
     let sim: SimModel
     @Binding var expanded: Bool
@@ -92,6 +93,7 @@ struct TouchTelemetryPanel: View {
     @State private var playhead: Double?
 
     var body: some View {
+        let _ = units
         VStack(alignment: .leading, spacing: 6) {
             Button { expanded.toggle() } label: {
                 HStack(spacing: VFSpace.m) {
@@ -116,7 +118,7 @@ struct TouchTelemetryPanel: View {
                 } else {
                     // Each series has its own dash as well as its colour, and a legend.
                     HStack(spacing: VFSpace.l) {
-                        chart(String(localized: "Roll, pitch, yaw (°)"), series: [
+                        chart(String(localized: "Roll, pitch, yaw (\(VFFormat.symbol(.angle)))"), scale: 1 / UnitSettings.current.inputFactor(for: .angle), series: [
                             (String(localized: "Roll"), \.roll, theme.accent, []),
                             (String(localized: "Pitch"), \.pitch, theme.warning, [5, 3]),
                             (String(localized: "Yaw"), \.yaw, theme.inkSecondary, [1.5, 2.5]),
@@ -149,16 +151,17 @@ struct TouchTelemetryPanel: View {
 
     static func readout(_ s: TelemetrySample) -> String {
         let n = { (v: Double, d: Int) in VFFormat.number(v, digits: d) }
-        return String(localized: "t \(n(s.t, 1)) s · roll \(n(s.roll, 0))° · pitch \(n(s.pitch, 0))° · \(n(s.speed, 1)) m/s · battery \(n(s.battery, 0)) %")
+        return String(localized: "t \(n(s.t, 1)) s · roll \(AsmFormat.deg(s.roll)) · pitch \(AsmFormat.deg(s.pitch)) · \(n(s.speed, 1)) m/s · battery \(n(s.battery, 0)) %")
     }
 
-    private func chart(_ title: String, series: [(String, KeyPath<TelemetrySample, Double>, Color, [CGFloat])]) -> some View {
+    /// `scale` turns the samples into the shown unit (degrees into radians when the reader picked them).
+    private func chart(_ title: String, scale: Double = 1, series: [(String, KeyPath<TelemetrySample, Double>, Color, [CGFloat])]) -> some View {
         VStack(alignment: .leading, spacing: 2) {
             Text(title).font(VFFont.micro).foregroundStyle(theme.inkSecondary)
             Chart {
                 ForEach(series, id: \.0) { name, key, _, dash in
                     ForEach(samples) { s in
-                        LineMark(x: .value("Time", s.t), y: .value(name, s[keyPath: key]), series: .value("Series", name))
+                        LineMark(x: .value("Time", s.t), y: .value(name, s[keyPath: key] * scale), series: .value("Series", name))
                             .foregroundStyle(by: .value("Series", name))
                             .lineStyle(StrokeStyle(lineWidth: 1.4, dash: dash))
                     }
@@ -187,7 +190,7 @@ struct TouchTelemetryPanel: View {
         .frame(maxWidth: .infinity)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(title)
-        .accessibilityValue(shown.map { s in series.map { "\($0.0) \(VFFormat.number(s[keyPath: $0.1], digits: 1))" }.joined(separator: ", ") } ?? "")
+        .accessibilityValue(shown.map { s in series.map { "\($0.0) \(VFFormat.number(s[keyPath: $0.1] * scale, digits: scale == 1 ? 1 : 3))" }.joined(separator: ", ") } ?? "")
     }
 }
 #endif

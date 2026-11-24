@@ -132,7 +132,7 @@ enum GenerateSelfTest {
             let t = Date()
             let reports = try o.candidates.map { try GenerateEngine.checkMesh($0.mesh, request: request) }
             let checkSeconds = Date().timeIntervalSince(t)
-            let ids = ["watertight", "manifold", "bodies", "min_wall", "overhangs", "voids", "triangles"]
+            let ids = ["watertight", "manifold", "bodies", "min_wall", "overhangs", "tool_access", "voids", "triangles"]
             let complete = reports.allSatisfy { $0.items.map(\.id) == ids }
             let closed = reports.allSatisfy { $0.item("watertight")?.status == .pass && $0.item("manifold")?.status == .pass }
             let walls = reports.compactMap(\.minWall)

@@ -78,14 +78,30 @@ char *vf_generate_loads_from_record(const char *request_json);
 // Mesh checks (VIAFORM-SPEC 7.10.3), op check_mesh: a surface as flat arrays (as VfGenMesh) and
 // a request {process ("free" | "additive" | "fdm" | "sls" | "resin" | "milling" | "extrusion"),
 // build [x,y,z], overhang (deg from the plate, 45), min_wall (mm, default the process minimum),
-// max_bodies (1), plate_tolerance (mm, 0.5), samples (20000)} or NULL for the defaults.
-// Answers {"ok": {checks: [{id (watertight | manifold | bodies | min_wall | overhangs | voids |
-// triangles), name, status (pass | warning | fail | skipped), value, limit, unit, detail,
-// spot: {min, max} or null}], triangles, vertices, area_mm2, volume_mm3, open_edges,
+// max_bodies (1), plate_tolerance (mm, 0.5), samples (20000), tool_axes ([[x,y,z], ...] from
+// the part toward the tool, default the build direction: 3-axis from the top), undercut_tolerance
+// (deg, 2)} or NULL for the defaults.
+// Answers {"ok": {checks: [{id (watertight | manifold | bodies | min_wall | overhangs |
+// tool_access | voids | triangles), name, status (pass | warning | fail | skipped), value, limit,
+// unit, detail, spot: {min, max} or null}], triangles, vertices, area_mm2, volume_mm3, open_edges,
 // nonmanifold_edges, bodies, voids, min_wall_mm, thin_share, wall_samples, overhang_mm2,
-// overhang_share, passed, warnings, failures, seconds}} or {"error"}. Call it off the main thread.
+// overhang_share, unreachable_mm2, unreachable_share, passed, warnings, failures, seconds}} or
+// {"error"}. Call it off the main thread.
 char *vf_generate_check_mesh(const float *positions, uint64_t vertex_count, const uint32_t *indices,
                              uint64_t index_count, const char *request_json);
+// Per-vertex maps for the canvas, op mesh_maps: same surface and request as check_mesh. Each
+// output is NULL (map skipped) or room for vertex_count floats: overhang angle from the plate
+// (deg), wall thickness (mm), share of the surface the tool reaches (0 to 1); NaN where nothing
+// was measured or the map does not apply to the process (overhang: additive; access: milling).
+// Answers {"ok": {vertices, triangles, rays, overhang?: {applies, limit_deg, build, flagged_mm2,
+// flagged_share, flattest_deg}, wall?: {limit_mm, min_mm (the wall 99 % of the surface
+// reaches), thinnest_mm, max_mm, median_mm, thin_share, measured_share}, access?: {applies,
+// model, axes, tolerance_deg, unreachable_mm2, unreachable_share}, seconds}} or {"error"}. A
+// wall vertex no ray came back from takes its measured neighbours' mean. Call it off the main
+// thread.
+char *vf_generate_mesh_maps(const float *positions, uint64_t vertex_count, const uint32_t *indices,
+                            uint64_t index_count, const char *request_json, float *overhang_out,
+                            float *wall_out, float *access_out);
 // Writes a surface to a file, op export_mesh: request {path, format ("stl" | "3mf" | "obj";
 // default the path's extension), name?}. Written beside the final name, then renamed into
 // place. {"ok": {path, format, bytes, triangles}} or {"error": why, in words}.

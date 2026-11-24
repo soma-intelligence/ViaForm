@@ -30,10 +30,15 @@ struct BomSummary: View {
 }
 
 struct BomFigures: View {
+    @ObservedUnits private var units
     @Environment(\.viaFormTheme) private var theme
     let model: BomModel
 
-    var body: some View { prefix; suffix }
+    var body: some View {
+        let _ = units
+        prefix
+        suffix
+    }
 
     private var t: BomTotals { model.rollup.totals }
     private var c: String { model.currency }
@@ -186,6 +191,7 @@ enum BomQty {
 // MARK: Detail (both platforms)
 
 struct BomDetail: View {
+    @ObservedUnits private var units
     @Environment(\.viaFormTheme) private var theme
     @Bindable var model: BomModel
     let row: BomRow
@@ -201,6 +207,7 @@ struct BomDetail: View {
     private var notesChanged: Bool { notes != (row.line.userNotes ?? "") }
 
     var body: some View {
+        let _ = units
         let l = row.line
         let r = row.roll
         Form {
@@ -274,7 +281,7 @@ struct BomDetail: View {
                 LabeledContent("Per build") { MoneyText(value: r.perBuildCost, currency: model.currency) }
                 LabeledContent("Mass each", value: BomFormat.mass(l.massG))
                 if let d = l.dimsMm, d.count == 3 {
-                    LabeledContent("Size", value: d.map { $0.formatted(.number.precision(.fractionLength(0...1))) }.joined(separator: " x ") + " mm")
+                    LabeledContent("Size", value: VFFormat.lengths(d))
                 }
                 LabeledContent("Price checked") {
                     Text(BomFormat.checked(r.checkedOn)).help(BomFormat.fullDate(r.checkedOn))
@@ -371,11 +378,13 @@ struct BomDetail: View {
 
 /// Several lines selected: what they add up to and what can be done to all of them.
 struct BomMultiDetail: View {
+    @ObservedUnits private var units
     @Environment(\.viaFormTheme) private var theme
     let model: BomModel
     let rows: [BomRow]
 
     var body: some View {
+        let _ = units
         let removable = model.removable(rows)
         let extended = rows.compactMap(\.roll.extended).reduce(0, +)
         let unpriced = rows.filter { $0.roll.extended == nil }.count
@@ -605,6 +614,7 @@ private extension View {
 // MARK: Mac: sortable, grouped table with inline edits
 
 struct BomPanel: View {
+    @ObservedUnits private var units
     @Environment(\.viaFormTheme) private var theme
     @Bindable var model: BomModel
     let design: DesignModel
@@ -613,6 +623,7 @@ struct BomPanel: View {
     @State private var importing = false
 
     var body: some View {
+        let _ = units
         VStack(spacing: 0) {
             header
             Divider()
@@ -920,6 +931,7 @@ struct BomNotesCell: View {
 // MARK: iPad and iPhone: list and detail
 
 struct BomPanel: View {
+    @ObservedUnits private var units
     @Environment(\.viaFormTheme) private var theme
     @Bindable var model: BomModel
     let design: DesignModel
@@ -929,6 +941,7 @@ struct BomPanel: View {
     @State private var importingProject = false
 
     var body: some View {
+        let _ = units
         NavigationSplitView {
             List(selection: $model.selection) {
                 Section {

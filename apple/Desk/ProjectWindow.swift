@@ -360,31 +360,41 @@ struct ProjectWindow: View {
     }
 
     /// The compact window's inspector: a floating surface on the trailing edge of the stage,
-    /// shown and hidden by the same toggle, closed with Esc or its close button.
+    /// shown and hidden by the same toggle, closed with Esc or its close button. Generate has a
+    /// side column of its own (the study panel): there the inspector takes that column's place
+    /// instead of floating over it (see `content`).
     @ViewBuilder private func inspectorOverlay(_ actions: StageActions) -> some View {
-        if overlayShown {
-            VStack(spacing: 0) {
-                HStack {
-                    VFCaption(inspectorMode == .library ? "Libraries" : "Inspector")
-                    Spacer()
-                    VFIconButton("xmark", label: String(localized: "Close Inspector")) { closeOverlayInspector() }
-                        .help("Close the inspector (Esc)")
-                }
-                .padding(.leading, VFSpace.l)
-                .padding(.trailing, VFSpace.s)
-                .padding(.vertical, VFSpace.xs)
-                VFHairline()
-                inspectorContent(actions)
-                    .frame(maxHeight: .infinity, alignment: .top)
-            }
-            .frame(width: CompactLayout.overlayWidth(ideal: inspectorIdeal, detailWidth: detailWidth))
-            .clipShape(RoundedRectangle(cornerRadius: VFRadius.floating, style: .continuous))
-            .vfSurface(.floating, radius: VFRadius.floating)
-            .padding(VFSpace.s)
-            .accessibilityElement(children: .contain)
-            .accessibilityLabel(inspectorMode == .library ? "Libraries" : "Inspector")
-            .vfTransition(.move(edge: .trailing).combined(with: .opacity))
+        if overlayShown && !inspectorInStageColumn {
+            compactInspectorPanel(actions)
+                .frame(width: CompactLayout.overlayWidth(ideal: inspectorIdeal, detailWidth: detailWidth))
+                .clipShape(RoundedRectangle(cornerRadius: VFRadius.floating, style: .continuous))
+                .vfSurface(.floating, radius: VFRadius.floating)
+                .padding(VFSpace.s)
+                .vfTransition(.move(edge: .trailing).combined(with: .opacity))
         }
+    }
+
+    /// The stage shows the compact inspector in its own side column (Generate's study panel).
+    private var inspectorInStageColumn: Bool { workspace == .generate }
+
+    /// The compact inspector's content under its title and close button.
+    private func compactInspectorPanel(_ actions: StageActions) -> some View {
+        VStack(spacing: 0) {
+            HStack {
+                VFCaption(inspectorMode == .library ? "Libraries" : "Inspector")
+                Spacer()
+                VFIconButton("xmark", label: String(localized: "Close Inspector")) { closeOverlayInspector() }
+                    .help("Close the inspector (Esc)")
+            }
+            .padding(.leading, VFSpace.l)
+            .padding(.trailing, VFSpace.s)
+            .padding(.vertical, VFSpace.xs)
+            VFHairline()
+            inspectorContent(actions)
+                .frame(maxHeight: .infinity, alignment: .top)
+        }
+        .accessibilityElement(children: .contain)
+        .accessibilityLabel(inspectorMode == .library ? "Libraries" : "Inspector")
     }
 
     private func closeOverlayInspector() {
@@ -723,8 +733,12 @@ struct ProjectWindow: View {
             DesignCanvas(model: model, pcb: pcb, flow: flow, workspace: workspace, actions: actions,
                          dialogInInspector: showInspector && inspectorMode == .inspector)
         case .generate:
-            // Compact folds the study's own side panel into a sheet while the inspector is open.
-            GenerateView(model: generate, design: model, theme: theme.viewportTheme, compact: embeddedCompact)
+            // iPhone folds the study's side panel into a sheet. A compact Mac window has no room
+            // for a floating inspector beside the study panel: the inspector takes the panel's
+            // column while it is open, and closing it brings the study panel back (P2-7).
+            GenerateView(model: generate, design: model, theme: theme.viewportTheme, compact: embeddedCompact,
+                         sidePanel: overlayShown && inspectorInStageColumn
+                             ? AnyView(compactInspectorPanel(actions).background(theme.panel)) : nil)
         case .electronics:
             DeskPCBView(model: pcb, design: model, embedded: true, hiddenLayers: hiddenLayers,
                         runChecks: { actions.run("electronics.drc") },

@@ -88,6 +88,7 @@
 		5CD25CEBAA72E372201BF803 /* PCBModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 473F2F992C7761C7C9AD43FD /* PCBModel.swift */; };
 		5E21203224CEE2558532413E /* Shaders.metal in Sources */ = {isa = PBXBuildFile; fileRef = D27D89BE87A01C0D5E2FDD5A /* Shaders.metal */; };
 		5E702E91D6071985364AEBDE /* ThemeTokens.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4E5F62431967C8A466E2EEB3 /* ThemeTokens.swift */; };
+		602B4B033708B9DB9EEE15DF /* GenerateMaps.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3C055647B0BAC398F5682951 /* GenerateMaps.swift */; };
 		61653D2E7A6F9751899F0D7B /* AssembleHand.swift in Sources */ = {isa = PBXBuildFile; fileRef = C35ABFFBB4159AA7329E6AEC /* AssembleHand.swift */; };
 		62A9140FC49EC507611B0744 /* Renderer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8F4CB49F555B9AB7E2A36188 /* Renderer.swift */; };
 		63F59E9C12B9AB951DDB1EA9 /* StageDetail.swift in Sources */ = {isa = PBXBuildFile; fileRef = F9540445BAD1E9E04CEA3584 /* StageDetail.swift */; };
@@ -104,6 +105,7 @@
 		6E61D3C2B70C1EB37009226A /* PrivacySettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = 95AF318A7F3AF353FB2772BD /* PrivacySettings.swift */; };
 		6F7DB3A8705EDBE93DF5A3B7 /* SketchCanvasLayers.swift in Sources */ = {isa = PBXBuildFile; fileRef = 09A9A24E545B427E7B42B3F0 /* SketchCanvasLayers.swift */; };
 		71501DBADB89BB557729B4CB /* FlowSelfTest.swift in Sources */ = {isa = PBXBuildFile; fileRef = 53C5402D0D3498EFB386796E /* FlowSelfTest.swift */; };
+		716DEB7C68621ED6DB144AAC /* GenerateMaps.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3C055647B0BAC398F5682951 /* GenerateMaps.swift */; };
 		72BA9E56E2CC811842301347 /* FlowGraphView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9C0EA3A033635B3AF0D33E7C /* FlowGraphView.swift */; };
 		757A31B03775E6E3035CE714 /* MotionStudyPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 19150837D68FE717C60EC679 /* MotionStudyPanel.swift */; };
 		76034A4FBE11C11FF46747C9 /* UnitSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = 975EACD0F5598BBF08997A2F /* UnitSettings.swift */; };
@@ -299,6 +301,7 @@
 		3891112F94DFE17B5406D2A9 /* TouchSampleDrone.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TouchSampleDrone.swift; sourceTree = "<group>"; };
 		3A8178DF7AA3953AC62B3368 /* ViewCube.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ViewCube.swift; sourceTree = "<group>"; };
 		3AF8D32DFF65087A948E5F3E /* CommonViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CommonViews.swift; sourceTree = "<group>"; };
+		3C055647B0BAC398F5682951 /* GenerateMaps.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GenerateMaps.swift; sourceTree = "<group>"; };
 		3C631454225F4CE5F91F2235 /* InspectorPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InspectorPanel.swift; sourceTree = "<group>"; };
 		3C8952B94A6BD068EA734518 /* ThemeBridges.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ThemeBridges.swift; sourceTree = "<group>"; };
 		3D4FD2C46FE16D31DB60B3BB /* TouchSimulation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TouchSimulation.swift; sourceTree = "<group>"; };
@@ -430,6 +433,7 @@
 				A0BEF2BD0A83AFB3FE69C41F /* GenerateInspector.swift */,
 				FE793E7676F94451DE4341C2 /* GenerateJSON.swift */,
 				6B939933A9E0F62B0A7AE880 /* GenerateLive.swift */,
+				3C055647B0BAC398F5682951 /* GenerateMaps.swift */,
 				4B73B87698BA8F6AB6B165B0 /* GenerateModel.swift */,
 				43D4EBBDE903BFD851647F34 /* GenerateOutcomes.swift */,
 				87277DE0D5BC3B1308EEE679 /* GenerateProject.swift */,
@@ -906,6 +910,7 @@
 				AF93592C235F6C30A5DF832C /* GenerateInspector.swift in Sources */,
 				7CD53BC24A665F0A36015444 /* GenerateJSON.swift in Sources */,
 				CE06B5F275D92DBDF932234E /* GenerateLive.swift in Sources */,
+				716DEB7C68621ED6DB144AAC /* GenerateMaps.swift in Sources */,
 				08F9063B02BC6C637D02A80F /* GenerateModel.swift in Sources */,
 				BB59BA7D6AAC6949036EBD6A /* GenerateOutcomes.swift in Sources */,
 				43A0CDB29EEE0447E55D3914 /* GenerateProject.swift in Sources */,
@@ -1053,6 +1058,7 @@
 				FA2A5D0EF9454B8CE0F5385E /* GenerateInspector.swift in Sources */,
 				964773B2B3B7C736CE665606 /* GenerateJSON.swift in Sources */,
 				7F8CDA88AC745BE64D0FBB4C /* GenerateLive.swift in Sources */,
+				602B4B033708B9DB9EEE15DF /* GenerateMaps.swift in Sources */,
 				D175689D645D1D3D294F3048 /* GenerateModel.swift in Sources */,
 				88AC6A3DB94007232DBA35E5 /* GenerateOutcomes.swift in Sources */,
 				774C7B24030D74AAE42A9A30 /* GenerateProject.swift in Sources */,

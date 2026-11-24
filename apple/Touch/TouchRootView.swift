@@ -936,11 +936,13 @@ struct SuggestionBar: View {
 
 /// Bodies and sketches, with visibility. Every row has a long-press menu.
 struct ItemsPanel: View {
+    @ObservedUnits private var units
     @Environment(\.viaFormTheme) private var theme
     let model: DesignModel
     var floating = true
 
     var body: some View {
+        let _ = units
         List {
             if !model.assembly.isEmpty {
                 Section("Components") {
@@ -978,7 +980,7 @@ struct ItemsPanel: View {
                         Image(systemName: "cube.fill").foregroundStyle(theme.inkSecondary).accessibilityHidden(true)
                         VStack(alignment: .leading) {
                             Text(b.name).foregroundStyle(visible ? theme.ink : theme.inkTertiary)
-                            if let v = b.volume_mm3 { Text("\(VFFormat.number(v, digits: 0)) mm³").font(VFFont.micro).foregroundStyle(theme.inkSecondary) }
+                            if let v = b.volume_mm3 { Text(VFFormat.volume(v)).font(VFFont.micro).foregroundStyle(theme.inkSecondary) }
                         }
                         Spacer()
                         VFIconButton(visible ? "eye" : "eye.slash",

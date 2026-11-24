@@ -61,7 +61,13 @@ struct NumberField: View {
     /// Base units per display unit (25.4 for inches); 1 for quantities that are not converted.
     private var factor: Double { UnitSettings.current.inputFactor(for: unit) }
     /// The editable text of a base value, in the display unit.
-    private func editable(_ v: Double) -> String { VFFormat.editable(v / factor) }
+    /// In a converted unit the text keeps one digit more than the display precision (4.7244 in,
+    /// not 4.724409); an untouched field commits nothing, so the base value stays exact.
+    private func editable(_ v: Double) -> String {
+        guard factor != 1, let d = UnitSettings.current.display(for: unit) else { return VFFormat.editable(v / factor) }
+        let p = pow(10.0, Double(d.digits + 1))
+        return VFFormat.editable((v / factor * p).rounded() / p)
+    }
     /// One arrow or scrub step in base units: `step` turned into a round display step.
     private var baseStep: Double { UnitSettings.current.displayStep(step, for: unit) * factor }
     private var unitToken: String { "\(lengthPref)|\(anglePref)|\(massPref)|\(decimalsPref)" }
@@ -156,6 +162,11 @@ struct NumberField: View {
     }
 
     private func commit() {
+        // The text still shows the value (rounded in a converted unit): nothing to change.
+        if error == nil, text.trimmingCharacters(in: .whitespaces) == editable(value) {
+            onCommit?()
+            return
+        }
         switch preview {
         case .success(let v):
             let c = clamped(v)

@@ -124,7 +124,8 @@ struct PreviewMesh: Sendable {
 
     var isEmpty: Bool { triangleCount == 0 }
 
-    static func make(_ c: StudyCandidate, study: Study) -> PreviewMesh {
+    /// The study material's colour, as the scene paints a surface with no map.
+    nonisolated static func materialRGB(_ study: Study) -> SIMD3<Float> {
         let base = SimColor(hex: study.material.color)
         var rgb = SIMD3<Float>(0.72, 0.75, 0.78)
         #if os(macOS)
@@ -133,6 +134,11 @@ struct PreviewMesh: Sendable {
         var r: CGFloat = 0, g: CGFloat = 0, b: CGFloat = 0, a: CGFloat = 0
         if base.getRed(&r, green: &g, blue: &b, alpha: &a) { rgb = SIMD3(Float(r), Float(g), Float(b)) }
         #endif
+        return rgb
+    }
+
+    static func make(_ c: StudyCandidate, study: Study) -> PreviewMesh {
+        let rgb = materialRGB(study)
         if c.mesh.triangleCount > 0, c.mesh.vertexCount > 0 {
             return surface(c.mesh, allowable: Float(study.material.allowable), limit: Float(study.stressLimit), plain: rgb)
         }
@@ -141,17 +147,9 @@ struct PreviewMesh: Sendable {
 
     /// A live preview's coarse surface, in the material's colour.
     static func live(_ m: StudyMesh, study: Study) -> PreviewMesh {
-        var rgb = SIMD3<Float>(0.72, 0.75, 0.78)
-        let base = SimColor(hex: study.material.color)
-        #if os(macOS)
-        if let s = base.usingColorSpace(.sRGB) { rgb = SIMD3(Float(s.redComponent), Float(s.greenComponent), Float(s.blueComponent)) }
-        #else
-        var r: CGFloat = 0, g: CGFloat = 0, b: CGFloat = 0, a: CGFloat = 0
-        if base.getRed(&r, green: &g, blue: &b, alpha: &a) { rgb = SIMD3(Float(r), Float(g), Float(b)) }
-        #endif
         var plain = m
         plain.stress = []
-        return surface(plain, allowable: 0, limit: 0, plain: rgb)
+        return surface(plain, allowable: 0, limit: 0, plain: materialRGB(study))
     }
 
     /// The engine's surface: area-weighted vertex normals, colours from the vertex stress.
@@ -308,8 +306,24 @@ struct PreviewMesh: Sendable {
         return out
     }
 
-    /// The SceneKit geometry over the packed buffers.
-    func geometry() -> SCNGeometry {
+    /// SceneKit reads vertex colours as linear light, while the scales and the material colour
+    /// are sRGB (as the legends draw them). Without this the map reads lighter and more magenta
+    /// than its legend.
+    nonisolated static func linearized(_ rgba: Data) -> Data {
+        var f = rgba.withUnsafeBytes { Array($0.bindMemory(to: Float.self)) }
+        func lin(_ c: Float) -> Float { c <= 0.04045 ? c / 12.92 : powf((c + 0.055) / 1.055, 2.4) }
+        var i = 0
+        while i + 3 < f.count {
+            f[i] = lin(f[i]); f[i + 1] = lin(f[i + 1]); f[i + 2] = lin(f[i + 2])
+            i += 4
+        }
+        return f.withUnsafeBufferPointer { Data(buffer: $0) }
+    }
+
+    /// The SceneKit geometry over the packed buffers; `colors` (RGBA floats per vertex, a map's
+    /// paint) replaces the preview's own when it fits.
+    func geometry(colors paint: Data? = nil) -> SCNGeometry {
+        let colors = Self.linearized(paint.flatMap { $0.count == 16 * vertexCount ? $0 : nil } ?? self.colors)
         let v = SCNGeometrySource(data: positions, semantic: .vertex, vectorCount: vertexCount, usesFloatComponents: true,
                                   componentsPerVector: 3, bytesPerComponent: 4, dataOffset: 0, dataStride: 12)
         let n = SCNGeometrySource(data: normals, semantic: .normal, vectorCount: vertexCount, usesFloatComponents: true,
@@ -355,6 +369,10 @@ final class GenerateScene {
     private var shownRegions: Int?
     private var shownResult: (version: Int, index: Int?)?
     private var shownLive: Int?
+    /// A map's paint for one candidate of one set of previews (`applyMap`), and the model the
+    /// scene last showed, to repaint with it.
+    private var mapPaint: (index: Int, version: Int, colors: Data)?
+    private weak var lastModel: GenerateModel?
 
     static let supportColor = SIMD3<Double>(0.25, 0.55, 1.0)
     static let loadColor = SIMD3<Double>(1.0, 0.58, 0.12)
@@ -485,6 +503,7 @@ final class GenerateScene {
     /// Brings the scene up to date: the design space when it changed, the regions, and the
     /// picked candidate's surface in the Result display.
     func update(_ model: GenerateModel) {
+        lastModel = model
         let s = model.study
         let lo = simd_min(s.min, s.max), hi = simd_max(s.min, s.max)
         if shownSpace == nil || shownSpace! != (lo, hi) {
@@ -533,9 +552,19 @@ final class GenerateScene {
             shownResult = (model.previewsVersion, index)
             resultNode.childNodes.forEach { $0.removeFromParentNode() }
             if let index, let p = model.previews[safe: index], !p.isEmpty {
-                resultNode.addChildNode(SCNNode(geometry: p.geometry()))
+                let paint = mapPaint.flatMap { $0.index == index && $0.version == model.previewsVersion ? $0.colors : nil }
+                resultNode.addChildNode(SCNNode(geometry: p.geometry(colors: paint)))
             }
         }
+    }
+
+    /// Paints candidate `index` of previews `version` with a map's vertex colours (nil: the
+    /// preview's own, the stress), and redraws it if it shows.
+    func applyMap(_ colors: Data?, index: Int, version: Int) {
+        mapPaint = colors.map { (index, version, $0) }
+        guard let model = lastModel else { return }
+        shownResult = nil
+        update(model)
     }
 
     private func buildSpace(_ lo: Vec3, _ hi: Vec3) {

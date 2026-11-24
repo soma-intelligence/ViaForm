@@ -9,12 +9,14 @@ import SwiftUI
 /// moves in the view plane), the selected joint's ring (turns the joint), a fingertip target
 /// (slides on the object's surface). Anywhere else the camera orbits, pans and zooms.
 struct AssembleCanvas: View {
+    @ObservedUnits private var units
     @Environment(\.viaFormTheme) private var theme
     @Bindable var model: AssembleModel
     @State private var scene = AssembleScene()
     @State private var labels = AssembleLabels()
 
     var body: some View {
+        let _ = units
         ZStack(alignment: .topLeading) {
             AssembleSceneView(model: model, scene: scene, labels: labels, dark: theme.isDark)
                 .accessibilityElement()

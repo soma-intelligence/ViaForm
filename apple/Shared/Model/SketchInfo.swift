@@ -48,25 +48,43 @@ struct SketchInfo: Equatable {
 
         var isAngle: Bool { name.hasPrefix("Angular") }
 
-        /// The text drawn on the canvas: "40", "R 6", "D 8", "30 deg".
+        /// The text drawn on the canvas, in the reader's display units (P2-23): "40", "R 6",
+        /// "D 8", "30 deg" (lengths carry no unit; "1.575" with inches).
         var text: String {
             switch name {
-            case "RadialDimension": "R " + Self.number(value)
-            case "DiameterDimension", "LinearDiameterDimension": "D " + Self.number(value)
-            case _ where isAngle: Self.number(value * 180 / .pi) + " deg"
-            default: Self.number(value)
+            case "RadialDimension": "R " + Self.shown(value, .length)
+            case "DiameterDimension", "LinearDiameterDimension": "D " + Self.shown(value, .length)
+            case _ where isAngle: Self.shown(value * 180 / .pi, .angle) + " " + Self.angleWord
+            default: Self.shown(value, .length)
             }
         }
 
-        /// The value as it is typed back: the parameter's expression when it has one.
+        /// The value as it is typed back: the parameter's expression when it has one, else the
+        /// value in the display unit with its unit ("40 mm", "1.575 in", "30 deg").
         var editText: String {
             if let e = expression, !e.isEmpty { return e }
-            return isAngle ? Self.number(value * 180 / .pi) + " deg" : Self.number(value) + " mm"
+            return isAngle ? Self.shown(value * 180 / .pi, .angle) + " " + Self.angleWord
+                : Self.shown(value, .length) + " " + VFFormat.symbol(.length)
         }
 
-        static func number(_ v: Double) -> String {
-            let r = (v * 100).rounded() / 100
-            return r == r.rounded() ? String(format: "%.0f", r) : String(format: "%.2f", r).replacingOccurrences(of: #"0$"#, with: "", options: .regularExpression)
+        /// "deg" or "rad": typed back, so a word rather than the degree sign.
+        static var angleWord: String { UnitSettings.current.angle == .deg ? "deg" : "rad" }
+
+        /// A base value (mm or degrees) in the display unit, at 0.01 mm or 0.01 degree and the
+        /// matching precision in larger units (0.001 in, 0.0001 rad), trailing zeros dropped.
+        static func shown(_ v: Double, _ unit: VFUnit) -> String {
+            let f = UnitSettings.current.inputFactor(for: unit)
+            let digits = 2 + max(0, Int(log10(f).rounded()))
+            return number(v / f, digits: digits)
+        }
+
+        static func number(_ v: Double, digits: Int = 2) -> String {
+            let p = pow(10.0, Double(digits))
+            let r = (v * p).rounded() / p
+            guard r != r.rounded() else { return String(format: "%.0f", r) }
+            var s = String(format: "%.\(digits)f", r)
+            while s.hasSuffix("0") { s.removeLast() }
+            return s
         }
     }
 

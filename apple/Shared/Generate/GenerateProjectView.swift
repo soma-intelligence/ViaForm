@@ -3,12 +3,14 @@ import SwiftUI
 /// The Project pane: the open project's studies (a tap makes one the setup), its assembly of
 /// generated parts and real components, and, once inserted, its joints to drive.
 struct ProjectForm: View {
+    @ObservedUnits private var units
     @Environment(\.viaFormTheme) private var theme
     @Bindable var model: GenerateModel
     let design: DesignModel
     @State private var confirm: ConfirmRequest?
 
     var body: some View {
+        let _ = units
         Form {
             Section {
                 // The open project is the filled button; the other opens on a click. Only the
@@ -179,10 +181,12 @@ private struct ProjectButton: View {
 
 /// One joint's angle, within its limits.
 struct JointSlider: View {
+    @ObservedUnits private var units
     let joint: AssemblyJoint
     let set: (Double) -> Void
 
     var body: some View {
+        let _ = units
         VStack(alignment: .leading, spacing: VFSpace.xxs) {
             LabeledContent(joint.name) {
                 Text(VFFormat.angle(joint.value)).monospacedDigit()

@@ -6,12 +6,14 @@ import SwiftUI
 /// list while dragging the tip; the grasp's object, fingers and actuators in the grasp editor;
 /// interference results on CHECK.
 struct AssembleInspector: View {
+    @ObservedUnits private var units
     @Environment(\.viaFormTheme) private var theme
     @Bindable var model: AssembleModel
     /// Opens Simulate with a hold scenario ("Test in simulation").
     var testInSimulation: (() -> Void)?
 
     var body: some View {
+        let _ = units
         VStack(alignment: .leading, spacing: VFSpace.l) {
             switch model.tool {
             case .dragTip: ikSections
@@ -113,8 +115,8 @@ struct AssembleInspector: View {
                 AsmRow("Centre of mass y", VFFormat.length(m.comMM.y))
                 AsmRow("Centre of mass z", VFFormat.length(m.comMM.z))
                 if m.inertia.count >= 3 {
-                    AsmRow("Ixx, Iyy, Izz", m.inertia.prefix(3).map { VFFormat.value($0, .none) }.joined(separator: ", ") + " kg·mm²")
-                        .help("Inertia about the centre of mass, kg·mm²")
+                    AsmRow("Ixx, Iyy, Izz", VFFormat.inertia(Array(m.inertia.prefix(3))))
+                        .help("Inertia about the centre of mass, \(VFFormat.inertiaSymbol())")
                 }
                 ForEach(m.warnings, id: \.self) { w in
                     Label(w, systemImage: "exclamationmark.triangle.fill").font(VFFont.small).foregroundStyle(theme.warning)
@@ -132,7 +134,7 @@ struct AssembleInspector: View {
                     Label("No interference at this pose", systemImage: "checkmark.circle").font(VFFont.row).foregroundStyle(theme.success)
                 } else {
                     ForEach(pairs) { p in
-                        AsmRow(verbatim: "\(title(p.a)) / \(title(p.b))", VFFormat.value(p.volumeMM3, .custom("mm³")), warn: true)
+                        AsmRow(verbatim: "\(title(p.a)) / \(title(p.b))", VFFormat.volume(p.volumeMM3), warn: true)
                     }
                 }
             } else {
@@ -331,6 +333,7 @@ struct StudyProgressRow: View {
 /// The editor of one joint: type, the parts it joins, axis, limits, motor, damping, friction,
 /// and a drive slider. Edits are undo steps in the assembly and recommit it to the flow.
 struct JointEditor: View {
+    @ObservedUnits private var units
     @Environment(\.viaFormTheme) private var theme
     let model: AssembleModel
     let joint: AsmJoint
@@ -338,6 +341,7 @@ struct JointEditor: View {
     private var unit: VFUnit { joint.angular ? .angle : .length }
 
     var body: some View {
+        let _ = units
         AsmSection("Joint: \(joint.title)") {
             AsmRow("Type", Self.kindTitle(joint.kind))
             AsmRow("Joins", String(localized: "\(name(joint.parent)) to \(name(joint.child))"))
@@ -358,7 +362,7 @@ struct JointEditor: View {
             AsmNumberRow("Lower limit", joint.range?.lowerBound ?? 0, joint.unit) { v in setLimit(lower: v) }
             AsmNumberRow("Upper limit", joint.range?.upperBound ?? 0, joint.unit) { v in setLimit(upper: v) }
             if let l = joint.limits {
-                if let v = l.velocity_dps { AsmRow("Velocity", VFFormat.value(v, .custom("°/s"))) }
+                if let v = l.velocity_dps { AsmRow("Velocity", VFFormat.rate(v, .angle)) }
                 if let e = l.effort_nm { AsmRow("Effort", VFFormat.value(e, .custom("N·m"))) }
             }
         }

@@ -121,6 +121,7 @@ struct RobotTwinView: View {
 /// The joints: measured value, commanded target, jog buttons, and a drag that drafts a pose
 /// committed with Move to Pose. All motion asks through the gate.
 struct RobotJointsPanel: View {
+    @ObservedUnits private var units
     @Environment(\.viaFormTheme) private var theme
     @Binding var confirm: ConfirmRequest?
     @State private var draft: [Double] = []
@@ -130,6 +131,7 @@ struct RobotJointsPanel: View {
     private let step: Double = 5
 
     var body: some View {
+        let _ = units
         let joints = safety.link?.joints ?? []
         VStack(alignment: .leading, spacing: VFSpace.s) {
             HStack {

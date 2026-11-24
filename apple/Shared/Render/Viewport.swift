@@ -29,10 +29,12 @@ extension Color {
 
 /// The shape being drawn and the snapped cursor, on the sketch plane.
 struct SketchOverlay: View {
+    @ObservedUnits private var units
     let model: DesignModel
     let color: Color
 
     var body: some View {
+        let _ = units
         Canvas { ctx, size in
             guard let plane = model.sketchPlane else { return }
             let cam = model.camera
@@ -51,7 +53,7 @@ struct SketchOverlay: View {
                 let s = screen(cur)
                 let r: CGFloat = model.cursorSnap == nil ? 3 : 5
                 ctx.stroke(Path(ellipseIn: CGRect(x: s.x - r, y: s.y - r, width: r * 2, height: r * 2)), with: .color(color), lineWidth: 1.5)
-                let label = String(format: "%.2f, %.2f", cur.x, cur.y) + (model.cursorSnap.map { "  \($0)" } ?? "")
+                let label = VFFormat.lengths([cur.x, cur.y], separator: ", ", digits: 2) + (model.cursorSnap.map { "  \($0)" } ?? "")
                 ctx.draw(Text(label).font(VFFont.micro).foregroundStyle(color), at: CGPoint(x: s.x + 12, y: s.y - 12), anchor: .leading)
             }
         }

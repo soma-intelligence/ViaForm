@@ -80,6 +80,7 @@ struct BoardLinkInfo {
 /// The 3D link card over the board: a live view of the board in its part, the revision state
 /// (Live, or how far behind), the part it is mounted on and the clearance, with the actions.
 struct LinkCard: View {
+    @ObservedUnits private var units
     @Environment(\.viaFormTheme) private var theme
     let info: BoardLinkInfo
     let design: DesignModel
@@ -87,6 +88,7 @@ struct LinkCard: View {
     let showIn3D: () -> Void
 
     var body: some View {
+        let _ = units
         VStack(alignment: .leading, spacing: VFSpace.s) {
             HStack(spacing: VFSpace.s) {
                 VFCaption("3D link")
@@ -162,6 +164,7 @@ struct LinkCard: View {
 /// clearance dimension on the tightest side, and the leader from the link card to the board's
 /// mount point. Drawn in the canvas's own coordinates (`PCBCanvasTransform`).
 struct BoardLinkAnnotations: View {
+    @ObservedUnits private var units
     @Environment(\.viaFormTheme) private var theme
     let info: BoardLinkInfo
     let board: CGSize          // the sheet's board, mm
@@ -170,6 +173,7 @@ struct BoardLinkAnnotations: View {
     let card: CGRect?
 
     var body: some View {
+        let _ = units
         Canvas { ctx, _ in
             let t = transform
             let accent = theme.accent
@@ -182,7 +186,7 @@ struct BoardLinkAnnotations: View {
             dim.move(to: CGPoint(x: b0.x, y: dy - 6)); dim.addLine(to: CGPoint(x: b0.x, y: dy + 6))
             dim.move(to: CGPoint(x: b1.x, y: dy - 6)); dim.addLine(to: CGPoint(x: b1.x, y: dy + 6))
             ctx.stroke(dim, with: .color(accent), lineWidth: 1.2)
-            label(&ctx, String(format: "%.2f", board.width), CGPoint(x: (b0.x + b1.x) / 2, y: dy - 9), accent)
+            label(&ctx, VFFormat.number(VFFormat.toDisplay(board.width, .length), digits: units.length == .mm ? 2 : 3), CGPoint(x: (b0.x + b1.x) / 2, y: dy - 9), accent)
 
             if info.host != nil {
                 let k0 = t.view(PCBPoint(x: -info.left, y: -info.top))
@@ -190,7 +194,7 @@ struct BoardLinkAnnotations: View {
                 let keep = CGRect(x: k0.x, y: k0.y, width: k1.x - k0.x, height: k1.y - k0.y)
                 ctx.stroke(Path(keep), with: .color(info.fits ? accent : theme.danger), style: StrokeStyle(lineWidth: 1.3, dash: [6, 4]))
                 let host = info.host ?? ""
-                ctx.draw(Text(String(format: "Keep-in %.0f x %.0f from %@", board.width + info.left + info.right, board.height + info.top + info.bottom, host))
+                ctx.draw(Text("Keep-in \(VFFormat.lengths([board.width + info.left + info.right, board.height + info.top + info.bottom])) from \(host)")
                             .font(VFFont.small.weight(.medium)).foregroundStyle(accent),
                          at: CGPoint(x: keep.minX, y: keep.maxY + 6), anchor: .topLeading)
                 // Clearance on the tightest side.
@@ -215,7 +219,7 @@ struct BoardLinkAnnotations: View {
                     tl = CGPoint(x: x + 46, y: (keep.maxY + b1.y) / 2)
                 }
                 ctx.stroke(c, with: .color(info.fits ? theme.success : theme.danger), style: StrokeStyle(lineWidth: 1.4))
-                label(&ctx, String(format: "%.2f mm", info.clearance ?? 0), tl, info.fits ? theme.success : theme.danger)
+                label(&ctx, VFFormat.length(info.clearance ?? 0, digits: 2), tl, info.fits ? theme.success : theme.danger)
             }
 
             // Leader from the card to the mount point (the board's centre, where it is seated).
@@ -247,11 +251,13 @@ struct BoardLinkAnnotations: View {
 /// The rule checks in one capsule: "DRC passed · 2 layers · 36 x 36 mm · 12 nets", or the count
 /// of findings. Clicking runs the checks again.
 struct DRCCapsule: View {
+    @ObservedUnits private var units
     @Environment(\.viaFormTheme) private var theme
     let pcb: PCBModel
     let run: () -> Void
 
     var body: some View {
+        let _ = units
         let n = pcb.findings.count
         let unrouted = pcb.checks?.airwires.count ?? 0
         let ok = n == 0

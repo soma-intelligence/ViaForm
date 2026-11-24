@@ -281,6 +281,7 @@ struct DottedArc: Shape {
 /// The selection's context pill, value bubble and arc, placed over the viewport from the
 /// selection's projected anchor (`AnchorLayout` of the spec, on the orbit camera).
 struct DesignAnchorLayer: View {
+    @ObservedUnits private var units
     @Environment(\.viaFormTheme) private var theme
     let model: DesignModel
     let stage: Workspace
@@ -289,6 +290,7 @@ struct DesignAnchorLayer: View {
     var extra: [ContextAction] = []
 
     var body: some View {
+        let _ = units
         GeometryReader { geo in
             let size = geo.size
             // The picked face or edge, or the picked bodies' projected bounds (as on the Mac):

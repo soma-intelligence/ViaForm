@@ -79,6 +79,7 @@ struct RobotStage: View {
 /// The Robot stage's bottom panel: telemetry per joint and the record control, empty until a
 /// robot streams. Wells are flexible with a minimum size, so larger text never clips.
 struct RobotTelemetryPanel: View {
+    @ObservedUnits private var units
     @Environment(\.viaFormTheme) private var theme
     private var safety: RobotSafety { RobotSafety.shared }
 
@@ -101,6 +102,7 @@ struct RobotTelemetryPanel: View {
     }
 
     var body: some View {
+        let _ = units
         HStack(alignment: .top, spacing: VFSpace.xl) {
             VStack(alignment: .leading, spacing: VFSpace.s) {
                 VFCaption("Telemetry")

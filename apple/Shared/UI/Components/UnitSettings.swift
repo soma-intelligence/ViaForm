@@ -27,6 +27,19 @@ enum LengthDisplay: String, CaseIterable, Identifiable, Sendable {
         case .inch: String(localized: "Inches (in)")
         }
     }
+    /// The reader's length unit now.
+    static var current: LengthDisplay { UnitSettings.current.length }
+
+    /// The unit's name in a sentence: "millimetres", "inches".
+    var plural: String {
+        switch self {
+        case .mm: String(localized: "millimetres")
+        case .cm: String(localized: "centimetres")
+        case .m: String(localized: "metres")
+        case .inch: String(localized: "inches")
+        }
+    }
+
     /// Default fraction digits: 0.1 mm, 0.01 cm, 0.001 m, 0.001 in.
     var digits: Int {
         switch self {
@@ -98,10 +111,18 @@ struct UnitSettings: Equatable, Sendable {
         if ProcessInfo.processInfo.arguments.contains("--selftest") { return .base }
         let d = UserDefaults.standard
         let dec = d.object(forKey: decimalsKey) as? Int ?? -1
-        return UnitSettings(length: LengthDisplay(rawValue: d.string(forKey: lengthKey) ?? "") ?? .mm,
-                            angle: AngleDisplay(rawValue: d.string(forKey: angleKey) ?? "") ?? .deg,
-                            mass: MassDisplay(rawValue: d.string(forKey: massKey) ?? "") ?? .g,
-                            decimals: dec < 0 ? nil : min(dec, 6))
+        var u = UnitSettings(length: LengthDisplay(rawValue: d.string(forKey: lengthKey) ?? "") ?? .mm,
+                             angle: AngleDisplay(rawValue: d.string(forKey: angleKey) ?? "") ?? .deg,
+                             mass: MassDisplay(rawValue: d.string(forKey: massKey) ?? "") ?? .g,
+                             decimals: dec < 0 ? nil : min(dec, 6))
+        // Launch flags for captures and checks, never stored: --length-unit=in, --angle-unit=rad,
+        // --mass-unit=kg.
+        for arg in ProcessInfo.processInfo.arguments {
+            if let v = arg.flagValue("--length-unit="), let l = LengthDisplay(rawValue: v) { u.length = l }
+            if let v = arg.flagValue("--angle-unit="), let a = AngleDisplay(rawValue: v) { u.angle = a }
+            if let v = arg.flagValue("--mass-unit="), let m = MassDisplay(rawValue: v) { u.mass = m }
+        }
+        return u
     }
 
     /// How a quantity shows: base units per display unit, the suffix, and fraction digits.
@@ -123,6 +144,29 @@ struct UnitSettings: Equatable, Sendable {
     func displayStep(_ baseStep: Double, for unit: VFUnit) -> Double {
         guard let f = display(for: unit)?.factor, f != 1, baseStep > 0 else { return baseStep }
         return pow(10, (log10(baseStep / f)).rounded())
+    }
+}
+
+private extension String {
+    /// The text after `prefix` when this argument starts with it.
+    func flagValue(_ prefix: String) -> String? { hasPrefix(prefix) ? String(dropFirst(prefix.count)) : nil }
+}
+
+/// Makes a view redraw when the reader changes a display unit. A view that shows a length, an
+/// angle or a mass through `VFFormat` declares `@ObservedUnits private var units` and reads it in
+/// `body` (`let _ = units`), or uses it directly. Its value is `UnitSettings.current`.
+@propertyWrapper
+struct ObservedUnits: DynamicProperty {
+    @AppStorage(UnitSettings.lengthKey) private var length = LengthDisplay.mm.rawValue
+    @AppStorage(UnitSettings.angleKey) private var angle = AngleDisplay.deg.rawValue
+    @AppStorage(UnitSettings.massKey) private var mass = MassDisplay.g.rawValue
+    @AppStorage(UnitSettings.decimalsKey) private var decimals = -1
+
+    init() {}
+
+    var wrappedValue: UnitSettings {
+        _ = (length, angle, mass, decimals)
+        return UnitSettings.current
     }
 }
 

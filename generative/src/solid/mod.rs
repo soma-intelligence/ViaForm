@@ -28,6 +28,7 @@ pub mod frame3d;
 pub mod grid;
 pub mod iso;
 pub mod loads;
+pub mod maps;
 pub mod mg;
 pub mod mma;
 pub mod optimize;

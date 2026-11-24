@@ -7,6 +7,7 @@ import UniformTypeIdentifiers
 /// their panels, the sheet filling the window, a floating browser on the left and a floating
 /// inspector (the link to 3D and the rule checks) on the right.
 struct DeskPCBView: View {
+    @ObservedUnits private var units
     @Environment(\.viaFormTheme) private var theme
     @Environment(\.vfToasts) private var toasts
     @Bindable var model: PCBModel
@@ -28,6 +29,7 @@ struct DeskPCBView: View {
     @State private var open: Set<String> = ["Parts", "Board"]
 
     var body: some View {
+        let _ = units
         VStack(spacing: 0) {
             toolbar
             Divider()
@@ -65,10 +67,10 @@ struct DeskPCBView: View {
         .onKeyPress("r") { model.rotateSelection(); return .handled }
         .onKeyPress("w") { model.tool = .wire; return .handled }
         .onKeyPress("x") { model.tool = .route; return .handled }
-        // The arrow keys move the selected part 1 mm (Shift: 10 mm): moving is never drag-only.
+        // The arrow keys move the selected part one nudge step (Shift: ten): moving is never drag-only.
         .onKeyPress(keys: [.leftArrow, .rightArrow, .upArrow, .downArrow]) { press in
             guard model.selectionPosition != nil else { return .ignored }
-            let d = press.modifiers.contains(.shift) ? 10.0 : 1.0
+            let d = PCBNudge.step * (press.modifiers.contains(.shift) ? 10.0 : 1.0)
             switch press.key {
             case .leftArrow: model.nudgeSelection(dx: -d, dy: 0)
             case .rightArrow: model.nudgeSelection(dx: d, dy: 0)
@@ -185,7 +187,7 @@ struct DeskPCBView: View {
                 NumberField("X", value: Binding(get: { p.x }, set: { model.moveSelection(to: PCBPoint(x: $0, y: p.y)) }), unit: .length, step: 1, width: 64)
                 NumberField("Y", value: Binding(get: { p.y }, set: { model.moveSelection(to: PCBPoint(x: p.x, y: $0)) }), unit: .length, step: 1, width: 64)
             }
-            Text("Arrow keys move it 1 mm, Shift-arrow 10 mm.").font(VFFont.micro).foregroundStyle(theme.inkTertiary)
+            Text("Arrow keys move it \(PCBNudge.label()), Shift-arrow \(PCBNudge.label(times: 10)).").font(VFFont.micro).foregroundStyle(theme.inkTertiary)
             Divider().padding(.vertical, VFSpace.xxs)
         }
     }

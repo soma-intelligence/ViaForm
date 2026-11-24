@@ -235,7 +235,7 @@ struct FlowReporting: ViewModifier {
     static func generatedTree(_ asm: [String: Any], inserted: Bool) -> [FlowModel.TreeItem] {
         let parts = asm["parts"] as? [[String: Any]] ?? []
         func name(_ p: [String: Any], _ i: Int) -> String { (p["name"] as? String) ?? (p["ref"] as? String) ?? "part \(i + 1)" }
-        func mass(_ p: [String: Any]) -> String? { (p["mass_g"] as? Double).map { String(format: "%.1f g", $0) } }
+        func mass(_ p: [String: Any]) -> String? { (p["mass_g"] as? Double).map { VFFormat.mass($0) } }
         let state = inserted ? "inserted" : "not inserted"
         var items: [FlowModel.TreeItem] = []
         var made: [FlowModel.TreeItem] = [], generated: [FlowModel.TreeItem] = [], comps: [FlowModel.TreeItem] = []

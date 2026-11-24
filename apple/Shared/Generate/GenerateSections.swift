@@ -48,7 +48,7 @@ extension Study {
     func status(_ section: StudySection) -> SectionStatus {
         switch section {
         case .designSpace:
-            if voxel <= 0 || !voxel.isFinite { return .error(String(localized: "The voxel size must be above 0 mm.")) }
+            if voxel <= 0 || !voxel.isFinite { return .error(String(localized: "The voxel size must be above zero.")) }
             if (0..<3).contains(where: { abs(max[$0] - min[$0]) <= 0 }) { return .missing(String(localized: "Give the box a size on every axis.")) }
             if elementCount > 8_000_000 { return .error(String(localized: "Over 8 million voxels: use a larger voxel.")) }
             return .complete
@@ -56,7 +56,7 @@ extension Study {
             if volumeFraction <= 0 || volumeFraction >= 1 { return .error(String(localized: "The volume fraction must be between 0 and 100 %.")) }
             return .complete
         case .solver:
-            if let m = massTargetG, m <= 0 { return .error(String(localized: "The target mass must be above 0 g.")) }
+            if let m = massTargetG, m <= 0 { return .error(String(localized: "The target mass must be above zero.")) }
             return .complete
         case .material:
             if material.e <= 0 || material.density <= 0 || material.allowable <= 0 {
@@ -67,7 +67,7 @@ extension Study {
         case .limits:
             if safetyFactor < 1 { return .error(String(localized: "The safety factor must be at least 1.")) }
             if let s = maxStress, s <= 0 { return .error(String(localized: "The stress limit must be above 0 MPa.")) }
-            if let d = maxDisplacement, d <= 0 { return .error(String(localized: "The displacement limit must be above 0 mm.")) }
+            if let d = maxDisplacement, d <= 0 { return .error(String(localized: "The displacement limit must be above zero.")) }
             return .complete
         case .symmetry:
             return .complete

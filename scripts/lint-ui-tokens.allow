@@ -5,3 +5,11 @@
 # not literal colours. Owned by the Generate work; sweep its fixed colours into ThemeScenes.swift
 # when that work lands.
 apple/Shared/Generate/GenerateScene.swift
+
+# The mm rule (P2-23): these files write " mm" on purpose. Text sent to the engine stays in
+# millimetres, and the self tests compare the base-unit strings.
+units: apple/Shared/UI/Components/VFFormat.swift        # the formatter itself and its self test
+units: apple/Shared/UI/Components/UnitSettings.swift    # unit settings self test
+units: apple/Shared/UI/CommonViews.swift                # command form self test ("30 mm" sent to the core)
+units: apple/Shared/Model/DesignInteractions.swift      # a typed dimension is sent to the engine in mm
+units: apple/Shared/Model/DesignModel.swift             # sample parameter expression for the engine

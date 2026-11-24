@@ -1,12 +1,14 @@
 //! Mesh checks on a candidate's surface before it is made (VIAFORM-SPEC 7.10.3, MESH CHECKS):
 //! watertight, manifold, bodies, thinnest wall against the process minimum, overhangs along the
-//! build direction (additive), enclosed voids and the triangle count. Each check answers pass,
+//! build direction (additive), tool access from the allowed tool axes (milling), enclosed voids
+//! and the triangle count. Each check answers pass,
 //! warning, fail or skipped, with its figure, the limit it was held to, a sentence, and where
 //! the worst spot is so a front end can frame it.
 //!
 //! All of it is cheap next to a run: edge counting is a sort, the wall thickness casts one ray
 //! inward from a sample of triangles through a uniform grid of the triangles (Amanatides and Woo
-//! 1987 traversal, Moller and Trumbore 1997 intersection). Units: mm, mm², degrees.
+//! 1987 traversal, Moller and Trumbore 1997 intersection). The same pieces give the per-vertex
+//! maps a canvas paints ([`super::maps`]). Units: mm, mm², degrees.
 
 use std::time::Instant;
 
@@ -30,15 +32,22 @@ pub struct CheckRequest {
     pub min_wall: Option<f64>,
     /// Separate bodies allowed.
     pub max_bodies: usize,
-    /// Faces within this of the lowest point along the build direction sit on the plate, mm.
+    /// Faces within this of the lowest point along the build direction sit on the plate (for
+    /// milling: on the table, along each tool axis), mm.
     pub plate_tolerance: f64,
-    /// Triangles sampled for the wall thickness (all of them when fewer).
+    /// Triangles sampled for the wall thickness and the tool access (all of them when fewer).
     pub samples: usize,
+    /// Directions the tool may come from for milling (any length; from the part toward the
+    /// tool); default the build direction, else +z: a 3-axis machine cutting from the top.
+    pub tool_axes: Option<Vec<[f64; 3]>>,
+    /// A face tilted away from the tool by up to this much is still cut (smoothed voxel walls
+    /// lean a little), degrees.
+    pub undercut_tolerance: f64,
 }
 
 impl Default for CheckRequest {
     fn default() -> Self {
-        Self { process: "free".into(), build: None, overhang: 45.0, min_wall: None, max_bodies: 1, plate_tolerance: 0.5, samples: 20_000 }
+        Self { process: "free".into(), build: None, overhang: 45.0, min_wall: None, max_bodies: 1, plate_tolerance: 0.5, samples: 20_000, tool_axes: None, undercut_tolerance: 2.0 }
     }
 }
 
@@ -58,6 +67,32 @@ impl CheckRequest {
     /// True for processes built layer on layer along `build`, where overhangs need support.
     pub fn layered(&self) -> bool {
         matches!(self.process.to_ascii_lowercase().as_str(), "additive" | "fdm" | "resin" | "sla")
+    }
+
+    /// True for machining, where a face must be in reach of the tool.
+    pub fn machined(&self) -> bool {
+        matches!(self.process.to_ascii_lowercase().as_str(), "milling" | "cnc" | "cnc3")
+    }
+
+    /// The build direction as a unit vector, +z when unset or degenerate.
+    pub fn build_unit(&self) -> [f64; 3] {
+        let b = self.build.unwrap_or([0.0, 0.0, 1.0]);
+        let l = norm(b);
+        if l > 0.0 && l.is_finite() { scale(b, 1.0 / l) } else { [0.0, 0.0, 1.0] }
+    }
+
+    /// The tool axes as unit vectors: those asked for, else the build direction (+z).
+    pub fn tool_axes_unit(&self) -> Vec<[f64; 3]> {
+        let axes: Vec<V> = self
+            .tool_axes
+            .iter()
+            .flatten()
+            .filter_map(|a| {
+                let l = norm(*a);
+                (l > 0.0 && l.is_finite()).then(|| scale(*a, 1.0 / l))
+            })
+            .collect();
+        if axes.is_empty() { vec![self.build_unit()] } else { axes }
     }
 
     /// True for powder or resin processes, where a closed void traps material.
@@ -122,6 +157,9 @@ pub struct MeshChecks {
     pub wall_samples: usize,
     pub overhang_mm2: f64,
     pub overhang_share: f64,
+    /// Surface the tool cannot reach (milling only), mm², and its share of the sampled area.
+    pub unreachable_mm2: f64,
+    pub unreachable_share: f64,
     /// No check failed or warned.
     pub passed: bool,
     pub warnings: usize,
@@ -131,6 +169,8 @@ pub struct MeshChecks {
 
 /// Share of the surface allowed to overhang before the check warns (smoothing leaves a little).
 pub const OVERHANG_SHARE: f64 = 0.02;
+/// Share of the surface allowed out of the tool's reach before the check warns.
+pub const UNREACHABLE_SHARE: f64 = 0.01;
 /// Triangles over which the file is heavy for a slicer or a CAD import.
 pub const HEAVY_TRIANGLES: usize = 3_000_000;
 
@@ -144,10 +184,19 @@ pub fn check(mesh: &Mesh, req: &CheckRequest) -> MeshChecks {
     let manifold = closed && iso::is_manifold(mesh);
     let (bodies, voids, void_spot) = shells(mesh, &tris);
     let wall_limit = req.min_wall.filter(|w| w.is_finite() && *w > 0.0).or_else(|| req.process_min_wall());
-    let wall = wall_thickness(&tris, req.samples.max(1), wall_limit);
-    let overhang = if req.layered() { Some(overhangs(&tris, req)) } else { None };
+    let grid = (nt > 0).then(|| TriGrid::new(&tris));
+    let picks = tris.sample(req.samples.max(1));
+    let wall = match &grid {
+        Some(g) => wall_thickness(&tris, &wall_hits(&tris, g, &picks), wall_limit),
+        None => Wall { min: None, absolute: None, thin_share: 0.0, samples: 0 },
+    };
+    let overhang = if req.layered() { Some(overhangs(&tris, &overhang_faces(&tris, req))) } else { None };
+    let access = match &grid {
+        Some(g) if req.machined() => Some(unreachable(&tris, &access_faces(&tris, g, &req.tool_axes_unit(), req.undercut_tolerance, req.plate_tolerance, &picks))),
+        _ => None,
+    };
     let area = tris.area.iter().sum::<f64>();
-    let mut checks = Vec::with_capacity(7);
+    let mut checks = Vec::with_capacity(8);
 
     checks.push(Check {
         id: "watertight".into(),
@@ -268,6 +317,32 @@ pub fn check(mesh: &Mesh, req: &CheckRequest) -> MeshChecks {
             }
         }
     });
+    checks.push(match access {
+        None => Check {
+            id: "tool_access".into(),
+            name: "Tool access".into(),
+            status: Status::Skipped,
+            value: None,
+            limit: None,
+            unit: "mm²".into(),
+            detail: "Only checked for milled parts (a tool axis).".into(),
+            spot: None,
+        },
+        Some(a) => Check {
+            id: "tool_access".into(),
+            name: "Tool access".into(),
+            status: if a.share <= UNREACHABLE_SHARE { Status::Pass } else { Status::Warning },
+            value: Some(a.area),
+            limit: Some(UNREACHABLE_SHARE * a.sampled),
+            unit: "mm²".into(),
+            detail: if a.area <= 0.0 {
+                "The tool reaches every face from above.".into()
+            } else {
+                format!("{:.1} % of the surface is hidden from the tool: an undercut or a covered pocket.", 100.0 * a.share)
+            },
+            spot: a.spot,
+        },
+    });
     checks.push(Check {
         id: "voids".into(),
         name: "Voids".into(),
@@ -317,6 +392,8 @@ pub fn check(mesh: &Mesh, req: &CheckRequest) -> MeshChecks {
         wall_samples: wall.samples,
         overhang_mm2: overhang.map_or(0.0, |o| o.area),
         overhang_share: overhang.map_or(0.0, |o| if area > 0.0 { o.area / area } else { 0.0 }),
+        unreachable_mm2: access.map_or(0.0, |a| a.area),
+        unreachable_share: access.map_or(0.0, |a| a.share),
         checks,
         seconds: t0.elapsed().as_secs_f64(),
     }
@@ -324,7 +401,7 @@ pub fn check(mesh: &Mesh, req: &CheckRequest) -> MeshChecks {
 
 // MARK: geometry
 
-type V = [f64; 3];
+pub(super) type V = [f64; 3];
 
 fn sub(a: V, b: V) -> V {
     [a[0] - b[0], a[1] - b[1], a[2] - b[2]]
@@ -351,18 +428,18 @@ fn around(p: V, r: f64) -> Spot {
 
 /// The triangles that name three distinct existing vertices, with their corners, unit normals
 /// and areas.
-struct Tris {
-    corners: Vec<[V; 3]>,
-    normal: Vec<V>,
-    area: Vec<f64>,
+pub(super) struct Tris {
+    pub(super) corners: Vec<[V; 3]>,
+    pub(super) normal: Vec<V>,
+    pub(super) area: Vec<f64>,
     /// Index into the mesh's triangles.
-    source: Vec<usize>,
+    pub(super) source: Vec<usize>,
     /// The mesh's vertex indices of each corner.
-    verts: Vec<[u32; 3]>,
+    pub(super) verts: Vec<[u32; 3]>,
 }
 
 impl Tris {
-    fn new(mesh: &Mesh) -> Self {
+    pub(super) fn new(mesh: &Mesh) -> Self {
         let p = &mesh.positions;
         let nv = p.len() / 3;
         let at = |i: u32| -> Option<V> {
@@ -395,13 +472,20 @@ impl Tris {
         out
     }
 
-    fn len(&self) -> usize {
+    pub(super) fn len(&self) -> usize {
         self.corners.len()
     }
 
-    fn centroid(&self, t: usize) -> V {
+    pub(super) fn centroid(&self, t: usize) -> V {
         let [a, b, c] = self.corners[t];
         scale(add(add(a, b), c), 1.0 / 3.0)
+    }
+
+    /// About `samples` triangles spread evenly over the list (every one when fewer), leaving out
+    /// those with no area.
+    pub(super) fn sample(&self, samples: usize) -> Vec<usize> {
+        let step = self.len().div_ceil(samples.max(1)).max(1);
+        (0..self.len()).step_by(step).filter(|&t| self.area[t] > 0.0).collect()
     }
 }
 
@@ -506,24 +590,22 @@ struct Wall {
     samples: usize,
 }
 
-/// Casts one ray inward from the centre of each sampled triangle and keeps the distance to the
-/// first triangle that faces away along it (the far side of the wall).
-fn wall_thickness(tris: &Tris, samples: usize, limit: Option<f64>) -> Wall {
-    let n = tris.len();
-    if n == 0 {
-        return Wall { min: None, absolute: None, thin_share: 0.0, samples: 0 };
-    }
-    let grid = TriGrid::new(tris);
-    let step = n.div_ceil(samples).max(1);
-    let picks: Vec<usize> = (0..n).step_by(step).filter(|&t| tris.area[t] > 0.0).collect();
-    let hits: Vec<(usize, Option<f64>)> = picks
+/// Casts one ray inward from the centre of each picked triangle and keeps the distance to the
+/// first triangle that faces away along it (the far side of the wall): (triangle, thickness mm
+/// or none when no ray came back).
+pub(super) fn wall_hits(tris: &Tris, grid: &TriGrid, picks: &[usize]) -> Vec<(usize, Option<f64>)> {
+    picks
         .par_iter()
         .map(|&t| {
             let d = scale(tris.normal[t], -1.0);
-            let start = tris.centroid(t);
-            (t, grid.first_exit(tris, start, d, t))
+            (t, grid.first_exit(tris, tris.centroid(t), d, t))
         })
-        .collect();
+        .collect()
+}
+
+/// The wall figures from the cast rays: the thickness 99 % of the sampled area reaches, the
+/// thinnest sample and the share under `limit`.
+fn wall_thickness(tris: &Tris, hits: &[(usize, Option<f64>)], limit: Option<f64>) -> Wall {
     let mut got: Vec<(f64, usize)> = hits.iter().filter_map(|(t, w)| w.map(|w| (w, *t))).collect();
     got.sort_by(|a, b| a.0.total_cmp(&b.0));
     let total: f64 = got.iter().map(|(_, t)| tris.area[*t]).sum();
@@ -538,7 +620,7 @@ fn wall_thickness(tris: &Tris, samples: usize, limit: Option<f64>) -> Wall {
             break;
         }
     }
-    Wall { min, absolute: got.first().map(|g| g.0), thin_share: if total > 0.0 { thin / total } else { 0.0 }, samples: picks.len() }
+    Wall { min, absolute: got.first().map(|g| g.0), thin_share: if total > 0.0 { thin / total } else { 0.0 }, samples: hits.len() }
 }
 
 #[derive(Clone, Copy)]
@@ -547,27 +629,53 @@ struct Overhang {
     spot: Option<Spot>,
 }
 
-/// Faces looking down flatter than the allowed overhang, off the build plate.
-fn overhangs(tris: &Tris, req: &CheckRequest) -> Overhang {
-    let b = req.build.unwrap_or([0.0, 0.0, 1.0]);
-    let l = norm(b);
-    let b = if l > 0.0 && l.is_finite() { scale(b, 1.0 / l) } else { [0.0, 0.0, 1.0] };
+/// How each triangle faces the build plate.
+pub(super) struct OverhangFaces {
+    /// Cosine of the angle between the face's normal and straight down (-build): above
+    /// `threshold` the face looks down flatter than the allowed overhang.
+    pub(super) down: Vec<f64>,
+    /// Every corner within the plate tolerance of the lowest point: the plate holds it up.
+    pub(super) on_plate: Vec<bool>,
+    pub(super) threshold: f64,
+}
+
+impl OverhangFaces {
+    /// The face needs support: it looks down flatter than the limit, off the plate.
+    pub(super) fn flagged(&self, t: usize) -> bool {
+        self.down[t] > self.threshold && !self.on_plate[t]
+    }
+
+    /// The face's angle from the build plate, degrees, for a face looking down off the plate
+    /// (0 a flat ceiling, 90 a wall); 90 for a face that looks up or sideways or rests on the
+    /// plate (it needs no support).
+    pub(super) fn angle(&self, t: usize) -> f64 {
+        if self.down[t] <= 0.0 || self.on_plate[t] { 90.0 } else { self.down[t].clamp(0.0, 1.0).acos().to_degrees() }
+    }
+}
+
+pub(super) fn overhang_faces(tris: &Tris, req: &CheckRequest) -> OverhangFaces {
+    let b = req.build_unit();
     let floor = tris.corners.par_iter().map(|c| c.iter().map(|p| dot(*p, b)).fold(f64::INFINITY, f64::min)).reduce(|| f64::INFINITY, f64::min);
     // A face looking down at `a` degrees from the plate has its normal `a` degrees from straight
     // down, so it is flatter than `overhang` when -n.b > cos(overhang).
     let threshold = req.overhang.clamp(0.1, 90.0).to_radians().cos();
     let tol = req.plate_tolerance.max(0.0);
-    let (mut area, mut lo, mut hi) = (0.0, [f64::INFINITY; 3], [f64::NEG_INFINITY; 3]);
-    for t in 0..tris.len() {
-        let down = -dot(tris.normal[t], b);
-        if down <= threshold {
-            continue;
-        }
-        let on_plate = tris.corners[t].iter().all(|p| dot(*p, b) - floor <= tol);
-        if on_plate {
-            continue;
-        }
-        area += tris.area[t];
+    let down = tris.normal.iter().map(|n| -dot(*n, b)).collect();
+    let on_plate = tris.corners.iter().map(|c| c.iter().all(|p| dot(*p, b) - floor <= tol)).collect();
+    OverhangFaces { down, on_plate, threshold }
+}
+
+/// Faces looking down flatter than the allowed overhang, off the build plate.
+fn overhangs(tris: &Tris, faces: &OverhangFaces) -> Overhang {
+    let flagged: Vec<usize> = (0..tris.len()).filter(|&t| faces.flagged(t)).collect();
+    let area = flagged.iter().map(|&t| tris.area[t]).sum::<f64>();
+    Overhang { area, spot: bounds(tris, &flagged) }
+}
+
+/// A box around the given triangles, or none when there are none.
+fn bounds(tris: &Tris, list: &[usize]) -> Option<Spot> {
+    let (mut lo, mut hi) = ([f64::INFINITY; 3], [f64::NEG_INFINITY; 3]);
+    for &t in list {
         for p in tris.corners[t] {
             for a in 0..3 {
                 lo[a] = lo[a].min(p[a]);
@@ -575,13 +683,65 @@ fn overhangs(tris: &Tris, req: &CheckRequest) -> Overhang {
             }
         }
     }
-    Overhang { area, spot: (area > 0.0).then_some(Spot { min: lo, max: hi }) }
+    (!list.is_empty()).then_some(Spot { min: lo, max: hi })
+}
+
+/// Whether the tool reaches each picked triangle (none for triangles not picked). The model is a
+/// line of sight per tool axis, the tool's own width and holder left out: a face is reached
+/// along an axis when it does not turn away from the tool by more than `tolerance` degrees and a
+/// straight line from its centre along the axis leaves the part without crossing the surface. A
+/// face lying on the table (within `table` mm of the part's lowest point along the axis) is the
+/// stock's base and counts as reached. With one axis (the default) that is a 3-axis machine
+/// cutting from the top; each further axis is another setup.
+pub(super) fn access_faces(tris: &Tris, grid: &TriGrid, axes: &[V], tolerance: f64, table: f64, picks: &[usize]) -> Vec<Option<bool>> {
+    let lean = -tolerance.clamp(0.0, 89.0).to_radians().sin();
+    let lift = 1e-4 * grid.cell.max(1e-3);
+    let floors: Vec<f64> = axes
+        .iter()
+        .map(|a| tris.corners.par_iter().map(|c| c.iter().map(|p| dot(*p, *a)).fold(f64::INFINITY, f64::min)).reduce(|| f64::INFINITY, f64::min))
+        .collect();
+    let mut out = vec![None; tris.len()];
+    let hits: Vec<(usize, bool)> = picks
+        .par_iter()
+        .map(|&t| {
+            let n = tris.normal[t];
+            let o = add(tris.centroid(t), scale(n, lift));
+            let reached = axes.iter().zip(&floors).any(|(a, floor)| {
+                let on_table = tris.corners[t].iter().all(|p| dot(*p, *a) - floor <= table.max(0.0));
+                on_table || (dot(n, *a) >= lean && !grid.blocked(tris, o, *a, t))
+            });
+            (t, reached)
+        })
+        .collect();
+    for (t, r) in hits {
+        out[t] = Some(r);
+    }
+    out
+}
+
+#[derive(Clone, Copy)]
+struct Unreachable {
+    area: f64,
+    /// Area of the triangles looked at.
+    sampled: f64,
+    share: f64,
+    spot: Option<Spot>,
+}
+
+fn unreachable(tris: &Tris, faces: &[Option<bool>]) -> Unreachable {
+    let hidden: Vec<usize> = (0..tris.len()).filter(|&t| faces[t] == Some(false)).collect();
+    let sampled: f64 = (0..tris.len()).filter(|&t| faces[t].is_some()).map(|t| tris.area[t]).sum();
+    let area_seen: f64 = hidden.iter().map(|&t| tris.area[t]).sum();
+    let total: f64 = tris.area.iter().sum();
+    let share = if sampled > 0.0 { area_seen / sampled } else { 0.0 };
+    // The sampled share stands for the whole surface.
+    Unreachable { area: share * total, sampled: total, share, spot: bounds(tris, &hidden) }
 }
 
 /// The triangles bucketed into a uniform grid of cubic cells over their bounds.
-struct TriGrid {
+pub(super) struct TriGrid {
     origin: V,
-    cell: f64,
+    pub(super) cell: f64,
     n: [usize; 3],
     /// Start of each cell's list in `items` (`cells + 1` entries).
     start: Vec<u32>,
@@ -589,7 +749,7 @@ struct TriGrid {
 }
 
 impl TriGrid {
-    fn new(tris: &Tris) -> Self {
+    pub(super) fn new(tris: &Tris) -> Self {
         let mut lo = [f64::INFINITY; 3];
         let mut hi = [f64::NEG_INFINITY; 3];
         for c in &tris.corners {
@@ -654,13 +814,10 @@ impl TriGrid {
         TriGrid { origin: lo, cell, n, start: count, items }
     }
 
-    /// Distance along `d` (unit) from `o` to the nearest triangle whose normal faces along `d`,
-    /// leaving out `skip` and the triangles that share a corner with it (on a smoothed voxel
-    /// surface a neighbour folded past a right angle would read as a wall a hair thick); none
-    /// when the ray leaves the grid first.
-    fn first_exit(&self, tris: &Tris, o: V, d: V, skip: usize) -> Option<f64> {
-        let eps = 1e-7 * self.cell.max(1.0);
-        // Cell of the start point, then step through cells in order (Amanatides and Woo).
+    /// Walks the cells a ray from `o` along `d` (unit) crosses, in order (Amanatides and Woo),
+    /// handing `visit` each cell's triangles and the distance at which the ray leaves that cell;
+    /// stops when `visit` answers true or the ray leaves the grid.
+    fn walk(&self, o: V, d: V, mut visit: impl FnMut(&[u32], f64) -> bool) {
         let mut ijk = [0i64; 3];
         let mut step = [0i64; 3];
         let mut t_max = [f64::INFINITY; 3];
@@ -679,10 +836,39 @@ impl TriGrid {
                 t_delta[a] = -self.cell / d[a];
             }
         }
-        let mut best = f64::INFINITY;
         loop {
             let c = ijk[0] as usize + self.n[0] * (ijk[1] as usize + self.n[1] * ijk[2] as usize);
-            for &t in &self.items[self.start[c] as usize..self.start[c + 1] as usize] {
+            let exit = t_max[0].min(t_max[1]).min(t_max[2]);
+            if visit(&self.items[self.start[c] as usize..self.start[c + 1] as usize], exit) {
+                return;
+            }
+            let a = if t_max[0] <= t_max[1] && t_max[0] <= t_max[2] {
+                0
+            } else if t_max[1] <= t_max[2] {
+                1
+            } else {
+                2
+            };
+            if step[a] == 0 {
+                return;
+            }
+            ijk[a] += step[a];
+            if ijk[a] < 0 || ijk[a] >= self.n[a] as i64 {
+                return;
+            }
+            t_max[a] += t_delta[a];
+        }
+    }
+
+    /// Distance along `d` (unit) from `o` to the nearest triangle whose normal faces along `d`,
+    /// leaving out `skip` and the triangles that share a corner with it (on a smoothed voxel
+    /// surface a neighbour folded past a right angle would read as a wall a hair thick); none
+    /// when the ray leaves the grid first.
+    pub(super) fn first_exit(&self, tris: &Tris, o: V, d: V, skip: usize) -> Option<f64> {
+        let eps = 1e-7 * self.cell.max(1.0);
+        let mut best = f64::INFINITY;
+        self.walk(o, d, |items, exit| {
+            for &t in items {
                 let t = t as usize;
                 // The far wall faces roughly along the ray (within 60 degrees): a grazing hit is a
                 // fold of the surface, not the other side of a wall.
@@ -697,26 +883,21 @@ impl TriGrid {
                 }
             }
             // The nearest hit inside this cell ends the walk: later cells are farther.
-            let exit = t_max[0].min(t_max[1]).min(t_max[2]);
-            if best <= exit {
-                return Some(best);
-            }
-            let a = if t_max[0] <= t_max[1] && t_max[0] <= t_max[2] {
-                0
-            } else if t_max[1] <= t_max[2] {
-                1
-            } else {
-                2
-            };
-            if step[a] == 0 {
-                return best.is_finite().then_some(best);
-            }
-            ijk[a] += step[a];
-            if ijk[a] < 0 || ijk[a] >= self.n[a] as i64 {
-                return best.is_finite().then_some(best);
-            }
-            t_max[a] += t_delta[a];
-        }
+            best <= exit
+        });
+        best.is_finite().then_some(best)
+    }
+
+    /// True when a ray from `o` along `d` (unit) crosses any triangle but `skip` before it
+    /// leaves the grid: the surface stands in the way.
+    pub(super) fn blocked(&self, tris: &Tris, o: V, d: V, skip: usize) -> bool {
+        let eps = 1e-7 * self.cell.max(1.0);
+        let mut found = false;
+        self.walk(o, d, |items, _| {
+            found = items.iter().any(|&t| t as usize != skip && hit(tris.corners[t as usize], o, d).is_some_and(|h| h > eps));
+            found
+        });
+        found
     }
 }
 
@@ -879,9 +1060,34 @@ mod tests {
         wedge.indices = vec![0, 2, 1, 1, 2, 3];
         let tris = Tris::new(&wedge);
         assert!(tris.normal[0][2] < 0.0 && tris.normal[0][0] > 0.0);
-        let steep = overhangs(&tris, &CheckRequest { overhang: 60.0, plate_tolerance: 0.0, ..Default::default() });
-        let mild = overhangs(&tris, &CheckRequest { overhang: 30.0, plate_tolerance: 0.0, ..Default::default() });
+        let steep = overhangs(&tris, &overhang_faces(&tris, &CheckRequest { overhang: 60.0, plate_tolerance: 0.0, ..Default::default() }));
+        let mild = overhangs(&tris, &overhang_faces(&tris, &CheckRequest { overhang: 30.0, plate_tolerance: 0.0, ..Default::default() }));
         assert!(steep.area > 0.0 && mild.area == 0.0, "{} {}", steep.area, mild.area);
+    }
+
+    #[test]
+    fn tool_access_is_checked_for_milling_only() {
+        // A cup open at the top (a box with a cavity reaching through its top is not closed, so
+        // use a slab over a post: the slab's underside hides from a tool above).
+        let mut m = boxed([0.0, 0.0, 0.0], [4.0, 4.0, 10.0]);
+        cuboid([-10.0, -10.0, 10.0], [14.0, 14.0, 12.0], false, &mut m);
+        let free = check(&m, &CheckRequest::default());
+        assert_eq!(by(&free, "tool_access").status, Status::Skipped);
+        assert_eq!(free.unreachable_mm2, 0.0);
+        let mill = check(&m, &CheckRequest { process: "milling".into(), ..Default::default() });
+        let a = by(&mill, "tool_access");
+        assert_eq!(a.status, Status::Warning);
+        assert!(a.spot.is_some() && a.detail.contains("hidden"));
+        // The slab's underside, the post's top and sides: everything under the slab. The post's
+        // foot rests on the table.
+        assert!((mill.unreachable_mm2 - (576.0 + 16.0 + 160.0)).abs() < 1e-6, "{}", mill.unreachable_mm2);
+        // A lone box on the table: its bottom is the stock's base, so all of it is reached.
+        let block = check(&boxed([0.0; 3], [10.0; 3]), &CheckRequest { process: "milling".into(), ..Default::default() });
+        assert_eq!(by(&block, "tool_access").status, Status::Pass);
+        // A second setup from below reaches the slab's underside and the post's sides; the
+        // post's top stays covered.
+        let two = check(&m, &CheckRequest { process: "cnc".into(), tool_axes: Some(vec![[0.0, 0.0, 1.0], [0.0, 0.0, -1.0]]), ..Default::default() });
+        assert!((two.unreachable_mm2 - 16.0).abs() < 1e-6, "{}", two.unreachable_mm2);
     }
 
     /// A real optimised bracket on 2 mm voxels: closed, manifold, and the wall the surface keeps

@@ -234,20 +234,32 @@ struct AsmMotionStudy: Equatable {
     var duration: Double { steps.last?.time ?? 0 }
 }
 
-/// Joint values for display: rounded, never "-0".
+/// Joint values for display: rounded, never "-0", in the reader's display units (P2-23).
 enum AsmFormat {
+    /// An angle given in degrees: "35°", or "0.61 rad" when the reader picked radians (two more
+    /// digits, so a step of one degree still shows).
     static func deg(_ v: Double, digits: Int = 0) -> String {
-        let p = pow(10.0, Double(digits))
-        let r = (v * p).rounded() / p
-        return String(format: "%.\(digits)f°", r == 0 ? 0 : r)
+        let u = UnitSettings.current
+        guard u.angle == .deg else { return rounded(v / u.angle.factor, digits: digits + 2) + " " + u.angle.symbol }
+        return rounded(v, digits: digits) + "°"
     }
 
-    /// A joint value with its unit: degrees for a revolute joint, mm for a slider.
+    /// A joint value with its unit: an angle for a revolute joint, a length for a slider
+    /// ("12 mm", "0.47 in").
     static func value(_ v: Double, _ j: AsmJoint, digits: Int = 0) -> String {
         guard !j.angular else { return deg(v, digits: digits) }
+        let u = UnitSettings.current
+        let extra = u.length == .mm ? 0 : max(0, u.length.digits - 1)
+        return rounded(v / u.length.factor, digits: digits + extra) + " " + u.length.rawValue
+    }
+
+    /// The unit a joint's value shows in ("°", "rad", "mm", "in").
+    static func unit(_ j: AsmJoint) -> String { VFFormat.symbol(j.angular ? .angle : .length) }
+
+    private static func rounded(_ v: Double, digits: Int) -> String {
         let p = pow(10.0, Double(digits))
         let r = (v * p).rounded() / p
-        return String(format: "%.\(digits)f mm", r == 0 ? 0 : r)
+        return String(format: "%.\(digits)f", r == 0 ? 0 : r)
     }
 
     /// "shoulder_pan" as "Shoulder Pan": ids read as words in the UI.

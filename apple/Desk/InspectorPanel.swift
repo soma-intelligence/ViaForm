@@ -6,6 +6,7 @@ import SwiftUI
 /// selection also lives (one line, folded), then the stage's own section (parameters, study,
 /// board, scenario, training, outputs).
 struct InspectorPanel: View {
+    @ObservedUnits private var units
     @Environment(\.viaFormTheme) private var theme
     let workspace: Workspace
     let flow: FlowModel
@@ -23,6 +24,7 @@ struct InspectorPanel: View {
     @Bindable private var safety = RobotSafety.shared
 
     var body: some View {
+        let _ = units
         ScrollView {
             VStack(alignment: .leading, spacing: VFSpace.l) {
                 selectionCard
@@ -42,7 +44,7 @@ struct InspectorPanel: View {
         if workspace == .assemble, let a = assemble {
             if a.tool == .grasp { return ("Grasp", "Object \(a.grasp.shape), \(a.grasp.fingers.count) fingertips") }
             if a.tool == .dragTip { return ("Tool tip", "Drag tip, \(a.ik.solver.lowercased()) solver") }
-            if let j = a.selected { return (j.title + " joint", j.kind.capitalized + String(format: ", %.1f %@", a.q[j.id] ?? 0, j.unit)) }
+            if let j = a.selected { return (j.title + " joint", j.kind.capitalized + ", " + AsmFormat.value(a.q[j.id] ?? 0, j, digits: 1)) }
             return nil
         }
         if StageActions.designLike.contains(workspace) {
@@ -62,7 +64,7 @@ struct InspectorPanel: View {
             if let i = generate.selected, let c = generate.candidate {
                 let sf = formatFactor(c.analysis.safetyFactor)
                 return ("Candidate \(i + 1)" + (i == generate.outcome?.best ? ", best" : ""),
-                        String(format: "%.1f g, safety factor %@, %@", c.massG, sf, c.feasible ? "feasible" : "over a limit"))
+                        "\(VFFormat.mass(c.massG)), safety factor \(sf), \(c.feasible ? "feasible" : "over a limit")")
             }
             if let key = generate.selection {
                 let kind = switch key { case .support: "Support"; case .load: "Load"; case .keepOut: "Keep-out"; case .keepIn: "Keep-in" }
@@ -228,7 +230,7 @@ struct InspectorPanel: View {
                     kv("Body", b)
                     kv("Material", info.material ?? "Not set")
                     if let v = info.volume_mm3 {
-                        kv("Volume", String(format: "%.1f cm³", v / 1000))
+                        kv("Volume", VFFormat.volume(v))
                         if let rho = Self.density(info.material) { kv("Mass", VFFormat.mass(v / 1000 * rho)) }
                     }
                     if let f = info.faces { kv("Faces", "\(f)") }
@@ -264,7 +266,7 @@ struct InspectorPanel: View {
                         .help(link.revision.map { "Link revision \($0)" } ?? "")
                 }
                 kv("Mounted on", link.host ?? "Not mounted")
-                if let c = link.clearance { kv("Clearance", String(format: "%.2f mm", c), warn: c < 0) }
+                if let c = link.clearance { kv("Clearance", VFFormat.length(c, digits: 2), warn: c < 0) }
             }
             section("Checks") {
                 let drc = pcb.checks?.drc.count ?? 0, erc = pcb.checks?.erc.count ?? 0

@@ -98,10 +98,12 @@ struct GenerateResults: View {
 /// The headline figures, two to a row; a figure past its limit says so in words and a shape.
 struct MetricGrid: View {
     @Environment(\.viaFormTheme) private var theme
+    @ObservedUnits private var units
     let candidate: StudyCandidate
     let study: Study
 
     var body: some View {
+        let _ = units
         let a = candidate.analysis
         Grid(alignment: .leading, horizontalSpacing: VFSpace.xl, verticalSpacing: VFSpace.l) {
             GridRow {
@@ -113,7 +115,7 @@ struct MetricGrid: View {
                 metric(String(localized: "Peak stress"), "\(Int(a.worstStress.rounded())) MPa", warn: a.worstStress > study.stressLimit)
             }
             GridRow {
-                metric(String(localized: "Displacement"), "\(String(format: "%.3g", a.worstDisplacement)) mm",
+                metric(String(localized: "Displacement"), VFFormat.lengthSignificant(a.worstDisplacement),
                        warn: study.maxDisplacement.map { a.worstDisplacement > $0 } ?? false)
                 metric(String(localized: "First mode"), a.firstFrequency.map { VFFormat.value($0, .frequency) } ?? "–",
                        warn: (a.firstFrequency ?? .infinity) < (study.minFrequency ?? 0))
@@ -140,10 +142,12 @@ struct MetricGrid: View {
 /// its unit.
 struct CasesSection: View {
     @Environment(\.viaFormTheme) private var theme
+    @ObservedUnits private var units
     let candidate: StudyCandidate
     let study: Study
 
     var body: some View {
+        let _ = units
         let a = candidate.analysis
         let n = max(a.compliance.count, a.maxStress.count, a.maxDisplacement.count)
         if n > 0 {
@@ -153,7 +157,7 @@ struct CasesSection: View {
                         Text("Case").gridColumnAlignment(.leading)
                         Text("Compliance\nN·mm")
                         Text("Peak stress\nMPa")
-                        Text("Displacement\nmm")
+                        Text("Displacement\n\(VFFormat.symbol(.length))")
                     }
                     .font(VFFont.micro)
                     .multilineTextAlignment(.trailing)
@@ -171,13 +175,13 @@ struct CasesSection: View {
                                 Text(format(a.maxStress[safe: i], "%.0f"))
                             }
                             .foregroundStyle(over ? theme.warning : theme.ink)
-                            Text(format(a.maxDisplacement[safe: i], "%.3g"))
+                            Text(lengthNumber(a.maxDisplacement[safe: i]))
                         }
                         .monospacedDigit()
                         .font(VFFont.row)
                         .foregroundStyle(theme.ink)
                         .accessibilityElement(children: .ignore)
-                        .accessibilityLabel(Text("\(name): compliance \(format(a.compliance[safe: i], "%.4g")) N·mm, peak stress \(format(a.maxStress[safe: i], "%.0f")) MPa\(over ? String(localized: ", over the limit") : ""), displacement \(format(a.maxDisplacement[safe: i], "%.3g")) mm"))
+                        .accessibilityLabel(Text("\(name): compliance \(format(a.compliance[safe: i], "%.4g")) N·mm, peak stress \(format(a.maxStress[safe: i], "%.0f")) MPa\(over ? String(localized: ", over the limit") : ""), displacement \(a.maxDisplacement[safe: i].map { VFFormat.lengthSignificant($0) } ?? "–")"))
                     }
                 }
             }
@@ -187,6 +191,13 @@ struct CasesSection: View {
     private func format(_ v: Double?, _ f: String) -> String {
         guard let v, v.isFinite else { return "–" }
         return String(format: f, v)
+    }
+
+    /// A displacement in the display length unit, three significant digits, no unit (the column
+    /// title names it).
+    private func lengthNumber(_ mm: Double?) -> String {
+        guard let mm, mm.isFinite else { return "–" }
+        return VFFormat.significant(VFFormat.toDisplay(mm, .length), digits: 3)
     }
 }
 
@@ -238,6 +249,7 @@ struct ModesSection: View {
 /// One impact over time: the worst stress and the largest displacement, each with its limit.
 struct ImpactSection: View {
     @Environment(\.viaFormTheme) private var theme
+    @ObservedUnits private var units
     let impact: StudyImpactResponse
     let study: Study
 
@@ -253,13 +265,14 @@ struct ImpactSection: View {
         return (0..<n).compactMap { i in
             let t = impact.time[i], s = impact.stress[i], d = impact.displacement[i]
             guard t.isFinite, s.isFinite, d.isFinite else { return nil }
-            return Sample(id: i, ms: t * 1000, stress: s, displacement: d)
+            return Sample(id: i, ms: t * 1000, stress: s, displacement: VFFormat.toDisplay(d, .length))
         }
     }
 
     var body: some View {
         let name = study.cases[safe: impact.caseIndex].map { $0.name.isEmpty ? String(localized: "Case \(impact.caseIndex + 1)") : $0.name }
             ?? String(localized: "Case \(impact.caseIndex + 1)")
+        let _ = units
         let over = impact.peakStress > study.stressLimit
         let response = String(localized: "Response"), limit = String(localized: "Limit")
         Section {
@@ -270,7 +283,7 @@ struct ImpactSection: View {
                 }
                 .foregroundStyle(over ? theme.warning : theme.ink)
             }
-            LabeledContent("Peak displacement") { Text("\(String(format: "%.3g", impact.peakDisplacement)) mm").monospacedDigit() }
+            LabeledContent("Peak displacement") { Text(VFFormat.lengthSignificant(impact.peakDisplacement)).monospacedDigit() }
             LabeledContent("Dynamic amplification") { Text("\(String(format: "%.2f", impact.amplification))×").monospacedDigit() }
             let data = samples
             if data.count > 1 {
@@ -296,18 +309,18 @@ struct ImpactSection: View {
                             .foregroundStyle(by: .value("Series", response))
                     }
                     if let limit = study.maxDisplacement {
-                        RuleMark(y: .value("Limit", limit))
+                        RuleMark(y: .value("Limit", VFFormat.toDisplay(limit, .length)))
                             .lineStyle(StrokeStyle(lineWidth: 1, dash: [4, 3]))
                             .foregroundStyle(by: .value("Series", String(localized: "Limit")))
                     }
                 }
                 .chartForegroundStyleScale([response: theme.accent, limit: theme.warning])
                 .chartXAxisLabel("Time, ms")
-                .chartYAxisLabel("Displacement, mm")
+                .chartYAxisLabel("Displacement, \(VFFormat.symbol(.length))")
                 .frame(height: 140)
                 .accessibilityElement(children: .ignore)
                 .accessibilityLabel("Largest displacement over time")
-                .accessibilityValue(Text("Peak \(String(format: "%.3g", impact.peakDisplacement)) mm"))
+                .accessibilityValue(Text("Peak \(VFFormat.lengthSignificant(impact.peakDisplacement))"))
             }
         } header: {
             Text("Impact on \(name)")

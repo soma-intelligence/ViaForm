@@ -6,6 +6,7 @@ import SwiftUI
 
 /// The design card: the armed tool with its live value, or the selection, or the design.
 struct TouchDesignInspector: View {
+    @ObservedUnits private var units
     @Environment(\.viaFormTheme) private var theme
     @Bindable var model: DesignModel
     let flow: FlowModel
@@ -13,6 +14,7 @@ struct TouchDesignInspector: View {
     let open: (Workspace) -> Void
 
     var body: some View {
+        let _ = units
         if model.tool != .select, model.tool != .sketch {
             toolCard
         } else if !model.bodiesInSelection.isEmpty {
@@ -40,7 +42,7 @@ struct TouchDesignInspector: View {
         let none = String(localized: "None")
         return TouchInspectorCard(title: names.count == 1 ? names[0] : String(localized: "\(names.count) bodies"), symbol: "cube",
                                   subtitle: component.map { String(localized: "In \($0.occurrence ?? $0.name)") }) {
-            TouchKVRow(label: String(localized: "Volume"), value: volume > 0 ? "\(VFFormat.number(volume, digits: 0)) mm³" : none)
+            TouchKVRow(label: String(localized: "Volume"), value: volume > 0 ? VFFormat.volume(volume) : none)
             TouchKVRow(label: String(localized: "Mass (PA12)"), value: volume > 0 ? VFFormat.mass(volume * 1.01e-3) : none)
             TouchKVRow(label: String(localized: "Faces"), value: "\(bodies.compactMap(\.faces).reduce(0, +))")
             TouchKVRow(label: String(localized: "Material"), value: bodies.first?.material ?? "PA12", divider: false)
@@ -61,6 +63,7 @@ struct TouchDesignInspector: View {
 
 /// Assemble: the components, what is grounded and what carries the board.
 struct TouchAssembleInspector: View {
+    @ObservedUnits private var units
     @Environment(\.viaFormTheme) private var theme
     let model: DesignModel
     let pcb: PCBModel
@@ -68,6 +71,7 @@ struct TouchAssembleInspector: View {
     let open: (Workspace) -> Void
 
     var body: some View {
+        let _ = units
         TouchInspectorCard(title: String(localized: "Assembly"), symbol: "gearshape.2",
                            subtitle: flow.revisionName(of: "assemble") ?? String(localized: "Not built yet")) {
             if model.assembly.isEmpty {
@@ -235,6 +239,7 @@ struct TouchTrainInspector: View {
 /// iPhone bar (P1-27). Done commits one command; Command-Return does the same from a keyboard
 /// (plain Return only commits the field being typed in).
 struct ToolSession: View {
+    @ObservedUnits private var units
     /// The Move field being edited (X 0, Y 1, Z 2): Return goes to the next one.
     @State private var moveFocus: Int?
     enum Layout { case card, bar }
@@ -243,6 +248,7 @@ struct ToolSession: View {
     var layout: Layout = .card
 
     var body: some View {
+        let _ = units
         switch layout {
         case .card:
             VStack(alignment: .leading, spacing: VFSpace.m) {

@@ -292,6 +292,61 @@ pub unsafe extern "C" fn vf_generate_check_mesh(positions: *const f32, vertex_co
     }))
 }
 
+/// Per-vertex maps of a candidate's surface for the canvas (VIAFORM-SPEC 7.10.3), the JSON op
+/// `mesh_maps`: the same arrays and request as [`vf_generate_check_mesh`] (plus `tool_axes?`,
+/// `undercut_tolerance?`). Each of `overhang_out`, `wall_out` and `access_out` is null (that map
+/// is skipped) or room for `vertex_count` floats, filled with the overhang angle from the plate
+/// (degrees), the wall thickness (mm) and the share of the surface the tool reaches (0 to 1);
+/// NaN where nothing was measured or the map does not apply to the process. Answers `{"ok":
+/// {vertices, triangles, rays, overhang?: {applies, limit_deg, build, flagged_mm2,
+/// flagged_share, flattest_deg}, wall?: {limit_mm, min_mm (99 % of the surface), thinnest_mm,
+/// max_mm, median_mm, thin_share, measured_share}, access?: {applies, model, axes,
+/// tolerance_deg, unreachable_mm2, unreachable_share}, seconds}}` or `{"error"}`. Runs on the calling thread: call it off the
+/// main thread.
+///
+/// # Safety
+/// The arrays are as [`mesh_in`] says; `request` is null or a NUL-terminated string; each
+/// output is null or holds `vertex_count` writable floats.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn vf_generate_mesh_maps(
+    positions: *const f32,
+    vertex_count: u64,
+    indices: *const u32,
+    index_count: u64,
+    request: *const c_char,
+    overhang_out: *mut f32,
+    wall_out: *mut f32,
+    access_out: *mut f32,
+) -> *mut c_char {
+    // SAFETY: per the contract above.
+    let (mesh, request) = unsafe { (mesh_in(positions, vertex_count, indices, index_count), text(request)) };
+    let r = guard(Err("the engine stopped mapping the mesh".into()), || {
+        use viaform_core::viaform_generative::solid::{checks, maps};
+        let req: checks::CheckRequest = match request.map(str::trim).filter(|r| !r.is_empty()) {
+            Some(r) => serde_json::from_str(r).map_err(|e| format!("request: {e}"))?,
+            None => checks::CheckRequest::default(),
+        };
+        let want = maps::Wanted { overhang: !overhang_out.is_null(), wall: !wall_out.is_null(), access: !access_out.is_null() };
+        Ok(maps::maps(&mesh, &req, want))
+    });
+    let n = vertex_count as usize;
+    let fill = |dst: *mut f32, src: &[f32]| {
+        if !dst.is_null() && n > 0 {
+            // SAFETY: the caller gives room for `vertex_count` floats in each non-null output.
+            let out = unsafe { std::slice::from_raw_parts_mut(dst, n) };
+            for (k, o) in out.iter_mut().enumerate() {
+                *o = src.get(k).copied().unwrap_or(f32::NAN);
+            }
+        }
+    };
+    link_reply(r.and_then(|m: viaform_core::viaform_generative::solid::maps::MeshMaps| {
+        fill(overhang_out, &m.overhang_deg);
+        fill(wall_out, &m.wall_mm);
+        fill(access_out, &m.access);
+        serde_json::to_value(&m.summary).map_err(|e| e.to_string())
+    }))
+}
+
 /// Writes a candidate's surface to a file, the JSON op `export_mesh`: `request` is `{path,
 /// format: "stl" | "3mf" | "obj" (default: the path's extension), name?}`; answers `{"ok":
 /// {path, format, bytes, triangles}}` or `{"error"}` in words (no folder, no such format, disk
@@ -393,15 +448,58 @@ mod tests {
         let r = reply(unsafe { vf_generate_check_mesh(p.as_ptr(), 8, i.as_ptr(), i.len() as u64, req.as_ptr()) });
         let ok = &r["ok"];
         let ids: Vec<&str> = ok["checks"].as_array().unwrap().iter().map(|c| c["id"].as_str().unwrap()).collect();
-        assert_eq!(ids, ["watertight", "manifold", "bodies", "min_wall", "overhangs", "voids", "triangles"], "{r}");
+        assert_eq!(ids, ["watertight", "manifold", "bodies", "min_wall", "overhangs", "tool_access", "voids", "triangles"], "{r}");
         assert_eq!(ok["passed"], true, "{r}");
         assert!((ok["min_wall_mm"].as_f64().unwrap() - 10.0).abs() < 1e-6);
         assert_eq!(ok["checks"][3]["limit"], 0.8);
         // Null request: the defaults (a free shape, no overhang check).
         let d = reply(unsafe { vf_generate_check_mesh(p.as_ptr(), 8, i.as_ptr(), i.len() as u64, std::ptr::null()) });
         assert_eq!(d["ok"]["checks"][4]["status"], "skipped");
+        assert_eq!(d["ok"]["checks"][5]["status"], "skipped");
+        let mill = CString::new(r#"{"process": "milling"}"#).unwrap();
+        let m = reply(unsafe { vf_generate_check_mesh(p.as_ptr(), 8, i.as_ptr(), i.len() as u64, mill.as_ptr()) });
+        assert_eq!(m["ok"]["checks"][5]["status"], "pass", "{m}");
         let bad = CString::new("{nope").unwrap();
         let e = reply(unsafe { vf_generate_check_mesh(p.as_ptr(), 8, i.as_ptr(), i.len() as u64, bad.as_ptr()) });
+        assert!(e["error"].as_str().unwrap().starts_with("request"));
+    }
+
+    /// The maps op fills the asked-for vertex arrays and leaves the others alone; a map that does
+    /// not apply to the process reads NaN.
+    #[test]
+    fn mesh_maps_fill_the_vertex_arrays() {
+        let (p, i) = cube();
+        let req = CString::new(r#"{"process": "milling"}"#).unwrap();
+        let (mut over, mut wall, mut access) = ([7.0f32; 8], [7.0f32; 8], [7.0f32; 8]);
+        // SAFETY: arrays and their lengths match; eight floats in each output.
+        let r = reply(unsafe {
+            vf_generate_mesh_maps(p.as_ptr(), 8, i.as_ptr(), i.len() as u64, req.as_ptr(), over.as_mut_ptr(), wall.as_mut_ptr(), access.as_mut_ptr())
+        });
+        let ok = &r["ok"];
+        assert_eq!(ok["vertices"], 8, "{r}");
+        assert_eq!(ok["overhang"]["applies"], false);
+        assert!(over.iter().all(|v| v.is_nan()));
+        assert!(wall.iter().all(|w| (w - 10.0).abs() < 1e-4), "{wall:?}");
+        assert_eq!(ok["wall"]["limit_mm"], 1.0);
+        assert_eq!(ok["access"]["applies"], true);
+        // A block on the table: the top and sides are in reach, the bottom is the stock's base.
+        assert!(access.iter().all(|a| (a - 1.0).abs() < 1e-6), "{access:?}");
+        assert_eq!(ok["access"]["unreachable_share"], 0.0);
+        assert!(ok["access"]["model"].as_str().unwrap().contains("3-axis"));
+        // Printed, one map asked for: the others stay untouched.
+        let fdm = CString::new(r#"{"process": "fdm"}"#).unwrap();
+        let mut only = [7.0f32; 8];
+        let untouched = [7.0f32; 8];
+        let r = reply(unsafe {
+            vf_generate_mesh_maps(p.as_ptr(), 8, i.as_ptr(), i.len() as u64, fdm.as_ptr(), only.as_mut_ptr(), std::ptr::null_mut(), std::ptr::null_mut())
+        });
+        assert!(r["ok"]["wall"].is_null() && r["ok"]["access"].is_null(), "{r}");
+        assert_eq!(r["ok"]["overhang"]["applies"], true);
+        // The cube sits on the plate: nothing needs support.
+        assert_eq!(r["ok"]["overhang"]["flagged_mm2"], 0.0);
+        assert!(only.iter().all(|v| v.is_finite() && *v <= 90.0) && only != untouched);
+        let bad = CString::new("{nope").unwrap();
+        let e = reply(unsafe { vf_generate_mesh_maps(p.as_ptr(), 8, i.as_ptr(), i.len() as u64, bad.as_ptr(), only.as_mut_ptr(), std::ptr::null_mut(), std::ptr::null_mut()) });
         assert!(e["error"].as_str().unwrap().starts_with("request"));
     }
 

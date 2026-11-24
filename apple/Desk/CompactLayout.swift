@@ -53,6 +53,16 @@ enum RibbonFold {
         return Result(strip: strip, more: more)
     }
 
+    struct Step: Hashable { let visible: Int; let labels: Bool }
+
+    /// A ribbon's layouts from widest to narrowest, for `ViewThatFits`: every group labelled,
+    /// then as icons, then one group less each time (labelled first), down to MORE alone.
+    static func steps(_ n: Int) -> [Step] {
+        guard n > 0 else { return [Step(visible: 0, labels: true)] }
+        return (1...n).reversed().flatMap { [Step(visible: $0, labels: true), Step(visible: $0, labels: false)] }
+            + [Step(visible: 0, labels: true)]
+    }
+
     /// Every command of `groups` is in the strip or in MORE, exactly once, in its group's order.
     static func keepsEvery<C: Equatable>(_ groups: [Group<C>], _ r: Result<C>) -> Bool {
         groups.allSatisfy { g in
@@ -153,6 +163,27 @@ enum CompactLayoutSelfTest {
         out.append((CompactLayout.sidebarCollapseBelow < CompactLayout.inspectorOverlayBelow
                     && CompactLayout.minWindow.width < CompactLayout.sidebarCollapseBelow,
                     "P2-7 compact thresholds: minimum 760 < sidebar 900 < inspector 1100"))
+        // The Assemble ribbon folds with the same steps: every tab keeps every command at every
+        // width, the narrowest step is MORE alone, and each command keeps its words.
+        var asmKept = true, asmWords = true, asmNarrowest = true
+        for tab in AssembleModel.Tab.allCases {
+            let g = AssembleRibbon.groups(tab)
+            let steps = RibbonFold.steps(g.count)
+            for step in steps {
+                asmKept = asmKept && RibbonFold.keepsEvery(g, RibbonFold.fold(g, visible: step.visible))
+            }
+            let last = RibbonFold.fold(g, visible: steps.last?.visible ?? 0)
+            asmNarrowest = asmNarrowest && last.strip.isEmpty && last.more.flatMap(\.commands) == g.flatMap(\.commands)
+            asmWords = asmWords && g.flatMap(\.commands).allSatisfy { !$0.title.isEmpty && !$0.symbol.isEmpty && !$0.help.isEmpty }
+                && Set(g.map(\.name)).count == g.count
+        }
+        out.append((asmKept && asmNarrowest && asmWords,
+                    "P2-7 the Assemble ribbon folds into More like the stage ribbon and keeps every command of every tab"))
+        let reasons = AssembleRibbon.unavailableReason("dragTip", product: .hand) != nil
+            && AssembleRibbon.unavailableReason("grasp", product: .arm) != nil
+            && AssembleRibbon.unavailableReason("dragTip", product: .arm) == nil
+            && AssembleRibbon.unavailableReason("grasp", product: .hand) == nil
+        out.append((reasons, "P2-7 a folded Assemble command keeps its disabled reason (Drag Tip for arms, Grasp for hands)"))
         var s = SidebarAutoCollapse()
         let launchNarrow = s.width(760, shown: true)
         s.userChose()  // the reader opens it again at 760

@@ -4,6 +4,7 @@ import SwiftUI
 /// Tap runs the current tool; drag on the selected part moves it, drag elsewhere pans;
 /// pinch zooms.
 struct PCBCanvas: View {
+    @ObservedUnits private var units
     @Bindable var model: PCBModel
     /// The dense board style (soldermask, gold pads, silkscreen, mounting holes, dotted
     /// airwires) instead of the flat one. The Mac project window uses it.
@@ -32,6 +33,7 @@ struct PCBCanvas: View {
     }
 
     var body: some View {
+        let _ = units
         GeometryReader { geo in
             Canvas { ctx, size in draw(&ctx, size) }
                 .background(palette.paper)
@@ -68,12 +70,13 @@ struct PCBCanvas: View {
     /// The selection's commands, also reachable without a drag (P2-18).
     @ViewBuilder private var contextMenu: some View {
         if let id = model.selection, model.component(id) != nil || model.footprint(id) != nil {
-            Button("Rotate 90°", systemImage: "rotate.right") { model.rotateSelection() }
-            Menu("Move by 1 mm") {
-                Button("Left", systemImage: "arrow.left") { model.nudgeSelection(dx: -1, dy: 0) }
-                Button("Right", systemImage: "arrow.right") { model.nudgeSelection(dx: 1, dy: 0) }
-                Button("Up", systemImage: "arrow.up") { model.nudgeSelection(dx: 0, dy: -1) }
-                Button("Down", systemImage: "arrow.down") { model.nudgeSelection(dx: 0, dy: 1) }
+            let n = PCBNudge.step
+            Button(String(localized: "Rotate \(AsmFormat.deg(90))"), systemImage: "rotate.right") { model.rotateSelection() }
+            Menu(String(localized: "Move by \(PCBNudge.label())")) {
+                Button("Left", systemImage: "arrow.left") { model.nudgeSelection(dx: -n, dy: 0) }
+                Button("Right", systemImage: "arrow.right") { model.nudgeSelection(dx: n, dy: 0) }
+                Button("Up", systemImage: "arrow.up") { model.nudgeSelection(dx: 0, dy: -n) }
+                Button("Down", systemImage: "arrow.down") { model.nudgeSelection(dx: 0, dy: n) }
             }
             Divider()
             Button("Delete", systemImage: "trash", role: .destructive) { model.deleteSelection() }
@@ -99,16 +102,17 @@ struct PCBCanvas: View {
     }
 
     private func partElement(id: Int, label: String, at p: CGPoint) -> some View {
-        Rectangle()
+        let n = PCBNudge.step, by = PCBNudge.label()
+        return Rectangle()
             .frame(width: 24, height: 24)
             .position(p)
             .accessibilityLabel(label)
             .accessibilityAddTraits(model.selection == id ? [.isButton, .isSelected] : .isButton)
             .accessibilityAction { model.selection = id }
-            .accessibilityAction(named: Text("Move left 1 mm")) { model.selection = id; model.nudgeSelection(dx: -1, dy: 0) }
-            .accessibilityAction(named: Text("Move right 1 mm")) { model.selection = id; model.nudgeSelection(dx: 1, dy: 0) }
-            .accessibilityAction(named: Text("Move up 1 mm")) { model.selection = id; model.nudgeSelection(dx: 0, dy: -1) }
-            .accessibilityAction(named: Text("Move down 1 mm")) { model.selection = id; model.nudgeSelection(dx: 0, dy: 1) }
+            .accessibilityAction(named: Text("Move left \(by)")) { model.selection = id; model.nudgeSelection(dx: -n, dy: 0) }
+            .accessibilityAction(named: Text("Move right \(by)")) { model.selection = id; model.nudgeSelection(dx: n, dy: 0) }
+            .accessibilityAction(named: Text("Move up \(by)")) { model.selection = id; model.nudgeSelection(dx: 0, dy: -n) }
+            .accessibilityAction(named: Text("Move down \(by)")) { model.selection = id; model.nudgeSelection(dx: 0, dy: n) }
             .accessibilityAction(named: Text("Rotate")) { model.selection = id; model.rotateSelection() }
     }
 
@@ -410,6 +414,15 @@ struct PCBCanvas: View {
 }
 
 /// The canvas's sheet-to-view mapping, for overlays: a sheet point (millimetres) to a view point.
+/// One nudge of a PCB part (arrow keys, the context menu, VoiceOver). The board data stays in
+/// millimetres; with inches the step is the 0.05 in (50 mil) grid of inch boards, else 1 mm.
+/// Shift moves ten steps.
+enum PCBNudge {
+    static var step: Double { UnitSettings.current.length == .inch ? 1.27 : 1 }
+    /// "1 mm", "0.050 in" (ten steps with `times: 10`).
+    static func label(times: Double = 1) -> String { VFFormat.lengths([step * times]) }
+}
+
 struct PCBCanvasTransform: Equatable {
     var center: PCBPoint
     var scale: Double

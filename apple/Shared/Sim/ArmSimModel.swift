@@ -69,12 +69,13 @@ final class ArmSimModel: @unchecked Sendable {
         }
     }
 
-    let scenarios = [
+    /// Computed so the cube's size follows the reader's length unit (P2-23).
+    var scenarios: [Scenario] { [
         Scenario(id: "reach", title: String(localized: "Reach"), artifact: "simulate.reach",
                  detail: String(localized: "Home, ready, reach over the cube and back"), duration: 7),
         Scenario(id: "pick", title: String(localized: "Pick cube"), artifact: "simulate.pick",
-                 detail: String(localized: "Down to the 30 mm cube, close the jaw, lift"), duration: 8),
-    ]
+                 detail: String(localized: "Down to the \(VFFormat.length(30)) cube, close the jaw, lift"), duration: 8),
+    ] }
 
     var scenarioID = "reach"
     var randomise = Randomise()

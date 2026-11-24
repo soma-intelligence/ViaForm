@@ -146,6 +146,105 @@ enum VFFormat {
     static func angle(_ deg: Double) -> String { value(deg, .angle) }
     static func mass(_ g: Double) -> String { value(g, .mass) }
 
+    // MARK: Derived quantities (P2-23): they follow the reader's length, angle and mass units.
+
+    /// A length with a fixed number of fraction digits in the display unit ("0.50 mm",
+    /// "0.020 in"): for values whose precision is part of their meaning (clearances).
+    static func length(_ mm: Double, digits: Int) -> String {
+        guard mm.isFinite else { return "n/a" }
+        let u = UnitSettings.current
+        let extra = u.length == .mm ? 0 : max(0, u.length.digits - 1)
+        return number(mm / u.length.factor, digits: digits + extra) + " " + u.length.rawValue
+    }
+
+    /// A small result shown with significant digits ("0.0123 mm", "0.000484 in"), so a tiny
+    /// displacement never rounds to zero.
+    static func lengthSignificant(_ mm: Double, digits: Int = 3) -> String {
+        guard mm.isFinite else { return "n/a" }
+        let u = UnitSettings.current
+        return significant(mm / u.length.factor, digits: digits) + " " + u.length.rawValue
+    }
+
+    /// Several lengths sharing one unit: "30 x 20 x 12 mm", "1.181 x 0.787 x 0.472 in".
+    /// `digits` fixes the millimetre fraction digits (larger units get the matching extra ones);
+    /// without it millimetres show up to one decimal.
+    static func lengths(_ mms: [Double], separator: String = " x ", digits fixed: Int? = nil) -> String {
+        let u = UnitSettings.current
+        let extra = u.length == .mm ? 0 : max(0, u.length.digits - 1)
+        let digits = u.decimals ?? fixed.map { $0 + extra } ?? (u.length == .mm ? 0 : u.length.digits)
+        let parts = mms.map { v -> String in
+            guard v.isFinite else { return "n/a" }
+            if u.length == .mm, u.decimals == nil, fixed == nil {
+                return (v / u.length.factor).formatted(.number.precision(.fractionLength(0...1)))
+            }
+            return number(v / u.length.factor, digits: digits)
+        }
+        return parts.joined(separator: separator) + " " + u.length.rawValue
+    }
+
+    /// An area in the square of the display length unit: "600 mm²", "0.93 in²".
+    static func area(_ mm2: Double) -> String { power(mm2, 2) }
+
+    /// A volume in the cube of the display length unit: "7,200 mm³", "0.439 in³".
+    static func volume(_ mm3: Double) -> String { power(mm3, 3) }
+
+    /// The symbol of the length unit raised to a power ("mm²", "in³").
+    static func lengthSymbol(power p: Int = 1) -> String {
+        let s = UnitSettings.current.length.rawValue
+        switch p {
+        case 2: return s + "²"
+        case 3: return s + "³"
+        default: return s
+        }
+    }
+
+    /// A rate of an angle or a length per time unit: "45.0°/s", "0.785 rad/s", "12.0 mm/s".
+    static func rate(_ v: Double, _ unit: VFUnit, per time: String = "s") -> String {
+        guard v.isFinite else { return "n/a" }
+        let u = UnitSettings.current
+        guard let d = u.display(for: unit) else { return value(v, unit) + "/" + time }
+        let s = number(v / d.factor, digits: d.digits)
+        return d.symbol == "°" ? s + "°/" + time : s + " " + d.symbol + "/" + time
+    }
+
+    /// The symbol of a rate ("°/s", "rad/s"), for a chart axis or a column title.
+    static func rateSymbol(_ unit: VFUnit, per time: String = "s") -> String { symbol(unit) + "/" + time }
+
+    /// Moments of inertia, engine kg·mm², in the display mass (kg when the reader keeps grams)
+    /// times the display length squared: "12.5, 12.5, 3.1 kg·mm²", "0.019, 0.019, 0.005 kg·in²".
+    static func inertia(_ kgmm2: [Double]) -> String {
+        let u = UnitSettings.current
+        let massSym = u.mass == .g ? "kg" : u.mass.rawValue
+        let massFactor = u.mass == .g ? 1 : u.mass.factor / 1000
+        let f = massFactor * u.length.factor * u.length.factor
+        return kgmm2.map { significant($0 / f, digits: 3) }.joined(separator: ", ") + " " + inertiaSymbol(massSym)
+    }
+
+    /// "kg·mm²", "lb·in²".
+    static func inertiaSymbol(_ mass: String? = nil) -> String {
+        let u = UnitSettings.current
+        return (mass ?? (u.mass == .g ? "kg" : u.mass.rawValue)) + "·" + lengthSymbol(power: 2)
+    }
+
+    /// A value of length raised to `p` (mm² or mm³) in the display unit. Millimetres keep whole
+    /// numbers, the larger units keep up to four significant digits (a cube of 20 mm is 0.4882 in³).
+    private static func power(_ v: Double, _ p: Int) -> String {
+        guard v.isFinite else { return "n/a" }
+        let u = UnitSettings.current
+        let shown = v / pow(u.length.factor, Double(p))
+        let s: String
+        if let d = u.decimals { s = number(shown, digits: d) }
+        else if u.length == .mm { s = number(shown, digits: 0) }
+        else { s = significant(shown, digits: 4) }
+        return s + " " + lengthSymbol(power: p)
+    }
+
+    /// A number with up to `digits` significant digits, grouped.
+    static func significant(_ v: Double, digits: Int) -> String {
+        guard v.isFinite else { return "n/a" }
+        return v.formatted(.number.precision(.significantDigits(1...max(1, digits))).grouping(.automatic))
+    }
+
     /// Money: always two decimals in the given currency; "No price" for a missing value
     /// (never "0", which reads as free).
     static func money(_ v: Double?, currency: String = "USD") -> String {
@@ -305,5 +404,46 @@ extension VFExpression.Failure {
             }
         case .divideByZero: String(localized: "Division by zero.")
         }
+    }
+}
+
+// MARK: - Self test
+
+/// The strings built from lengths, areas, volumes and angles follow the display units (P2-23,
+/// the hand-built "mm" strings routed through `VFFormat`). Expected texts are built with
+/// `VFFormat.number` so the check holds in any locale.
+enum UnitStringsSelfTest {
+    static func checks() -> [(Bool, String)] {
+        var out: [(Bool, String)] = []
+        let saved = UnitSettings.override
+        defer { UnitSettings.override = saved }
+        let n = VFFormat.number
+
+        UnitSettings.override = .base
+        out.append((VFFormat.length(12) == n(12, 1) + " mm", "P2-23 units: 12 mm is \(VFFormat.length(12))"))
+        out.append((VFFormat.area(600) == n(600, 0) + " mm²", "P2-23 units: an area in mm² (\(VFFormat.area(600)))"))
+        out.append((VFFormat.volume(7200) == n(7200, 0) + " mm³", "P2-23 units: a volume in mm³ (\(VFFormat.volume(7200)))"))
+        out.append((VFFormat.lengths([30, 20, 12]) == "30 x 20 x 12 mm", "P2-23 units: a size in mm (\(VFFormat.lengths([30, 20, 12])))"))
+        out.append((VFFormat.lengthSignificant(0.0123) == n(0.0123, 4) + " mm", "P2-23 units: a small displacement keeps its digits (\(VFFormat.lengthSignificant(0.0123)))"))
+        out.append((VFFormat.length(0.5, digits: 2) == n(0.5, 2) + " mm", "P2-23 units: a clearance in mm (\(VFFormat.length(0.5, digits: 2)))"))
+        out.append((AsmFormat.deg(45) == "45°", "P2-23 units: a joint angle in degrees (\(AsmFormat.deg(45)))"))
+        out.append((PCBNudge.step == 1 && PCBNudge.label() == "1 mm", "P2-23 units: a PCB nudge is 1 mm (\(PCBNudge.label()))"))
+        out.append((SketchInfo.Dimension.shown(40, .length) == "40", "P2-23 units: a sketch dimension of 40 mm reads 40"))
+
+        UnitSettings.override = UnitSettings(length: .inch, angle: .rad)
+        out.append((VFFormat.length(25.4) == n(1, 3) + " in", "P2-23 units: 25.4 mm is \(VFFormat.length(25.4))"))
+        out.append((VFFormat.area(645.16) == "1 in²", "P2-23 units: 645.16 mm² is \(VFFormat.area(645.16))"))
+        out.append((VFFormat.volume(8000) == n(0.4882, 4) + " in³", "P2-23 units: a 20 mm cube is \(VFFormat.volume(8000))"))
+        out.append((VFFormat.lengths([25.4, 50.8]) == n(1, 3) + " x " + n(2, 3) + " in", "P2-23 units: a size in inches (\(VFFormat.lengths([25.4, 50.8])))"))
+        out.append((VFFormat.lengthSignificant(0.0254) == n(0.001, 3) + " in", "P2-23 units: a small displacement in inches (\(VFFormat.lengthSignificant(0.0254)))"))
+        out.append((VFFormat.length(0.5, digits: 2) == n(0.0197, 4) + " in", "P2-23 units: a 0.5 mm clearance in inches (\(VFFormat.length(0.5, digits: 2)))"))
+        out.append((VFFormat.symbol(.length) == "in" && VFFormat.lengthSymbol(power: 2) == "in²", "P2-23 units: column titles say in and in²"))
+        out.append((AsmFormat.deg(90) == "1.57 rad", "P2-23 units: a joint angle in radians (\(AsmFormat.deg(90)))"))
+        out.append((VFFormat.rate(90, .angle) == n(Double.pi / 2, 3) + " rad/s", "P2-23 units: a joint speed in rad/s (\(VFFormat.rate(90, .angle)))"))
+        out.append((PCBNudge.step == 1.27 && PCBNudge.label() == n(0.05, 3) + " in", "P2-23 units: a PCB nudge is the 0.05 in grid (\(PCBNudge.label()))"))
+        out.append((SketchInfo.Dimension.shown(25.4, .length) == "1" && SketchInfo.Dimension.shown(40, .length) == "1.575",
+                    "P2-23 units: sketch dimensions read in inches (\(SketchInfo.Dimension.shown(40, .length)))"))
+        out.append((VFFormat.value(5, .stress) == n(5, 1) + " MPa", "P2-23 units: stress stays in MPa"))
+        return out
     }
 }

@@ -11,6 +11,7 @@ import AppKit
 ///
 /// Snapping: 0.5 mm steps; Shift snaps to 5 mm; Command (on the Mac) drags freely.
 struct DesignDistanceHandle: View {
+    @ObservedUnits private var units
     @Environment(\.viaFormTheme) private var theme
     let model: DesignModel
     let point: SIMD3<Double>
@@ -28,6 +29,7 @@ struct DesignDistanceHandle: View {
     private static let anchorRadius: CGFloat = 4.5
 
     var body: some View {
+        let _ = units
         let anchor = model.camera.project(point, size: size)
         let tip = Self.tip(model: model, point: point, normal: normal, size: size)
         let grip = touch ? Self.grip.touch : Self.grip.mac
@@ -52,9 +54,9 @@ struct DesignDistanceHandle: View {
                 #if os(macOS)
                 .onHover { inside in if inside { NSCursor.openHand.push() } else { NSCursor.pop() } }
                 #endif
-                .help("Drag to set the distance. Shift snaps to 5 mm, Command drags freely")
+                .help("Drag to set the distance. Shift snaps to \(VFFormat.length(5)), Command drags freely")
                 .accessibilityLabel("Distance handle")
-                .accessibilityValue(String(format: "%.1f mm", model.toolValue))
+                .accessibilityValue(VFFormat.length(model.toolValue))
                 .accessibilityAdjustableAction { dir in
                     model.beginHandleDrag()
                     model.dragHandle(by: dir == .increment ? 1 : -1, step: 0.5)

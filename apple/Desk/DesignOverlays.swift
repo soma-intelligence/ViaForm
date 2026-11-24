@@ -160,6 +160,7 @@ struct GizmoArc: View {
 /// `AnchorLayout` from the selection's world anchor and the orbit camera, and keeps clear of the
 /// view cube, the command dialog and the navigation pill (`avoid`).
 struct DesignAnchorOverlay: View {
+    @ObservedUnits private var units
     let model: DesignModel
     let workspace: Workspace
     let actions: StageActions
@@ -167,6 +168,7 @@ struct DesignAnchorOverlay: View {
     var avoid: [CGRect] = []
 
     var body: some View {
+        let _ = units
         GeometryReader { geo in
             let size = geo.size
             // Read the revision and the camera so the overlay follows edits and orbits.

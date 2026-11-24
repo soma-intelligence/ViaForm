@@ -46,14 +46,11 @@ enum ViewportAccessibility {
             var parts: [String] = []
             if !visible { parts.append(String(localized: "Hidden")) }
             if let v = b.volume_mm3, v.isFinite, v > 0 {
-                parts.append(VFFormat.value(v, .custom("mm³")))
+                parts.append(VFFormat.volume(v))
             }
             if let box {
                 let d = box.hi - box.lo
-                let x = VFFormat.value(d.x, .length, withUnit: false)
-                let y = VFFormat.value(d.y, .length, withUnit: false)
-                let z = VFFormat.value(d.z, .length, withUnit: false)
-                parts.append(String(localized: "\(x) by \(y) by \(z) mm"))
+                parts.append(VFFormat.lengths([d.x, d.y, d.z], separator: String(localized: " by ")))
             }
             if let m = b.material, !m.isEmpty { parts.append(m) }
             let fallback = CGRect(x: VFSpace.m, y: VFSpace.m + CGFloat(i) * (stacked.height + VFSpace.xs),
@@ -88,12 +85,14 @@ enum ViewportAccessibility {
 /// An invisible layer over the viewport that carries the body elements. It takes no hits, so
 /// the Metal view keeps every click and gesture.
 struct ViewportAccessibilityLayer: View {
+    @ObservedUnits private var units
     let model: DesignModel
     /// Projection follows the camera only while an assistive technology runs, so orbiting does
     /// not rebuild this layer for nothing.
     @Environment(\.accessibilityEnabled) private var assistive
 
     var body: some View {
+        let _ = units
         GeometryReader { g in
             let items = ViewportAccessibility.elements(snapshot: model.snapshot, scene: model.scene,
                                                        selected: model.selectedBodies,

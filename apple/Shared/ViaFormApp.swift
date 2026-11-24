@@ -9,6 +9,10 @@ struct ViaFormApp: App {
     init() {
         LegacyDefaults.migrate()
         if ProcessInfo.processInfo.arguments.contains("--selftest") { SelfTest.run() }
+        // These two used to start from the first window's models, so a scripted launch that
+        // opens no window hung. Touching the models here runs them and exits.
+        if ProcessInfo.processInfo.arguments.contains("--robot-selftest") { _ = RobotSafety.shared }
+        if ProcessInfo.processInfo.arguments.contains("--flow-selftest") { _ = FlowModel() }
     }
 
     var body: some Scene {

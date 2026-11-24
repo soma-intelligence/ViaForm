@@ -16,6 +16,11 @@ struct GenerateView: View {
     let design: DesignModel
     let theme: ViewportTheme
     var compact = false
+    /// What the side column shows instead of the study panel: the Mac window's inspector when the
+    /// window is too narrow to dock it (P2-7). The inspector then takes the study panel's place
+    /// rather than floating over it, so the two never cover each other; closing it brings the
+    /// study panel back.
+    var sidePanel: AnyView? = nil
     @State private var scene: GenerateScene?
     @State private var showSheet = false
     #if os(iOS)
@@ -91,8 +96,12 @@ struct GenerateView: View {
                 }
             }
             Divider()
-            GenerateInspector(model: model, design: design)
-                .frame(width: VFSize.sidePanel)
+            Group {
+                if let sidePanel { sidePanel } else { GenerateInspector(model: model, design: design) }
+            }
+            .frame(width: VFSize.sidePanel)
+            // The column never draws over the stage's own controls beside it.
+            .clipped()
         }
     }
 
@@ -152,7 +161,7 @@ struct GenerateView: View {
                             AssemblyBadge(model: model, project: p)
                         }
                         if model.display == .result, let i = model.selected, let p = model.previews[safe: i], let s = model.studied {
-                            StressLegend(preview: p, study: s, scale: $model.stressScale)
+                            CandidateMapOverlay(model: model, scene: scene, preview: p, study: s, index: i)
                         }
                     }
                 }

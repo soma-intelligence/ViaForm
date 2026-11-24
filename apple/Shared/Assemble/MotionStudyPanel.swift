@@ -5,6 +5,7 @@ import SwiftUI
 /// playhead to scrub, play and stop, and the steps where parts collide marked in red with the
 /// first contact of each pair (a band and the words in the header, never the colour alone).
 struct MotionStudyPanel: View {
+    @ObservedUnits private var units
     @Environment(\.viaFormTheme) private var theme
     @Bindable var model: AssembleModel
     var height: CGFloat = 210
@@ -17,6 +18,7 @@ struct MotionStudyPanel: View {
     private var palette: [Color] { Self.palette(theme) }
 
     var body: some View {
+        let _ = units
         VStack(alignment: .leading, spacing: VFSpace.s) {
             header
             if let p = model.studyProgress {
@@ -158,7 +160,7 @@ struct MotionStudyPanel: View {
         } }
         .chartYAxis { AxisMarks(position: .leading, values: .automatic(desiredCount: 4)) { v in
             AxisGridLine().foregroundStyle(theme.hairline)
-            AxisValueLabel { if let d = v.as(Double.self) { Text(String(format: "%.0f°", d)) } }
+            AxisValueLabel { if let d = v.as(Double.self) { Text(AsmFormat.deg(d)) } }
         } }
         .chartOverlay { proxy in
             GeometryReader { g in

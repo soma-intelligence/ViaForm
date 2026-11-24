@@ -228,10 +228,12 @@ struct SimTelemetryCard: View {
 /// The flight setup (mission, course, weather, brain, realism, frame), the stress test's
 /// disturbances, the training and the drone's parts.
 struct SimInspector: View {
+    @ObservedUnits private var units
     @Environment(\.viaFormTheme) private var theme
     @Bindable var model: SimModel
 
     var body: some View {
+        let _ = units
         Form {
             Section("Flight") {
                 if let c = model.catalog {
@@ -282,7 +284,7 @@ struct SimInspector: View {
                             HStack {
                                 Text(p.qty > 1 ? "\(p.qty) × \(p.role)" : p.role).font(VFFont.rowEmphasis).foregroundStyle(theme.ink)
                                 Spacer()
-                                Text(p.massG > 0 ? VFFormat.value(p.massG * Double(p.qty), .custom("g")) : String(localized: "Mass from the model"))
+                                Text(p.massG > 0 ? VFFormat.mass(p.massG * Double(p.qty)) : String(localized: "Mass from the model"))
                                     .foregroundStyle(theme.inkSecondary)
                             }
                             Text(p.name).font(VFFont.small).foregroundStyle(theme.inkSecondary)
@@ -338,24 +340,26 @@ struct SimDisturbanceSection: View {
 
 /// The frame the generative design made: found or not, what it builds, flown or not.
 struct SimFrameSection: View {
+    @ObservedUnits private var units
     @Environment(\.viaFormTheme) private var theme
     @Bindable var model: SimModel
 
     var body: some View {
+        let _ = units
         Section {
             if let g = model.generatedFrame {
                 switch g.airframe {
                 case .success(let a):
                     Toggle("Build the drone from it", isOn: $model.useGeneratedFrame)
-                    LabeledContent(a.name, value: String(localized: "\(VFFormat.value(a.frameG, .custom("g"))) frame, \(VFFormat.length(a.armMm)) arm"))
-                    LabeledContent("All-up", value: String(localized: "\(Int((a.massKg * 1000).rounded())) g, thrust to weight \(String(format: "%.1f", a.thrustToWeight))"))
+                    LabeledContent(a.name, value: String(localized: "\(VFFormat.mass(a.frameG)) frame, \(VFFormat.length(a.armMm)) arm"))
+                    LabeledContent("All-up", value: String(localized: "\(VFFormat.mass(a.massKg * 1000)), thrust to weight \(String(format: "%.1f", a.thrustToWeight))"))
                 case .failure(let e):
                     InlineError(String(localized: "The generated frame could not be read."), details: e.message,
                                 retryTitle: String(localized: "Check Again")) { model.reloadGeneratedFrame() }
                 }
             } else {
                 EmptyState(String(localized: "No generated frame yet"), systemImage: "airplane",
-                           message: String(localized: "The nominal 60 mm frame flies until Generate makes one."),
+                           message: String(localized: "The nominal \(VFFormat.length(60)) frame flies until Generate makes one."),
                            actionTitle: String(localized: "Check Again")) { model.reloadGeneratedFrame() }
             }
             if model.generatedFrame != nil {
@@ -370,23 +374,25 @@ struct SimFrameSection: View {
 
 /// The drone built from the sourced components: found or not, what it weighs and lifts.
 struct SimRealPartsSection: View {
+    @ObservedUnits private var units
     @Environment(\.viaFormTheme) private var theme
     @Bindable var model: SimModel
 
     var body: some View {
+        let _ = units
         Section {
             if let r = model.realParts {
                 switch r.vehicle {
                 case .success(let v):
                     Toggle("Build the drone from them", isOn: $model.useRealParts)
-                    LabeledContent("All-up", value: String(localized: "\(Int((v.massKg * 1000).rounded())) g, thrust to weight \(String(format: "%.1f", v.thrustToWeight))"))
+                    LabeledContent("All-up", value: String(localized: "\(VFFormat.mass(v.massKg * 1000)), thrust to weight \(String(format: "%.1f", v.thrustToWeight))"))
                     LabeledContent("Battery", value: String(localized: "\(Int(v.battery.cells))S, \(Int((v.battery.capacityAh * 1000).rounded())) mAh"))
                     LabeledContent("Placed", value: v.assembly ? String(localized: "\(v.placed) by the assembly, the rest standard") : String(localized: "standard positions"))
                     ForEach(v.components, id: \.ref) { p in
                         HStack {
                             Text(p.qty > 1 ? "\(p.qty) × \(p.category)" : p.category).font(VFFont.row).foregroundStyle(theme.ink)
                             Spacer()
-                            Text(p.massG.map { VFFormat.value($0 * Double(p.qty), .custom("g")) } ?? String(localized: "no mass")).foregroundStyle(theme.inkSecondary)
+                            Text(p.massG.map { VFFormat.mass($0 * Double(p.qty)) } ?? String(localized: "no mass")).foregroundStyle(theme.inkSecondary)
                         }
                     }
                     if !v.missing.isEmpty {
@@ -503,10 +509,12 @@ struct SimTrainingSection: View {
 
 /// What the mission is doing: the race's countdown and gates, or the stabilization readout.
 struct SimMissionCard: View {
+    @ObservedUnits private var units
     @Environment(\.viaFormTheme) private var theme
     let model: SimModel
 
     var body: some View {
+        let _ = units
         if let r = model.race {
             VStack(alignment: .leading, spacing: VFSpace.xs) {
                 VFCaption(String(localized: "Race"))

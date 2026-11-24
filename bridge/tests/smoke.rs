@@ -46,6 +46,16 @@ unsafe extern "C" {
     fn vf_generate_cancel(job: *const c_void);
     fn vf_generate_free(job: *mut c_void);
     fn vf_generate_mesh_free(mesh: *mut c_void);
+    fn vf_generate_mesh_maps(
+        positions: *const f32,
+        vertex_count: u64,
+        indices: *const u32,
+        index_count: u64,
+        request: *const c_char,
+        overhang_out: *mut f32,
+        wall_out: *mut f32,
+        access_out: *mut f32,
+    ) -> *mut c_char;
 }
 
 fn c(s: &str) -> CString {
@@ -203,4 +213,22 @@ fn generate_start_cancel_free() {
         vf_generate_free(null_mut());
         vf_generate_mesh_free(null_mut());
     }
+}
+
+/// The mesh maps call resolves by its C name, takes an empty surface and null outputs, and
+/// answers JSON.
+#[test]
+fn generate_mesh_maps_takes_empty_input() {
+    // SAFETY: null arrays with zero counts, null request, null outputs: all allowed.
+    let v = take(unsafe { vf_generate_mesh_maps(std::ptr::null(), 0, std::ptr::null(), 0, std::ptr::null(), null_mut(), null_mut(), null_mut()) });
+    assert_eq!(v["ok"]["vertices"], 0, "{v}");
+    // A triangle with all three maps asked for.
+    let p = [0.0f32, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0, 0.0];
+    let i = [0u32, 1, 2];
+    let (mut a, mut b, mut cc) = ([0.0f32; 3], [0.0f32; 3], [0.0f32; 3]);
+    let req = c(r#"{"process": "fdm"}"#);
+    // SAFETY: three vertices and three floats in each output.
+    let v = take(unsafe { vf_generate_mesh_maps(p.as_ptr(), 3, i.as_ptr(), 3, req.as_ptr(), a.as_mut_ptr(), b.as_mut_ptr(), cc.as_mut_ptr()) });
+    assert_eq!(v["ok"]["triangles"], 1, "{v}");
+    assert!(cc.iter().all(|x| x.is_nan()), "no tool map for printing");
 }

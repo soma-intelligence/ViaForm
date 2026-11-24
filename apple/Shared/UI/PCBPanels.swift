@@ -20,10 +20,12 @@ enum PCBSymbol {
 
 /// Parts, nets and board items, with selection.
 struct PCBBrowser: View {
+    @ObservedUnits private var units
     @Environment(\.viaFormTheme) private var theme
     @Bindable var model: PCBModel
 
     var body: some View {
+        let _ = units
         List(selection: Binding(get: { model.selection }, set: { model.selection = $0 })) {
             if let p = model.project {
                 Section("Parts") {

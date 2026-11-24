@@ -11,13 +11,22 @@ struct GenerateInspector: View {
     /// The setup panes lock while a study runs; Project, Results and Variants stay usable.
     private var locked: Bool { model.running && [.study, .regions].contains(model.pane) }
 
+    private var panePicker: some View {
+        Picker("Pane", selection: $model.pane) {
+            ForEach(GenerateModel.Pane.allCases, id: \.self) { Text($0.title).tag($0) }
+        }
+        .labelsHidden()
+    }
+
     var body: some View {
         VStack(spacing: 0) {
-            Picker("Pane", selection: $model.pane) {
-                ForEach(GenerateModel.Pane.allCases, id: \.self) { Text($0.title).tag($0) }
+            // Five panes do not fit a 320 pt column as full segments: try the
+            // regular control, then the small one, then a menu, so no title is cut.
+            ViewThatFits(in: .horizontal) {
+                panePicker.pickerStyle(.segmented).fixedSize()
+                panePicker.pickerStyle(.segmented).controlSize(.small).fixedSize()
+                panePicker.pickerStyle(.menu).frame(maxWidth: .infinity, alignment: .leading)
             }
-            .pickerStyle(.segmented)
-            .labelsHidden()
             .padding(.horizontal, VFSpace.xl)
             .padding(.vertical, VFSpace.m)
             if locked {
@@ -80,6 +89,7 @@ struct IntRow: View {
 // MARK: Study
 
 struct StudyForm: View {
+    @ObservedUnits private var units
     @Environment(\.viaFormTheme) private var theme
     @Bindable var model: GenerateModel
     @State private var confirm: ConfirmRequest?
@@ -91,6 +101,7 @@ struct StudyForm: View {
     }
 
     var body: some View {
+        let _ = units
         let s = model.study
         Form {
             Section {
@@ -118,7 +129,7 @@ struct StudyForm: View {
                     Text("about \(readableDuration(t))").monospacedDigit().foregroundStyle(t > 600 ? theme.warning : theme.inkSecondary)
                 }
             } footer: {
-                Text("World millimetres, Z up. Each voxel is one hexahedral element.")
+                Text("World coordinates in \(LengthDisplay.current.plural), Z up. Each voxel is one hexahedral element.")
             }
             InspectorSection(.goal, String(localized: "Goal"), status: s.status(.goal)) {
                 Picker("Method", selection: $model.study.method) {
@@ -468,6 +479,7 @@ struct LoadFields: View {
 /// x, y and z on one row.
 struct Vec3Row: View {
     @Environment(\.viaFormTheme) private var theme
+    @ObservedUnits private var units
     let label: String
     @Binding var value: Vec3
     let unit: String
@@ -479,8 +491,9 @@ struct Vec3Row: View {
     }
 
     var body: some View {
+        let _ = units
         VStack(alignment: .leading, spacing: VFSpace.xs) {
-            Text(unit.isEmpty ? label : "\(label), \(unit)").foregroundStyle(theme.inkSecondary).font(VFFont.row)
+            Text(unit.isEmpty ? label : "\(label), \(VFFormat.symbol(VFUnit(symbol: unit)))").foregroundStyle(theme.inkSecondary).font(VFFont.row)
             HStack(spacing: VFSpace.xs) {
                 ForEach(0..<3, id: \.self) { a in
                     Text(["x", "y", "z"][a]).font(VFFont.micro).foregroundStyle(theme.inkTertiary).accessibilityHidden(true)

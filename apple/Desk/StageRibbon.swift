@@ -33,7 +33,7 @@ struct StageRibbon: View {
                     // one by one (P2-7): never wider than the window, every verb reachable.
                     let groups = verbGroups
                     ViewThatFits(in: .horizontal) {
-                        ForEach(Self.foldSteps(groups.count), id: \.self) { step in
+                        ForEach(RibbonFold.steps(groups.count), id: \.self) { step in
                             let r = RibbonFold.fold(groups, visible: step.visible, perGroup: CompactLayout.verbsPerGroup)
                             HStack(spacing: VFSpace.s) {
                                 VerbStrip(groups: r.strip, actions: actions, labels: step.labels)
@@ -163,16 +163,6 @@ struct StageRibbon: View {
         let primaryIDs = Set(primary.map(\.command))
         return StageScreen.ribbon(flow.commands(stage: workspace.stage).filter { $0.source == "app" && !primaryIDs.contains($0.id) }, perGroup: .max)
             .map { RibbonFold.Group(name: $0.name, commands: $0.commands) }
-    }
-
-    struct FoldStep: Hashable { let visible: Int; let labels: Bool }
-
-    /// The ribbon's layouts from widest to narrowest: every group labelled, then as icons, then
-    /// one group less each time (labelled first), down to MORE alone.
-    static func foldSteps(_ n: Int) -> [FoldStep] {
-        guard n > 0 else { return [FoldStep(visible: 0, labels: true)] }
-        return (1...n).reversed().flatMap { [FoldStep(visible: $0, labels: true), FoldStep(visible: $0, labels: false)] }
-            + [FoldStep(visible: 0, labels: true)]
     }
 }
 

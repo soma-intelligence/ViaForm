@@ -55,6 +55,7 @@ struct SketchProfileLayer: View {
 /// place: click it, type a number, a number with its unit or an expression, Return applies it
 /// (one undo step), Escape or a click elsewhere leaves it as it was.
 struct SketchDimensionLayer: View {
+    @ObservedUnits private var units
     @Environment(\.viaFormTheme) private var theme
     let model: DesignModel
     /// The typed field is a half step taller than the label chip, and never narrower than this.
@@ -64,6 +65,7 @@ struct SketchDimensionLayer: View {
     @FocusState private var focused: Bool
 
     var body: some View {
+        let _ = units
         GeometryReader { geo in
             let size = geo.size
             if model.sketchOpen, let info = model.sketchInfo {

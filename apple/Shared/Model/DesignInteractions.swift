@@ -53,8 +53,11 @@ extension DesignModel {
             flash("This dimension follows the sketch and cannot be typed", error: true)
             return false
         }
-        // A bare number is a length in millimetres, or an angle in degrees.
-        if Double(t) != nil { t += d.isAngle ? " deg" : " mm" }
+        // Plain arithmetic with or without units ("1.5", "1.5 in", "2*12.5") is read in the
+        // reader's display unit and sent in millimetres or degrees (the engine's units, P2-23).
+        // Anything else (a parameter expression) goes to the engine as typed.
+        let unit: VFUnit = d.isAngle ? .angle : .length
+        if case .success(let v) = VFExpression(unit: unit).evaluate(t) { t = VFFormat.editable(v) + (d.isAngle ? " deg" : " mm") }
         return run("parameters.change", ["name": param, "expression": t], quiet: true) != nil
     }
 
