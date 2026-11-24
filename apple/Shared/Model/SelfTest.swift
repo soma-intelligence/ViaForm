@@ -134,6 +134,7 @@ enum SelfTest {
         for (ok, what) in MainActor.assumeIsolated({ CommandFormSelfTest.checks() }) { check(ok, what) }
         for (ok, what) in UnitSettingsSelfTest.checks() { check(ok, what) } // P2-23 display units
         for (ok, what) in MainActor.assumeIsolated({ ViewportAccessibilitySelfTest.checks() }) { check(ok, what) }
+        for (ok, what) in MainActor.assumeIsolated({ AboutCreditsSelfTest.checks() }) { check(ok, what) } // P3-14 credits
         #if os(macOS)
         let alertOK = MainActor.assumeIsolated { () -> Bool in
             let a = FileActions.failureAlert(url: URL(fileURLWithPath: "/tmp/x.viaform"), reason: "Disk full")

@@ -82,8 +82,8 @@ P2:
 - P2-26 fixed (2026-11-23). With Differentiate Without Color on, the stress legend shows worded bands (Low, At limit from 80 % of the limit, Over limit) with their MPa ranges, dots for At limit and a hatch with an outline for Over limit, and a line says how many regions are over the limit and how much of the surface they cover. Scene colours are unchanged. Captured in `screens/uiux/after/heatmap-dwc-light.png` and `heatmap-dwc-dark.png`.
 
 P3:
-- Fixed: P3-1 to P3-13.
-- P3-14 not started. It waits on the icon work.
+- Fixed: P3-1 to P3-14.
+- P3-14 fixed (2026-11-23). Both apps carry the Glass lattice icon (checked in the built bundles). iPad offers Default or Graphite in the browser sheet, with previews and an inline error if the change fails. About ViaForm (Mac app menu and iPad sheet) shows the version, the build, GPL-3.0-or-later and the engines and components with their licences and links, from one shared list (`Shared/UI/AboutCredits.swift`) checked by `--selftest`. MuJoCo is not listed: the app is built without it and only writes MJCF files. Captured in `screens/uiux/after/about-light.png` and `about-dark.png`. The iPad screens were not run in a simulator.
 
 ## P0: reliability, data loss, safety
 

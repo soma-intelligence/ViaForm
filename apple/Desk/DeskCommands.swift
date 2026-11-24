@@ -91,6 +91,11 @@ struct DeskFileCommands: Commands {
     @FocusedValue(\.vfDesk) private var desk
 
     var body: some Commands {
+        // P3-14: the standard panel with version, build, licence and credits (AboutCredits.swift).
+        CommandGroup(replacing: .appInfo) {
+            let _ = AboutPanel.launchHook
+            Button("About ViaForm") { AboutPanel.show() }
+        }
         CommandGroup(replacing: .newItem) {
             Button("New Design") { if let d = desk?.design { FileActions.newDesign(d) } }
                 .keyboardShortcut("n")

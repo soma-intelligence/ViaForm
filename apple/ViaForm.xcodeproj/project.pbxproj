@@ -13,6 +13,7 @@
 		049CA90E23489C8966F04948 /* ToolIcons in Resources */ = {isa = PBXBuildFile; fileRef = 812579DC75498AA5D6AB6F9A /* ToolIcons */; };
 		04AC02723FEAD9064EA4CD4A /* PhysService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55521679B4C4AE4DA2FA5599 /* PhysService.swift */; };
 		0543BE7177CBE3FC85E571D6 /* RobotSafety.swift in Sources */ = {isa = PBXBuildFile; fileRef = 65085BBD229CB770B45F114C /* RobotSafety.swift */; };
+		060E91F037793DEA6615956E /* AboutCredits.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7B7D72A0C48361738CBC407D /* AboutCredits.swift */; };
 		0701DDEE908A4C3F43A6D3DF /* UndoLabels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 30EE56056B8FDA448065CAE6 /* UndoLabels.swift */; };
 		0796659B2AAA50F8D11A2F38 /* AssembleHand.swift in Sources */ = {isa = PBXBuildFile; fileRef = C35ABFFBB4159AA7329E6AEC /* AssembleHand.swift */; };
 		0830A61B80419B43FE637086 /* AssembleCanvas.swift in Sources */ = {isa = PBXBuildFile; fileRef = D54D03BA238A53AEC7C1B5BB /* AssembleCanvas.swift */; };
@@ -131,6 +132,7 @@
 		847CA8F0C8D8A8F3B5D9D565 /* LibraryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2918A7B44F606A1261C0D339 /* LibraryView.swift */; };
 		84838198DA0E65F9CBCECD87 /* CommonViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3AF8D32DFF65087A948E5F3E /* CommonViews.swift */; };
 		8494EDF052033A32736DA2CD /* DeskCommands.swift in Sources */ = {isa = PBXBuildFile; fileRef = BBE5A9FD6E7926576EAF8115 /* DeskCommands.swift */; };
+		86FC28AC3F3084299AA879EF /* AppIconPreviews.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = EEF80B380D8C11DF9504566C /* AppIconPreviews.xcassets */; };
 		88484E3D33F36FF509846E0E /* ThemeBridges.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3C8952B94A6BD068EA734518 /* ThemeBridges.swift */; };
 		88AA1B027D873DF12C8C849E /* BomSelfTest.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6FCD678DF2B15800B741BEB1 /* BomSelfTest.swift */; };
 		88AC6A3DB94007232DBA35E5 /* GenerateOutcomes.swift in Sources */ = {isa = PBXBuildFile; fileRef = 43D4EBBDE903BFD851647F34 /* GenerateOutcomes.swift */; };
@@ -156,6 +158,7 @@
 		9CF4F7820A659652A13D9E09 /* GenerateProjectView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 091E7C5D0B2B4C8EA3C5C6EB /* GenerateProjectView.swift */; };
 		A03BC12F9DC1C3A5A5E630D7 /* DesignModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB1FBA106ED4B32C213038A7 /* DesignModel.swift */; };
 		A0DD42C4FFA33E9BEA649C5B /* CommandPalette.swift in Sources */ = {isa = PBXBuildFile; fileRef = 67A03FD333CE4FF231237DE9 /* CommandPalette.swift */; };
+		A21D3B2C9B0EC734C331F6A1 /* TouchAppIconSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = F36318D7999856AFDDFFA76D /* TouchAppIconSection.swift */; };
 		A47F8A5298474130721EC198 /* DesignModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB1FBA106ED4B32C213038A7 /* DesignModel.swift */; };
 		A4B8477B59581C31717127D3 /* TouchSheets.swift in Sources */ = {isa = PBXBuildFile; fileRef = 82B0D6DA41A11587F514728C /* TouchSheets.swift */; };
 		A933E41AFFFC1D1C1849FDCE /* Tools.swift in Sources */ = {isa = PBXBuildFile; fileRef = F07451B8B7CEC74F78569709 /* Tools.swift */; };
@@ -200,6 +203,7 @@
 		CC48BF0C8C3EFFEF79979660 /* GenerateViewport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 234592B9F6248DFDC2C45FC1 /* GenerateViewport.swift */; };
 		CCBF1660D9B277AEC20F8DF5 /* GenerateSelfTest.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6CD8D4940B52AE54BF44CF8B /* GenerateSelfTest.swift */; };
 		CCDF0557F2A1E03C6D1F3398 /* AssembleCanvas.swift in Sources */ = {isa = PBXBuildFile; fileRef = D54D03BA238A53AEC7C1B5BB /* AssembleCanvas.swift */; };
+		CCF75BB91750FC67ECE11D88 /* AboutCredits.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7B7D72A0C48361738CBC407D /* AboutCredits.swift */; };
 		CCFC80DB3700E742762FE545 /* SafetyBar.swift in Sources */ = {isa = PBXBuildFile; fileRef = EBAFC253B7A42923CFA29A47 /* SafetyBar.swift */; };
 		CE06B5F275D92DBDF932234E /* GenerateLive.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6B939933A9E0F62B0A7AE880 /* GenerateLive.swift */; };
 		CF65BDCC1795CCA8C3E92E09 /* RobotControls.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4143B3D1CFF69171214AFA1C /* RobotControls.swift */; };
@@ -240,6 +244,7 @@
 		FA218DE8D90EB6ABE7780FA5 /* GenerateScene.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1472B60FE780629A7156623F /* GenerateScene.swift */; };
 		FA2A5D0EF9454B8CE0F5385E /* GenerateInspector.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0BEF2BD0A83AFB3FE69C41F /* GenerateInspector.swift */; };
 		FA50C1DE12EA28139F44E17A /* ThemeScenes.swift in Sources */ = {isa = PBXBuildFile; fileRef = 26B01C23D4602757196184E8 /* ThemeScenes.swift */; };
+		FB8F784AAF6DFC267B9BC812 /* AppIconPreviews.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = EEF80B380D8C11DF9504566C /* AppIconPreviews.xcassets */; };
 		FEB29680EA676AFB8813BC97 /* StageScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = 82C736CF5517A6097BC26B67 /* StageScreen.swift */; };
 		FEDF94B77466C586A213ECAB /* FlowReporting.swift in Sources */ = {isa = PBXBuildFile; fileRef = 81C44FC197697E742BFD9D38 /* FlowReporting.swift */; };
 		FF0E13BDCDAD76FAAD39B097 /* PCBCanvas.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1D1F18AE0D526C526FF07AB4 /* PCBCanvas.swift */; };
@@ -332,6 +337,7 @@
 		745D83EC2D8B367AF2C4D43E /* Localizable.xcstrings */ = {isa = PBXFileReference; lastKnownFileType = text.json.xcstrings; path = Localizable.xcstrings; sourceTree = "<group>"; };
 		77AFC3A2C7D25A9CCBE7322B /* BoardLink.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BoardLink.swift; sourceTree = "<group>"; };
 		78DB719F7DDC7037F40641A3 /* ProjectFiles.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProjectFiles.swift; sourceTree = "<group>"; };
+		7B7D72A0C48361738CBC407D /* AboutCredits.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AboutCredits.swift; sourceTree = "<group>"; };
 		7EA0945B1956AF40BCDFADBE /* StartWindow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StartWindow.swift; sourceTree = "<group>"; };
 		7F05F4DB6823381A05553073 /* ProjectWindow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProjectWindow.swift; sourceTree = "<group>"; };
 		812579DC75498AA5D6AB6F9A /* ToolIcons */ = {isa = PBXFileReference; lastKnownFileType = folder; name = ToolIcons; path = Resources/ToolIcons; sourceTree = SOURCE_ROOT; };
@@ -389,7 +395,9 @@
 		E325639CD6C7A3355D3C095C /* ElectronicsOverlays.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ElectronicsOverlays.swift; sourceTree = "<group>"; };
 		E82DD3CDC34A46978E781EFF /* DeskPCBView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeskPCBView.swift; sourceTree = "<group>"; };
 		EBAFC253B7A42923CFA29A47 /* SafetyBar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SafetyBar.swift; sourceTree = "<group>"; };
+		EEF80B380D8C11DF9504566C /* AppIconPreviews.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = AppIconPreviews.xcassets; sourceTree = "<group>"; };
 		F07451B8B7CEC74F78569709 /* Tools.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Tools.swift; sourceTree = "<group>"; };
+		F36318D7999856AFDDFFA76D /* TouchAppIconSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TouchAppIconSection.swift; sourceTree = "<group>"; };
 		F4A77374ED99614E8009ED99 /* ViewportAccessibility.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ViewportAccessibility.swift; sourceTree = "<group>"; };
 		F6C2CDB912FA87CF32180DC7 /* GenerateEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GenerateEngine.swift; sourceTree = "<group>"; };
 		F6F39F931A750D8FB4424A5A /* LibraryEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LibraryEngine.swift; sourceTree = "<group>"; };
@@ -494,6 +502,7 @@
 		42FD655DD067268DD2A8F842 /* Touch */ = {
 			isa = PBXGroup;
 			children = (
+				F36318D7999856AFDDFFA76D /* TouchAppIconSection.swift */,
 				036AE9C7561FD5F04F4EA6E3 /* TouchChrome.swift */,
 				D08BF28BFF34B87DB2D1D583 /* TouchPCBView.swift */,
 				30A581FD8803976EB9B39F2B /* TouchRobotStage.swift */,
@@ -529,6 +538,7 @@
 		58EA3D1B3313E6678E04C234 /* Resources */ = {
 			isa = PBXGroup;
 			children = (
+				EEF80B380D8C11DF9504566C /* AppIconPreviews.xcassets */,
 				745D83EC2D8B367AF2C4D43E /* Localizable.xcstrings */,
 			);
 			path = Resources;
@@ -678,6 +688,7 @@
 		DFF34BD71ABF0C09E25583E5 /* UI */ = {
 			isa = PBXGroup;
 			children = (
+				7B7D72A0C48361738CBC407D /* AboutCredits.swift */,
 				3534FE6374783A2D84121C16 /* CommandIcon.swift */,
 				3AF8D32DFF65087A948E5F3E /* CommonViews.swift */,
 				1D1F18AE0D526C526FF07AB4 /* PCBCanvas.swift */,
@@ -833,6 +844,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				86FC28AC3F3084299AA879EF /* AppIconPreviews.xcassets in Resources */,
 				D75C2AAD771D48AF6D7F0628 /* AppIcons.xcassets in Resources */,
 				2A3F5D455070A65A1C6AFFD7 /* Localizable.xcstrings in Resources */,
 				894268853E1C683D84B0CCAC /* ToolIcons in Resources */,
@@ -843,6 +855,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				FB8F784AAF6DFC267B9BC812 /* AppIconPreviews.xcassets in Resources */,
 				C9FA4E10B382746CC2042A4F /* AppIcons.xcassets in Resources */,
 				B19854870862220369FEC2AE /* Localizable.xcstrings in Resources */,
 				049CA90E23489C8966F04948 /* ToolIcons in Resources */,
@@ -856,6 +869,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				CCF75BB91750FC67ECE11D88 /* AboutCredits.swift in Sources */,
 				5C3C24A405338A23129B4DFA /* ActionTiming.swift in Sources */,
 				5B23C20D2850D1010E987552 /* AnchorLayout.swift in Sources */,
 				45F0E6435A6E3B762DA4F125 /* ArmSimModel.swift in Sources */,
@@ -945,6 +959,7 @@
 				8A9FD46674AE39C280D95ACF /* ThemeSwiftUI.swift in Sources */,
 				79F2C41C22C219AD3E396B05 /* ThemeTokens.swift in Sources */,
 				216D3AAC05F99BFCDBFEDE38 /* Tools.swift in Sources */,
+				A21D3B2C9B0EC734C331F6A1 /* TouchAppIconSection.swift in Sources */,
 				F343613AD107424661B185C8 /* TouchChrome.swift in Sources */,
 				64CD2BBD8D38E7BE142B57D7 /* TouchPCBView.swift in Sources */,
 				C15F2A6622C1F54919E1ADA7 /* TouchRobotStage.swift in Sources */,
@@ -988,6 +1003,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				060E91F037793DEA6615956E /* AboutCredits.swift in Sources */,
 				FFF31539CE5E1346EAA75ADC /* ActionTiming.swift in Sources */,
 				0C60ABAA25C1A07FAE590D57 /* AnchorLayout.swift in Sources */,
 				B64EDB7680AA12AC9BE7004D /* ArmSimModel.swift in Sources */,

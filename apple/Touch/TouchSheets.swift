@@ -86,8 +86,15 @@ struct TouchBrowserSheet: View {
                     Button("Libraries", systemImage: "books.vertical") { dismiss(); showLibrary() }
                 }
                 Section("Appearance") { ThemeModePicker() }
+                TouchAppIconSection()
                 UnitSettingsStoredSection()
                 PrivacySettingsSections()
+                Section {
+                    NavigationLink { AboutCreditsView() } label: {
+                        Label("About ViaForm", systemImage: "info.circle")
+                    }
+                    .frame(minHeight: VFSize.touchTarget)
+                }
             }
             .navigationTitle(ProjectTitle.of(flow: flow, design: model))
             .navigationBarTitleDisplayMode(.inline)
