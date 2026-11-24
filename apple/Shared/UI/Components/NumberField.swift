@@ -33,6 +33,11 @@ struct NumberField: View {
     @State private var error: String?
     @State private var scrubStart: Double?
     @FocusState private var focused: Bool
+    // The reader's display units (P2-23): the field shows and takes a bare number in them.
+    @AppStorage(UnitSettings.lengthKey) private var lengthPref = LengthDisplay.mm.rawValue
+    @AppStorage(UnitSettings.angleKey) private var anglePref = AngleDisplay.deg.rawValue
+    @AppStorage(UnitSettings.massKey) private var massPref = MassDisplay.g.rawValue
+    @AppStorage(UnitSettings.decimalsKey) private var decimalsPref = -1
 
     init(_ label: String = "", value: Binding<Double>, unit: VFUnit = .none, range: ClosedRange<Double>? = nil,
          step: Double = 1, width: CGFloat = 72, showsUnit: Bool = true, onCommit: (() -> Void)? = nil) {
@@ -52,6 +57,14 @@ struct NumberField: View {
     }
 
     private var preview: Result<Double, VFExpression.Failure> { VFExpression(unit: unit).evaluate(text) }
+
+    /// Base units per display unit (25.4 for inches); 1 for quantities that are not converted.
+    private var factor: Double { UnitSettings.current.inputFactor(for: unit) }
+    /// The editable text of a base value, in the display unit.
+    private func editable(_ v: Double) -> String { VFFormat.editable(v / factor) }
+    /// One arrow or scrub step in base units: `step` turned into a round display step.
+    private var baseStep: Double { UnitSettings.current.displayStep(step, for: unit) * factor }
+    private var unitToken: String { "\(lengthPref)|\(anglePref)|\(massPref)|\(decimalsPref)" }
 
     var body: some View {
         VStack(alignment: .trailing, spacing: VFSpace.xxs) {
@@ -113,8 +126,8 @@ struct NumberField: View {
                         @unknown default: break
                         }
                     }
-                if showsUnit, !unit.symbol.isEmpty {
-                    Text(unit.symbol).font(VFFont.row).foregroundStyle(theme.inkSecondary).accessibilityHidden(true)
+                if showsUnit, !VFFormat.symbol(unit).isEmpty {
+                    Text(VFFormat.symbol(unit)).font(VFFont.row).foregroundStyle(theme.inkSecondary).accessibilityHidden(true)
                 }
             }
             // While typing an expression, the result it will commit; or the error, beside the field.
@@ -124,14 +137,15 @@ struct NumberField: View {
                     .foregroundStyle(theme.danger)
                     .fixedSize(horizontal: false, vertical: true)
                     .accessibilityLabel(Text("Error: \(error)"))
-            } else if focused, case .success(let v) = preview, VFFormat.editable(v) != text.trimmingCharacters(in: .whitespaces) {
+            } else if focused, case .success(let v) = preview, editable(v) != text.trimmingCharacters(in: .whitespaces) {
                 Text("= \(VFFormat.value(clamped(v), unit))")
                     .font(VFFont.micro)
                     .foregroundStyle(theme.inkTertiary)
             }
         }
-        .onAppear { text = VFFormat.editable(value) }
-        .onChange(of: value) { _, v in if !focused { text = VFFormat.editable(v) } }
+        .onAppear { text = editable(value) }
+        .onChange(of: value) { _, v in if !focused { text = editable(v) } }
+        .onChange(of: unitToken) { _, _ in if !focused { text = editable(value) } }
         .onChange(of: focused) { _, f in if !f { commit() } }
         .onChange(of: text) { _, _ in if error != nil, case .success = preview { error = nil } }
     }
@@ -151,7 +165,7 @@ struct NumberField: View {
                 error = nil
             }
             if c != value { value = c }
-            text = VFFormat.editable(c)
+            text = editable(c)
             onCommit?()
         case .failure(.empty):
             revert()
@@ -162,18 +176,18 @@ struct NumberField: View {
 
     private func revert() {
         error = nil
-        text = VFFormat.editable(value)
+        text = editable(value)
     }
 
     private func nudge(_ sign: Double, modifiers: EventModifiers) {
-        var d = step
+        var d = baseStep
         if modifiers.contains(.shift) { d *= 10 }
         if modifiers.contains(.option) { d *= 0.1 }
         let base: Double
         if case .success(let v) = preview { base = v } else { base = value }
         let next = clamped(base + sign * d)
         value = next
-        text = VFFormat.editable(next)
+        text = editable(next)
         error = nil
         onCommit?()
     }
@@ -186,14 +200,14 @@ struct NumberField: View {
                 guard let s = scrubStart else { return }
                 #if os(macOS)
                 let flags = NSEvent.modifierFlags
-                var d = step
+                var d = baseStep
                 if flags.contains(.shift) { d *= 10 }
                 if flags.contains(.option) { d *= 0.1 }
                 #else
-                let d = step
+                let d = baseStep
                 #endif
                 let next = clamped(s + (g.translation.width / 4).rounded() * d)
-                if next != value { value = next; text = VFFormat.editable(next) }
+                if next != value { value = next; text = editable(next) }
             }
             .onEnded { _ in
                 scrubStart = nil

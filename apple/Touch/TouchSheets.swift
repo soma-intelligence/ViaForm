@@ -86,6 +86,8 @@ struct TouchBrowserSheet: View {
                     Button("Libraries", systemImage: "books.vertical") { dismiss(); showLibrary() }
                 }
                 Section("Appearance") { ThemeModePicker() }
+                UnitSettingsStoredSection()
+                PrivacySettingsSections()
             }
             .navigationTitle(ProjectTitle.of(flow: flow, design: model))
             .navigationBarTitleDisplayMode(.inline)

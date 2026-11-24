@@ -1,4 +1,7 @@
 import SwiftUI
+#if os(macOS)
+import AppKit
+#endif
 
 /// The Generate workspace: set up a 3D study (design space, material, goal, limits, and the
 /// regions that hold, load, keep out and keep in, placed by number or by dragging them in the
@@ -525,11 +528,20 @@ func formatFactor(_ f: Double) -> String {
 /// allowable, with the limit the study holds marked; the scale can be switched.
 struct StressLegend: View {
     @Environment(\.viaFormTheme) private var theme
+    @Environment(\.accessibilityDifferentiateWithoutColor) private var differentiateSetting
     let preview: PreviewMesh
     let study: Study
     @Binding var scale: StressColors.Scale
+    /// Pins the Differentiate Without Color look (snapshots); nil follows the setting.
+    var differentiateOverride: Bool? = nil
+    /// The colour scale menu (offscreen snapshots cannot draw a menu).
+    var showsScaleMenu = true
 
     private let barWidth: CGFloat = 200
+    /// P2-26: worded bands, a hatch on the over-limit part and a count of the regions over it.
+    private var differentiate: Bool { differentiateOverride ?? (differentiateSetting || StressColors.forceDifferentiate) }
+    private var allowable: Double { max(study.material.allowable, 1e-9) }
+    private var bands: [StressColors.Band] { StressColors.bands(limit: study.stressLimit, allowable: allowable) }
 
     var body: some View {
         VStack(alignment: .leading, spacing: VFSpace.xs) {
@@ -537,28 +549,24 @@ struct StressLegend: View {
                 HStack {
                     Text("Von Mises stress, MPa").font(VFFont.rowEmphasis).foregroundStyle(theme.ink)
                     Spacer(minLength: VFSpace.m)
-                    Menu {
-                        Picker("Colours", selection: $scale) {
-                            ForEach(StressColors.Scale.allCases) { Text($0.title).tag($0) }
-                        }
-                    } label: {
-                        Image(systemName: "paintpalette").font(VFFont.glyph(12))
-                    }
-                    .menuStyle(.borderlessButton)
-                    .fixedSize()
-                    .help("Heat map colours")
-                    .accessibilityLabel("Heat map colours")
+                    if showsScaleMenu { scaleMenu }
                 }
                 GeometryReader { g in
-                    let allowable = max(study.material.allowable, 1e-9)
                     let x = min(max(study.stressLimit / allowable, 0), 1) * g.size.width
                     ZStack(alignment: .leading) {
                         RoundedRectangle(cornerRadius: VFRadius.mark)
                             .fill(LinearGradient(gradient: StressColors.gradient(scale), startPoint: .leading, endPoint: .trailing))
+                        if differentiate {
+                            ForEach(bands) { b in
+                                BandPattern(kind: b.kind, ink: theme.ink, halo: theme.panel)
+                                    .frame(width: max(g.size.width * (b.to - b.from), 0), height: g.size.height)
+                                    .offset(x: g.size.width * b.from)
+                            }
+                        }
                         Rectangle().fill(theme.ink).frame(width: 2, height: g.size.height + 6).offset(x: x - 1)
                     }
                 }
-                .frame(width: barWidth, height: 10)
+                .frame(width: barWidth, height: differentiate ? 16 : 10)
                 .accessibilityHidden(true)
                 HStack {
                     Text("0")
@@ -571,6 +579,7 @@ struct StressLegend: View {
                 .foregroundStyle(theme.inkSecondary)
                 .frame(width: barWidth)
                 .accessibilityHidden(true)
+                if differentiate { bandRows }
                 let peak = Double(preview.peakStress)
                 if peak > study.stressLimit {
                     Label("Peak \(Int(peak.rounded())) MPa, over the limit", systemImage: "exclamationmark.triangle.fill")
@@ -578,6 +587,13 @@ struct StressLegend: View {
                         .foregroundStyle(theme.warning)
                 } else {
                     Text("Peak \(Int(peak.rounded())) MPa").font(VFFont.rowEmphasis).foregroundStyle(theme.ink)
+                }
+                if differentiate {
+                    Text(regionsLine)
+                        .font(VFFont.small)
+                        .foregroundStyle(theme.ink)
+                        .frame(width: barWidth, alignment: .leading)
+                        .fixedSize(horizontal: false, vertical: true)
                 }
             } else {
                 Text(preview.voxels ? "Voxels (no surface from the solver)" : "No stress on this surface")
@@ -590,6 +606,94 @@ struct StressLegend: View {
         .vfSurface(.floating)
         .accessibilityElement(children: .contain)
         .accessibilityLabel(Text("Stress legend, 0 to \(Int(study.material.allowable.rounded())) MPa, limit \(Int(study.stressLimit.rounded())) MPa, peak \(Int(Double(preview.peakStress).rounded())) MPa"))
+        .accessibilityValue(preview.coloredByStress ? Text(regionsLine) : Text(""))
+    }
+
+    private var scaleMenu: some View {
+        Menu {
+            Picker("Colours", selection: $scale) {
+                ForEach(StressColors.Scale.allCases) { Text($0.title).tag($0) }
+            }
+        } label: {
+            Image(systemName: "paintpalette").font(VFFont.glyph(12))
+        }
+        .menuStyle(.borderlessButton)
+        .fixedSize()
+        .help("Heat map colours")
+        .accessibilityLabel("Heat map colours")
+    }
+
+    /// One row per band: its pattern swatch, its word and its range in MPa.
+    private var bandRows: some View {
+        VStack(alignment: .leading, spacing: VFSpace.xxs) {
+            ForEach(bands) { b in
+                HStack(spacing: VFSpace.s) {
+                    ZStack {
+                        Rectangle().fill(Color(scene: SIMD3<Double>(StressColors.rgb(Float((b.from + b.to) / 2), scale: scale))))
+                        BandPattern(kind: b.kind, ink: theme.ink, halo: theme.panel)
+                    }
+                    .frame(width: 22, height: 12)
+                    .clipShape(RoundedRectangle(cornerRadius: VFRadius.mark))
+                    .overlay(RoundedRectangle(cornerRadius: VFRadius.mark).strokeBorder(theme.hairline))
+                    .accessibilityHidden(true)
+                    Text(b.title).font(VFFont.rowEmphasis).foregroundStyle(theme.ink)
+                    Spacer(minLength: VFSpace.s)
+                    Text("\(Int((b.from * allowable).rounded())) to \(Int((b.to * allowable).rounded())) MPa")
+                        .font(VFFont.small)
+                        .foregroundStyle(theme.inkSecondary)
+                }
+                .frame(width: barWidth)
+                .accessibilityElement(children: .combine)
+            }
+        }
+        .padding(.top, VFSpace.xxs)
+    }
+
+    private var regionsLine: String {
+        let n = preview.overLimitRegions
+        guard n > 0 else { return String(localized: "No region over the limit") }
+        let pct = max(Int((preview.overLimitShare * 100).rounded()), 1)
+        return String(localized: "\(n) regions over the limit, \(pct) % of the surface")
+    }
+}
+
+/// A band's mark that does not rely on colour: nothing for Low, dots for At limit, a hatch
+/// and an outline for Over limit. Each stroke has a halo so it reads on any colour of the scale.
+private struct BandPattern: View {
+    let kind: StressColors.Band.Kind
+    let ink: Color
+    let halo: Color
+
+    var body: some View {
+        Canvas { ctx, size in
+            let r = CGRect(origin: .zero, size: size)
+            switch kind {
+            case .low:
+                break
+            case .atLimit:
+                var dots = Path()
+                var x: CGFloat = 3
+                while x < size.width {
+                    dots.addEllipse(in: CGRect(x: x - 1.5, y: size.height / 2 - 1.5, width: 3, height: 3))
+                    x += 6
+                }
+                ctx.stroke(dots, with: .color(halo), lineWidth: 1.5)
+                ctx.fill(dots, with: .color(ink))
+            case .over:
+                var hatch = Path()
+                var x = -size.height
+                while x < size.width {
+                    hatch.move(to: CGPoint(x: x, y: size.height))
+                    hatch.addLine(to: CGPoint(x: x + size.height, y: 0))
+                    x += 5
+                }
+                ctx.clip(to: Path(r))
+                ctx.stroke(hatch, with: .color(halo), lineWidth: 2.6)
+                ctx.stroke(hatch, with: .color(ink), lineWidth: 1.2)
+                ctx.stroke(Path(r.insetBy(dx: 0.75, dy: 0.75)), with: .color(ink), lineWidth: 1.5)
+            }
+        }
+        .allowsHitTesting(false)
     }
 }
 
@@ -614,5 +718,84 @@ struct AssemblyBadge: View {
         }
         .padding(VFSpace.panelPadding)
         .vfSurface(.floating)
+    }
+}
+
+// MARK: Checks
+
+/// P2-26 for `--selftest`: the legend's bands, the over-limit region count, and with
+/// `--legend-snapshot=<dir>` the legend as drawn, default and Differentiate Without Color, in
+/// both themes (heatmap-dwc-light.png, heatmap-dwc-dark.png).
+@MainActor
+enum HeatMapLegendSelfTest {
+    static func checks() -> [(Bool, String)] {
+        var out: [(Bool, String)] = []
+        let bands = StressColors.bands(limit: 100, allowable: 200)
+        out.append((bands.map(\.kind) == [.low, .atLimit, .over] && abs(bands[1].to - 0.5) < 1e-9 && bands.allSatisfy { !$0.title.isEmpty },
+                    "P2-26 heat map legend has Low, At limit and Over limit bands"))
+        let split = PreviewMesh.overLimit(stress: [10, 10, 10, 300, 300, 300, 300, 300, 300],
+                                          triangles: [0, 1, 2, 3, 4, 5, 6, 7, 8], limit: 100)
+        out.append((split.regions == 2 && split.vertices == 6, "P2-26 two separate hot patches count as 2 regions (got \(split.regions))"))
+        // The cantilever at its own 2 mm voxels (coarser ones lose the tip load), briefly run.
+        var s = GenerateModel.study(.cantilever)
+        s.iterations = 10
+        s.variants = 1
+        do {
+            let job = try GenerateJob(json: try GenerateEngine.json(s))
+            let o = try job.outcome()
+            guard let c = o.candidates.first else { return out + [(false, "P2-26 study gave no candidate")] }
+            let first = PreviewMesh.make(c, study: s)
+            s.maxStress = Double(first.peakStress) * 0.6
+            let p = PreviewMesh.make(c, study: s)
+            out.append((p.coloredByStress && p.overLimitRegions > 0 && p.overLimitShare > 0 && p.overLimitShare < 1,
+                        "P2-26 study surface over a lowered limit reports \(p.overLimitRegions) regions, \(Int(p.overLimitShare * 100)) %, peak \(Int(first.peakStress)) MPa"))
+            if let dir = ProcessInfo.processInfo.arguments.first(where: { $0.hasPrefix("--legend-snapshot=") })?.dropFirst(18) {
+                out.append((snapshot(p, study: s, dir: String(dir)), "P2-26 legend snapshots written to \(dir)"))
+            }
+        } catch {
+            out.append((false, "P2-26 study: \(error.localizedDescription)"))
+        }
+        return out
+    }
+
+    private static func snapshot(_ p: PreviewMesh, study: Study, dir: String) -> Bool {
+        #if os(macOS)
+        var ok = true
+        for mode in [ThemeMode.light, .dark] {
+            let board = LegendBoard(preview: p, study: study).viaFormTheme(mode)
+            let r = ImageRenderer(content: board)
+            r.scale = 2
+            guard let cg = r.cgImage,
+                  let png = NSBitmapImageRep(cgImage: cg).representation(using: .png, properties: [:]) else { ok = false; continue }
+            do { try png.write(to: URL(fileURLWithPath: dir).appendingPathComponent("heatmap-dwc-\(mode.rawValue).png")) } catch { ok = false }
+        }
+        return ok
+        #else
+        return false
+        #endif
+    }
+}
+
+/// The legend twice, as it reads by default and with Differentiate Without Color.
+private struct LegendBoard: View {
+    @Environment(\.viaFormTheme) private var theme
+    let preview: PreviewMesh
+    let study: Study
+
+    var body: some View {
+        HStack(alignment: .top, spacing: VFSpace.xxl) {
+            column("Default", differentiate: false)
+            column("Differentiate Without Color", differentiate: true)
+        }
+        .padding(VFSpace.xxl)
+        .background(theme.chrome)
+    }
+
+    private func column(_ title: LocalizedStringKey, differentiate: Bool) -> some View {
+        VStack(alignment: .leading, spacing: VFSpace.m) {
+            Text(title).font(VFFont.caps).foregroundStyle(theme.inkSecondary)
+            StressLegend(preview: preview, study: study, scale: .constant(.viridis),
+                          differentiateOverride: differentiate, showsScaleMenu: false)
+        }
     }
 }

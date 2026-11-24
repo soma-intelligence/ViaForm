@@ -54,6 +54,37 @@ enum StressColors {
         return simd_mix(stops[i], stops[i + 1], SIMD3(repeating: x - Float(i)))
     }
 
+    /// P2-26: legend bands that read without colour. Off the colour, `--differentiate-without-color`
+    /// forces them for screenshots and checks.
+    static let forceDifferentiate = ProcessInfo.processInfo.arguments.contains("--differentiate-without-color")
+
+    /// The legend's worded bands, as fractions of the allowable: low up to 80 % of the limit,
+    /// at the limit from there to the limit, over the limit beyond it.
+    struct Band: Identifiable, Equatable {
+        enum Kind { case low, atLimit, over }
+        var kind: Kind
+        var from: Double
+        var to: Double
+        var id: Kind { kind }
+        var title: String {
+            switch kind {
+            case .low: String(localized: "Low")
+            case .atLimit: String(localized: "At limit")
+            case .over: String(localized: "Over limit")
+            }
+        }
+    }
+
+    static let nearLimit = 0.8
+
+    static func bands(limit: Double, allowable: Double) -> [Band] {
+        let a = max(allowable, 1e-9)
+        let l = min(max(limit / a, 0), 1)
+        let near = l * nearLimit
+        return [Band(kind: .low, from: 0, to: near), Band(kind: .atLimit, from: near, to: l), Band(kind: .over, from: l, to: 1)]
+            .filter { $0.to > $0.from }
+    }
+
     static func gradient(_ scale: Scale = current) -> Gradient {
         Gradient(colors: scale.stops.map { Color(scene: SIMD3(Double($0.x), Double($0.y), Double($0.z))) })
     }
@@ -84,6 +115,10 @@ struct PreviewMesh: Sendable {
     /// Worst vertex stress, MPa (0 when the engine sent none).
     var peakStress: Float = 0
     var coloredByStress = false
+    /// Connected patches of the surface over the study's stress limit (P2-26: the legend says
+    /// it in words), and their share of the vertices.
+    var overLimitRegions = 0
+    var overLimitShare: Float = 0
     /// The surface is the voxels' faces (the engine sent no mesh).
     var voxels = false
 
@@ -99,7 +134,7 @@ struct PreviewMesh: Sendable {
         if base.getRed(&r, green: &g, blue: &b, alpha: &a) { rgb = SIMD3(Float(r), Float(g), Float(b)) }
         #endif
         if c.mesh.triangleCount > 0, c.mesh.vertexCount > 0 {
-            return surface(c.mesh, allowable: Float(study.material.allowable), plain: rgb)
+            return surface(c.mesh, allowable: Float(study.material.allowable), limit: Float(study.stressLimit), plain: rgb)
         }
         return voxelFaces(c.grid, c.density, plain: rgb)
     }
@@ -116,11 +151,11 @@ struct PreviewMesh: Sendable {
         #endif
         var plain = m
         plain.stress = []
-        return surface(plain, allowable: 0, plain: rgb)
+        return surface(plain, allowable: 0, limit: 0, plain: rgb)
     }
 
     /// The engine's surface: area-weighted vertex normals, colours from the vertex stress.
-    private static func surface(_ m: StudyMesh, allowable: Float, plain: SIMD3<Float>) -> PreviewMesh {
+    private static func surface(_ m: StudyMesh, allowable: Float, limit: Float, plain: SIMD3<Float>) -> PreviewMesh {
         let n = m.vertexCount
         var out = PreviewMesh()
         // Keep only triangles whose corners exist.
@@ -182,7 +217,40 @@ struct PreviewMesh: Sendable {
         out.max = lo.x <= hi.x ? hi : .zero
         out.peakStress = peak
         out.coloredByStress = stressed
+        if stressed, limit > 0 {
+            let (regions, over) = overLimit(stress: m.stress, triangles: tris, limit: limit)
+            out.overLimitRegions = regions
+            out.overLimitShare = n > 0 ? Float(over) / Float(n) : 0
+        }
         return out
+    }
+
+    /// Vertices over `limit` joined by the triangle edges between them: the number of
+    /// connected patches, and how many vertices they hold.
+    static func overLimit(stress: [Float], triangles: [UInt32], limit: Float) -> (regions: Int, vertices: Int) {
+        let n = stress.count
+        var parent = Array(0..<n)
+        func root(_ i: Int) -> Int {
+            var i = i
+            while parent[i] != i { parent[i] = parent[parent[i]]; i = parent[i] }
+            return i
+        }
+        func over(_ i: Int) -> Bool { stress[i].isFinite && stress[i] > limit }
+        func join(_ a: Int, _ b: Int) {
+            guard a < n, b < n, over(a), over(b) else { return }
+            let ra = root(a), rb = root(b)
+            if ra != rb { parent[ra] = rb }
+        }
+        for t in stride(from: 0, to: triangles.count - 2, by: 3) {
+            let a = Int(triangles[t]), b = Int(triangles[t + 1]), c = Int(triangles[t + 2])
+            join(a, b); join(b, c); join(c, a)
+        }
+        var roots = Set<Int>(), count = 0
+        for i in 0..<n where over(i) {
+            count += 1
+            roots.insert(root(i))
+        }
+        return (roots.count, count)
     }
 
     /// The outer faces of the voxels at density 0.5 and over, flat shaded.

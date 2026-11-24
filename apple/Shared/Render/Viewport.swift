@@ -18,6 +18,7 @@ struct Viewport: View {
             SketchProfileLayer(model: model, color: Color(theme.highlight)).allowsHitTesting(false)
             SketchOverlay(model: model, color: Color(theme.highlight)).allowsHitTesting(false)
             SketchDimensionLayer(model: model)
+            ViewportAccessibilityLayer(model: model)
         }
     }
 }

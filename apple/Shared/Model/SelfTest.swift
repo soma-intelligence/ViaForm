@@ -132,6 +132,8 @@ enum SelfTest {
         for (ok, what) in MainActor.assumeIsolated({ ProjectSelfTest.checks() }) { check(ok, what) }
         // P1-5 typed command forms, P1-12 body rename (CommonViews.swift).
         for (ok, what) in MainActor.assumeIsolated({ CommandFormSelfTest.checks() }) { check(ok, what) }
+        for (ok, what) in UnitSettingsSelfTest.checks() { check(ok, what) } // P2-23 display units
+        for (ok, what) in MainActor.assumeIsolated({ ViewportAccessibilitySelfTest.checks() }) { check(ok, what) }
         #if os(macOS)
         let alertOK = MainActor.assumeIsolated { () -> Bool in
             let a = FileActions.failureAlert(url: URL(fileURLWithPath: "/tmp/x.viaform"), reason: "Disk full")
@@ -139,6 +141,7 @@ enum SelfTest {
                 && a.informativeText.hasPrefix("Disk full")
         }
         check(alertOK, "P0-4 a failed save offers Try Again (default), Save As, Cancel and says why")
+        for (ok, what) in CompactLayoutSelfTest.checks() { check(ok, what) }
         #endif
 
         // Simulation: the Rust flight model (sim/), through the bridge.

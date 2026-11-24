@@ -75,11 +75,11 @@ P1:
 
 P2:
 - Fixed: P2-1 to P2-6, P2-8 to P2-11, P2-13 to P2-19, P2-21, P2-22, P2-24 and P2-25.
-- P2-7 partial. The minimum window is 760 x 560. The ribbon fold and the inspector overlay are not done.
-- P2-12 partial. Done: PCB parts, the joystick, the timeline and the Assemble viewport. Not done: the Design viewport has no accessibility children.
-- P2-20 partial. Badge, e-stop and danger pairs are tested. Toast and banner pairs are not.
-- P2-23 partial. Settings has General and Navigation tabs. Units and Privacy are missing.
-- P2-26 partial. Done: StatusDot shapes, the dashed PCB layer, BOM and Library words. Not done: a heat map pattern.
+- P2-7 fixed (2026-11-23). The minimum window is 760 x 560 and every compact width is named in `Desk/CompactLayout.swift`. The stage ribbon folds its last groups into More (labelled, then icons, then one group at a time), keeping every command with its label, enabled state and reason. Under 1100 pt the inspector floats over the stage on a floating surface, opened by the same toggle and closed with Esc. Under 900 pt the sidebar collapses, and a choice the reader made at that width is kept. Tested in `--selftest`; captured in `screens/uiux/after/compact-760-light.png`, `compact-760-dark.png` and `compact-1000-light.png`. Not done: the Assemble ribbon has fixed tabs with no More fold, and Generate's study panel sits under the floating inspector at 760.
+- P2-12 fixed (2026-11-23). The Design viewport gives VoiceOver one element per body (`Shared/Render/ViewportAccessibility.swift`), framed where the body shows on screen, with its name, visibility, volume, size and selected state, and the actions select, Frame and Hide or Show. Move has X, Y and Z fields with units on Mac and iPad.
+- P2-20 fixed (2026-11-23). Toast, InlineError and ErrorBanner (both severities) and the stale stage banner pairs are tested in every theme, including Increase Contrast. All pass AA with no token change.
+- P2-23 fixed (2026-11-23). Settings has General, Navigation, Units and Privacy tabs, and the window resizes per tab. Units (length, angle, mass, decimal places) drive `VFFormat` and `NumberField`; the engine stays in mm, degrees and grams. Privacy has a usage data switch (off, and nothing is sent: there is no reporting code), Clear Recent Projects with a confirmation, and the data and cache folders. The iPad browser sheet has the same Units and Privacy sections. Not done: about 100 strings built by hand with a literal "mm" still ignore the unit setting.
+- P2-26 fixed (2026-11-23). With Differentiate Without Color on, the stress legend shows worded bands (Low, At limit from 80 % of the limit, Over limit) with their MPa ranges, dots for At limit and a hatch with an outline for Over limit, and a line says how many regions are over the limit and how much of the surface they cover. Scene colours are unchanged. Captured in `screens/uiux/after/heatmap-dwc-light.png` and `heatmap-dwc-dark.png`.
 
 P3:
 - Fixed: P3-1 to P3-13.

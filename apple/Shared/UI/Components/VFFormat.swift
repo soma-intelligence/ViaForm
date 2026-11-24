@@ -102,8 +102,16 @@ enum VFUnit: Hashable, Sendable {
 
 enum VFFormat {
     /// "12.0 mm", "45.0°", "820 g", "1.25 kg" (mass switches to kg at 1 kg).
+    /// Length, angle and mass follow the reader's display units (`UnitSettings`, P2-23); the
+    /// value passed in is always in the engine's base unit.
     static func value(_ v: Double, _ unit: VFUnit, withUnit: Bool = true) -> String {
         guard v.isFinite else { return "n/a" }
+        let units = UnitSettings.current
+        if let d = units.display(for: unit), d.factor != 1 || units.decimals != nil {
+            let s = number(v / d.factor, digits: d.digits)
+            guard withUnit else { return s }
+            return d.symbol == "°" ? s + "°" : s + " " + d.symbol
+        }
         if case .mass = unit, abs(v) >= 1000 {
             return number(v / 1000, digits: 2) + (withUnit ? " kg" : "")
         }
@@ -123,6 +131,12 @@ enum VFFormat {
         if s.hasSuffix(".") { s.removeLast() }
         return s
     }
+
+    /// A base value (mm, deg, g) in the reader's display unit; other quantities unchanged.
+    static func toDisplay(_ v: Double, _ unit: VFUnit) -> Double { v / UnitSettings.current.inputFactor(for: unit) }
+
+    /// The suffix the reader sees for `unit` ("in", "rad", "lb", or the base symbol).
+    static func symbol(_ unit: VFUnit) -> String { UnitSettings.current.display(for: unit)?.symbol ?? unit.symbol }
 
     static func number(_ v: Double, digits: Int) -> String {
         v.formatted(.number.precision(.fractionLength(digits)).grouping(.automatic))
@@ -196,8 +210,15 @@ struct VFExpression {
         let chars: [Character]
         let unit: VFUnit
         var i = 0
+        /// Base units per bare number: the reader's display unit (1 in an inch field is 25.4 mm).
+        /// Inside parentheses it is 1, and the parenthesis as a whole takes the unit after it.
+        var bareFactor: Double
 
-        init(chars: [Character], unit: VFUnit) { self.chars = chars; self.unit = unit }
+        init(chars: [Character], unit: VFUnit) {
+            self.chars = chars
+            self.unit = unit
+            bareFactor = UnitSettings.current.inputFactor(for: unit)
+        }
 
         var atEnd: Bool { i >= chars.count }
         mutating func skip() { while !atEnd, chars[i].isWhitespace { i += 1 } }
@@ -234,9 +255,13 @@ struct VFExpression {
             if c == "+" { i += 1; return try factor() }
             if c == "(" {
                 i += 1
+                let outer = bareFactor
+                bareFactor = 1
+                defer { bareFactor = outer }
                 let v = try sum()
                 guard peek() == ")" else { throw Failure.syntax("(") }
                 i += 1
+                bareFactor = outer
                 return try withUnit(v)
             }
             let start = i
@@ -255,7 +280,7 @@ struct VFExpression {
             skip()
             let start = i
             while !atEnd, chars[i].isLetter || chars[i] == "\"" || chars[i] == "'" || chars[i] == "°" || chars[i] == "%" || chars[i] == "µ" { i += 1 }
-            guard i > start else { return v }
+            guard i > start else { return v * bareFactor }
             let word = String(chars[start..<i])
             if case .custom(let sym) = unit, word.lowercased() == sym.lowercased() { return v }
             if case .none = unit { throw Failure.unit(word) }

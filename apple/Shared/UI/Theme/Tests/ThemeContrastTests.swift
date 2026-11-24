@@ -162,4 +162,69 @@ final class ThemeContrastTests: XCTestCase {
             }
         }
     }
+
+    // MARK: Toasts and banners (UI-UX-AUDIT P2-20)
+
+    /// Every palette the app can draw with: light, dark, and both under Increase Contrast.
+    private var allPalettes: [(name: String, palette: VFPalette)] {
+        ThemeVariant.allCases.flatMap { v in
+            [("\(v)", v.palette), ("\(v) high contrast", v.highContrastPalette)]
+        }
+    }
+
+    /// What a floating overlay (toast, banner) shows under it: the flat fill over both viewport ends
+    /// and over the panels, and the glass build (material plus the fill at 85 %) over the viewport.
+    private func floatingBackdrops(_ p: VFPalette) -> [(name: String, color: VFColor)] {
+        let glass = p.floating.opacity(0.85)
+        return [("floating/viewportTop", p.floating.over(p.viewportTop)),
+                ("floating/viewportBottom", p.floating.over(p.viewportBottom)),
+                ("floating/panel", p.floating.over(p.panel)),
+                ("floating/chrome", p.floating.over(p.chrome)),
+                ("glass/viewportTop", glass.over(p.viewportTop)),
+                ("glass/viewportBottom", glass.over(p.viewportBottom))]
+    }
+
+    /// ToastView: ink text, accentText action, success or danger icon, over the floating fill.
+    func testToastPairs() {
+        for (name, p) in allPalettes {
+            for bg in floatingBackdrops(p) {
+                check(p.ink, on: bg.color, min: textAA, "\(name) toast text on \(bg.name)")
+                check(p.accentText, on: bg.color, min: textAA, "\(name) toast action on \(bg.name)")
+                check(p.success, on: bg.color, min: nonTextAA, "\(name) toast success icon on \(bg.name)")
+                check(p.danger, on: bg.color, min: nonTextAA, "\(name) toast error icon on \(bg.name)")
+            }
+        }
+    }
+
+    /// InlineError and ErrorBanner, both severities: the tint at 10 % over the surface it sits on
+    /// (panel and well inline, the floating fill as a banner). Message ink, Details link, raw
+    /// details text, icon and the 45 % stroke.
+    func testInlineErrorAndBannerPairs() {
+        for (name, p) in allPalettes {
+            let bases = [("panel", p.panel), ("well", p.well), ("chrome", p.chrome)] + floatingBackdrops(p)
+            for (severity, tint) in [("error", p.danger), ("warning", p.warning)] {
+                for base in bases {
+                    let fill = tint.opacity(0.10).over(base.color)
+                    let what = "\(name) \(severity) on \(base.name)"
+                    check(p.ink, on: fill, min: textAA, "\(what): message")
+                    check(p.accentText, on: fill, min: textAA, "\(what): Details link")
+                    check(p.inkSecondary, on: fill, min: textAA, "\(what): details text")
+                    check(tint, on: fill, min: nonTextAA, "\(what): icon")
+                }
+            }
+        }
+    }
+
+    /// The stale or failed stage banner (StaleBanner): ink text, warning or danger icon, over the
+    /// floating fill; its primary action is onAccent on accent (tested above).
+    func testWarningBannerPairs() {
+        for (name, p) in allPalettes {
+            for bg in floatingBackdrops(p) {
+                check(p.ink, on: bg.color, min: textAA, "\(name) stale banner text on \(bg.name)")
+                check(p.warning, on: bg.color, min: nonTextAA, "\(name) stale banner icon on \(bg.name)")
+                check(p.danger, on: bg.color, min: nonTextAA, "\(name) failed banner icon on \(bg.name)")
+                check(p.inkSecondary, on: bg.color, min: textAA, "\(name) banner close glyph on \(bg.name)")
+            }
+        }
+    }
 }

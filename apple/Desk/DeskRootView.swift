@@ -560,8 +560,9 @@ struct CommandDialog: View {
         if model.tool == .move {
             HStack {
                 ForEach(0..<3, id: \.self) { i in
-                    TextField(["X", "Y", "Z"][i], value: Binding(get: { model.moveVector[i] }, set: { model.moveVector[i] = $0 }), format: .number)
-                        .textFieldStyle(.roundedBorder)
+                    NumberField(String(localized: "Move \(["X", "Y", "Z"][i])"),
+                                value: Binding(get: { model.moveVector[i] }, set: { model.moveVector[i] = $0 }),
+                                unit: .length)
                 }
             }
         }

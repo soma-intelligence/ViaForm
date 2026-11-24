@@ -282,15 +282,22 @@ struct DeskRoot: View {
         } else {
             ProjectWindow(model: model, pcb: pcb)
                 .viaFormTheme()
+                .settingsAtLaunch()
         }
     }
 }
 
-/// Settings: General (appearance, units), Navigation (mouse and trackpad preset).
+/// Settings: General (appearance, introductions), Navigation (mouse and trackpad preset), Units
+/// (display units and decimals) and Privacy (usage data, recent projects, where files live).
+/// The window sizes to the selected tab's content.
 struct DeskSettingsView: View {
+    enum Pane: String, CaseIterable { case general, navigation, units, privacy }
+
+    @State private var pane: Pane = SettingsLaunch.pane ?? .general
+
     var body: some View {
-        TabView {
-            Tab("General", systemImage: "gearshape") {
+        TabView(selection: $pane) {
+            Tab("General", systemImage: "gearshape", value: Pane.general) {
                 Form {
                     LabeledContent("Appearance") { ThemeModePicker(showsLabel: false) }
                     Section {
@@ -302,12 +309,53 @@ struct DeskSettingsView: View {
                     }
                 }
                 .formStyle(.grouped)
+                .settingsPane(height: 160)
             }
-            Tab("Navigation", systemImage: "computermouse") {
-                NavigationSettings()
+            Tab("Navigation", systemImage: "computermouse", value: Pane.navigation) {
+                NavigationSettings().settingsPane(height: 560)
+            }
+            Tab("Units", systemImage: "ruler", value: Pane.units) {
+                UnitSettingsForm().settingsPane(height: 290)
+            }
+            Tab("Privacy", systemImage: "hand.raised", value: Pane.privacy) {
+                PrivacySettingsForm().settingsPane(height: 504)
             }
         }
-        .frame(width: 520, height: 380)
+    }
+}
+
+private extension View {
+    /// A settings tab: one width, and the height of its own content, so the window resizes per tab
+    /// instead of one fixed box. A grouped Form scrolls, so it has no ideal height of its own to
+    /// size to: each tab gives the height its content takes in English, and scrolls past it (a
+    /// longer translation).
+    func settingsPane(height: CGFloat) -> some View {
+        frame(width: 520, height: height)
+    }
+}
+
+/// `--open-settings` or `--open-settings=units|privacy|navigation|general`: opens the Settings
+/// window at launch on that tab (screenshots and tests).
+enum SettingsLaunch {
+    static var pane: DeskSettingsView.Pane? {
+        guard let a = ProcessInfo.processInfo.arguments.first(where: { $0.hasPrefix("--open-settings") }) else { return nil }
+        return DeskSettingsView.Pane(rawValue: String(a.split(separator: "=").last ?? "")) ?? .general
+    }
+}
+
+extension View {
+    /// Opens Settings once at launch when `--open-settings` is passed.
+    func settingsAtLaunch() -> some View { modifier(SettingsAtLaunch()) }
+}
+
+private struct SettingsAtLaunch: ViewModifier {
+    @Environment(\.openSettings) private var openSettings
+    func body(content: Content) -> some View {
+        content.task {
+            guard SettingsLaunch.pane != nil else { return }
+            try? await Task.sleep(for: .milliseconds(600))
+            openSettings()
+        }
     }
 }
 #endif

@@ -45,6 +45,14 @@ struct ProjectWindow: View {
     @State private var dismissedBanners: Set<String> = []
     @State private var tabs: [Workspace: String] = [:]
     @State private var detailWidth: CGFloat = 900
+    /// The window's width, for the compact layout (P2-7, CompactLayout).
+    @State private var windowWidth: CGFloat = 1440
+    /// Collapses the sidebar in a narrow window, never against the reader's choice.
+    @State private var sidebarAuto = SidebarAutoCollapse()
+    /// The sidebar visibility the window set itself, to tell it from the reader's toggles.
+    @State private var autoColumns: NavigationSplitViewVisibility?
+    /// The inspector column is shown (wide window and inspector on).
+    @State private var dockedShown = !ProcessInfo.processInfo.arguments.contains("--no-inspector")
     @State private var hiddenLayers: Set<String> = []
     /// The window's toasts ("Deleted Frame", "Saved"), shown over the stage.
     @State private var toasts = ToastCenter()
@@ -160,8 +168,13 @@ struct ProjectWindow: View {
                 .navigationSplitViewColumnWidth(min: VFSize.sidebarMin, ideal: 256, max: VFSize.sidebarMax)
         } detail: {
             VStack(spacing: 0) {
+              VStack(spacing: 0) {
                 content(actions)
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    // The stage never holds the window wider or taller than its minimum
+                    // (760 x 560, P2-7): a stage taller than a compact window is clipped at the
+                    // bottom panel instead of pushing the ribbon under the toolbar.
+                    .frame(minWidth: 0, maxWidth: .infinity, minHeight: 0, maxHeight: .infinity, alignment: .top)
+                    .clipped()
                     .overlay(alignment: .top) { staleBanner(actions) }
                     .overlay(alignment: .leading) {
                         if showData { DataPanel(model: model, shown: $showData).vfTransition(.move(edge: .leading)) }
@@ -186,6 +199,9 @@ struct ProjectWindow: View {
                     BomDivider(height: $bomHeight)
                     BomPanel(model: bom, design: model, pcb: pcb) { showBom = false }.frame(height: bomHeight)
                 }
+              }
+              .overlay(alignment: .topTrailing) { inspectorOverlay(actions) }
+              .vfAnimation(.easeOut(duration: VFMotion.standard), value: overlayShown)
                 StageStatusBar(leading: statusLine(screen), items: statusItems, coreOK: !EngineGate.shared.shut,
                                trailing: AnyView(bottomToggle), status: screen.status)
             }
@@ -227,25 +243,25 @@ struct ProjectWindow: View {
             .navigationTitle(title)
             .navigationSubtitle(screen.revision.map { "\(workspace.title) · \($0)" } ?? workspace.title)
             .toolbar { toolbar(actions) }
-            .inspector(isPresented: $showInspector) {
-            Group {
-                switch inspectorMode {
-                case .inspector:
-                    if commandRunning {
-                        // The transient command dialog replaces the inspector while it runs.
-                        ScrollView { CommandDialog(model: model).padding(VFSpace.l) }
-                            .background(theme.panel)
-                    } else {
-                        InspectorPanel(workspace: workspace, flow: flow, model: model, pcb: pcb, sim: sim, generate: generate, actions: actions,
-                                       assemble: assemble.isActive ? assemble : nil, armSim: armSimActive ? armSim : nil,
-                                       testInSimulation: { workspace = .simulation })
-                    }
-                case .library:
-                    LibraryView(model: library, design: model, pcb: pcb) { inspectorMode = .inspector }
-                }
+            // A wide window docks the inspector in its column; a compact one floats it over the
+            // stage instead (P2-7), so the viewport keeps its width.
+            .inspector(isPresented: $dockedShown) {
+                inspectorContent(actions)
+                    .inspectorColumnWidth(min: VFSize.inspectorMin, ideal: inspectorIdeal, max: 560)
             }
-            .inspectorColumnWidth(min: VFSize.inspectorMin, ideal: inspectorMode == .library ? 380 : VFSize.inspector, max: 560)
-            }
+        }
+        .background(GeometryReader { g in
+            Color.clear
+                .onAppear { windowResized(g.size.width) }
+                .onChange(of: g.size.width) { _, w in windowResized(w) }
+        })
+        .onChange(of: showInspector) { _, _ in syncDockedInspector() }
+        .onChange(of: compactInspector) { _, _ in syncDockedInspector() }
+        .onChange(of: dockedShown) { _, v in
+            if !compactInspector && v != showInspector { showInspector = v }
+        }
+        .onChange(of: columns) { _, c in
+            if c == autoColumns { autoColumns = nil } else { sidebarAuto.userChose() }
         }
         // While the palette or the shortcut sheet is up, VoiceOver and clicks stay on it (P1-16).
         .accessibilityHidden(showPalette || showShortcuts)
@@ -311,6 +327,79 @@ struct ProjectWindow: View {
     }
 
     private func closePalette() { showPalette = false }
+
+    // MARK: Compact layout (P2-7)
+
+    /// The inspector floats over the stage instead of taking a column.
+    private var compactInspector: Bool { CompactLayout.inspectorOverlays(windowWidth: windowWidth) }
+    private var overlayShown: Bool { compactInspector && showInspector }
+    private var inspectorIdeal: CGFloat { inspectorMode == .library ? 380 : VFSize.inspector }
+
+    /// The docked inspector column follows `showInspector` in a wide window only. A close from the
+    /// column itself (a drag) is the reader's and goes back to `showInspector`.
+    private func syncDockedInspector() {
+        let v = showInspector && !compactInspector
+        if dockedShown != v { dockedShown = v }
+    }
+
+    @ViewBuilder private func inspectorContent(_ actions: StageActions) -> some View {
+        switch inspectorMode {
+        case .inspector:
+            if commandRunning {
+                // The transient command dialog replaces the inspector while it runs.
+                ScrollView { CommandDialog(model: model).padding(VFSpace.l) }
+                    .background(theme.panel)
+            } else {
+                InspectorPanel(workspace: workspace, flow: flow, model: model, pcb: pcb, sim: sim, generate: generate, actions: actions,
+                               assemble: assemble.isActive ? assemble : nil, armSim: armSimActive ? armSim : nil,
+                               testInSimulation: { workspace = .simulation })
+            }
+        case .library:
+            LibraryView(model: library, design: model, pcb: pcb) { inspectorMode = .inspector }
+        }
+    }
+
+    /// The compact window's inspector: a floating surface on the trailing edge of the stage,
+    /// shown and hidden by the same toggle, closed with Esc or its close button.
+    @ViewBuilder private func inspectorOverlay(_ actions: StageActions) -> some View {
+        if overlayShown {
+            VStack(spacing: 0) {
+                HStack {
+                    VFCaption(inspectorMode == .library ? "Libraries" : "Inspector")
+                    Spacer()
+                    VFIconButton("xmark", label: String(localized: "Close Inspector")) { closeOverlayInspector() }
+                        .help("Close the inspector (Esc)")
+                }
+                .padding(.leading, VFSpace.l)
+                .padding(.trailing, VFSpace.s)
+                .padding(.vertical, VFSpace.xs)
+                VFHairline()
+                inspectorContent(actions)
+                    .frame(maxHeight: .infinity, alignment: .top)
+            }
+            .frame(width: CompactLayout.overlayWidth(ideal: inspectorIdeal, detailWidth: detailWidth))
+            .clipShape(RoundedRectangle(cornerRadius: VFRadius.floating, style: .continuous))
+            .vfSurface(.floating, radius: VFRadius.floating)
+            .padding(VFSpace.s)
+            .accessibilityElement(children: .contain)
+            .accessibilityLabel(inspectorMode == .library ? "Libraries" : "Inspector")
+            .vfTransition(.move(edge: .trailing).combined(with: .opacity))
+        }
+    }
+
+    private func closeOverlayInspector() {
+        vfWithAnimation(.easeOut(duration: VFMotion.standard)) { showInspector = false }
+    }
+
+    /// The window changed width: collapse or bring back the sidebar when it crosses the
+    /// threshold, unless the reader chose otherwise at this width.
+    private func windowResized(_ w: CGFloat) {
+        windowWidth = w
+        guard let show = sidebarAuto.width(w, shown: columns != .detailOnly) else { return }
+        let c: NavigationSplitViewVisibility = show ? .all : .detailOnly
+        autoColumns = c
+        vfWithAnimation(.easeOut(duration: VFMotion.standard)) { columns = c }
+    }
 
     private var projectContext: ProjectFiles.Context {
         ProjectFiles.Context(design: model, pcb: pcb, bom: bom, flow: flow, generate: generate, assemble: assemble)
@@ -412,6 +501,14 @@ struct ProjectWindow: View {
         }
         if showPalette { return false }
         if ch == "?" && mods.isSubset(of: [.shift]) { showShortcuts = true; return true }
+        // Esc closes the floating inspector of a compact window, once nothing is armed: a running
+        // command, a tool or a marking menu takes Esc first (they live in that inspector too).
+        if e.keyCode == 53, mods.isEmpty, overlayShown, !(e.window?.firstResponder is NSTextView),
+           model.markingMenu == nil, model.tool == .select, model.genericCommand == nil,
+           !(workspace == .assemble && assemble.isActive && assemble.tool != .select) {
+            closeOverlayInspector()
+            return true
+        }
         // Robot stage: Space, or Esc twice within 0.6 s, is the e-stop (VIAFORM-SPEC 6.4).
         if workspace == .robot, mods.isEmpty {
             // Not taken while latched, so Space holds the focused Re-enable Motors (P0-13).

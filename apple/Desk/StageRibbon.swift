@@ -29,13 +29,17 @@ struct StageRibbon: View {
                 if designLike {
                     PanelStrip(model: model, panels: panels)
                 } else {
-                    // Labelled verbs, then icons only, then a scrolling strip: never wider
-                    // than the window.
+                    // Labelled verbs, then icons only, then the last groups folded into MORE
+                    // one by one (P2-7): never wider than the window, every verb reachable.
+                    let groups = verbGroups
                     ViewThatFits(in: .horizontal) {
-                        VerbStrip(groups: verbGroups, actions: actions)
-                        VerbStrip(groups: verbGroups, actions: actions, labels: false)
-                        ScrollView(.horizontal, showsIndicators: false) {
-                            VerbStrip(groups: verbGroups, actions: actions, labels: false)
+                        ForEach(Self.foldSteps(groups.count), id: \.self) { step in
+                            let r = RibbonFold.fold(groups, visible: step.visible, perGroup: CompactLayout.verbsPerGroup)
+                            HStack(spacing: VFSpace.s) {
+                                VerbStrip(groups: r.strip, actions: actions, labels: step.labels)
+                                if !r.more.isEmpty { VerbMoreMenu(groups: r.more, actions: actions) }
+                            }
+                            .fixedSize()
                         }
                     }
                     .layoutPriority(-1)
@@ -153,10 +157,22 @@ struct StageRibbon: View {
 
     // MARK: Stage verbs
 
-    private var verbGroups: [StageScreen.RibbonGroup] {
-        // The primary actions sit on the trailing edge; the strip keeps the other verbs.
+    private var verbGroups: [RibbonFold.Group<FlowModel.Command>] {
+        // The primary actions sit on the trailing edge; the strip keeps the other verbs. Every
+        // verb of a group comes here: the fold sends the ones past the cap to MORE.
         let primaryIDs = Set(primary.map(\.command))
-        return StageScreen.ribbon(flow.commands(stage: workspace.stage).filter { $0.source == "app" && !primaryIDs.contains($0.id) }, perGroup: 6)
+        return StageScreen.ribbon(flow.commands(stage: workspace.stage).filter { $0.source == "app" && !primaryIDs.contains($0.id) }, perGroup: .max)
+            .map { RibbonFold.Group(name: $0.name, commands: $0.commands) }
+    }
+
+    struct FoldStep: Hashable { let visible: Int; let labels: Bool }
+
+    /// The ribbon's layouts from widest to narrowest: every group labelled, then as icons, then
+    /// one group less each time (labelled first), down to MORE alone.
+    static func foldSteps(_ n: Int) -> [FoldStep] {
+        guard n > 0 else { return [FoldStep(visible: 0, labels: true)] }
+        return (1...n).reversed().flatMap { [FoldStep(visible: $0, labels: true), FoldStep(visible: $0, labels: false)] }
+            + [FoldStep(visible: 0, labels: true)]
     }
 }
 
@@ -315,7 +331,7 @@ struct MorePanel: View {
 /// A non-design stage's verbs as dense labelled buttons, grouped with a legend.
 struct VerbStrip: View {
     @Environment(\.viaFormTheme) private var theme
-    let groups: [StageScreen.RibbonGroup]
+    let groups: [RibbonFold.Group<FlowModel.Command>]
     let actions: StageActions
     var labels = true
 
