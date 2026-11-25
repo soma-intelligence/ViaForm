@@ -4,63 +4,17 @@ import SwiftUI
 
 // MARK: Marking menu
 
-/// The right-click wheel: eight commands around the cursor and an overflow list under it.
-/// Drag or click toward a slice to run it; Escape or a click outside closes it.
+/// The right-click wheel (M-7): eight commands on the Fusion compass around the cursor and an
+/// overflow list under it. Moving the pointer toward a slice highlights its wedge and a click
+/// anywhere in the wedge runs it; a right-drag flick runs a slice without the wheel
+/// (`MarkingFlick`). The south slice opens the sketch submenu. Escape or a click outside closes it.
 struct MarkingMenu: View {
     @Environment(\.viaFormTheme) private var theme
     let model: DesignModel
     let at: CGPoint
-
-    private struct Slot: Identifiable {
-        let id: String
-        let symbol: String
-        var art: String? = nil
-        let run: (DesignModel) -> Void
-
-        init(id: String, tool: Tool, run: @escaping (DesignModel) -> Void) {
-            self.init(id: id, symbol: tool.symbol, art: ToolIcons.art(for: tool), run: run)
-        }
-
-        init(id: String, symbol: String, art: String? = nil, run: @escaping (DesignModel) -> Void) {
-            self.id = id; self.symbol = symbol; self.art = art; self.run = run
-        }
-    }
-
-    private var wheel: [Slot] {
-        if model.sketchOpen {
-            return [
-                Slot(id: "Line", tool: .line) { $0.tool = .line },
-                Slot(id: "Finish Sketch", symbol: "checkmark.circle") { $0.finishSketch() },
-                Slot(id: "Rectangle", tool: .rectangle) { $0.tool = .rectangle },
-                Slot(id: "Redo", symbol: "arrow.uturn.forward") { $0.redo() },
-                Slot(id: "Trim", tool: .trim) { $0.tool = .trim },
-                Slot(id: "Delete", tool: .delete) { $0.deleteSelection() },
-                Slot(id: "Circle", tool: .circle) { $0.tool = .circle },
-                Slot(id: "Undo", symbol: "arrow.uturn.backward") { $0.undo() },
-            ]
-        }
-        return [
-            Slot(id: "Sketch", tool: .sketch) { m in
-                if m.selection.contains(where: \.isFace) { m.sketchOnSelectedFace() } else { m.tool = .sketch }
-            },
-            Slot(id: "Push / Pull", tool: .pressPull) { $0.tool = .pressPull },
-            Slot(id: "Extrude", tool: .extrude) { $0.tool = .extrude },
-            Slot(id: "Redo", symbol: "arrow.uturn.forward") { $0.redo() },
-            Slot(id: "Move", tool: .move) { $0.tool = .move },
-            Slot(id: "Delete", tool: .delete) { $0.deleteSelection() },
-            Slot(id: "Fillet", tool: .fillet) { $0.tool = .fillet },
-            Slot(id: "Undo", symbol: "arrow.uturn.backward") { $0.undo() },
-        ]
-    }
-
-    private var overflow: [Slot] {
-        [
-            Slot(id: "Repeat Last", symbol: "repeat") { m in if let t = m.lastTool { m.tool = t } },
-            Slot(id: "Fit", symbol: "arrow.up.left.and.down.right.magnifyingglass") { $0.zoomToFit() },
-            Slot(id: "Measure", tool: .measure) { $0.measureSelection() },
-            Slot(id: "Toolbox Search", symbol: "magnifyingglass") { $0.toolboxOpen = true },
-        ]
-    }
+    /// The slice the pointer points at while the wheel is open.
+    @State private var hover: Int?
+    @State private var subOpen = false
 
     private let radius: CGFloat = 92
     /// Opened by the --show-marking screenshot hook: for its first 20 s a stray click on the window (the Mac
@@ -70,58 +24,99 @@ struct MarkingMenu: View {
         ProcessInfo.processInfo.arguments.contains("--show-marking") && Date().timeIntervalSince(hookOpened) < 20
     }
 
+    /// The highlighted slice: the flick's while a right-drag runs, else the pointer's.
+    private var hot: Int? { MarkingFlick.shared.origin != nil ? MarkingFlick.shared.hot : hover }
+
     var body: some View {
+        let wheel = MarkingWheel.slots(model)
+        let overflow = MarkingWheel.overflow(model)
         ZStack {
             let _ = Self.hookOpened
             Color.clear
                 .contentShape(Rectangle())
-                .onTapGesture { if !Self.pinned { model.markingMenu = nil } }
+                .onContinuousHover(coordinateSpace: .local) { phase in
+                    if case let .active(p) = phase { hover = MarkingCompass.slice(from: at, to: p) } else { hover = nil }
+                }
+                .onTapGesture(coordinateSpace: .local) { p in
+                    let d = hypot(p.x - at.x, p.y - at.y)
+                    if d < radius * 1.6, let i = MarkingCompass.slice(from: at, to: p) { tap(wheel[i]) }
+                    else if !Self.pinned { model.markingMenu = nil }
+                }
+            if let hot {
+                MarkingCompass.wedge(hot, center: at, inner: 18, outer: radius * 0.78)
+                    .fill(theme.accent.opacity(0.22))
+                    .allowsHitTesting(false)
+                    .accessibilityHidden(true)
+            }
             Circle().fill(theme.floating).frame(width: 30, height: 30)
                 .overlay(Circle().stroke(theme.floatingStroke))
                 .position(at)
                 .accessibilityHidden(true)
-            // Order: top, top right, right, bottom right, bottom, bottom left, left, top left.
+            // Order: north, then clockwise.
             ForEach(Array(wheel.enumerated()), id: \.element.id) { i, slot in
                 let a = -Double.pi / 2 + Double(i) * .pi / 4
-                pill(slot)
+                pill(slot, on: hot == i)
                     .position(x: at.x + radius * cos(a) * (i % 4 == 0 ? 1 : 1.25), y: at.y + radius * sin(a) * 0.82)
             }
-            VStack(alignment: .leading, spacing: 0) {
-                ForEach(overflow) { slot in
-                    Button { fire(slot) } label: {
-                        Label { Text(LocalizedStringKey(slot.id)) } icon: { CommandIcon(art: slot.art, symbol: slot.symbol, size: 12) }
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                            .padding(.horizontal, VFSpace.m).frame(minHeight: VFSize.macRow - 3).contentShape(Rectangle())
-                    }
-                    .buttonStyle(.plain)
-                }
+            if subOpen, let south = wheel.first(where: { !$0.submenu.isEmpty }) {
+                list(south.submenu)
+                    .position(x: at.x + 150, y: at.y + radius * 0.82 + 20 + CGFloat(south.submenu.count) * (VFSize.macRow - 3) / 2)
             }
-            .font(VFFont.row)
-            .foregroundStyle(theme.ink)
-            .frame(width: 170)
-            .padding(.vertical, VFSpace.xs)
-            .vfSurface(.floating, radius: VFRadius.card)
-            .position(x: at.x, y: at.y + radius + 74)
+            list(overflow)
+                .position(x: at.x, y: at.y + radius + 30 + CGFloat(overflow.count) * (VFSize.macRow - 3) / 2)
         }
+        .onChange(of: model.markingMenu) { _, _ in subOpen = false }
     }
 
-    private func pill(_ slot: Slot) -> some View {
-        Button { fire(slot) } label: {
+    private func list(_ slots: [MarkingSlot]) -> some View {
+        VStack(alignment: .leading, spacing: 0) {
+            ForEach(slots) { slot in
+                Button { fire(slot) } label: {
+                    Label { Text(slot.title) } icon: { CommandIcon(art: slot.art, symbol: slot.symbol, size: 12) }
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(.horizontal, VFSpace.m).frame(minHeight: VFSize.macRow - 3).contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .disabled(!slot.enabled)
+                .opacity(slot.enabled ? 1 : 0.45)
+            }
+        }
+        .font(VFFont.row)
+        .foregroundStyle(theme.ink)
+        .frame(width: 190)
+        .padding(.vertical, VFSpace.xs)
+        .vfSurface(.floating, radius: VFRadius.card)
+    }
+
+    private func pill(_ slot: MarkingSlot, on: Bool) -> some View {
+        Button { tap(slot) } label: {
             HStack(spacing: VFSpace.s) {
                 CommandIcon(art: slot.art, symbol: slot.symbol, size: 12).frame(width: 20)
-                Text(LocalizedStringKey(slot.id))
+                Text(slot.title)
+                if !slot.submenu.isEmpty {
+                    Image(systemName: "chevron.down").font(VFFont.glyph(9, weight: .semibold)).accessibilityHidden(true)
+                }
             }
             .font(VFFont.row)
             .foregroundStyle(theme.ink)
             .padding(.horizontal, VFSpace.m).frame(minHeight: VFSize.macRow - 3)
             .vfSurface(.floating, radius: VFRadius.touchCapsule)
+            .overlay(Capsule().strokeBorder(on ? theme.accent : .clear, lineWidth: 1.5))
             .contentShape(Capsule())
         }
         .buttonStyle(.plain)
         .fixedSize()
+        .accessibilityLabel(slot.title)
+        .accessibilityHint(slot.submenu.isEmpty ? "" : String(localized: "Opens the sketch tools"))
     }
 
-    private func fire(_ slot: Slot) {
+    /// A click on a slice: the submenu slice opens its list, the others run.
+    private func tap(_ slot: MarkingSlot) {
+        if !slot.submenu.isEmpty { subOpen.toggle(); return }
+        fire(slot)
+    }
+
+    private func fire(_ slot: MarkingSlot) {
         model.markingMenu = nil
         slot.run(model)
     }

@@ -223,13 +223,48 @@ struct TouchWorkspaceButton: View {
     let flow: FlowModel
     let stage: Workspace
     var compact = false
+    /// The iPad design screen's rail row: the workspace icon on its tile and its name floating
+    /// beside it ("Modeling"), no capsule.
+    var plain = false
     @Binding var isOpen: Bool
     let open: (Workspace) -> Void
     @State private var showGraph = false
 
+    /// The rail's name for the stage: the 3D design is the Modeling workspace.
+    static func railTitle(_ stage: Workspace) -> String {
+        stage == .design ? String(localized: "Modeling") : stage.title
+    }
+
     var body: some View {
         let badge = WorkspaceMenu.badge(flow, current: stage)
         Button { isOpen = true } label: {
+            if plain {
+                TouchRailRow(symbol: stage.symbol, title: Self.railTitle(stage), tint: theme.stageFill(stage.vfStage))
+                    .overlay(alignment: .topLeading) { WorkspaceBadgeView(badge: badge, size: 15).offset(x: 30, y: 2) }
+            } else {
+                capsule(badge)
+            }
+        }
+        .modifier(TouchRailPress(rail: plain))
+        .accessibilityLabel(WorkspaceMenu.spoken(current: stage, badge: badge))
+        .accessibilityHint(Text("Opens the list of stages"))
+        .modifier(TouchWorkspacePresenter(compact: compact, isOpen: $isOpen) { menu })
+        .sheet(isPresented: $showGraph) { graphSheet }
+    }
+
+    private var graphSheet: some View {
+        NavigationStack {
+            ScrollView([.horizontal, .vertical]) {
+                FlowGraphView(flow: flow, current: stage, open: { w in showGraph = false; open(w) })
+            }
+            .navigationTitle(Text("Flow"))
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar { ToolbarItem(placement: .confirmationAction) { Button("Done") { showGraph = false } } }
+        }
+        .viaFormTheme()
+    }
+
+    private func capsule(_ badge: WorkspaceBadge) -> some View {
             HStack(spacing: VFSpace.s) {
                 Image(systemName: stage.symbol).font(VFFont.glyph(17, weight: .medium))
                     .foregroundStyle(theme.stageFill(stage.vfStage))
@@ -244,22 +279,6 @@ struct TouchWorkspaceButton: View {
             .background(Capsule().fill(theme.well))
             .overlay(alignment: .topTrailing) { WorkspaceBadgeView(badge: badge, size: 17).offset(x: 4, y: -2) }
             .contentShape(Capsule())
-        }
-        .buttonStyle(.vfTouch)
-        .accessibilityLabel(WorkspaceMenu.spoken(current: stage, badge: badge))
-        .accessibilityHint(Text("Opens the list of stages"))
-        .modifier(TouchWorkspacePresenter(compact: compact, isOpen: $isOpen) { menu })
-        .sheet(isPresented: $showGraph) {
-            NavigationStack {
-                ScrollView([.horizontal, .vertical]) {
-                    FlowGraphView(flow: flow, current: stage, open: { w in showGraph = false; open(w) })
-                }
-                .navigationTitle(Text("Flow"))
-                .navigationBarTitleDisplayMode(.inline)
-                .toolbar { ToolbarItem(placement: .confirmationAction) { Button("Done") { showGraph = false } } }
-            }
-            .viaFormTheme()
-        }
     }
 
     private var list: some View {
@@ -390,6 +409,8 @@ struct TouchJobList: View {
 /// The share menu: files of the design, of the board, the bill of materials and the libraries.
 struct TouchShareMenu: View {
     @Environment(\.viaFormTheme) private var theme
+    /// The title pill's labelled accent "Share" button (T-6) instead of the bare icon.
+    var prominent = false
     let export: (ExportKind) -> Void
     let showBom: () -> Void
     let showLibrary: () -> Void
@@ -406,10 +427,21 @@ struct TouchShareMenu: View {
                 Button("Libraries", systemImage: "books.vertical") { showLibrary() }
             }
         } label: {
-            Image(systemName: "square.and.arrow.up").font(VFFont.glyph(17, weight: .medium))
-                .foregroundStyle(theme.ink)
-                .frame(width: VFSize.touchTarget, height: VFSize.touchTarget)
-                .contentShape(Rectangle())
+            if prominent {
+                // The title pill's word button: "Share" on a small accent plate.
+                Text("Share").font(VFFont.small.weight(.semibold))
+                    .foregroundStyle(theme.onAccent)
+                    .padding(.horizontal, VFSpace.m)
+                    .frame(minHeight: 28)
+                    .background(RoundedRectangle(cornerRadius: VFRadius.control, style: .continuous).fill(theme.accent))
+                    .frame(minHeight: VFSize.touchTarget)
+                    .contentShape(Rectangle())
+            } else {
+                Image(systemName: "square.and.arrow.up").font(VFFont.glyph(17, weight: .medium))
+                    .foregroundStyle(theme.ink)
+                    .frame(width: VFSize.touchTarget, height: VFSize.touchTarget)
+                    .contentShape(Rectangle())
+            }
         }
         .hoverEffect(.highlight)
         .accessibilityLabel(Text("Share"))
@@ -583,6 +615,8 @@ struct TouchKeyCommands: View {
 struct TouchShortcutsSheet: View {
     @Environment(\.viaFormTheme) private var theme
     @Environment(\.dismiss) private var dismiss
+    /// The design's single-letter tool keys (`TouchKeymap.rows(model)`), listed under Tools.
+    var toolRows: [(keys: String, title: String)] = []
 
     private struct Row: Identifiable { let keys: String; let title: String; var id: String { keys + title } }
 
@@ -608,9 +642,11 @@ struct TouchShortcutsSheet: View {
                 Row(keys: "⇧⌘L", title: String(localized: "Libraries")),
                 Row(keys: "⌘/", title: String(localized: "This list")),
             ]),
+            (String(localized: "Tools"), toolRows.map { Row(keys: $0.keys, title: $0.title) }),
             (String(localized: "Gestures"), [
                 Row(keys: String(localized: "Two-finger tap"), title: String(localized: "Undo, on the 3D view")),
                 Row(keys: String(localized: "Long press"), title: String(localized: "More actions on a row or a step")),
+                Row(keys: String(localized: "Press and hold"), title: String(localized: "Pick what lies under the finger, on the 3D view")),
             ]),
         ]
     }
@@ -618,7 +654,7 @@ struct TouchShortcutsSheet: View {
     var body: some View {
         NavigationStack {
             List {
-                ForEach(groups, id: \.0) { title, rows in
+                ForEach(groups.filter { !$0.1.isEmpty }, id: \.0) { title, rows in
                     Section(title) {
                         ForEach(rows) { r in
                             HStack {

@@ -30,19 +30,39 @@ final class DesignModel {
     var moveVector: SIMD3<Double> = .init(10, 0, 0)
 
     /// Clicks gathered on the sketch plane for the current sketch tool.
-    private(set) var clicks: [SIMD2<Double>] = []
+    var clicks: [SIMD2<Double>] = []
+    /// What each click snapped to (B-6), in step with `clicks`.
+    var clickSnaps: [SnapHit] = []
     /// Where the cursor is on the sketch plane, snapped.
-    private(set) var cursor: SIMD2<Double>?
-    private(set) var cursorSnap: String?
+    var cursor: SIMD2<Double>?
+    var cursorSnap: String?
+    /// The cursor's snap with its references, for the inference line (B-6).
+    var cursorHit: SnapHit?
 
-    var selection: [Pick] = [] { didSet { pushHighlight() } }
-    var selectedBodies: Set<String> = [] { didSet { pushHighlight() } }
+    // One selection space at a time (sketch entities or 3D picks): picking in one clears the
+    // other, so Delete and the tools never act on a selection the canvas no longer shows.
+    var selection: [Pick] = [] {
+        didSet {
+            pushHighlight()
+            if !selection.isEmpty, !sketchSelection.isEmpty { sketchSelection = [] }
+        }
+    }
+    var selectedBodies: Set<String> = [] {
+        didSet {
+            pushHighlight()
+            if !selectedBodies.isEmpty, !sketchSelection.isEmpty { sketchSelection = [] }
+        }
+    }
     var hover: Pick? { didSet { if hover != oldValue { pushHighlight() } } }
 
     var message: String?
     var messageIsError = false
     /// The generic command form (any registry command, by its params doc).
-    var genericCommand: CommandInfo?
+    var genericCommand: CommandInfo? {
+        // Sketch commands with a click flow (dimension, construction, constraints on the
+        // sketch selection) run it instead of the JSON form, whatever surface asked.
+        didSet { if let c = genericCommand, routeSketchCommand(c.id) { genericCommand = nil } }
+    }
     /// Where the desktop marking menu is open, in viewport points.
     var markingMenu: CGPoint?
     /// A one-shot face pick another workspace asked for (mounting the board): body, point, normal.
@@ -67,6 +87,13 @@ final class DesignModel {
 
     private var previewCheckpoint: Int?
     private var previewApplied = false
+    /// The body names before a tool preview ran. Fusion creates nothing before OK, so the
+    /// browser lists only these while a preview shows (`listedBodies`).
+    @ObservationIgnored private var bodiesBeforePreview: Set<String>?
+    /// The feature session's own preview is on (it sets this; see `FeatureSession.applied`).
+    @ObservationIgnored var sessionPreviewApplied = false
+    /// The engine's refusal of the tool's last preview (OK then keeps the dialog open).
+    private(set) var previewError: String?
 
     /// The open sketch (or, while Extrude is armed, the sketch it extrudes) as the canvas draws
     /// it: points to drag, profiles to pick, dimensions to edit.
@@ -83,9 +110,77 @@ final class DesignModel {
     /// Set while a tool is armed by a handle drag, so arming runs no preview of its own.
     @ObservationIgnored var armingQuietly = false
 
+    // Sketch selection and constraints (B-1 to B-5, B-9): see SketchSelection.swift.
+    /// Picked sketch entities and constraint glyphs of the open sketch, in pick order.
+    var sketchSelection: [SketchPick] = [] {
+        didSet {
+            guard !sketchSelection.isEmpty else { return }
+            if !selection.isEmpty { selection = [] }
+            if !selectedBodies.isEmpty { selectedBodies = [] }
+        }
+    }
+    /// The sketch entity or glyph under the pointer.
+    var sketchHover: SketchPick?
+    /// Draw constraint glyphs on the open sketch ("Show constraints").
+    var showConstraints: Bool = SketchDisplaySettings.constraints {
+        didSet { SketchDisplaySettings.set(showConstraints, for: SketchDisplaySettings.constraintsKey) }
+    }
+    /// Draw dimensions on the open sketch (Sketch Palette "Dimensions", shared by Mac and iPad:
+    /// `SketchDisplaySettings.dimensionsKey`). The canvas reads the key live.
+    var showDimensions: Bool {
+        get { SketchDisplaySettings.dimensions }
+        set { UserDefaults.standard.set(newValue, forKey: SketchDisplaySettings.dimensionsKey) }
+    }
+    /// New sketch curves are drawn as construction geometry.
+    var constructionMode = false
+    /// The Dimension tool's picks so far (one or two entities).
+    var dimensionPicks: [SketchPick] = []
+    /// The Dimension tool's cursor on the sketch plane (unsnapped), for its preview.
+    var dimensionCursor: SIMD2<Double>?
+    /// A dimension the sketch already determines: offered again as a driven one.
+    var dimensionOffer: DimensionOffer?
+    /// A dimension just placed: the canvas opens its value field once, then clears this.
+    var dimensionToEdit: String?
+    /// Symmetry applied with two picks waits for the line (or point) as a third pick.
+    var symmetryPending: [SketchPick]?
+
+    // Drawing (B-6, B-8, B-11, B-12, M-16): see SketchDrawing.swift.
+    /// Sizes typed while drawing (B-8): the values, the active field and its text.
+    var sizeEntry = SizeEntry()
+    /// Mirror and the sketch patterns: the entities are picked, now the line or the place.
+    var sketchOpTarget = false
+    /// A tangent arc dragged from the end of a line chain (B-12).
+    var tangentArc: TangentArcDrag?
+    /// A trim path being dragged across curves (M-16), in sketch coordinates.
+    var trimPath: [SIMD2<Double>] = []
+
+    // Selection modes (M-8, M-9, T-11): see SelectionModes.swift.
+    /// What a click picks with Select (persisted).
+    var selectionFilter: SelectionFilter = SelectionFilter.stored {
+        didSet { UserDefaults.standard.set(selectionFilter.rawValue, forKey: SelectionFilter.storageKey) }
+    }
+    /// The box being dragged, in viewport points, and whether it is a crossing box.
+    var selectionBox: SelectionBox?
+    /// The pick list of overlapping items open after a press and hold.
+    var pickList: PickList?
+    /// Taps come from a finger (iPad, iPhone): a tap on nothing clears the sketch selection even
+    /// though taps toggle.
+    @ObservationIgnored var touchTaps: Bool = {
+        #if os(iOS)
+        true
+        #else
+        false
+        #endif
+    }()
+    /// The sketch Extrude takes when it is not the last one (a profile tapped, T-8).
+    var extrudeSketch: Int?
+    /// The sketch of the feature being edited, by feature id (read once per edit).
+    @ObservationIgnored var editSketchCache: (feature: Int, sketch: Int?)?
+
     init() {
         Perf.watchMainThread()
         Perf.milestone("design model init")
+        onMainActor { _ in SketchSelfTest.runIfAsked(); SketchCoreSelfTest.runIfAsked() }
         refresh()
         if let home = engine.homeCamera() { camera = home }
         // `--sample hand` and `--sample drone` open a generative project, not the sample design.
@@ -135,6 +230,9 @@ final class DesignModel {
     }
 
     func refresh() {
+        // The pick list names meshes and faces of the scene it was opened on.
+        if pickList != nil { pickList = nil }
+        if !previewApplied && !sessionPreviewApplied { bodiesBeforePreview = nil }
         Perf.measure("refresh") {
             snapshot = Perf.measure("refresh.inspect") { engine.inspect() }
             sketchPlane = engine.sketchPlane()
@@ -221,6 +319,8 @@ final class DesignModel {
     /// stream for a big assembly. `final` (the end of a gesture) lays it out now.
     func cameraChanged(final: Bool = false) {
         onCameraMove?(camera)
+        if pickList != nil { pickList = nil }
+        if final { exitSketchIfTurnedAway() }
         cameraSerial += 1
         let now = Perf.now()
         defer { lastCameraMove = now }
@@ -294,10 +394,9 @@ final class DesignModel {
     // MARK: Pointer
 
     func hover(at p: CGPoint) {
-        if tool.isSketchTool, let plane = sketchPlane {
-            guard let q = ScenePicker.onPlane(plane, camera: camera, at: p, size: viewSize) else { return }
-            (cursor, cursorSnap) = snap(q)
-            hover = nil
+        if sketchHoverHandled(at: p) { return }
+        if tool.isSketchTool, sketchPlane != nil {
+            sketchToolHover(at: p)
             return
         }
         if tool == .extrude, let info = sketchInfo {
@@ -306,10 +405,10 @@ final class DesignModel {
             if i != hoverProfile { hoverProfile = i }
             return
         }
-        hover = ScenePicker.pick(scene, camera: camera, at: p, size: viewSize, edges: wantsEdges)
+        hover = tool == .select ? filteredPick(at: p) : ScenePicker.pick(scene, camera: camera, at: p, size: viewSize, edges: wantsEdges)
     }
 
-    private var wantsEdges: Bool { tool == .select || tool == .fillet || tool == .chamfer }
+    var wantsEdges: Bool { tool == .select || tool == .fillet || tool == .chamfer }
 
     /// A click or tap. `additive` keeps the selection (Shift on a Mac, the default on touch).
     /// How a click changes the selection (FRONTEND-SPEC 7.3): click replaces, Shift adds,
@@ -321,10 +420,11 @@ final class DesignModel {
     }
 
     func click(at p: CGPoint, mode: SelectMode) {
+        if sketchClickHandled(at: p, mode: mode) { return }
         let additive = mode != .replace
+        if pickList != nil { pickList = nil }
         if tool.isSketchTool {
-            guard let plane = sketchPlane, let q = ScenePicker.onPlane(plane, camera: camera, at: p, size: viewSize) else { return }
-            sketchClick(snap(q).0, raw: q)
+            sketchToolClick(at: p, mode: mode)
             return
         }
         if tool == .extrude, let info = sketchInfo, info.profiles.count > 1 {
@@ -333,7 +433,11 @@ final class DesignModel {
             }
             return
         }
-        let hit = ScenePicker.pick(scene, camera: camera, at: p, size: viewSize, edges: wantsEdges)
+        let hit = tool == .select && facePick == nil ? filteredPick(at: p) : ScenePicker.pick(scene, camera: camera, at: p, size: viewSize, edges: wantsEdges)
+        if tool == .select, facePick == nil, selectionFilter == .body {
+            selectBody(of: hit, mode: mode)
+            return
+        }
         if let pick = facePick {
             if case let .face(mesh, _, point, normal)? = hit, mesh < scene.meshes.count {
                 facePick = nil
@@ -355,7 +459,7 @@ final class DesignModel {
             break
         }
         guard let hit else {
-            if !additive { selection = []; selectedBodies = [] }
+            if !additive { replaceSelection() }
             return
         }
         let present = selection.firstIndex(where: { $0.sameEntity(hit) })
@@ -365,14 +469,15 @@ final class DesignModel {
         case .add:
             if present == nil { selection.append(hit) }
         case .replace:
-            selection = [hit]
-            selectedBodies = []
+            replaceSelection([hit])
         }
         if tool == .pressPull || tool == .fillet || tool == .chamfer || tool == .shell { applyPreview() }
     }
 
-    /// A double click or tap selects the whole body.
+    /// A double click or tap selects the whole body; on a sketch curve with Select it selects the
+    /// curve's chain (M-16).
     func doubleClick(at p: CGPoint) {
+        if chainSelect(at: p) { return }
         guard let hit = ScenePicker.pickFace(scene, camera: camera, at: p, size: viewSize) else { return }
         let name = scene.meshes[hit.mesh].body
         if selectedBodies.contains(name) { selectedBodies.remove(name) } else { selectedBodies.insert(name) }
@@ -407,8 +512,23 @@ final class DesignModel {
 
     func finishSketch() {
         clicks = []
+        clickSnaps = []
         run("sketch.finish", quiet: true)
         tool = .select
+    }
+
+    /// T-17: with `SketchDisplaySettings.exitOnOrbitKey` on, the open sketch finishes once the
+    /// view rests more than 60 degrees away from square to its plane.
+    private func exitSketchIfTurnedAway() {
+        guard SketchDisplaySettings.exitOnOrbit, sketchOpen, let plane = sketchPlane,
+              Self.turnedAway(back: camera.back, normal: plane.normal) else { return }
+        finishSketch()
+    }
+
+    /// The view direction is more than 60 degrees from the plane's normal.
+    static func turnedAway(back: SIMD3<Double>, normal: SIMD3<Double>) -> Bool {
+        guard simd_length(back) > 1e-9, simd_length(normal) > 1e-9 else { return false }
+        return abs(simd_dot(simd_normalize(back), simd_normalize(normal))) < 0.5
     }
 
     func look(along normal: SIMD3<Double>) {
@@ -419,134 +539,28 @@ final class DesignModel {
         cameraChanged()
     }
 
-    private func snap(_ q: SIMD2<Double>) -> (SIMD2<Double>, String?) {
-        let radius = camera.halfHeight * 0.03
-        if let r = try? engine.execute("sketch.snap", ["at": [q.x, q.y], "radius": radius]) as? [String: Any],
-           let snaps = r["snaps"] as? [[String: Any]],
-           let best = snaps.first(where: { ($0["type"] as? String) != "on_curve" }),
-           let at = best["at"] as? [Double], at.count == 2 {
-            return (SIMD2(at[0], at[1]), best["type"] as? String)
-        }
-        let s = gridStep / 2
-        return (SIMD2((q.x / s).rounded() * s, (q.y / s).rounded() * s), nil)
-    }
-
-    private func curve(at q: SIMD2<Double>) -> String? {
-        let radius = camera.halfHeight * 0.03
-        guard let r = try? engine.execute("sketch.snap", ["at": [q.x, q.y], "radius": radius]) as? [String: Any],
-              let snaps = r["snaps"] as? [[String: Any]] else { return nil }
-        return snaps.compactMap { $0["curve"] as? String }.first
-    }
-
-    private func pointRef(at q: SIMD2<Double>) -> String? {
-        let radius = camera.halfHeight * 0.03
-        guard let r = try? engine.execute("sketch.snap", ["at": [q.x, q.y], "radius": radius]) as? [String: Any],
-              let snaps = r["snaps"] as? [[String: Any]] else { return nil }
-        return snaps.compactMap { $0["point"] as? String }.first
-    }
-
-    private func pt(_ p: SIMD2<Double>) -> [Double] { [p.x, p.y] }
-
-    private func sketchClick(_ q: SIMD2<Double>, raw: SIMD2<Double>) {
-        switch tool {
-        case .line:
-            if let last = clicks.last {
-                let closing = clicks.count > 1 && simd_distance(q, clicks[0]) < 1e-9
-                run("sketch.line", ["points": [pt(last), pt(q)]], quiet: true)
-                clicks = closing ? [] : [q]
-            } else {
-                clicks = [q]
-            }
-        case .spline:
-            clicks.append(q)
-        case .trim:
-            if let c = curve(at: raw) { run("sketch.trim", ["curve": c, "at": pt(raw)]) }
-        case .offset:
-            if let c = curve(at: raw) { run("sketch.offset", ["curves": [c], "distance": toolValue]) }
-        case .sketchFillet:
-            if let p = pointRef(at: raw) { run("sketch.fillet", ["point": p, "radius": toolValue]) }
-        default:
-            clicks.append(q)
-            if clicks.count >= tool.clicks { commitSketchShape() }
-        }
-    }
-
-    private func commitSketchShape() {
-        let c = clicks
-        clicks = []
-        switch tool {
-        case .rectangle:
-            run("sketch.rectangle.two_point", ["p0": pt(c[0]), "p1": pt(c[1])], quiet: true)
-        case .centerRectangle:
-            run("sketch.rectangle.center", ["center": pt(c[0]), "corner": pt(c[1])], quiet: true)
-        case .circle:
-            let r = simd_distance(c[0], c[1])
-            if r > 0 { run("sketch.circle.center", ["center": pt(c[0]), "radius": r], quiet: true) }
-        case .polygon:
-            let r = simd_distance(c[0], c[1])
-            let a = atan2(c[1].y - c[0].y, c[1].x - c[0].x) * 180 / .pi
-            if r > 0 { run("sketch.polygon.inscribed", ["center": pt(c[0]), "radius": r, "sides": max(3, Int(toolValue)), "angle": a], quiet: true) }
-        case .arc:
-            run("sketch.arc.three_point", ["start": pt(c[0]), "end": pt(c[1]), "through": pt(c[2])], quiet: true)
-        case .slot:
-            let d = c[1] - c[0]
-            let len = simd_length(d)
-            guard len > 0 else { return }
-            let n = SIMD2(-d.y, d.x) / len
-            let w = abs(simd_dot(c[2] - c[0], n)) * 2
-            if w > 0 { run("sketch.slot.center_to_center", ["p0": pt(c[0]), "p1": pt(c[1]), "width": w], quiet: true) }
-        case .point:
-            run("sketch.point", ["point": pt(c[0])], quiet: true)
-        default:
-            break
-        }
-    }
-
-    /// Ends an open-ended tool (line chain, spline), as Escape or Done does.
-    func endChain() {
-        if tool == .spline, clicks.count >= 2 {
-            run("sketch.spline.fit_point", ["points": clicks.map(pt)], quiet: true)
-        }
-        clicks = []
-    }
-
-    /// The preview of the shape being drawn, in sketch coordinates: polylines.
-    var rubberBand: [[SIMD2<Double>]] {
-        guard let cur = cursor, !clicks.isEmpty else { return [] }
-        let c = clicks
-        switch tool {
-        case .line: return [[c[c.count - 1], cur]]
-        case .spline: return [c + [cur]]
-        case .rectangle:
-            let a = c[0], b = cur
-            return [[a, SIMD2(b.x, a.y), b, SIMD2(a.x, b.y), a]]
-        case .centerRectangle:
-            let d = cur - c[0], a = c[0] - d, b = cur
-            return [[a, SIMD2(b.x, a.y), b, SIMD2(a.x, b.y), a]]
-        case .circle, .polygon:
-            let r = simd_distance(c[0], cur)
-            let n = tool == .polygon ? max(3, Int(toolValue)) : 64
-            let a0 = atan2(cur.y - c[0].y, cur.x - c[0].x)
-            return [(0...n).map { i in
-                let a = a0 + Double(i) / Double(n) * 2 * .pi
-                return c[0] + SIMD2(cos(a), sin(a)) * r
-            }]
-        case .arc: return c.count == 1 ? [[c[0], cur]] : [[c[0], cur, c[1]]]
-        case .slot: return c.count == 1 ? [[c[0], cur]] : [[c[0], c[1]], [c[1], cur]]
-        default: return []
-        }
-    }
+    // Snapping, the sketch tools' clicks, the rubber band and typed sizes: SketchDrawing.swift.
 
     // MARK: Solid tools
 
     private func toolChanged(from old: Tool) {
+        if pickList != nil { pickList = nil }
+        previewError = nil
+        // The typed-options session (FeatureSession) drops its own preview when its tool goes.
+        defer { onMainActor { FeatureSession.of($0).sync() } }
         if previewCheckpoint != nil { cancelPreview() }
         clicks = []
         cursor = nil
+        drawingToolChanged()
+        sketchToolChanged()
         extrudeProfiles = []
         hoverProfile = nil
+        if tool != .extrude { extrudeSketch = nil }
         if armingQuietly {
             toolValue = 0
+            // Editing a feature arms its tool quietly: the canvas still shows that feature's
+            // sketch (an extrude's own profiles, not the last sketch's).
+            if tool == .extrude || old == .extrude { reloadSketchInfo() }
             return
         }
         if let v = tool.value { toolValue = v.initial }
@@ -561,6 +575,15 @@ final class DesignModel {
     }
 
     private func valueChanged() {
+        // The dialog's session holds the preview (typed options, an edit): it runs the command
+        // itself, so the model lays no second preview over it.
+        let owned = onMainActorNow(false) { m -> Bool in
+            let session = FeatureSession.of(m)
+            guard session.ownsPreview else { return false }
+            session.sync()
+            return true
+        }
+        if owned { return }
         switch tool {
         case .extrude, .revolve, .pressPull, .fillet, .chamfer, .shell: applyPreview()
         default: break
@@ -576,6 +599,7 @@ final class DesignModel {
             var p: [String: Any] = ["distance": toolValue]
             if toolOperation != "auto" { p["operation"] = toolOperation }
             if !extrudeProfiles.isEmpty { p["profiles"] = extrudeProfiles.sorted() }
+            if let s = extrudeSketch { p["sketch"] = s }
             return ("solid.extrude", p)
         case .revolve:
             var p: [String: Any] = ["axis": revolveAxis, "angle": "\(toolValue) deg"]
@@ -602,6 +626,7 @@ final class DesignModel {
     func applyPreview() {
         guard let (id, params) = pendingCommand, toolValue != 0 || tool == .revolve else {
             // A value of zero shows no feature: take the last preview back.
+            previewError = nil
             if previewApplied, let cp = previewCheckpoint {
                 _ = try? engine.execute("edit.restore_checkpoint", ["checkpoint": cp])
                 previewApplied = false
@@ -619,14 +644,17 @@ final class DesignModel {
                 previewApplied = false
                 previewCheckpoint = nil
             }
+            notePreviewBaseline()
             if previewCheckpoint == nil {
                 let r = try engine.execute("edit.checkpoint") as? [String: Any]
                 previewCheckpoint = r?["checkpoint"] as? Int
             }
             try engine.execute(id, params)
             previewApplied = true
+            previewError = nil
             flash(nil)
         } catch {
+            previewError = error.localizedDescription
             flash(error.localizedDescription, error: true)
         }
         let keep = selection
@@ -641,6 +669,7 @@ final class DesignModel {
         }
         previewCheckpoint = nil
         previewApplied = false
+        previewError = nil
         selection = []
         tool = .select
         refresh()
@@ -652,13 +681,28 @@ final class DesignModel {
         }
         previewCheckpoint = nil
         previewApplied = false
+        previewError = nil
         refresh()
     }
 
     var hasPreview: Bool { previewApplied }
 
+    /// Notes the bodies there are before a preview runs; the first preview of a tool sets it,
+    /// later values keep it (the snapshot may still show the last preview then).
+    func notePreviewBaseline() {
+        if bodiesBeforePreview == nil { bodiesBeforePreview = Set(snapshot.bodies.map(\.name)) }
+    }
+
+    /// The bodies the browser lists: all of them, less those a running preview made.
+    var listedBodies: [DesignSnapshot.Body] {
+        guard let before = bodiesBeforePreview, previewApplied || sessionPreviewApplied else { return snapshot.bodies }
+        return snapshot.bodies.filter { before.contains($0.name) }
+    }
+
     func cancelTool() {
-        if !clicks.isEmpty { clicks = []; return }
+        if cancelDrawingStep() { return }
+        if !clicks.isEmpty { clicks = []; clickSnaps = []; return }
+        if cancelSketchPicks() { return }
         tool = .select
     }
 
@@ -704,6 +748,7 @@ final class DesignModel {
     }
 
     func deleteSelection() {
+        if sketchOpen, !sketchSelection.isEmpty { deleteSketchSelection(); return }
         let faces = selection.filter(\.isFace).map(\.points)
         if !selectedBodies.isEmpty {
             run("solid.remove", ["bodies": Array(selectedBodies)])
@@ -750,10 +795,28 @@ final class DesignModel {
 
     // MARK: Document
 
-    func undo() { run("edit.undo", quiet: true) }
-    func redo() { run("edit.redo", quiet: true) }
+    func undo() {
+        abandonPreviews()
+        run("edit.undo", quiet: true)
+    }
+    func redo() {
+        abandonPreviews()
+        run("edit.redo", quiet: true)
+    }
+
+    /// Before the history moves (undo, redo, new, open): an open dialog and its preview go first,
+    /// so no checkpoint is restored over a history it no longer belongs to.
+    func abandonPreviews() {
+        let hasCheckpoint = previewCheckpoint != nil
+        onMainActor { m in
+            let session = FeatureSession.of(m)
+            if session.holdsPreview || hasCheckpoint { session.cancel() }
+        }
+        if previewCheckpoint != nil { cancelPreview() }
+    }
 
     func newDesign() {
+        abandonPreviews()
         run("file.new", quiet: true)
         if let home = engine.homeCamera() { camera = home }
         cameraChanged()
@@ -763,6 +826,7 @@ final class DesignModel {
         #if os(macOS)
         NSDocumentController.shared.noteNewRecentDocumentURL(url)
         #endif
+        abandonPreviews()
         let ext = url.pathExtension.lowercased()
         let path = url.path
         switch ext {
@@ -868,6 +932,29 @@ final class SceneTicket: @unchecked Sendable {
 /// A built scene crossing from the worker to the main thread.
 private struct SceneBox: @unchecked Sendable {
     let scene: SceneData
+}
+
+extension DesignModel {
+    // The model is used from the main thread only, but is not marked @MainActor (the views and
+    // helpers that read it are not all isolated yet). These hop explicitly instead of assuming
+    // isolation, so a call off the main thread queues the work rather than trapping.
+
+    /// Runs `body` on the main actor: now when this is the main thread, else queued there.
+    func onMainActor(_ body: @escaping @MainActor (DesignModel) -> Void) {
+        let me = UncheckedWeak(self)
+        if Thread.isMainThread {
+            MainActor.assumeIsolated { if let m = me.value { body(m) } }
+        } else {
+            DispatchQueue.main.async { if let m = me.value { body(m) } }
+        }
+    }
+
+    /// The main actor's answer now when this is the main thread; `fallback` off it.
+    func onMainActorNow<T: Sendable>(_ fallback: T, _ body: @MainActor (DesignModel) -> T) -> T {
+        guard Thread.isMainThread else { return fallback }
+        nonisolated(unsafe) let me = self
+        return MainActor.assumeIsolated { body(me) }
+    }
 }
 
 /// A weak reference handed to a main-queue callback. The model lives on the main thread; the

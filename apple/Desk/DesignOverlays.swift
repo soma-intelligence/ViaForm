@@ -90,6 +90,57 @@ struct ValueBadge: View {
     }
 }
 
+/// The value badge made editable (M-4): it reads like `ValueBadge`; a click turns it into a
+/// field (units and expressions, as the dialog's), Return or a click away puts the value in.
+/// Beside it, the operation the extrude will do, with Cut marked when the drag went into the
+/// material, as a menu to pick another.
+struct ValueBadgeField: View {
+    @Environment(\.viaFormTheme) private var theme
+    @Bindable var session: FeatureSession
+    let unit: String
+    @State private var typing = false
+    @State private var focused = false
+
+    var body: some View {
+        HStack(spacing: VFSpace.xs) {
+            if typing {
+                NumberField(String(localized: "Value"), value: Binding(get: { session.value }, set: { session.value = $0 }),
+                            unit: VFUnit(symbol: unit), step: unit == "deg" ? 15 : 1, width: 76, onCommit: { typing = false })
+                    .labelHiddenVisually()
+                    .focusBinding($focused)
+                    .padding(VFSpace.xxs)
+                    .background(RoundedRectangle(cornerRadius: VFRadius.control, style: .continuous).fill(theme.panel))
+                    .overlay(RoundedRectangle(cornerRadius: VFRadius.control, style: .continuous).strokeBorder(theme.accent, lineWidth: 1.5))
+                    .onAppear { focused = true }
+                    .onChange(of: focused) { _, f in if !f { typing = false } }
+            } else {
+                Button { typing = true } label: { ValueBadge(text: DesignAnchorOverlay.format(session.value, unit)) }
+                    .buttonStyle(.plain)
+                    .help(String(localized: "Click to type a value"))
+                    .accessibilityLabel(String(localized: "Value \(DesignAnchorOverlay.format(session.value, unit))"))
+                    .accessibilityHint(String(localized: "Type a new value"))
+            }
+            if session.tool == .extrude || session.tool == .revolve {
+                Menu {
+                    ForEach(session.editing != nil ? ["new_body", "join", "cut", "intersect"] : ["auto", "new_body", "join", "cut", "intersect"], id: \.self) { op in
+                        Button(FeatureDialogFields.operationTitle(op)) { session.operation = op }
+                    }
+                } label: {
+                    Text(session.autoCut ? String(localized: "Cut (auto)") : FeatureDialogFields.operationTitle(session.operation))
+                        .font(VFFont.small)
+                        .foregroundStyle(session.operation == "cut" ? theme.danger : theme.ink)
+                }
+                .menuStyle(.borderlessButton)
+                .fixedSize()
+                .padding(.horizontal, VFSpace.s).frame(height: 24)
+                .vfSurface(.control, radius: VFRadius.control)
+                .help(String(localized: "Operation"))
+            }
+        }
+        .fixedSize()
+    }
+}
+
 /// The armed tool's handle drawn from the anchor: a dimension arrow along the picked face's
 /// normal for a distance (Push / Pull, extrude, shell), a swept arc for an angle (revolve), with
 /// end ticks and the anchor dot.
@@ -166,20 +217,57 @@ struct DesignAnchorOverlay: View {
     let actions: StageActions
     let pcb: PCBModel
     var avoid: [CGRect] = []
+    /// Fusion's canvas: no context pill and no face handle while nothing is armed (the reference
+    /// shows the selection only); the armed command's gizmo and value box stay.
+    var fusion = false
+
+    private var session: FeatureSession { FeatureSession.of(model) }
+    /// Edit Feature from the pill for a feature with no dialog of its own (M-10).
+    @State private var editing: FeatureEditRequest?
 
     var body: some View {
         let _ = units
+        content.modifier(FeatureSessionSync(model: model))
+            .sheet(item: $editing) { r in EditFeatureSheet(model: model, feature: r.feature) }
+            .onAppear {
+                // Runs FeatureDialogSelfTest alone (until the lead folds it into --selftest) and quits.
+                guard ProcessInfo.processInfo.arguments.contains("--feature-dialog-selftest") else { return }
+                let results = FeatureDialogSelfTest.checks()
+                for (ok, what) in results { print(ok ? "PASS" : "FAIL", what) }
+                exit(results.allSatisfy(\.0) ? 0 : 1)
+            }
+    }
+
+    private var content: some View {
         GeometryReader { geo in
             let size = geo.size
             // Read the revision and the camera so the overlay follows edits and orbits.
             let _ = (model.scene.revision, model.camera.yaw, model.camera.pitch, model.camera.distance, model.camera.target)
             let avoid = self.avoid + Self.chrome(size, dialog: model.tool != .select || model.genericCommand != nil)
+            // To Object waits for a face: the next click on the canvas is that face.
+            if session.pickingToObject {
+                Color.clear.contentShape(Rectangle())
+                    .onTapGesture(coordinateSpace: .local) { p in session.canvasTap(at: p, size: size) }
+                    .onHover { inside in if inside { NSCursor.crosshair.push() } else { NSCursor.pop() } }
+                    .accessibilityHidden(true)
+            }
+            // Move runs: the gizmo at the selection's centre (B-13); OK applies it.
+            if model.tool == .move, let g = session.move {
+                MoveGizmo(camera: model.camera, size: size,
+                          state: Binding(get: { session.move ?? g }, set: { session.move = $0 }))
+            }
+            // M-1: the sketch selection's pill, the valid constraints beside the last pick.
+            if !fusion, AnchorLayout.anchor(model, size: size) == nil, let r = SketchPill.rect(model, size: size) {
+                let list = SketchPill.actions(model)
+                StageContextPill(title: SketchPill.title(model), actions: list, dismiss: { model.sketchSelection = [] })
+                    .position(AnchorLayout.place(StageContextPill.size(count: list.count), near: r, in: size, avoid: avoid, prefer: .above))
+            }
             if let a = AnchorLayout.anchor(model, size: size) {
                 ZStack(alignment: .topLeading) {
                     Color.clear.allowsHitTesting(false)
                     if let v = model.tool.value, model.tool != .select, !model.tool.isSketchTool {
                         gizmo(a, value: v, size: size)
-                    } else if model.tool == .select, model.facePick == nil {
+                    } else if model.tool == .select, model.facePick == nil, !fusion {
                         // The picked face's Push / Pull handle, kept clear of the pill.
                         let handle = model.showsFaceHandle ? model.handleAxis : nil
                         let keepClear = avoid + (handle.map { [handleRect($0, a, size: size)] } ?? [])
@@ -219,35 +307,36 @@ struct DesignAnchorOverlay: View {
     // MARK: Gizmo
 
     @ViewBuilder private func gizmo(_ a: AnchorLayout.Anchor, value v: (label: String, unit: String, initial: Double), size: CGSize) -> some View {
-        let text = Self.format(model.toolValue, v.unit)
+        let value = session.value
         if v.unit == "deg" {
             let r: CGFloat = 46
-            let sweep = -min(max(model.toolValue, -360), 360) * .pi / 180
+            let sweep = -min(max(value, -360), 360) * .pi / 180
             let tip = CGPoint(x: a.screen.x + cos(-.pi / 2 + sweep) * r, y: a.screen.y + sin(-.pi / 2 + sweep) * r)
             GizmoArc(kind: .arc(center: a.screen, radius: r, start: -.pi / 2, sweep: sweep))
-            ValueBadge(text: text).position(x: tip.x + 34, y: tip.y - 14)
-        } else if let axis = model.handleAxis {
+            ValueBadgeField(session: session, unit: v.unit).position(x: tip.x + 34, y: tip.y - 14)
+        } else if session.editing == nil, let axis = model.handleAxis {
             // A draggable handle along the face or profile normal.
             let tip = DesignDistanceHandle.tip(model: model, point: axis.point, normal: axis.normal, size: size)
             let base = model.camera.project(axis.point, size: size)
             DesignDistanceHandle(model: model, point: axis.point, normal: axis.normal, size: size)
             let dx = tip.x - base.x, dy = tip.y - base.y, len = max(hypot(dx, dy), 1)
-            ValueBadge(text: text).position(x: (base.x + tip.x) / 2 - dy / len * 46, y: (base.y + tip.y) / 2 + dx / len * 24)
-                .allowsHitTesting(false)
+            ValueBadgeField(session: session, unit: v.unit)
+                .position(x: (base.x + tip.x) / 2 - dy / len * 46, y: (base.y + tip.y) / 2 + dx / len * 24)
         } else {
-            let tip = linearTip(a, size: size)
+            let tip = linearTip(a, value: value, size: size)
             GizmoArc(kind: .linear(a.screen, tip))
             let dx = tip.x - a.screen.x, dy = tip.y - a.screen.y, len = max(hypot(dx, dy), 1)
             // The badge beside the arrow, off its side, never on the anchor.
-            ValueBadge(text: text).position(x: (a.screen.x + tip.x) / 2 - dy / len * 42, y: (a.screen.y + tip.y) / 2 + dx / len * 22)
+            ValueBadgeField(session: session, unit: v.unit)
+                .position(x: (a.screen.x + tip.x) / 2 - dy / len * 42, y: (a.screen.y + tip.y) / 2 + dx / len * 22)
         }
     }
 
     /// The arrow's tip: the value along the face normal (or up), projected; at least 48 points
     /// long so a small value stays readable.
-    private func linearTip(_ a: AnchorLayout.Anchor, size: CGSize) -> CGPoint {
+    private func linearTip(_ a: AnchorLayout.Anchor, value: Double, size: CGSize) -> CGPoint {
         let n = a.normal ?? SIMD3(0, 0, 1)
-        let world = model.camera.project(a.point + simd_normalize(n) * max(abs(model.toolValue), 0.001) * (model.toolValue < 0 ? -1 : 1), size: size)
+        let world = model.camera.project(a.point + simd_normalize(n) * max(abs(value), 0.001) * (value < 0 ? -1 : 1), size: size)
         var dx = world.x - a.screen.x, dy = world.y - a.screen.y
         var len = hypot(dx, dy)
         if len < 1 {
@@ -273,6 +362,8 @@ struct DesignAnchorOverlay: View {
         var out: [PillAction] = model.suggestions.prefix(4).map { t in
             PillAction(id: t.rawValue, title: StageLabels.command(t.label), tool: t, on: model.tool == t) { activate(t) }
         }
+        // M-10: the feature (and its sketch) that made the picked face.
+        out += CanvasEdit.actions(model) { editing = FeatureEditRequest(feature: $0) }
         // Cross-stage verbs: what the selection leads to in the other stages.
         let bodies = selectedBodyNames
         if workspace != .assemble, !model.assembly.isEmpty {

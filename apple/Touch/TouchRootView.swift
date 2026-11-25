@@ -3,11 +3,9 @@ import SwiftUI
 import UniformTypeIdentifiers
 
 /// The touch front end (iPad and iPhone), one shell for the nine stages of the pipeline. The
-/// stage's view fills the screen (the 3D design, the study, the board, the flight); over it a
-/// top capsule carries the title and revision, undo and redo, the workspace dropdown,
-/// Items | History, the view cube, the jobs and share; on the left the two tool groups, on the
-/// right the 320 point inspector card, under the selection the context pill, at the bottom the
-/// summary capsule (or the transport bar in Simulate and Train). The browser, export and the
+/// stage's view fills the screen (the 3D design, the study, the board, the flight). On the iPad
+/// the 3D stages use the Shapr3D zones (see `designStage`): Items slides in from the left,
+/// History from the right; the other stages and the iPhone keep the top capsule. The browser, export and the
 /// command palette open as sheets. Finger orbits, two fingers pan, pinch zooms, a two-finger tap
 /// on the 3D view undoes, Pencil selects and sketches. Each window owns its models, so two iPad
 /// windows never share a document.
@@ -17,7 +15,7 @@ struct TouchRootView: View {
             // Screenshots on a simulator nobody can turn: the shell laid out landscape and
             // drawn turned a quarter, the PNG is turned back afterwards. Debug only.
             GeometryReader { geo in
-                TouchShell().viaFormTheme()
+                TouchShell().viaFormTheme().touchNumberKeypad()
                     .frame(width: geo.size.height, height: geo.size.width)
                     .rotationEffect(.degrees(-90))
                     .position(x: geo.size.width / 2, y: geo.size.height / 2)
@@ -25,7 +23,7 @@ struct TouchRootView: View {
             .ignoresSafeArea()
             .statusBarHidden()
         } else {
-            TouchShell().viaFormTheme()
+            TouchShell().viaFormTheme().touchNumberKeypad()
         }
     }
 }
@@ -37,7 +35,8 @@ struct TouchShell: View {
     @State private var sim = SimModel()
     @State private var generate = GenerateModel()
     @State private var stage: Workspace = TouchShell.launchStage
-    @State private var side: TouchSideCard? = TouchShell.launchSide
+    /// Items slides in from the left, History from the right (T-6): two panels, both can be open.
+    @State private var panels = TouchPanels(TouchShell.launchSide)
     @State private var library = LibraryModel()
     @State private var showLibrary = ProcessInfo.processInfo.arguments.contains("--library")
     @State private var bom = BomModel()
@@ -53,8 +52,11 @@ struct TouchShell: View {
     @State private var perspective = false
     @State private var sectionOn = false
     @State private var isolated: [String] = []
-    /// The stage's inspector card (Option-Command-I hides it).
+    /// The stage's inspector card (Option-Command-I hides it). The design itself has none on
+    /// the iPad: its details open from the readout's (i).
     @State private var inspectorShown = true
+    /// The selection's details, from the readout's (i).
+    @State private var selectionInfo = false
     /// The product pipeline, shared with the Mac window's (see `FlowModel`).
     @State private var flow = FlowModel()
     /// The workspace dropdown (popover on iPad, sheet on iPhone).
@@ -65,6 +67,10 @@ struct TouchShell: View {
     @State private var undoTick = 0
     @State private var width: CGFloat = 1024
     @State private var restored = false
+    /// The left-handed layout mirrors the zones (agent D's setting, per device).
+    @AppStorage(TouchHandedness.key) private var leftHanded = false
+    /// The snapping rail's grid switch.
+    @AppStorage(SketchDisplaySettings.gridKey) private var gridVisible = true
     @Environment(\.horizontalSizeClass) private var hSize
 
     // Kept per scene: a restored or second window comes back where it was (P2-9).
@@ -98,18 +104,25 @@ struct TouchShell: View {
 
     var body: some View {
         stageView
-            .safeAreaInset(edge: .top, spacing: 0) { topCapsule }
+            .safeAreaInset(edge: .top, spacing: 0) {
+                // The 3D stages on the iPad draw their own top zones (designStage).
+                if !(onDesign && !compact) { topCapsule }
+            }
             .background(TwoFingerTapUndo { undo(gesture: true) }.allowsHitTesting(false))
             .background(TouchKeyCommands(focus: focus))
+            .background(TouchToolKeys(model: model, enabled: !presenting && !showPalette && stage == .design,
+                                      showPalette: { showPalette = true }))
+            .vfParameterLinks(model)
             .focusedSceneValue(\.vfTouch, focus)
-            .vfAnimation(.snappy(duration: VFMotion.standard), value: side)
+            .vfAnimation(.snappy(duration: VFMotion.standard), value: panels)
             .vfAnimation(.snappy(duration: VFMotion.standard), value: inspectorShown)
             .vfAnimation(.snappy(duration: VFMotion.fast), value: model.tool)
             .sensoryFeedback(.impact(weight: .light), trigger: undoTick)
             .sensoryFeedback(.selection, trigger: model.tool)
             .pencilDoubleTapTogglesTool(model)
+            .task { TouchSketchUISelfTest.runIfAsked(); TouchSketchToolsSelfTest.runIfAsked() }
             .onChange(of: stage) { _, s in pcb.syncLink(model); storedStage = s.rawValue }
-            .onChange(of: side) { _, s in storedSide = s?.rawValue ?? "" }
+            .onChange(of: panels) { _, p in storedSide = p.stored }
             .onChange(of: inspectorShown) { _, v in storedInspector = v }
             .onChange(of: telemetryOpen) { _, v in storedTelemetry = v }
             .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { width = $0 }
@@ -142,7 +155,7 @@ struct TouchShell: View {
             }
             .vfAnimation(.snappy(duration: VFMotion.fast), value: showPalette)
             .sheet(isPresented: $showCommands) { CommandBrowser(model: model).viaFormTheme() }
-            .sheet(isPresented: $showShortcuts) { TouchShortcutsSheet().viaFormTheme().presentationDetents([.medium, .large]) }
+            .sheet(isPresented: $showShortcuts) { TouchShortcutsSheet(toolRows: TouchKeymap.rows(model)).viaFormTheme().presentationDetents([.medium, .large]) }
             .sheet(isPresented: $showLibrary) {
                 LibraryView(model: library, design: model, pcb: pcb) { showLibrary = false }.presentationDetents([.medium, .large])
             }
@@ -151,9 +164,9 @@ struct TouchShell: View {
                     .onAppear { if BomModel.launchRequested, bom.rows.isEmpty { bom.applyLaunchFlags() } }
             }
             // On iPhone (and a narrow iPad window) the Items and History cards come up as sheets.
-            .sheet(isPresented: Binding(get: { compact && side != nil }, set: { if !$0 { side = nil } })) {
+            .sheet(isPresented: Binding(get: { compact && panels.any }, set: { if !$0 { panels = TouchPanels() } })) {
                 Group {
-                    if side == .history { HistorySidebar(model: model, floating: false) } else { ItemsPanel(model: model, floating: false) }
+                    if panels.history { HistorySidebar(model: model, floating: false) } else { ItemsPanel(model: model, floating: false) }
                 }
                 .environment(\.vfToasts, toasts)
                 .viaFormTheme()
@@ -230,46 +243,188 @@ struct TouchShell: View {
         }
     }
 
-    /// Design, Assemble, Render and Make over the 3D view.
+    /// Design, Assemble, Render and Make over the 3D view, in the reference tablet zones (T-6,
+    /// docs/research/cad-ui/shapr3d-ipad.md 1.1): Modeling and Items top left, the title pill
+    /// and the tool mode pill top centre, the view cube, the mini rail and History top right;
+    /// the tool column under Items, centred between them and the view modes and undo tiles;
+    /// the constraint column under History while sketching; the selection readout bottom
+    /// centre. Icons sit on white tiles at the screen edge, labels float (`TouchRail`). Items
+    /// slides in from the tool edge and pushes everything on that side over; History slides in
+    /// from the panel edge and pushes the rail. Both panels run the full height. The
+    /// left-handed setting mirrors the sides.
     private var designStage: some View {
-        ZStack {
-            Viewport(model: model, theme: theme.viewportTheme).ignoresSafeArea()
-            if stage == .design || stage == .assemble {
-                DesignAnchorLayer(model: model, stage: stage, extra: crossStageVerbs)
-            }
-            // The tool groups ride the leading edge at mid height, where a thumb rests on a
-            // held iPad (they sat in the top corner, a reach across the glass).
-            HStack(spacing: 0) {
-                tools
-                Spacer(minLength: 0)
-            }
-            .padding(.leading, VFSpace.l)
-            .padding(.bottom, 40)
-            VStack(spacing: VFSpace.m) {
-                HStack(alignment: .top, spacing: VFSpace.m) {
-                    Spacer(minLength: 0)
-                    if inspectorShown || side != nil { rightCard }
+        GeometryReader { geo in
+            let h = geo.size.height
+            ZStack {
+                // The sketch state is the readout's business here (TouchSketchStateChip is off).
+                Viewport(model: model, theme: theme.viewportTheme.touchGrid(gridVisible), sketchStatus: false)
+                if stage == .design || stage == .assemble {
+                    DesignAnchorLayer(model: model, stage: stage, extra: crossStageVerbs)
                 }
-                Spacer(minLength: 0)
-                PCBLinkBanner(design: model, pcb: pcb)
-                MessageBanner(model: model)
-                if model.tool == .sketch { PlaneChooser(model: model) }
-                if stage == .design, !model.snapshot.timeline.isEmpty, model.selection.isEmpty, model.selectedBodies.isEmpty {
-                    // Hidden while the context pill shows: one bar near the thumbs, not three.
-                    HistoryBar(model: model)
+                HStack(alignment: .top, spacing: 0) {
+                    if leftHanded {
+                        panelSide(height: h).environment(\.touchRailEdge, .leading)
+                        Spacer(minLength: 0)
+                        toolSide(height: h).environment(\.touchRailEdge, .trailing)
+                    } else {
+                        toolSide(height: h).environment(\.touchRailEdge, .leading)
+                        Spacer(minLength: 0)
+                        panelSide(height: h).environment(\.touchRailEdge, .trailing)
+                    }
                 }
-                SummaryCapsule(items: summary)
+                centre
             }
-            .padding(.horizontal, VFSpace.l)
-            .padding(.top, VFSpace.m)
-            .padding(.bottom, VFSpace.m)
+            .vfEngineGate()
+        }
+        .ignoresSafeArea()
+        // The reference runs edge to edge with no status bar.
+        .statusBarHidden()
+    }
+
+    /// The title pill, the tool mode pill and Normal to Sketch at the top centre; banners and
+    /// the selection readout at the bottom centre.
+    private var centre: some View {
+        VStack(spacing: VFSpace.s) {
+            TouchTitlePill(flow: flow, stage: stage, title: title, compact: compact,
+                           showBrowser: { showBrowser = true }, showPalette: { showPalette = true },
+                           showShortcuts: { showShortcuts = true },
+                           share: AnyView(TouchShareMenu(prominent: true, export: { exporting = $0 }, showBom: { showBom = true },
+                                                         showLibrary: { showLibrary = true })))
+            if model.tool != .select { TouchToolModePill(model: model) }
+            NormalToSketchPill(model: model)
+            Spacer(minLength: 0)
+            bottomCentre
+        }
+        .padding(.top, TouchRail.top)
+        .padding(.bottom, TouchRail.bottom)
+        .frame(maxWidth: 560)
+    }
+
+    /// The left rail's rows: the column (no constraint slot), the footer tiles and the view modes.
+    private func toolRows() -> (rows: Int, tiles: Int) {
+        guard stage == .design else { return (8, 3) }
+        let items = TouchColumnLayout.items(TouchColumnContext(model: model))
+        let tiles = TouchColumnLayout.tiles(items)
+        var rows = tiles.reduce(0) { $0 + $1.count }
+        var count = tiles.count
+        if model.sketchOpen { rows += 1; count += 1 }
+        if runningTool && !model.tool.isSketchTool { rows = 3; count = 1 } else if runningTool { rows += 2; count += 1 }
+        rows += TouchViewModeStack.rows(construction: constructionBinding != nil, isolate: showsIsolate)
+        return (rows, count + 1)
+    }
+
+    /// A design tool runs (not a sketch tool that only draws): Done and Cancel stand by the column.
+    private var runningTool: Bool {
+        stage == .design && model.tool != .select && model.tool != .sketch
+            && (!model.tool.isSketchTool || model.tool.takesSketchEntities)
+    }
+
+    private var showsIsolate: Bool {
+        model.sketchOpen || !model.selection.isEmpty || !model.selectedBodies.isEmpty
+    }
+
+    /// Items (on the outer edge, full height), then the rail: Modeling and Items, the column
+    /// centred under them, the view modes and the undo tiles at the foot.
+    private func toolSide(height h: CGFloat) -> some View {
+        let edge: Edge = leftHanded ? .trailing : .leading
+        let (rows, tiles) = toolRows()
+        let row = TouchRail.rowHeight(height: h, fixed: TouchRail.leftFixed, rows: rows, groups: tiles)
+        let rail = VStack(alignment: TouchHandedness.toolAlignment(leftHanded: leftHanded), spacing: TouchRail.gap) {
+            TouchWorkspaceZone(flow: flow, stage: stage, compact: compact, workspacesOpen: $showWorkspaces,
+                               side: panels.sideBinding($panels), showsItems: onDesign, open: open)
+            Spacer(minLength: 0)
+            tools.environment(\.touchRailRow, row)
+            Spacer(minLength: 0)
+            if sectionOn {
+                TouchSectionControl(model: model) { toggleSection() }
+                    .vfTransition(.opacity)
+            }
+            TouchViewModeStack(sectionOn: sectionOn, isolateOn: !isolated.isEmpty, construction: constructionBinding,
+                               showsIsolate: showsIsolate, toggleSection: toggleSection, toggleIsolate: toggleIsolate,
+                               measure: model.measureSelection)
+                .environment(\.touchRailRow, row)
+            TouchUndoCircles(target: undoTarget, stageTitle: stage.title, undo: { undo() }, redo: redo)
+        }
+        .padding(.top, TouchRail.top)
+        .padding(.bottom, TouchRail.bottom)
+        .padding(edge == .leading ? .leading : .trailing, TouchRail.edge)
+        return HStack(alignment: .top, spacing: 0) {
+            if leftHanded { rail }
+            if panels.items {
+                ItemsPanel(model: model)
+                    .padding(.vertical, 0)
+                    .padding(.top, TouchRail.top)
+                    .padding(.bottom, TouchRail.bottom)
+                    .padding(edge == .leading ? .leading : .trailing, TouchRail.edge)
+                    .vfTransition(.move(edge: edge).combined(with: .opacity))
+            }
+            if !leftHanded { rail }
+        }
+    }
+
+    /// Construction mode while a sketch is open (the bottom-left stack's first row).
+    private var constructionBinding: Binding<Bool>? {
+        guard stage == .design, model.sketchOpen else { return nil }
+        return Binding(get: { model.constructionMode }, set: { model.constructionMode = $0 })
+    }
+
+    /// The panel edge: the view cube and its rail, History, then the sketch's constraint column
+    /// (T-2) or another stage's inspector card; History's panel beyond them, full height.
+    private func panelSide(height h: CGFloat) -> some View {
+        let edge: Edge = leftHanded ? .leading : .trailing
+        let row = TouchRail.rowHeight(height: h, fixed: TouchRail.rightFixed, rows: TouchConstraintColumn.rowCount, groups: 2)
+        let rail = VStack(alignment: TouchHandedness.panelAlignment(leftHanded: leftHanded), spacing: TouchRail.gap) {
+            TouchViewZone(model: model, side: panels.sideBinding($panels), perspective: $perspective)
+            if stage == .design, model.sketchOpen {
+                TouchConstraintColumn(model: model)
+                    .environment(\.touchRailRow, row)
+                    .vfTransition(.move(edge: edge).combined(with: .opacity))
+            } else if stage != .design, inspectorShown, !panels.history {
+                rightCard
+            }
+            Spacer(minLength: 0)
+        }
+        .padding(.top, TouchRail.top)
+        .padding(edge == .trailing ? .trailing : .leading, TouchRail.edge)
+        return HStack(alignment: .top, spacing: 0) {
+            if !leftHanded { rail }
+            if panels.history {
+                HistorySidebar(model: model)
+                    .padding(.top, TouchRail.top)
+                    .padding(.bottom, TouchRail.bottom)
+                    .padding(edge == .trailing ? .trailing : .leading, TouchRail.edge)
+                    .padding(edge == .trailing ? .leading : .trailing, TouchRail.gap)
+                    .vfTransition(.move(edge: edge).combined(with: .opacity))
+            }
+            if leftHanded { rail }
+        }
+    }
+
+    /// Banners, the plane chooser and the selection readout, bottom centre. The readout's (i)
+    /// shows the selection's details (volume, mass, faces, material) in a popover.
+    private var bottomCentre: some View {
+        VStack(spacing: VFSpace.m) {
+            PCBLinkBanner(design: model, pcb: pcb)
+            MessageBanner(model: model)
+            if model.tool == .sketch { PlaneChooser(model: model) }
+            TouchSelectionReadout(model: model, showInspector: { selectionInfo = true })
+                .popover(isPresented: $selectionInfo, arrowEdge: .bottom) {
+                    TouchDesignInspector(model: model, flow: flow, stage: stage, open: open)
+                        .padding(VFSpace.s)
+                        .presentationCompactAdaptation(.popover)
+                        .viaFormTheme()
+                }
         }
     }
 
     @ViewBuilder private var tools: some View {
         switch stage {
+        case .design where runningTool && !model.tool.isSketchTool:
+            // The reference swaps the whole column for Done, the tool's options and Cancel.
+            TouchToolRailFooter(model: model)
         case .design:
-            DesignToolGroups(model: model, showCommands: $showPalette)
+            TouchToolColumn(model: model, showPalette: { showPalette = true }, extra: crossStageVerbs, constraintSlot: nil,
+                            footer: railFooter)
         case .assemble, .render:
             CatalogToolGroups(ribbon: StageScreen.ribbon(flow.commands(stage: stage.stage), perGroup: 8), groups: stage == .render ? 1 : 2, run: run)
         default:
@@ -277,19 +432,20 @@ struct TouchShell: View {
         }
     }
 
+    /// Under the column: Delete in a sketch; Done, the options and Cancel while a tool runs.
+    private var railFooter: AnyView? {
+        if runningTool { return AnyView(TouchToolRailFooter(model: model)) }
+        if model.sketchOpen { return AnyView(TouchSketchDeleteTile(model: model)) }
+        return nil
+    }
+
     @ViewBuilder private var rightCard: some View {
         Group {
-            if side == .items {
-                ItemsPanel(model: model)
-            } else if side == .history {
-                HistorySidebar(model: model)
-            } else {
-                switch stage {
-                case .assemble: TouchAssembleInspector(model: model, pcb: pcb, flow: flow, open: open)
-                case .render: TouchRenderInspector(model: model, flow: flow, open: open)
-                case .make: TouchMakeInspector(flow: flow, open: open, export: { exporting = $0 }, showBom: { showBom = true })
-                default: TouchDesignInspector(model: model, flow: flow, stage: stage, open: open)
-                }
+            switch stage {
+            case .assemble: TouchAssembleInspector(model: model, pcb: pcb, flow: flow, open: open)
+            case .render: TouchRenderInspector(model: model, flow: flow, open: open)
+            case .make: TouchMakeInspector(flow: flow, open: open, export: { exporting = $0 }, showBom: { showBom = true })
+            default: TouchDesignInspector(model: model, flow: flow, stage: stage, open: open)
             }
         }
         .vfTransition(.move(edge: .trailing).combined(with: .opacity))
@@ -298,7 +454,7 @@ struct TouchShell: View {
     /// iPhone and narrow windows: one column, tools in a bottom strip.
     private var compactDesign: some View {
         ZStack {
-            Viewport(model: model, theme: theme.viewportTheme).ignoresSafeArea()
+            Viewport(model: model, theme: theme.viewportTheme.touchGrid(gridVisible)).ignoresSafeArea()
             VStack(spacing: VFSpace.m) {
                 HStack {
                     Spacer()
@@ -310,7 +466,8 @@ struct TouchShell: View {
                 if model.tool == .sketch { PlaneChooser(model: model) }
                 if model.tool != .select, model.tool != .sketch { ToolSession(model: model, layout: .bar) }
                 else if !model.suggestions.isEmpty { SuggestionBar(model: model) }
-                ToolRail(model: model, compact: true, showCommands: $showCommands)
+                TouchToolColumn(model: model, showPalette: { showPalette = true }, axis: .horizontal, extra: crossStageVerbs,
+                                constraintSlot: model.sketchOpen ? AnyView(TouchConstraintStripMenu(model: model)) : nil)
             }
             .padding(.horizontal, VFSpace.l)
             .padding(.vertical, VFSpace.m)
@@ -326,26 +483,6 @@ struct TouchShell: View {
         ]
     }
 
-    private static func plain(_ s: AttributedString) -> String { String(s.characters) }
-
-    private var summary: [(symbol: String, text: String)] {
-        let bodies = model.snapshot.bodies.count, components = model.assembly.count
-        var out: [(String, String)] = [
-            ("cube", Self.plain(AttributedString(localized: "^[\(bodies) body](inflect: true)"))),
-            ("square.stack.3d.up", Self.plain(AttributedString(localized: "^[\(components) component](inflect: true)"))),
-        ]
-        if flow.designJoints > 0 {
-            let joints = flow.designJoints, motors = flow.designMotors
-            out.append(("link", Self.plain(AttributedString(localized: "^[\(joints) joint](inflect: true)"))))
-            if motors > 0 { out.append(("gearshape", Self.plain(AttributedString(localized: "^[\(motors) motor](inflect: true)")))) }
-        } else {
-            let steps = model.snapshot.timeline.count
-            out.append(("clock.arrow.circlepath", Self.plain(AttributedString(localized: "^[\(steps) step](inflect: true)"))))
-        }
-        if let rev = flow.revisionName(of: stage.stage) { out.append(("tag", rev)) }
-        return out
-    }
-
     // MARK: - Top capsule
 
     private var topCapsule: some View {
@@ -353,13 +490,12 @@ struct TouchShell: View {
             TouchTopCapsule(
                 flow: flow, stage: stage, title: title,
                 undoTarget: undoTarget,
-                compact: compact, side: $side, showsSideSwitch: onDesign,
+                compact: compact, side: panels.sideBinding($panels), showsSideSwitch: onDesign,
                 open: open, undo: { undo() }, redo: redo,
                 showBrowser: { showBrowser = true }, showPalette: { showPalette = true },
                 share: AnyView(TouchShareMenu(export: { exporting = $0 }, showBom: { showBom = true }, showLibrary: { showLibrary = true })),
                 workspacesOpen: $showWorkspaces
             )
-            if onDesign, !compact { viewCluster }
         }
         .padding(.horizontal, VFSpace.l)
         .padding(.top, VFSpace.xs)
@@ -370,41 +506,12 @@ struct TouchShell: View {
         ProjectTitle.of(flow: flow, design: model)
     }
 
-    /// The view cube and the view menu (perspective, fit, standard views, section, isolate).
-    private var viewCluster: some View {
-        HStack(spacing: VFSpace.xxs) {
-            ViewCube(model: model, size: 52)
-                .frame(width: 56, height: 56)
-            Menu {
-                Button("Home View", systemImage: "house") { model.setView(.iso) }
-                Toggle("Perspective", isOn: $perspective)
-                Button("Zoom to Fit", systemImage: "arrow.up.left.and.down.right.magnifyingglass") { model.zoomToFit() }
-                Section("Views") {
-                    ForEach(StandardView.allCases, id: \.self) { v in
-                        Button(v == .iso ? String(localized: "Isometric") : v.rawValue.capitalized) { model.setView(v) }
-                    }
-                }
-                Toggle("Section View", isOn: Binding(get: { sectionOn }, set: { _ in toggleSection() }))
-                Toggle("Isolate Selection", isOn: Binding(get: { !isolated.isEmpty }, set: { _ in toggleIsolate() }))
-            } label: {
-                Image(systemName: "eye").font(VFFont.glyph(17, weight: .medium)).foregroundStyle(theme.ink)
-                    .frame(width: VFSize.touchTarget, height: VFSize.touchTarget)
-                    .contentShape(Rectangle())
-            }
-            .hoverEffect(.highlight)
-            .accessibilityLabel(Text("View options"))
-        }
-        .padding(.horizontal, VFSpace.s)
-        .frame(minHeight: 56)
-        .vfSurface(.control, radius: VFRadius.touchCapsule)
-    }
-
     // MARK: - Keyboard focus
 
     /// A sheet, cover, popover or the palette is up over the shell.
     private var presenting: Bool {
         showBrowser || showLibrary || showBom || showCommands || showShortcuts || exporting != nil
-            || model.genericCommand != nil || (compact && side != nil) || showWorkspaces || confirm != nil
+            || model.genericCommand != nil || (compact && panels.any) || showWorkspaces || confirm != nil
     }
 
     private var focus: TouchFocus {
@@ -505,7 +612,7 @@ struct TouchShell: View {
 
     private func open(_ w: Workspace) {
         if stage == w { return }
-        if ![.design, .assemble, .render, .make].contains(w) { side = nil }
+        if ![.design, .assemble, .render, .make].contains(w) { panels = TouchPanels() }
         stage = w
     }
 
@@ -595,10 +702,16 @@ struct TouchShell: View {
         }
     }
 
+    /// Section View through agent C's `SectionController`: on cuts at XZ and shows the section
+    /// control (plane, offset); off clears the cut.
     private func toggleSection() {
-        sectionOn.toggle()
-        if sectionOn { model.run("inspect.section", ["plane": "XZ", "at": 0], quiet: true) }
-        else { model.run("inspect.section", ["clear": true], quiet: true) }
+        let section = SectionController.of(model)
+        if sectionOn || section.isOn {
+            section.clear(model: model)
+            sectionOn = false
+        } else {
+            sectionOn = section.set(named: "XZ", model: model)
+        }
     }
 
     /// Isolate hides every body outside the selection; a second tap shows them again.
@@ -620,7 +733,7 @@ struct TouchShell: View {
         restored = true
         let args = ProcessInfo.processInfo.arguments
         if Workspace.fromLaunchArguments(args) == nil, !args.contains("--board"), let w = Workspace(rawValue: storedStage) { stage = w }
-        if TouchShell.launchSide == nil { side = TouchSideCard(rawValue: storedSide) }
+        if TouchShell.launchSide == nil { panels = TouchPanels(stored: storedSide) }
         perspective = storedPerspective
         inspectorShown = storedInspector
         telemetryOpen = storedTelemetry
@@ -642,158 +755,35 @@ struct TouchShell: View {
             flow.newDocument(product: "Racer 3in")
             if GenerateProject.launchSample == nil, generate.project?.name != "drone" { generate.openSample("drone") }
         }
+        #if DEBUG
+        // The panels' own checks, before `--selftest` wires them (prints one line per check).
+        if args.contains("--panels-selftest") {
+            for (ok, what) in TouchPanelsSelfTest.checks() { print("\(ok ? "PASS" : "FAIL") \(what)") }
+        }
+        #endif
         if let s = args.first(where: { $0.hasPrefix("--select=") }) {
             model.selectedBodies = [String(s.dropFirst("--select=".count))]
         }
+        // `--touch-sketch-line`: a sketch open on XY with a rectangle, one side picked (screenshots).
+        if args.contains("--touch-sketch-line") {
+            model.run("file.new", quiet: true)
+            model.startSketch("XY")
+            model.run("sketch.rectangle.two_point", ["p0": [-30, -20], "p1": [30, 20]], quiet: true)
+            if let line = model.sketchInfo?.curves.first(where: { $0.kind == "line" }) {
+                model.sketchSelection = [SketchPick(id: line.id, kind: .line)]
+            }
+        }
+        // `--touch-tap-center`: one tap at the middle of the view once it has laid out (a face
+        // picked, for screenshots of the readout and the selection column).
+        if args.contains("--touch-tap-center") {
+            Task { @MainActor in
+                try? await Task.sleep(for: .milliseconds(900))
+                let size = model.viewSize
+                if size.width > 0 { model.click(at: CGPoint(x: size.width / 2, y: size.height / 2), mode: .replace) }
+            }
+        }
         if let s = args.first(where: { $0.hasPrefix("--tool=") }), let t = Tool(rawValue: String(s.dropFirst("--tool=".count))) {
             model.tool = t
-        }
-    }
-}
-
-// MARK: - Timeline
-
-/// The actions of one timeline step, shared by the context menus and the visible menus of the
-/// history list and the history bar (P1-28). Delete offers Undo in a toast (P0-10).
-struct TimelineStepActions: View {
-    let model: DesignModel
-    let index: Int
-    let feature: DesignSnapshot.Feature
-    let toasts: ToastCenter?
-
-    var body: some View {
-        Button("Roll Back Here", systemImage: "backward.end") { model.rollTimeline(to: index) }
-        Button(feature.suppressed == true ? String(localized: "Unsuppress") : String(localized: "Suppress"),
-               systemImage: feature.suppressed == true ? "eye" : "eye.slash") {
-            model.run("timeline.suppress", ["feature": feature.id])
-        }
-        Button(String(localized: "Delete \(feature.name)"), systemImage: "trash", role: .destructive) {
-            Self.delete(feature, model: model, toasts: toasts)
-        }
-    }
-
-    @MainActor static func delete(_ f: DesignSnapshot.Feature, model: DesignModel, toasts: ToastCenter?) {
-        guard model.run("timeline.delete", ["feature": f.id]) != nil else { return }
-        let step = DesignStep(model)
-        toasts?.show(String(localized: "Deleted \(f.name)"), systemImage: "trash", actionTitle: String(localized: "Undo")) { step.undo() }
-    }
-}
-
-/// Steps the roll marker with the arrow keys of a hardware keyboard.
-private struct TimelineArrowKeys: ViewModifier {
-    let model: DesignModel
-    let keys: (back: KeyEquivalent, forward: KeyEquivalent)
-
-    func body(content: Content) -> some View {
-        content
-            .focusable()
-            .focusEffectDisabled()
-            .onKeyPress(keys: [keys.back, keys.forward]) { press in
-                let count = model.snapshot.timeline.count
-                guard count > 0 else { return .ignored }
-                let now = min(max(model.snapshot.marker, 0), count)
-                let next = press.key == keys.back ? max(0, now - 1) : min(count, now + 1)
-                if next != now { model.rollTimeline(to: next) }
-                return .handled
-            }
-    }
-}
-
-/// The parametric history as a vertical list; tap a step to roll the design back to it. Every
-/// step has its actions in a visible menu, a long-press menu and swipe actions.
-struct HistorySidebar: View {
-    @Environment(\.viaFormTheme) private var theme
-    @Environment(\.vfToasts) private var toasts
-    let model: DesignModel
-    /// A card over the viewport (iPad); false inside a sheet (iPhone).
-    var floating = true
-
-    var body: some View {
-        List {
-            if model.snapshot.timeline.isEmpty {
-                Text("No steps yet. Sketch and extrude to start the history.")
-                    .font(VFFont.row).foregroundStyle(theme.inkSecondary)
-                    .listRowBackground(Color.clear)
-            }
-            ForEach(Array(model.snapshot.timeline.enumerated()), id: \.element.id) { i, f in
-                let rolled = f.rolled_back ?? false
-                HStack(spacing: VFSpace.s) {
-                    Button { model.rollTimeline(to: i + 1) } label: {
-                        HStack(spacing: VFSpace.m) {
-                            Image(systemName: FeatureSymbol.of(f.type)).frame(width: 20).foregroundStyle(theme.inkSecondary).accessibilityHidden(true)
-                            VStack(alignment: .leading, spacing: 1) {
-                                Text(f.name).font(VFFont.row).foregroundStyle(theme.ink)
-                                Text(stateText(f)).font(VFFont.micro).foregroundStyle(f.error != nil ? theme.danger : theme.inkSecondary)
-                            }
-                            Spacer(minLength: 0)
-                            if f.error != nil {
-                                Image(systemName: "exclamationmark.triangle.fill").foregroundStyle(theme.warning)
-                                    .accessibilityHidden(true)
-                            }
-                        }
-                        .frame(minHeight: VFSize.touchTarget)
-                        .contentShape(Rectangle())
-                    }
-                    .buttonStyle(.plain)
-                    .accessibilityElement(children: .combine)
-                    .accessibilityHint(Text("Rolls the design back to this step"))
-                    Menu {
-                        TimelineStepActions(model: model, index: i, feature: f, toasts: toasts)
-                    } label: {
-                        Image(systemName: "ellipsis.circle").font(VFFont.glyph(17)).foregroundStyle(theme.inkSecondary)
-                            .frame(width: VFSize.touchTarget, height: VFSize.touchTarget)
-                            .contentShape(Rectangle())
-                    }
-                    .hoverEffect(.highlight)
-                    .accessibilityLabel(String(localized: "Actions for \(f.name)"))
-                }
-                .opacity(rolled ? 0.5 : 1)
-                .listRowBackground(Color.clear)
-                .contextMenu { TimelineStepActions(model: model, index: i, feature: f, toasts: toasts) }
-                .swipeActions {
-                    Button(String(localized: "Delete"), role: .destructive) { TimelineStepActions.delete(f, model: model, toasts: toasts) }
-                    Button(f.suppressed == true ? String(localized: "Unsuppress") : String(localized: "Suppress")) {
-                        model.run("timeline.suppress", ["feature": f.id])
-                    }
-                }
-            }
-            .onMove { from, to in
-                guard let i = from.first, i < model.snapshot.timeline.count else { return }
-                model.run("timeline.reorder", ["feature": model.snapshot.timeline[i].name, "position": to > i ? to - 1 : to])
-            }
-            if !model.snapshot.timeline.isEmpty {
-                Button("Roll to End", systemImage: "forward.end") { model.run("timeline.roll_to", ["position": "end"], quiet: true) }
-                    .frame(minHeight: VFSize.touchTarget)
-                    .listRowBackground(Color.clear)
-            }
-        }
-        .listStyle(.plain)
-        .scrollContentBackground(.hidden)
-        .modifier(TimelineArrowKeys(model: model, keys: (.upArrow, .downArrow)))
-        .modifier(FloatingCard(on: floating))
-    }
-
-    /// The type and state in words (never colour alone): "Extrude · Rolled back".
-    private func stateText(_ f: DesignSnapshot.Feature) -> String {
-        if f.error != nil { return String(localized: "\(f.type) · Error") }
-        if f.suppressed == true { return String(localized: "\(f.type) · Suppressed") }
-        if f.rolled_back == true { return String(localized: "\(f.type) · Rolled back") }
-        return f.type
-    }
-}
-
-/// The iPad's floating content card (Items, History): opaque panel, sized to the window.
-private struct FloatingCard: ViewModifier {
-    let on: Bool
-
-    func body(content: Content) -> some View {
-        if on {
-            content
-                .frame(width: 300)
-                .frame(maxHeight: 460)
-                .vfSurface(.floating, radius: VFRadius.touchFloating)
-        } else {
-            content
         }
     }
 }
@@ -930,179 +920,6 @@ struct SuggestionBar: View {
             }
         }
         .padding(.horizontal, VFSpace.s)
-        .vfSurface(.control, radius: VFRadius.touchCapsule)
-    }
-}
-
-/// Bodies and sketches, with visibility. Every row has a long-press menu.
-struct ItemsPanel: View {
-    @ObservedUnits private var units
-    @Environment(\.viaFormTheme) private var theme
-    let model: DesignModel
-    var floating = true
-
-    var body: some View {
-        let _ = units
-        List {
-            if !model.assembly.isEmpty {
-                Section("Components") {
-                    ForEach(model.assembly) { c in
-                        HStack {
-                            Image(systemName: c.linkedPCB ? "cpu" : "shippingbox").foregroundStyle(c.linkedPCB ? theme.accentText : theme.inkSecondary)
-                                .accessibilityHidden(true)
-                            Text(c.occurrence ?? c.name).foregroundStyle(theme.ink)
-                            Spacer()
-                            if c.linkedPCB { Image(systemName: "link").foregroundStyle(theme.accentText).accessibilityLabel(Text("Linked to the board")) }
-                            if c.grounded { Image(systemName: "pin.fill").foregroundStyle(theme.inkSecondary).accessibilityLabel(Text("Grounded")) }
-                        }
-                        .font(VFFont.row)
-                        .frame(minHeight: VFSize.touchTarget)
-                        .contentShape(Rectangle())
-                        .onTapGesture { model.selectedBodies = Set(c.bodies) }
-                        .accessibilityElement(children: .combine)
-                        .accessibilityAddTraits(.isButton)
-                        .accessibilityHint(Text("Selects its bodies"))
-                        .contextMenu {
-                            Button("Select Bodies", systemImage: "cursorarrow") { model.selectedBodies = Set(c.bodies) }
-                        }
-                        .listRowBackground(Color.clear)
-                    }
-                }
-            }
-            Section("Bodies") {
-                if model.snapshot.bodies.isEmpty {
-                    Text("No bodies yet.").font(VFFont.row).foregroundStyle(theme.inkSecondary).listRowBackground(Color.clear)
-                }
-                ForEach(model.snapshot.bodies) { b in
-                    let visible = b.visible ?? true
-                    let selected = model.selectedBodies.contains(b.name)
-                    HStack {
-                        Image(systemName: "cube.fill").foregroundStyle(theme.inkSecondary).accessibilityHidden(true)
-                        VStack(alignment: .leading) {
-                            Text(b.name).foregroundStyle(visible ? theme.ink : theme.inkTertiary)
-                            if let v = b.volume_mm3 { Text(VFFormat.volume(v)).font(VFFont.micro).foregroundStyle(theme.inkSecondary) }
-                        }
-                        Spacer()
-                        VFIconButton(visible ? "eye" : "eye.slash",
-                                     label: visible ? String(localized: "Hide \(b.name)") : String(localized: "Show \(b.name)"),
-                                     size: 15, tint: visible ? theme.ink : theme.inkTertiary) {
-                            model.toggleBodyVisibility(b.name, visible: !visible)
-                        }
-                    }
-                    .font(VFFont.row)
-                    .contentShape(Rectangle())
-                    .onTapGesture { toggle(b.name) }
-                    .accessibilityAddTraits(selected ? [.isButton, .isSelected] : .isButton)
-                    .contextMenu {
-                        Button(selected ? String(localized: "Deselect") : String(localized: "Select"), systemImage: "cursorarrow") { toggle(b.name) }
-                        Button(visible ? String(localized: "Hide") : String(localized: "Show"), systemImage: visible ? "eye.slash" : "eye") {
-                            model.toggleBodyVisibility(b.name, visible: !visible)
-                        }
-                    }
-                    .listRowBackground(selected ? theme.selection : Color.clear)
-                }
-            }
-            Section("Sketches") {
-                ForEach(model.snapshot.sketches) { s in
-                    HStack {
-                        Image(systemName: "pencil.and.outline").foregroundStyle(theme.inkSecondary).accessibilityHidden(true)
-                        Text(s.name).foregroundStyle(theme.ink)
-                        Spacer()
-                        Button("Edit") { edit(s) }
-                            .buttonStyle(.vfSecondary)
-                            .accessibilityLabel(String(localized: "Edit \(s.name)"))
-                    }
-                    .font(VFFont.row)
-                    .frame(minHeight: VFSize.touchTarget)
-                    .contextMenu { Button("Edit Sketch", systemImage: "pencil") { edit(s) } }
-                    .listRowBackground(Color.clear)
-                }
-            }
-            if !model.snapshot.params.isEmpty {
-                Section("Parameters") {
-                    ForEach(model.snapshot.params) { p in
-                        HStack { Text(p.name).foregroundStyle(theme.ink); Spacer(); Text(p.expression).foregroundStyle(theme.inkSecondary).monospacedDigit() }
-                            .font(VFFont.row)
-                            .accessibilityElement(children: .combine)
-                            .listRowBackground(Color.clear)
-                    }
-                }
-            }
-        }
-        .listStyle(.insetGrouped)
-        .scrollContentBackground(.hidden)
-        .modifier(FloatingCard(on: floating))
-    }
-
-    private func toggle(_ name: String) {
-        if model.selectedBodies.contains(name) { model.selectedBodies.remove(name) } else { model.selectedBodies.insert(name) }
-    }
-
-    private func edit(_ s: DesignSnapshot.Sketch) {
-        model.run("sketch.edit", ["sketch": s.id])
-        if let pl = model.sketchPlane { model.look(along: pl.normal) }
-        model.tool = .line
-    }
-}
-
-/// The parametric history: one chip per step; tapping one rolls the design back to it. Each
-/// step's actions are in its long-press menu and in the Steps menu at the end of the bar.
-struct HistoryBar: View {
-    @Environment(\.viaFormTheme) private var theme
-    @Environment(\.vfToasts) private var toasts
-    let model: DesignModel
-
-    var body: some View {
-        HStack(spacing: 0) {
-            ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: VFSpace.s) {
-                    ForEach(Array(model.snapshot.timeline.enumerated()), id: \.element.id) { i, f in
-                        let rolled = f.rolled_back ?? false
-                        Button { model.rollTimeline(to: i + 1) } label: {
-                            HStack(spacing: VFSpace.xs) {
-                                Image(systemName: FeatureSymbol.of(f.type)).accessibilityHidden(true)
-                                Text(f.name).font(VFFont.small.weight(.medium))
-                                if f.error != nil {
-                                    Image(systemName: "exclamationmark.triangle.fill").foregroundStyle(theme.warning)
-                                        .accessibilityLabel(Text("Error"))
-                                }
-                            }
-                            .foregroundStyle(theme.ink)
-                            .padding(.horizontal, VFSpace.m).frame(minHeight: 32)
-                            .background(rolled ? Color.clear : theme.accent.opacity(0.12), in: Capsule())
-                            // Rolled back steps are outlined and dimmed, and say so to VoiceOver.
-                            .overlay(Capsule().strokeBorder(theme.accent.opacity(rolled ? 0.35 : 0), style: StrokeStyle(lineWidth: 1, dash: [3, 2])))
-                            .opacity(rolled ? 0.55 : 1)
-                            .frame(minHeight: VFSize.touchTarget)
-                            .contentShape(Rectangle())
-                        }
-                        .buttonStyle(.vfTouch)
-                        .accessibilityValue(rolled ? String(localized: "Rolled back") : "")
-                        .accessibilityHint(Text("Rolls the design back to this step"))
-                        .contextMenu { TimelineStepActions(model: model, index: i, feature: f, toasts: toasts) }
-                    }
-                }
-                .padding(.horizontal, VFSpace.m)
-            }
-            VFIconButton("forward.end.fill", label: String(localized: "Roll to End"), size: 14) {
-                model.run("timeline.roll_to", ["position": "end"], quiet: true)
-            }
-            Menu {
-                ForEach(Array(model.snapshot.timeline.enumerated()).reversed(), id: \.element.id) { i, f in
-                    Menu(f.name) { TimelineStepActions(model: model, index: i, feature: f, toasts: toasts) }
-                }
-            } label: {
-                Image(systemName: "ellipsis.circle").font(VFFont.glyph(16)).foregroundStyle(theme.inkSecondary)
-                    .frame(width: VFSize.touchTarget, height: VFSize.touchTarget)
-                    .contentShape(Rectangle())
-            }
-            .hoverEffect(.highlight)
-            .accessibilityLabel(Text("Step actions"))
-            .padding(.trailing, VFSpace.xs)
-        }
-        .frame(minHeight: 52)
-        .frame(maxWidth: 900)
-        .modifier(TimelineArrowKeys(model: model, keys: (.leftArrow, .rightArrow)))
         .vfSurface(.control, radius: VFRadius.touchCapsule)
     }
 }

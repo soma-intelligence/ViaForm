@@ -12,12 +12,31 @@ extension DesignModel {
         let info: SketchInfo?
         if sketchOpen {
             info = SketchInfo.load(engine, sketch: nil, plane: sketchPlane)
-        } else if tool == .extrude, let last = snapshot.sketches.last {
-            info = SketchInfo.load(engine, sketch: last.id, plane: nil)
+        } else if tool == .extrude, let id = editedFeatureSketch() ?? extrudeSketch ?? snapshot.sketches.last?.id {
+            // Editing an extrude shows its own sketch's profiles; a tapped profile (T-8) its
+            // sketch; a new extrude the last sketch.
+            info = SketchInfo.load(engine, sketch: id, plane: nil)
         } else {
             info = nil
         }
         if info != sketchInfo { sketchInfo = info }
+        pruneSketchSelection()
+    }
+
+    /// The sketch of the extrude or revolve the feature dialog is editing, if one is.
+    private func editedFeatureSketch() -> Int? {
+        // Off the main thread the session is not read: the last edit's sketch stands.
+        guard Thread.isMainThread else { return editSketchCache?.sketch }
+        let target: (id: Int, tool: Tool)? = onMainActorNow(nil) { m in FeatureSession.of(m).editing.map { ($0.id, $0.tool) } }
+        guard let target, target.tool == .extrude || target.tool == .revolve else {
+            if editSketchCache != nil { editSketchCache = nil }
+            return nil
+        }
+        if let c = editSketchCache, c.feature == target.id { return c.sketch }
+        let r = (try? engine.execute("timeline.inspect", ["feature": target.id])) as? [String: Any]
+        let sketch = (r?["definition"] as? [String: Any])?["sketch"] as? Int
+        editSketchCache = (target.id, sketch)
+        return sketch
     }
 
     /// Adds or removes one profile from what Extrude takes. Picking every profile, or none,
@@ -61,14 +80,22 @@ extension DesignModel {
         return run("parameters.change", ["name": param, "expression": t], quiet: true) != nil
     }
 
-    /// Starts dragging the sketch point under `p`, when Select is the tool in an open sketch.
-    func beginSketchDrag(at p: CGPoint) -> Bool {
-        guard sketchOpen, tool == .select, let info = sketchInfo,
+    /// Starts dragging the sketch point under `p` (within `radius` screen points: 8 for a
+    /// mouse, more for a finger), when Select is the tool in an open sketch. With `curves`, a
+    /// press on a curve away from its points drags the curve (the Mac). A press on a constraint
+    /// glyph never drags: it selects the glyph.
+    func beginSketchDrag(at p: CGPoint, radius: CGFloat = 8, curves: Bool = false) -> Bool {
+        guard sketchOpen, tool == .select, symmetryPending == nil, let info = sketchInfo,
               let q = ScenePicker.onPlane(info.plane, camera: camera, at: p, size: viewSize) else { return false }
-        // 8 points on screen, in sketch millimetres.
-        let radius = 2 * camera.halfHeight / max(Double(viewSize.height), 1) * 8
-        guard let pt = info.point(near: q, radius: radius), !pt.fixed else { return false }
-        sketchDrag = (pt.id, pt.at)
+        if showConstraints, SketchPicker.pick(info, camera: camera, at: p, size: viewSize, glyphs: true)?.kind == .constraint { return false }
+        if let pt = SketchPicker.point(info, camera: camera, at: p, size: viewSize, radius: radius) {
+            guard !pt.fixed else { return false }
+            sketchDrag = (pt.id, pt.at)
+            return true
+        }
+        guard curves, let hit = SketchPicker.pick(info, camera: camera, at: p, size: viewSize, glyphs: false),
+              hit.kind != .point, hit.kind != .constraint else { return false }
+        sketchDrag = (hit.id, q)
         return true
     }
 

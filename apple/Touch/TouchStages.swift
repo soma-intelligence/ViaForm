@@ -15,19 +15,26 @@ struct TouchDesignInspector: View {
 
     var body: some View {
         let _ = units
-        if model.tool != .select, model.tool != .sketch {
-            toolCard
-        } else if !model.bodiesInSelection.isEmpty {
-            selectionCard
-        } else {
-            designCard
+        Group {
+            if model.tool != .select, model.tool != .sketch {
+                toolCard
+            } else if !model.bodiesInSelection.isEmpty {
+                selectionCard
+            } else {
+                designCard
+            }
         }
+        // The card stays while the tool runs and after it ends: the feature session follows.
+        .modifier(FeatureSessionSync(model: model))
     }
 
     // MARK: Tool
 
     private var toolCard: some View {
-        TouchInspectorCard(title: model.tool.touchLabel, symbol: model.tool.symbol, subtitle: ToolSession.hint(model)) {
+        let editing = FeatureSession.of(model).editing
+        return TouchInspectorCard(title: editing.map { String(localized: "Edit \($0.name)") } ?? model.tool.touchLabel,
+                                  symbol: model.tool.symbol, subtitle: ToolSession.hint(model)) {
+            TouchToolModePill(model: model, compact: true)
             ToolSession(model: model, layout: .card)
         }
     }
@@ -240,9 +247,9 @@ struct TouchTrainInspector: View {
 /// (plain Return only commits the field being typed in).
 struct ToolSession: View {
     @ObservedUnits private var units
-    /// The Move field being edited (X 0, Y 1, Z 2): Return goes to the next one.
-    @State private var moveFocus: Int?
-    enum Layout { case card, bar }
+    /// `card`: fields and Cancel / Done (the inspector cards); `bar`: the iPhone bar;
+    /// `fields`: the fields alone (the iPad rail's option card between Done and Cancel).
+    enum Layout { case card, bar, fields }
     @Environment(\.viaFormTheme) private var theme
     @Bindable var model: DesignModel
     var layout: Layout = .card
@@ -256,10 +263,12 @@ struct ToolSession: View {
                 buttons.padding(.vertical, VFSpace.m)
             }
             .padding(.top, VFSpace.s)
+        case .fields:
+            VStack(alignment: .leading, spacing: VFSpace.xs) { fields }
         case .bar:
             VStack(alignment: .leading, spacing: VFSpace.m) {
                 HStack(spacing: VFSpace.m) {
-                    Label(model.tool.touchLabel, systemImage: model.tool.symbol).font(VFFont.title).foregroundStyle(theme.ink)
+                    TouchToolModePill(model: model, compact: true)
                     if let h = Self.hint(model) { Text(h).font(VFFont.small).foregroundStyle(theme.inkSecondary).lineLimit(1) }
                     Spacer(minLength: 0)
                 }
@@ -273,6 +282,15 @@ struct ToolSession: View {
     }
 
     @ViewBuilder private var fields: some View {
+        let session = FeatureSession.of(model)
+        if FeatureOptions.tools.contains(session.tool) {
+            FeatureDialogFields(model: model, session: session, touch: true, onValueReturn: { TouchResponder.endEditing() })
+        } else {
+            plainFields
+        }
+    }
+
+    @ViewBuilder private var plainFields: some View {
         if let v = model.tool.value {
             let unit = VFUnit(symbol: v.unit)
             HStack {
@@ -291,38 +309,8 @@ struct ToolSession: View {
                 .accessibilityValue(VFFormat.value(model.toolValue, unit))
             }
         }
-        if model.tool == .extrude || model.tool == .revolve {
-            Picker("Operation", selection: $model.toolOperation) {
-                Text("Auto").tag("auto"); Text("New Body").tag("new_body"); Text("Join").tag("join"); Text("Cut").tag("cut")
-            }
-            .pickerStyle(.segmented)
-            .frame(minHeight: VFSize.touchTarget)
-            .onChange(of: model.toolOperation) { _, _ in model.applyPreview() }
-        }
-        if model.tool == .revolve {
-            Picker("Axis", selection: $model.revolveAxis) {
-                ForEach(["x", "y", "X", "Y", "Z"], id: \.self) { a in
-                    Text(a == "x" || a == "y" ? String(localized: "Sketch \(a)") : a).tag(a)
-                }
-            }
-            .pickerStyle(.segmented).frame(minHeight: VFSize.touchTarget)
-            .onChange(of: model.revolveAxis) { _, _ in model.applyPreview() }
-        }
         if model.tool == .move {
-            // X, then Y, then Z: each field commits on Return and on focus loss.
-            ForEach(0..<3, id: \.self) { i in
-                let axis = ["X", "Y", "Z"][i]
-                HStack {
-                    Text(axis).font(VFFont.row).foregroundStyle(theme.inkSecondary)
-                    Spacer()
-                    NumberField(String(localized: "Move \(axis)"), value: Binding(get: { model.moveVector[i] }, set: { model.moveVector[i] = $0 }),
-                                unit: .length, width: 82)
-                        .labelHiddenVisually()
-                        .focusBinding(Binding(get: { moveFocus == i }, set: { if $0 { moveFocus = i } else if moveFocus == i { moveFocus = nil } }))
-                        .submitNext(i < 2 ? .next : .done) { moveFocus = i < 2 ? i + 1 : nil }
-                }
-                .frame(minHeight: VFSize.touchTarget)
-            }
+            MoveDialogRows(session: FeatureSession.of(model), touch: true)
         }
         if model.tool == .mirror {
             Picker("Plane", selection: $model.mirrorPlane) { ForEach(["XY", "XZ", "YZ"], id: \.self) { Text($0) } }
@@ -332,7 +320,7 @@ struct ToolSession: View {
 
     private var buttons: some View {
         HStack(spacing: VFSpace.m) {
-            Button { model.cancelTool() } label: {
+            Button { FeatureSession.of(model).cancel() } label: {
                 Text("Cancel").frame(maxWidth: .infinity, minHeight: VFSize.touchTarget)
             }
             .buttonStyle(.vfSecondary)
@@ -340,10 +328,16 @@ struct ToolSession: View {
                 Text("Done").frame(maxWidth: .infinity, minHeight: VFSize.touchTarget)
             }
             .buttonStyle(.vfPrimary)
+            .disabled(FeatureSession.of(model).missingInput() != nil)
             .help(String(localized: "Command-Return"))
             .accessibilityHint(Text("Commits the tool. Command-Return on a keyboard."))
             .vfEngineGate()
         }
+    }
+
+    /// The armed tool has fields to show (a value, the feature dialog, Move's rows, Mirror's plane).
+    @MainActor static func hasFields(_ model: DesignModel) -> Bool {
+        FeatureOptions.tools.contains(FeatureSession.of(model).tool) || model.tool.value != nil || model.tool == .move || model.tool == .mirror
     }
 
     static func range(_ unit: String, _ initial: Double, _ current: Double) -> ClosedRange<Double> {
@@ -353,16 +347,12 @@ struct ToolSession: View {
     }
 
     static func hint(_ model: DesignModel) -> String? {
-        switch model.tool {
+        if model.tool.isSketchTool { return TouchSketchHint.text(model) }
+        return switch model.tool {
         case .pressPull: model.selection.contains(where: \.isFace) ? nil : String(localized: "Tap a face")
         case .fillet, .chamfer: model.selection.contains(where: \.isEdge) ? nil : String(localized: "Tap edges")
         case .shell: model.selection.contains(where: \.isFace) ? nil : String(localized: "Tap faces to open")
         case .box, .cylinder, .sphere, .torus: String(localized: "Tap where it goes")
-        case .line: String(localized: "Tap points; double-tap ends")
-        case .spline: String(localized: "Tap fit points; double-tap ends")
-        case .trim: String(localized: "Tap the piece to remove")
-        case .offset: String(localized: "Tap a curve")
-        case .sketchFillet: String(localized: "Tap a corner")
         default: nil
         }
     }
@@ -382,12 +372,89 @@ struct ToolSession: View {
     }
 
     @MainActor private static func commit(_ model: DesignModel) {
+        let session = FeatureSession.of(model)
+        if let why = session.missingInput() {
+            model.flash(why, error: true)
+            return
+        }
         switch model.tool {
-        case .move: model.moveSelected(); model.tool = .select
+        case .move: session.commitMove()
         case .mirror: model.mirrorSelected(); model.tool = .select
-        case .line, .spline: model.endChain()
-        default:
-            if model.hasPreview { model.commitTool() } else { model.tool = .select }
+        case let t where t.isSketchTool: TouchSketchDone.run(model)
+        default: session.commit()
+        }
+    }
+}
+
+/// Done, the tool's options and Cancel next to the tool column on the iPad (the reference's
+/// blue check, option rows and red X), for a running tool. Done says what is still missing.
+struct TouchToolRailFooter: View {
+    @Environment(\.viaFormTheme) private var theme
+    @Bindable var model: DesignModel
+    @State private var options = false
+
+    var body: some View {
+        let session = FeatureSession.of(model)
+        let missing = model.tool.isSketchTool ? nil : session.missingInput()
+        // One tile, as in the reference: Done, the tool's options behind a gear, Cancel.
+        TouchRailGroup {
+            Button { ToolSession.finish(model) } label: {
+                TouchRailRow(symbol: "checkmark", title: String(localized: "Done"), subtitle: missing == nil ? nil : ToolSession.hint(model),
+                             active: missing == nil, enabled: missing == nil, tint: theme.accentText)
+            }
+            .buttonStyle(.touchRail)
+            .vfDisabled(missing != nil, reason: missing ?? "")
+            .help(String(localized: "Command-Return"))
+            .accessibilityLabel(Text("Done"))
+            .accessibilityHint(Text("Commits the tool. Command-Return on a keyboard."))
+            .vfEngineGate()
+            ForEach(ToolOptionRows.rows(model)) { row in optionRow(row) }
+            if !model.tool.isSketchTool, ToolSession.hasFields(model) {
+                Button { options = true } label: {
+                    TouchRailRow(symbol: "slider.horizontal.3", title: String(localized: "More Options"))
+                }
+                .buttonStyle(.touchRail)
+                .accessibilityLabel(Text("Options"))
+                .popover(isPresented: $options, arrowEdge: .leading) {
+                    ToolSession(model: model, layout: .fields)
+                        .padding(VFSpace.m)
+                        .frame(width: 268, alignment: .leading)
+                        .presentationCompactAdaptation(.popover)
+                }
+            }
+            Button {
+                if model.tool.isSketchTool { model.tool = .select } else { session.cancel() }
+            } label: {
+                TouchRailRow(symbol: "xmark", title: String(localized: "Cancel"), tint: theme.danger)
+            }
+            .buttonStyle(.touchRail)
+            .accessibilityLabel(Text("Cancel"))
+        }
+        .modifier(FeatureSessionSync(model: model))
+    }
+
+    /// A choice opens a menu of its values; a switch flips on tap.
+    @ViewBuilder private func optionRow(_ row: ToolOptionRow) -> some View {
+        if row.choices.isEmpty {
+            Button { row.toggle?() } label: {
+                TouchRailRow(symbol: row.symbol, title: row.title, subtitle: row.value, active: row.isOn)
+            }
+            .buttonStyle(.touchRail)
+            .accessibilityLabel(Text(row.title))
+            .accessibilityValue(Text(row.value))
+            .accessibilityAddTraits(row.isOn ? .isSelected : [])
+        } else {
+            Menu {
+                ForEach(row.choices) { c in
+                    Toggle(c.title, isOn: Binding(get: { c.on }, set: { if $0 { c.pick() } }))
+                }
+            } label: {
+                TouchRailRow(symbol: row.symbol, title: row.title, subtitle: row.value)
+            }
+            .menuStyle(.button)
+            .modifier(TouchRailPress(rail: true))
+            .accessibilityLabel(Text(row.title))
+            .accessibilityValue(Text(row.value))
         }
     }
 }

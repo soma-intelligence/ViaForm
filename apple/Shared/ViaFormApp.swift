@@ -17,8 +17,9 @@ struct ViaFormApp: App {
 
     var body: some Scene {
         #if os(macOS)
-        WindowGroup {
+        WindowGroup(id: DocTabs.sceneID) {
             // Each window owns its project: design, board, BOM, pipeline, undo and dirty state.
+            // Project windows share one tab group, one tab per document (M-20, DocTabs).
             DeskWindowRoot()
                 .frame(minWidth: 760, minHeight: 560)
         }

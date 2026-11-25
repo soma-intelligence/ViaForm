@@ -170,6 +170,7 @@ final class CADEngine: @unchecked Sendable {
             || id.contains("snap") || id.contains("measure") || id.hasPrefix("select.") || id.hasPrefix("view.")
             || id.hasPrefix("ui.") || id.hasPrefix("file.save") || id.hasPrefix("file.export") || id.hasPrefix("export.")
             || id.hasPrefix("render.") || id == "edit.checkpoint" || id == "edit.restore_checkpoint"
+            || id.hasPrefix("inspect.") || id == "component.properties" || id == "timeline.dependents" || id == "sketch.chain"
     }
 
     private func note(_ id: String, _ params: String, _ ok: Any) {

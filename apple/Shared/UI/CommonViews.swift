@@ -118,6 +118,9 @@ struct CommandFormState: Equatable {
     var picks: [String: [[Double]]] = [:]
     /// Optional numbers without a default that were switched on.
     var enabled: Set<String> = []
+    /// A numeric field's typed expression (a parameter name or a formula, B-10), sent as is
+    /// in place of the number when not empty, so the value follows the parameter.
+    var expressions: [String: String] = [:]
 
     /// The defaults, with the model's selection where a field takes it (bodies, edges, faces).
     init(fields: [CommandField], model: DesignModel?) {
@@ -170,6 +173,11 @@ struct CommandFormState: Equatable {
             switch f.kind {
             case .length, .angle, .number, .integer:
                 guard let v = numbers[k] else { continue }
+                let e = (expressions[k] ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+                if !e.isEmpty {
+                    if !(f.optional && f.default == nil && !enabled.contains(k)) { p[k] = e }
+                    continue
+                }
                 if f.default == nil { if f.optional && !enabled.contains(k) { continue } }
                 else if f.optional && v == f.default?.number { continue }
                 switch f.kind {
@@ -397,6 +405,7 @@ struct GenericCommandForm: View {
         NumberField(f.label, value: Binding(get: { state.numbers[f.key] ?? 0 }, set: { state.numbers[f.key] = $0 }),
                     unit: f.numberUnit, range: f.range, step: f.kind == .integer ? 1 : (f.kind == .angle ? 5 : 1), width: 88)
             .labelHiddenVisually()
+            .linked(Binding(get: { state.expressions[f.key] ?? "" }, set: { state.expressions[f.key] = $0 }))
     }
 
     private func enabledBinding(_ key: String) -> Binding<Bool> {
@@ -571,6 +580,21 @@ enum CommandFormSelfTest {
         m.run("solid.box", ["length": 5, "width": 5, "height": 5, "corner": [50, 0, 0], "operation": "new", "body_name": "Other"])
         let dup = m.renameBody(old, to: "Other")
         out.append((dup?.contains("Other") == true && m.message == nil, "P1-12 a taken name is refused with the reason (\(dup ?? "none"))"))
+
+        // Edit Feature: the sheet's fields come from timeline.inspect and only changes go out.
+        let e = DesignModel()
+        e.run("solid.box", ["length": "30 mm", "width": "20 mm", "height": "20 mm"])
+        let name = e.snapshot.timeline.first?.name ?? ""
+        let def = ((try? e.engine.execute("timeline.inspect", ["feature": name])) as? [String: Any])?["definition"] as? [String: Any] ?? [:]
+        let before = FeatureField.flatten(def)
+        var after = before
+        if let i = after.firstIndex(where: { $0.key.hasSuffix("length") }) { after[i].value = .text("45 mm") }
+        let set = FeatureField.changes(from: before, to: after)
+        out.append((set.count == 1, "Edit Feature sends only the changed field (\(set.keys.sorted()))"))
+        let edited = (try? e.engine.execute("timeline.edit", ["feature": name, "set": set])) != nil
+        e.refresh()
+        let ev = e.snapshot.bodies.first?.volume_mm3 ?? 0
+        out.append((edited && abs(ev - 45 * 20 * 20) < 1, "Edit Feature rebuilds the box at 45 mm (got \(ev) mm³)"))
         return out
     }
 }

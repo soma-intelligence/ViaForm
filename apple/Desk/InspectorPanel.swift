@@ -22,11 +22,19 @@ struct InspectorPanel: View {
     @State private var revisionsOf: String?
     @State private var confirm: ConfirmRequest?
     @Bindable private var safety = RobotSafety.shared
+    /// The Change Parameters sheet (B-10), the construction form (B-14), the mass report (M-21).
+    @State private var parametersSheet = false
+    @State private var constructOpen = false
+    @State private var massOpen = false
 
     var body: some View {
         let _ = units
         ScrollView {
             VStack(alignment: .leading, spacing: VFSpace.l) {
+                // M-3: the Sketch Palette docks at the top of the column while a sketch is open.
+                if model.sketchOpen, StageActions.designLike.contains(workspace) {
+                    SketchPalette(model: model)
+                }
                 selectionCard
                 flowSection
                 linkedSection
@@ -36,6 +44,8 @@ struct InspectorPanel: View {
         }
         .background(theme.panel)
         .confirmSheet($confirm)
+        .vfParameterLinks(model)
+        .sheet(isPresented: $parametersSheet) { ChangeParametersSheet(design: model) }
     }
 
     // MARK: Selection
@@ -237,10 +247,31 @@ struct InspectorPanel: View {
                     if let e = info.edges { kv("Edges", "\(e)") }
                 }
             }
-            if !s.params.isEmpty {
-                section("Parameters") {
-                    ForEach(s.params) { p in kv(p.name, p.expression) }
+            if !s.bodies.isEmpty {
+                // M-21: the full report (centre of mass, inertia, relative-to frame, copy).
+                DisclosureGroup(isExpanded: $massOpen) {
+                    MassPropertiesView(model: model).padding(.top, VFSpace.s)
+                } label: {
+                    VFCaption(String(localized: "Mass properties"))
                 }
+            }
+            // B-14: planes, axes and points from picks.
+            DisclosureGroup(isExpanded: $constructOpen) {
+                ConstructForm(model: model) { constructOpen = false }.padding(.top, VFSpace.s)
+            } label: {
+                VFCaption(String(localized: "Construct"))
+            }
+            // B-10: editable parameters; the Fusion-column table opens in a sheet.
+            section("Parameters") {
+                ParametersTable(design: model, style: .compact)
+                Button {
+                    parametersSheet = true
+                } label: {
+                    Label(String(localized: "Change Parameters"), systemImage: "tablecells")
+                        .frame(maxWidth: .infinity)
+                }
+                .buttonStyle(.vfSecondary).controlSize(.small)
+                .help(String(localized: "Open the full table: parameter, name, unit, expression, value, comments"))
             }
         case .generate:
             section("Study") {

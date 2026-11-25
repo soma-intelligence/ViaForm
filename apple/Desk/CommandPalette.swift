@@ -17,6 +17,8 @@ struct CommandPalette: View {
     /// Window commands (source "window"), run by `runExtra`.
     var extras: [FlowModel.Command] = []
     var runExtra: (String) -> Void = { _ in }
+    /// The S bar's grid of the mode's likely tools (M-15), above the search field. Nil for Command-K.
+    var header: AnyView? = nil
     var close: () -> Void
     @State private var query = ""
     @State private var cursor = 0
@@ -60,6 +62,10 @@ struct CommandPalette: View {
     var body: some View {
         let list = matches
         VStack(spacing: 0) {
+            if let header {
+                header
+                VFHairline()
+            }
             HStack(spacing: VFSpace.m) {
                 Image(systemName: "magnifyingglass").foregroundStyle(theme.inkSecondary).accessibilityHidden(true)
                 TextField("Search commands, stages and panels", text: $query)
@@ -70,7 +76,7 @@ struct CommandPalette: View {
                     .onExitCommand(perform: close)
                     .onKeyPress(.downArrow) { move(+1, count: list.count); return .handled }
                     .onKeyPress(.upArrow) { move(-1, count: list.count); return .handled }
-                KeyCap("\u{2318}K").accessibilityHidden(true)
+                KeyCap(header == nil ? "\u{2318}K" : "S").accessibilityHidden(true)
             }
             .padding(.horizontal, VFSpace.l)
             .frame(height: 44)

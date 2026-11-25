@@ -21,13 +21,32 @@ struct StageRibbon: View {
     private var designLike: Bool { StageActions.designLike.contains(workspace) }
 
     var body: some View {
+        if designLike { fusionBody } else { stageBody }
+    }
+
+    /// Design, Assemble and Render: Fusion's toolbar, tabs over panels, no trailing buttons (a
+    /// command finishes from its dialog, a sketch from FINISH SKETCH).
+    private var fusionBody: some View {
+        let f = theme.fusion
+        return VStack(alignment: .leading, spacing: 0) {
+            FusionTabs(tabs: tabs, tab: $tab)
+            FusionPanelStrip(model: model, panels: FusionRibbon.panels(tab: tab, commands: model.commands), tab: tab)
+                .frame(height: FusionTokens.panelRow, alignment: .leading)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(f.surface)
+        .onAppear(perform: fixTab)
+        .onChange(of: workspace) { _, _ in fixTab() }
+        .onChange(of: model.sketchOpen) { _, open in
+            if open { tab = "SKETCH" } else if tab == "SKETCH" { tab = tabs.first ?? "SOLID" }
+        }
+    }
+
+    private var stageBody: some View {
         VStack(spacing: 0) {
-            if designLike {
-                RibbonTabs(tabs: tabs, tab: $tab, sketchOpen: model.sketchOpen)
-            }
             HStack(alignment: .center, spacing: VFSpace.s) {
                 if designLike {
-                    PanelStrip(model: model, panels: panels)
+                    EmptyView()
                 } else {
                     // Labelled verbs, then icons only, then the last groups folded into MORE
                     // one by one (P2-7): never wider than the window, every verb reachable.
@@ -93,6 +112,8 @@ struct StageRibbon: View {
                 // A running command finishes from the ribbon too: accent, with Return.
                 DoneButton(help: String(localized: "Finish \(StageLabels.command(model.genericCommand?.label ?? model.tool.label)) (Return)")) { CommandDialog.finish(model) }
             } else if designLike && model.sketchOpen {
+                // The armed tool's own Done (Return ends the chain), then Finish Sketch.
+                if SketchRibbonTools.toolDoneShown(model) { SketchToolDoneButton(model: model) }
                 DoneButton { model.finishSketch() }
                     .keyboardShortcut(model.tool == .select && model.genericCommand == nil ? KeyboardShortcut(.return, modifiers: []) : nil)
             }
@@ -111,8 +132,14 @@ struct StageRibbon: View {
 
     // MARK: Design registry
 
-    /// The raw registry tabs this stage shows.
+    /// The tabs this stage shows: Fusion's Design tabs (Render and Assemble keep their own).
     private var tabs: [String] {
+        if workspace != .assemble { return FusionRibbon.tabs(workspace: workspace, commands: model.commands, sketchOpen: model.sketchOpen) }
+        return registryTabs
+    }
+
+    /// The raw registry tabs (Assemble's own tab first).
+    private var registryTabs: [String] {
         var seen: [String] = []
         for c in model.commands where !c.tab.isEmpty && !seen.contains(c.tab) { seen.append(c.tab) }
         let order = ["SOLID", "SURFACE", "SHEET METAL", "PLASTIC", "WELDMENTS", "INSERT", "INSPECT", "RENDER", "RENDER SCENE"]
@@ -133,21 +160,26 @@ struct StageRibbon: View {
     /// The Assemble stage's own tab: every registry panel about components, joints and position.
     static let assemblyTab = "ASSEMBLY"
 
-    private func isAssemblyPanel(_ c: CommandInfo) -> Bool {
+    private static func isAssemblyPanel(_ c: CommandInfo) -> Bool {
         let p = c.panel.uppercased()
         return p.contains("ASSEMBL") || p.contains("POSITION") || p.contains("JOINT") || p.contains("COMPONENT") || c.id.hasPrefix("assembly.") || c.id.hasPrefix("joint.")
     }
 
-    private var panels: [RibbonPanelModel] {
+    private var panels: [RibbonPanelModel] { Self.panels(tab: tab, commands: model.commands) }
+
+    /// The panels of one ribbon tab, in registry order (also read by the self tests).
+    static func panels(tab: String, commands: [CommandInfo]) -> [RibbonPanelModel] {
         var order: [String] = []
         var by: [String: [CommandInfo]] = [:]
-        let pool = tab == Self.assemblyTab ? model.commands.filter(isAssemblyPanel) : model.commands.filter { $0.tab == tab }
+        let pool = tab == assemblyTab ? commands.filter(isAssemblyPanel) : commands.filter { $0.tab == tab }
         for c in pool where c.panel != "FINISH SKETCH" {
             if by[c.panel] == nil { order.append(c.panel) }
             by[c.panel, default: []].append(c)
         }
-        return order.map { RibbonPanelModel(name: $0, commands: by[$0] ?? []) }
+        let list = order.map { RibbonPanelModel(name: $0, commands: by[$0] ?? []) }
             .map { $0.name.isEmpty ? RibbonPanelModel(name: "OTHER", commands: $0.commands) : $0 }
+        // B-11: every click-to-draw sketch tool sits in CREATE or MODIFY, registry-listed or not.
+        return tab == "SKETCH" ? SketchRibbonTools.merge(list, commands: commands) : list
     }
 
     private func fixTab() {
@@ -219,7 +251,12 @@ struct PanelStrip: View {
                 ForEach((1...panels.count).reversed(), id: \.self) { k in
                     HStack(alignment: .top, spacing: VFSpace.xs) {
                         ForEach(panels.prefix(k)) { p in
-                            RibbonPanelView(model: model, panel: p)
+                            // M-1: the constraints on the sketch selection, invalid ones greyed.
+                            if p.name == "CONSTRAINTS" && model.sketchOpen {
+                                ConstraintRibbonPanel(model: model, panel: p)
+                            } else {
+                                RibbonPanelView(model: model, panel: p)
+                            }
                             VFHairline(vertical: true).frame(height: 42)
                         }
                         if k < panels.count { MorePanel(model: model, panels: Array(panels.dropFirst(k))) }
@@ -239,6 +276,8 @@ struct RibbonPanelView: View {
     let panel: RibbonPanelModel
 
     private var main: [CommandInfo] {
+        // Sketch CREATE and MODIFY: the reference's row (Line, Rectangle, Circle, Spline, ...).
+        if let row = SketchRibbonTools.mainRow(panel) { return row }
         let keyed = panel.commands.filter { $0.key != nil }
         return Array((keyed + panel.commands.filter { $0.key == nil }).prefix(4))
     }
@@ -256,18 +295,32 @@ struct RibbonPanelView: View {
                             .contentShape(Rectangle())
                     }
                     .buttonStyle(.plain)
-                    .help(c.key.map { String(localized: "\(StageLabels.command(c.label)) (\(DeskKeymap.glyph($0)))") } ?? StageLabels.command(c.label))
+                    .help(RibbonPins.tooltip(c))
                     .accessibilityLabel(StageLabels.command(c.label))
                     .accessibilityAddTraits(on ? .isSelected : [])
                 }
             }
             Menu {
-                ForEach(panel.commands) { c in
-                    Button { CommandRouter.run(c, model) } label: {
-                        Label(StageLabels.command(c.label), systemImage: CommandSymbol.of(c.icon, id: c.id))
+                if let entries = SketchRibbonTools.entries(panel) {
+                    // Sketch CREATE and MODIFY: the reference's order, with its submenus.
+                    ForEach(entries) { e in
+                        switch e {
+                        case .command(let c): RibbonMenuRow(model: model, command: c)
+                        case .submenu(let title, let cs):
+                            Menu {
+                                ForEach(cs) { c in RibbonMenuRow(model: model, command: c) }
+                            } label: {
+                                Label(title, systemImage: CommandSymbol.of(cs[0].icon, id: cs[0].id))
+                            }
+                        }
                     }
-                    .keyboardShortcut(Self.menuKey(c.key))
+                } else {
+                    ForEach(panel.commands) { c in
+                        RibbonMenuRow(model: model, command: c)
+                    }
                 }
+                Divider()
+                PinMenu(commands: panel.commands)
             } label: {
                 VFCaption(StageLabels.panel(panel.name))
             }
@@ -288,6 +341,39 @@ extension RibbonPanelView {
     }
 }
 
+/// One row of a ribbon dropdown (M-19): the command, its key at the right edge (a single letter as
+/// the menu's key equivalent, anything else printed in the title), the registry summary on hover.
+struct RibbonMenuRow: View {
+    let model: DesignModel
+    let command: CommandInfo
+
+    var body: some View {
+        let title = StageLabels.command(command.label)
+        Button { CommandRouter.run(command, model) } label: {
+            Label(RibbonPins.rowKey(command.key).map { "\(title)   \($0)" } ?? title,
+                  systemImage: CommandSymbol.of(command.icon, id: command.id))
+        }
+        .keyboardShortcut(RibbonPanelView.menuKey(command.key))
+        .help(RibbonPins.tooltip(command))
+    }
+}
+
+/// "Pin to Toolbar" for each command of a panel, ticked when pinned; kept per user.
+struct PinMenu: View {
+    let commands: [CommandInfo]
+    @AppStorage(RibbonPins.storageKey) private var pins = ""
+
+    var body: some View {
+        Menu("Pin to Toolbar") {
+            ForEach(commands) { c in
+                Toggle(StageLabels.command(c.label), isOn: Binding(
+                    get: { RibbonPins.isPinned(pins, c.id) },
+                    set: { _ in pins = RibbonPins.toggled(pins, c.id) }))
+            }
+        }
+    }
+}
+
 /// The panels that did not fit, in one menu.
 struct MorePanel: View {
     let model: DesignModel
@@ -298,9 +384,7 @@ struct MorePanel: View {
             ForEach(panels) { p in
                 Section(StageLabels.panel(p.name)) {
                     ForEach(p.commands) { c in
-                        Button { CommandRouter.run(c, model) } label: {
-                            Label(StageLabels.command(c.label), systemImage: CommandSymbol.of(c.icon, id: c.id))
-                        }
+                        RibbonMenuRow(model: model, command: c)
                     }
                 }
             }

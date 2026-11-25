@@ -103,9 +103,13 @@ struct DeskFileCommands: Commands {
             Button("New from Template\u{2026}") { desk?.start() }
                 .keyboardShortcut("n", modifiers: [.command, .shift])
                 .disabled(desk == nil)
+            Button("New Design Tab") { DocTabs.newTab() }
+                .keyboardShortcut("t")
+                .disabled(desk?.design == nil || EngineGate.shared.shut)
             Button("Open\u{2026}") { if let d = desk?.design { FileActions.open(d) } }
                 .keyboardShortcut("o")
                 .disabled(desk?.design == nil || EngineGate.shared.shut)
+            RecentFilesMenu(model: desk?.design)
         }
         CommandGroup(replacing: .saveItem) {
             Button("Save") { if let d = desk?.design { FileActions.save(d) } }
@@ -250,8 +254,10 @@ enum HelpPages {
 /// When the window opens on the project start: `--start`, or a launch with no flags at all
 /// (opened from the Finder or the Dock, not from a script).
 enum StartLaunch {
-    static var atLaunch: Bool {
+    @MainActor static var atLaunch: Bool {
         let args = ProcessInfo.processInfo.arguments.dropFirst()
+        // M-20: only the first window starts on the start; a new tab is a blank design.
+        if DocTabs.anyWindowShown { return false }
         return args.contains("--start") || !args.contains { $0.hasPrefix("-") }
     }
 }
@@ -279,6 +285,8 @@ struct DeskWindowRoot: View {
 struct DeskRoot: View {
     let model: DesignModel
     let pcb: PCBModel
+    /// The reader's appearance; unset, the Mac window opens in Fusion's light look.
+    @AppStorage(ThemeMode.storageKey) private var storedTheme: String?
 
     var body: some View {
         if DeskLayout.launchLegacy {
@@ -286,7 +294,7 @@ struct DeskRoot: View {
                 .viaFormTheme(.dark)
         } else {
             ProjectWindow(model: model, pcb: pcb)
-                .viaFormTheme()
+                .viaFormTheme(storedTheme == nil && ThemeMode.launchOverride == nil ? .light : nil)
                 .settingsAtLaunch()
         }
     }
@@ -312,9 +320,10 @@ struct DeskSettingsView: View {
                             .font(VFFont.small)
                             .foregroundStyle(.secondary)
                     }
+                    SolidWorksExtrasToggle()
                 }
                 .formStyle(.grouped)
-                .settingsPane(height: 160)
+                .settingsPane(height: 250)
             }
             Tab("Navigation", systemImage: "computermouse", value: Pane.navigation) {
                 NavigationSettings().settingsPane(height: 560)

@@ -3,6 +3,9 @@ import simd
 
 /// The orientation cube: it turns with the view. A click on a face gives that standard view, a
 /// click near an edge or a corner gives the view along that edge or corner, and a drag orbits.
+/// On the Mac, looking square at a face shows arrows that turn the view 90 degrees (through
+/// `view.navigate`), and a right-click offers Go Home, Set Current View as Home and the
+/// projection.
 /// Colours come from the theme (light faces in light mode, panel grey in dark mode); a caller may
 /// still override them.
 struct ViewCube: View {
@@ -22,6 +25,7 @@ struct ViewCube: View {
     @State private var hovered: StandardView?
     @State private var dragLast: CGPoint?
     @State private var dragged = false
+    @State private var inside = false
 
     private struct Face {
         let view: StandardView
@@ -67,6 +71,64 @@ struct ViewCube: View {
     }
 
     var body: some View {
+        cube
+        #if os(macOS)
+            .overlay { if inside && aligned { arrows } }
+            .onHover { inside = $0 }
+            .contextMenu {
+                Button("Go Home") { ViewCubeHome.go(model) }
+                Button("Set Current View as Home") { ViewCubeHome.set(model) }
+                if ViewCubeHome.custom(model) {
+                    Button("Reset Home") { ViewCubeHome.reset(model) }
+                }
+                Divider()
+                Button("Orthographic") { model.camera.fov = 0; model.cameraChanged(final: true) }
+                    .disabled(model.camera.fov == 0)
+                Button("Perspective") { model.camera.fov = 0.7; model.cameraChanged(final: true) }
+                    .disabled(model.camera.fov > 0)
+                Divider()
+                Button("Fit to View") { model.zoomToFit() }
+            }
+        #endif
+    }
+
+    /// True when the view looks square at one face: then the 90 degree arrows show.
+    private var aligned: Bool {
+        let back = model.camera.basis.back
+        return Self.faces.contains { simd_dot($0.normal, back) > 0.999 }
+    }
+
+    #if os(macOS)
+    /// Fusion's turn arrows around a face: left, right, up and down turn the view 90 degrees to
+    /// the next face, the two curved ones roll it a quarter turn.
+    private var arrows: some View {
+        let r = size * 0.43
+        return ZStack {
+            arrow("arrowtriangle.left.fill", String(localized: "Turn left 90 degrees"), "left").offset(x: -r)
+            arrow("arrowtriangle.right.fill", String(localized: "Turn right 90 degrees"), "right").offset(x: r)
+            arrow("arrowtriangle.up.fill", String(localized: "Turn up 90 degrees"), "up").offset(y: -r)
+            arrow("arrowtriangle.down.fill", String(localized: "Turn down 90 degrees"), "down").offset(y: r)
+            arrow("arrow.counterclockwise", String(localized: "Roll 90 degrees counterclockwise"), "counterclockwise").offset(x: r * 0.62, y: -r)
+            arrow("arrow.clockwise", String(localized: "Roll 90 degrees clockwise"), "clockwise").offset(x: r, y: -r * 0.62)
+        }
+        .frame(width: size, height: size)
+    }
+
+    private func arrow(_ symbol: String, _ label: String, _ action: String) -> some View {
+        Button { ViewCubeHome.turn(model, action) } label: {
+            Image(systemName: symbol)
+                .font(VFFont.glyph(8, weight: .semibold))
+                .foregroundStyle(ink)
+                .frame(width: 14, height: 14)
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .help(label)
+        .accessibilityLabel(Text(label))
+    }
+    #endif
+
+    @ViewBuilder private var cube: some View {
         let shown = visible()
         let faceFill = face, edgeLine = edge, label = ink, hoverFill = hover
         // Fixed size from the cube, never Dynamic Type: a scaled label overflows its face and
@@ -126,7 +188,7 @@ struct ViewCube: View {
         #if os(macOS)
         // On the iPad a 44 pt home button would cover the cube: Home View is in the view menu.
         .overlay(alignment: .topTrailing) {
-            VFIconButton("arrow.counterclockwise", label: String(localized: "Home view"), size: 10, tint: ink) { model.setView(.iso) }
+            VFIconButton("arrow.counterclockwise", label: String(localized: "Home view"), size: 10, tint: ink) { ViewCubeHome.go(model) }
                 .offset(x: VFSpace.s, y: -VFSpace.xs)
         }
         #endif
@@ -156,5 +218,38 @@ struct ViewCube: View {
     private func face(at p: CGPoint, _ shown: [(Face, [CGPoint])]) -> StandardView? {
         for (f, pts) in shown.reversed() where polygon(pts).contains(p) { return f.view }
         return nil
+    }
+}
+
+/// The Home view the cube's home button goes to: the standard isometric orientation, or the
+/// camera saved with Set Current View as Home. Kept per open design for this run (the engine
+/// has no command that stores a Home view in the design yet).
+@MainActor
+enum ViewCubeHome {
+    private static var homes: [ObjectIdentifier: OrbitCamera] = [:]
+
+    static func custom(_ model: DesignModel) -> Bool { homes[ObjectIdentifier(model)] != nil }
+
+    static func set(_ model: DesignModel) { homes[ObjectIdentifier(model)] = model.camera }
+
+    static func reset(_ model: DesignModel) { homes[ObjectIdentifier(model)] = nil }
+
+    static func go(_ model: DesignModel) {
+        if let home = homes[ObjectIdentifier(model)] {
+            model.camera = home
+            model.cameraChanged(final: true)
+        } else {
+            model.setView(.iso)
+        }
+    }
+
+    /// `view.navigate` with a turn action (left, right, up, down, clockwise, counterclockwise).
+    static func turn(_ model: DesignModel, _ action: String, degrees: Double = 90) {
+        guard let r = (try? model.engine.execute("view.navigate", ["camera": model.camera.dictionary, "action": action, "degrees": degrees])) as? [String: Any],
+              let c = r["camera"], let data = try? JSONSerialization.data(withJSONObject: c),
+              var cam = try? JSONDecoder().decode(OrbitCamera.self, from: data) else { return }
+        cam.up = model.camera.up
+        model.camera = cam
+        model.cameraChanged(final: true)
     }
 }

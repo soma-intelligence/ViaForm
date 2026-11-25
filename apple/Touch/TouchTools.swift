@@ -3,8 +3,8 @@ import SwiftUI
 import UIKit
 import MetalKit
 
-// Floating pieces of the iPad stage: the two labelled tool groups, the context pill placed
-// under the selection, the value bubble, the inspector card and the summary capsule.
+// Floating pieces of the iPad stage: the tool column entry point, the context pill placed
+// under the selection (off by default since T-4), the value bubble, the inspector card and the summary capsule.
 
 // MARK: - Tool groups
 
@@ -63,62 +63,16 @@ struct PadToolButton: View {
     }
 }
 
-/// The design stage's two groups: sketch (or the sketch tools while one is open) and solid.
+/// The design stage's tools on the iPad: the adaptive column (T-4, T-5, T-17), kept under its old
+/// name so the root view's call site keeps working. New call sites use `TouchToolColumn`.
 struct DesignToolGroups: View {
     let model: DesignModel
     @Binding var showCommands: Bool
+    var extra: [ContextAction] = []
+    var constraintSlot: AnyView?
 
     var body: some View {
-        HStack(alignment: .top, spacing: 8) {
-            PadToolGroup(title: "Sketch") {
-                PadToolButton(label: "Select", symbol: "cursorarrow", active: model.tool == .select) { model.tool = .select }
-                if model.sketchOpen {
-                    ForEach(Tool.sketchTools) { t in tool(t) }
-                    PadToolButton(label: "Finish", symbol: "checkmark") { model.finishSketch() }
-                } else {
-                    tool(.sketch)
-                    tool(.measure)
-                }
-            }
-            if !model.sketchOpen {
-                // Seven faces fit a portrait iPad with the summary capsule under them; the rest
-                // (chamfer, shell, move, mirror, delete, every command) is behind More.
-                PadToolGroup(title: StageLabels.tab("SOLID").capitalized) {
-                    ForEach([Tool.extrude, .revolve, .pressPull, .fillet]) { t in tool(t) }
-                    menuTool("Shapes", symbol: "cube", tools: Tool.primitiveTools)
-                    menuTool("Combine", symbol: "square.on.square", tools: [.union, .subtract, .intersect])
-                    Menu {
-                        ForEach([Tool.chamfer, .shell, .move, .mirror, .delete]) { t in
-                            Button(StageLabels.command(t.touchLabel), systemImage: t.symbol) { activate(t) }
-                        }
-                        Divider()
-                        Button("All Commands…", systemImage: "magnifyingglass") { showCommands = true }
-                    } label: {
-                        PadToolButton(label: "More", symbol: "ellipsis.circle",
-                                      active: [Tool.chamfer, .shell, .move, .mirror].contains(model.tool)) {}
-                            .allowsHitTesting(false)
-                    }
-                    .hoverEffect(.highlight)
-                    .accessibilityLabel(Text("More tools"))
-                }
-            }
-        }
-    }
-
-    private func tool(_ t: Tool) -> some View {
-        PadToolButton(label: t.touchLabel, tool: t, active: model.tool == t) { activate(t) }
-    }
-
-    /// Several tools behind one face: the menu opens on tap.
-    private func menuTool(_ label: String, symbol: String, tools: [Tool]) -> some View {
-        Menu {
-            ForEach(tools) { t in Button(t.touchLabel, systemImage: t.symbol) { activate(t) } }
-        } label: {
-            PadToolButton(label: label, symbol: symbol, active: tools.contains(model.tool)) {}
-                .allowsHitTesting(false)
-        }
-        .hoverEffect(.highlight)
-        .accessibilityLabel(label)
+        TouchToolColumn(model: model, showPalette: { showCommands = true }, extra: extra, constraintSlot: constraintSlot)
     }
 
     func activate(_ t: Tool) { TouchToolActions.activate(t, model) }
@@ -288,6 +242,9 @@ struct DesignAnchorLayer: View {
     /// Rectangles of the floating cards, in the same space, to keep clear of.
     var avoid: [CGRect] = []
     var extra: [ContextAction] = []
+    /// The floating pill of verbs under the selection. Off on the iPad since T-4: the verbs live
+    /// in the left tool column. Kept for layouts without the column.
+    var showsPill = false
 
     var body: some View {
         let _ = units
@@ -315,9 +272,13 @@ struct DesignAnchorLayer: View {
                     Circle().fill(theme.accent).frame(width: 12, height: 12)
                         .overlay(Circle().strokeBorder(theme.onAccent, lineWidth: 2))
                         .position(anchor).allowsHitTesting(false)
-                    ValueBubble(text: Self.format(model.toolValue, v.unit)).position(bubble)
+                    // T-9: the value to type and the result menu (B's chip) on the handle.
+                    let _ = v
+                    TouchValueChip(model: model).position(bubble)
                 }
-                if !actions.isEmpty, model.tool == .select {
+                // B-13: the move gizmo while Move runs.
+                TouchMoveGizmoLayer(model: model)
+                if showsPill, !actions.isEmpty, model.tool == .select {
                     let w = CGFloat(actions.count) * 66 + 70, h: CGFloat = 76
                     let fallback = CGRect(x: size.width / 2 - 1, y: size.height - 260, width: 2, height: 2)
                     ContextPill(actions: actions, dismiss: { model.selection = []; model.selectedBodies = [] })

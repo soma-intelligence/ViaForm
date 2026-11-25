@@ -27,11 +27,20 @@ struct ProjectWindow: View {
     @State private var showInspector = !ProcessInfo.processInfo.arguments.contains("--no-inspector")
     @State private var inspectorMode = InspectorMode.inspector
     @State private var showPalette = false
+    /// The palette was opened with S: the mode's tools sit above its search field (M-15).
+    @State private var paletteSBar = false
+    /// The live measure of the 3D selection for the status bar (M-12), "1 Face | Area 20.2 cm²".
+    @State private var measureLine: String?
+    /// The mass properties report (marking menu Mass Properties), instead of the old toast.
+    @State private var showMass = false
     @State private var showShortcuts = ProcessInfo.processInfo.arguments.contains("--show-shortcuts")
     /// "Undone" or "Redone", shown a moment over the stage after an undo or a redo.
     @State private var undoFlash: String?
     @State private var flashToken = 0
     @AppStorage(ThemeMode.storageKey) private var themeMode: String = ThemeMode.default.rawValue
+    /// SolidWorks-only behaviours (confirmation corner, S bar), off by default (Fusion).
+    @AppStorage(SolidWorksExtras.storageKey) private var swExtras = false
+    private var solidWorksExtras: Bool { swExtras || SolidWorksExtras.on }
     @State private var showBottom = true
     @State private var showBom = BomModel.launchRequested
     @State private var showData = false
@@ -54,6 +63,10 @@ struct ProjectWindow: View {
     /// The inspector column is shown (wide window and inspector on).
     @State private var dockedShown = !ProcessInfo.processInfo.arguments.contains("--no-inspector")
     @State private var hiddenLayers: Set<String> = []
+    /// The floating BROWSER of the Fusion layout (Control-Command-S hides and shows it).
+    @State private var showBrowser = true
+    /// The inspector's state outside the 3D stages, kept while a 3D stage hides it.
+    @State private var stageInspector = true
     /// The window's toasts ("Deleted Frame", "Saved"), shown over the stage.
     @State private var toasts = ToastCenter()
     /// The BOM panel was edited last while open: Command-Z goes to it, not to the stage.
@@ -82,6 +95,17 @@ struct ProjectWindow: View {
 
     private var screen: StageScreen { StageScreen.make(workspace, flow: flow) }
 
+    /// Design, Assemble (parts) and Render draw Fusion's window: no sidebar column, the browser
+    /// floating over the canvas, no inspector unless asked, no status bar (FusionChrome.swift).
+    private var fusionLayout: Bool {
+        StageActions.designLike.contains(workspace) && !(workspace == .assemble && assemble.isActive)
+    }
+
+    /// The split view's columns: the sidebar never shows in the Fusion layout.
+    private var columnsBinding: Binding<NavigationSplitViewVisibility> {
+        Binding(get: { fusionLayout ? .detailOnly : columns }, set: { if !fusionLayout { columns = $0 } })
+    }
+
     private var title: String {
         ProjectTitle.of(flow: flow, design: model)
     }
@@ -103,6 +127,7 @@ struct ProjectWindow: View {
         })
         .navigationTitle("ViaForm")
         .navigationSubtitle("Start")
+        .onAppear { MacSketchUISelfTest.runIfAsked() }
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
                 Button { showStart = false } label: { Label("Close Start", systemImage: "xmark") }
@@ -113,6 +138,7 @@ struct ProjectWindow: View {
                                                 start: { showStart = false }, design: model))
         .projectFilesContext(design: model, pcb: pcb, bom: bom, flow: flow, generate: generate, assemble: assemble)
         .background(WindowSizer())
+        .background(DocTabHost())
     }
 
     /// Opens a template or a blank start: the product's design and its pipeline graph.
@@ -162,10 +188,11 @@ struct ProjectWindow: View {
     private var project: some View {
         let actions = actions
         let screen = screen
-        return NavigationSplitView(columnVisibility: $columns) {
+        return NavigationSplitView(columnVisibility: columnsBinding) {
             BrowserSidebar(workspace: workspace, model: model, flow: flow, actions: actions,
                            assemble: workspace == .assemble && assemble.isActive ? assemble : nil)
                 .navigationSplitViewColumnWidth(min: VFSize.sidebarMin, ideal: 256, max: VFSize.sidebarMax)
+                .toolbar(removing: .sidebarToggle)
         } detail: {
             VStack(spacing: 0) {
               VStack(spacing: 0) {
@@ -183,6 +210,7 @@ struct ProjectWindow: View {
                     .overlay(alignment: .bottomLeading) {
                         StageIntro(workspace: workspace).padding(VFSpace.l)
                     }
+                    .overlay(alignment: .topTrailing) { confirmationCorner }
                     .overlay(alignment: .bottom) {
                         if let undoFlash {
                             Text(undoFlash).font(VFFont.small.weight(.medium)).foregroundStyle(theme.ink)
@@ -202,8 +230,10 @@ struct ProjectWindow: View {
               }
               .overlay(alignment: .topTrailing) { inspectorOverlay(actions) }
               .vfAnimation(.easeOut(duration: VFMotion.standard), value: overlayShown)
-                StageStatusBar(leading: statusLine(screen), items: statusItems, coreOK: !EngineGate.shared.shut,
-                               trailing: AnyView(bottomToggle), status: screen.status)
+                if !fusionLayout {
+                    StageStatusBar(leading: statusLine(screen), items: statusItems, coreOK: !EngineGate.shared.shut,
+                                   trailing: AnyView(statusTrailing), status: screen.status)
+                }
             }
             .safeAreaInset(edge: .top, spacing: 0) {
                 // The workspace dropdown at the far left, then the stage's ribbon. Electronics has
@@ -219,6 +249,17 @@ struct ProjectWindow: View {
                     .fixedSize(horizontal: false, vertical: true)
                     .vfSurface(.ribbon)
                     .overlay(alignment: .bottom) { VFHairline() }
+                } else if fusionLayout {
+                    // Fusion's toolbar: the DESIGN box spanning both rows, then tabs over panels.
+                    HStack(alignment: .center, spacing: 0) {
+                        dropdown(actions)
+                        StageRibbon(workspace: workspace, model: model, flow: flow, tab: tabBinding, actions: actions, primary: screen.primary,
+                                    dialogDocked: false)
+                            .vfEngineGate()
+                    }
+                    .frame(height: FusionTokens.ribbonHeight)
+                    .background(theme.fusion.surface)
+                    .overlay(alignment: .bottom) { Rectangle().fill(theme.fusion.lineSoft).frame(height: 1) }
                 } else if workspace != .electronics {
                     HStack(spacing: 0) {
                         dropdown(actions)
@@ -240,9 +281,13 @@ struct ProjectWindow: View {
             })
             // Title, toolbar and inspector hang on the detail column, so the toolbar spans the
             // detail and the inspector instead of folding into the inspector's corner.
-            .navigationTitle(title)
+            // M-20: the window and its tab read "Name*" while there are unsaved edits.
+            .navigationTitle(DocTabTitle.text(title, edited: ProjectFiles.isEdited(projectContext)))
             .navigationSubtitle(screen.revision.map { "\(workspace.title) · \($0)" } ?? workspace.title)
             .toolbar { toolbar(actions) }
+            .toolbar(removing: .title)
+            .toolbarBackground(theme.fusion.appBar, for: .windowToolbar)
+            .toolbarBackgroundVisibility(.visible, for: .windowToolbar)
             // A wide window docks the inspector in its column; a compact one floats it over the
             // stage instead (P2-7), so the viewport keeps its width.
             .inspector(isPresented: $dockedShown) {
@@ -250,6 +295,7 @@ struct ProjectWindow: View {
                     .inspectorColumnWidth(min: VFSize.inspectorMin, ideal: inspectorIdeal, max: 560)
             }
         }
+        .toolbar(removing: .sidebarToggle)
         .background(GeometryReader { g in
             Color.clear
                 .onAppear { windowResized(g.size.width) }
@@ -272,7 +318,10 @@ struct ProjectWindow: View {
                     theme.ink.opacity(0.04).ignoresSafeArea().onTapGesture { closePalette() }
                         .accessibilityHidden(true)
                     CommandPalette(flow: flow, workspace: workspace, actions: actions, extras: windowCommands,
-                                   runExtra: runWindowCommand, close: closePalette)
+                                   runExtra: runWindowCommand,
+                                   header: paletteSBar ? AnyView(SBarGrid(tiles: SBar.tiles(workspace: workspace, model: model, flow: flow, actions: actions),
+                                                                          close: closePalette)) : nil,
+                                   close: closePalette)
                         .accessibilityAddTraits(.isModal)
                         .padding(.top, VFSpace.paletteTop)
                 }
@@ -307,11 +356,27 @@ struct ProjectWindow: View {
         }
         .onChange(of: showBom) { _, open in if !open { undoOwner = .stage } }
         .onChange(of: pcb.revision) { _, _ in undoOwner = .stage }
-        .onChange(of: showInspector) { _, v in storedInspector = v }
+        .onChange(of: showInspector) { _, v in if !fusionLayout { storedInspector = v } }
+        .onChange(of: fusionLayout) { _, fusion in
+            // The 3D stages hide the inspector (Fusion has none); the other stages get theirs back.
+            if fusion { stageInspector = showInspector; showInspector = false } else { showInspector = stageInspector }
+        }
         .onChange(of: showBottom) { _, v in storedBottom = v }
         .onChange(of: model.toolboxOpen) { _, open in
-            // S in the viewport asked for the old toolbox: the palette replaces it.
-            if open { showPalette = true; model.toolboxOpen = false }
+            // S in the viewport: Fusion's toolbox search, with the S bar on top only as a
+            // SolidWorks extra.
+            if open { paletteSBar = solidWorksExtras; showPalette = true; model.toolboxOpen = false }
+        }
+        .onChange(of: MeasureKey(selection: model.selection, bodies: model.selectedBodies, undo: model.snapshot.undo, redo: model.snapshot.redo)) { _, _ in
+            updateMeasure()
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .vfRevealInBrowser)) { n in
+            guard (n.object as? DesignModel) === model else { return }
+            if fusionLayout { showBrowser = true } else if columns == .detailOnly { columns = .all }
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .vfRevealInTimeline)) { n in
+            guard (n.object as? DesignModel) === model, hasBottom else { return }
+            showBottom = true
         }
         .onChange(of: workspace) { _, w in
             pcb.syncLink(model)
@@ -323,10 +388,37 @@ struct ProjectWindow: View {
         .reportsToFlow(flow, design: model, pcb: pcb, generate: generate, sim: sim)
         .projectFilesContext(design: model, pcb: pcb, bom: bom, flow: flow, generate: generate, assemble: assemble)
         .background(WindowSizer())
+        .background(DocTabHost())
+        .background(FusionWindowStyle())
+        .onReceive(NotificationCenter.default.publisher(for: .vfShowMassProperties)) { n in
+            guard (n.object as? DesignModel) === model else { return }
+            showMass = true
+        }
+        .sheet(isPresented: $showMass) { MassPropertiesView(model: model) { showMass = false } }
+        .vfParameterLinks(model)
         .onAppear(perform: launchHooks)
     }
 
-    private func closePalette() { showPalette = false }
+    private func closePalette() { showPalette = false; paletteSBar = false }
+
+    /// Asks the engine for the selection's key measure (M-12); nothing outside the 3D stages.
+    private func updateMeasure() {
+        guard StageActions.designLike.contains(workspace), !EngineGate.shared.shut else { measureLine = nil; return }
+        measureLine = SelectionMeasure.status(model)
+    }
+
+    /// The check and X under the view cube while a sketch or a command runs (M-18). When the
+    /// command dialog floats under the cube, the corner moves to the cube's left.
+    @ViewBuilder private var confirmationCorner: some View {
+        if solidWorksExtras, StageActions.designLike.contains(workspace), !(workspace == .assemble && assemble.isActive),
+           ConfirmationCorner.shown(model) {
+            let dialogFloats = !(showInspector && inspectorMode == .inspector)
+            ConfirmationCorner(model: model)
+                .padding(.top, VFSpace.overlayInset + (dialogFloats ? VFSpace.s : ConfirmationCorner.cubeHeight + VFSpace.s))
+                .padding(.trailing, VFSpace.overlayInset + (dialogFloats ? ConfirmationCorner.cubeHeight + VFSpace.m : 0))
+                .vfTransition(.opacity)
+        }
+    }
 
     // MARK: Compact layout (P2-7)
 
@@ -345,10 +437,17 @@ struct ProjectWindow: View {
     @ViewBuilder private func inspectorContent(_ actions: StageActions) -> some View {
         switch inspectorMode {
         case .inspector:
-            if commandRunning {
+            if commandRunning && !fusionLayout {
                 // The transient command dialog replaces the inspector while it runs.
-                ScrollView { CommandDialog(model: model).padding(VFSpace.l) }
-                    .background(theme.panel)
+                ScrollView {
+                    VStack(alignment: .leading, spacing: VFSpace.l) {
+                        CommandDialog(model: model)
+                        // M-3: a sketch tool keeps the Sketch Palette under its dialog.
+                        if model.sketchOpen { SketchPalette(model: model) }
+                    }
+                    .padding(VFSpace.l)
+                }
+                .background(theme.panel)
             } else {
                 InspectorPanel(workspace: workspace, flow: flow, model: model, pcb: pcb, sim: sim, generate: generate, actions: actions,
                                assemble: assemble.isActive ? assemble : nil, armSim: armSimActive ? armSim : nil,
@@ -417,7 +516,7 @@ struct ProjectWindow: View {
 
     /// What this window lends the menu bar: every File, Edit, View and Workspace item acts here.
     private func focus(_ screen: StageScreen, _ actions: StageActions) -> DeskFocus {
-        var f = DeskFocus(workspace: workspace, open: { workspace = $0 }, search: { showPalette = true },
+        var f = DeskFocus(workspace: workspace, open: { workspace = $0 }, search: { paletteSBar = false; showPalette = true },
                           openWorkspaces: { showWorkspaces.toggle() },
                           start: { showStart = true },
                           toggleInspector: { inspectorMode = .inspector; showInspector.toggle() },
@@ -428,7 +527,7 @@ struct ProjectWindow: View {
         f.design = model
         f.undo = undoTarget
         f.stopJob = stopJobAction
-        f.toggleSidebar = { columns = columns == .detailOnly ? .all : .detailOnly }
+        f.toggleSidebar = { if fusionLayout { showBrowser.toggle() } else { columns = columns == .detailOnly ? .all : .detailOnly } }
         f.showBom = { showBom.toggle() }
         f.showLibraries = {
             if showInspector && inspectorMode == .library { showInspector = false } else { inspectorMode = .library; showInspector = true }
@@ -557,7 +656,7 @@ struct ProjectWindow: View {
         let letter = ch.uppercased()
         if mods.isEmpty {
             switch letter {
-            case "S": showPalette = true; return true
+            case "S": paletteSBar = solidWorksExtras; showPalette = true; return true
             case "6": model.setView(.iso); return true
             case "K":
                 if model.sketchOpen { return false }
@@ -623,7 +722,7 @@ struct ProjectWindow: View {
     private func runWindowCommand(_ id: String) {
         switch id.dropFirst("window.".count) {
         case "inspector": inspectorMode = .inspector; showInspector.toggle()
-        case "sidebar": columns = columns == .detailOnly ? .all : .detailOnly
+        case "sidebar": if fusionLayout { showBrowser.toggle() } else { columns = columns == .detailOnly ? .all : .detailOnly }
         case "bottom": showBottom.toggle()
         case "bom": showBom.toggle()
         case "library": inspectorMode = .library; showInspector = true
@@ -669,9 +768,16 @@ struct ProjectWindow: View {
             return parts.joined(separator: " · ")
         }
         if StageActions.designLike.contains(workspace) {
+            // M-11: while sketching, the sketch, its defined state and the picks.
+            if var line = SketchStatusText.statusLine(model) {
+                // B-11: what the armed sketch tool waits for, Fusion's prompt.
+                if let hint = SketchRibbonTools.hint(model) { line += " · " + hint }
+                if let job = screen.job { line += " · " + job.caption }
+                return line
+            }
             let size = CGSize(width: max(detailWidth, 1), height: 600)
             if let a = AnchorLayout.anchor(model, size: size) {
-                var line = String(localized: "\(a.title) selected")
+                var line = measureLine ?? String(localized: "\(a.title) selected")
                 if let job = screen.job { line += " · " + job.caption }
                 return line
             }
@@ -682,6 +788,21 @@ struct ProjectWindow: View {
         }
         // Flow ids carry a kind prefix ("body:Frame"): show the name.
         return screen.statusLine.replacingOccurrences(of: #"\b[a-z]+:"#, with: "", options: .regularExpression)
+    }
+
+    /// The status text at the bottom right of the canvas (Fusion 1.11): the selection and its
+    /// measure, the sketch and its prompt, or a running job; nothing when idle.
+    private func fusionStatus(_ screen: StageScreen) -> String {
+        if var line = SketchStatusText.statusLine(model) {
+            if let hint = SketchRibbonTools.hint(model) { line += " | " + hint }
+            return line
+        }
+        let size = CGSize(width: max(detailWidth, 1), height: 600)
+        if let a = AnchorLayout.anchor(model, size: size) {
+            // "1 Face | Area : 23.00 cm²", the reference's spacing around the colon.
+            return measureLine.map(FusionStatus.format) ?? String(localized: "\(a.title) selected")
+        }
+        return screen.job?.caption ?? ""
     }
 
     private var tabBinding: Binding<String> {
@@ -705,6 +826,17 @@ struct ProjectWindow: View {
     private var armSimActive: Bool { assemble.isActive && assemble.product == .arm }
 
     private var hasBottom: Bool { [.design, .assemble, .electronics, .train, .robot].contains(workspace) }
+
+    /// The status bar's trailing controls: the selection filter in the 3D stages (M-9), then
+    /// the bottom panel toggle.
+    private var statusTrailing: some View {
+        HStack(spacing: VFSpace.m) {
+            if StageActions.designLike.contains(workspace), !(workspace == .assemble && assemble.isActive) {
+                SelectFilterStatusControl(model: model)
+            }
+            bottomToggle
+        }
+    }
 
     private var bottomToggle: some View {
         Button { showBottom.toggle() } label: {
@@ -731,7 +863,12 @@ struct ProjectWindow: View {
                               addLoadCases: { generate.addSimulatedCases($0) })
         case .design, .assemble, .render:
             DesignCanvas(model: model, pcb: pcb, flow: flow, workspace: workspace, actions: actions,
-                         dialogInInspector: showInspector && inspectorMode == .inspector)
+                         dialogInInspector: false,
+                         fusion: FusionCanvasChrome(
+                            browser: showBrowser ? AnyView(FusionBrowserPanel(shown: $showBrowser) {
+                                DesignOutline(model: model, title: ProjectTitle.of(flow: flow, design: model), fusion: true)
+                            }) : nil,
+                            status: fusionStatus(screen)))
         case .generate:
             // iPhone folds the study's side panel into a sheet. A compact Mac window has no room
             // for a floating inspector beside the study panel: the inspector takes the panel's
@@ -800,10 +937,18 @@ struct ProjectWindow: View {
 
     // MARK: Toolbar
 
+    /// Fusion's application bar (1.2): data panel, File, Save, Undo, Redo and Home at the left;
+    /// the document tab in the middle; new tab, extensions, jobs, notifications, help and the
+    /// profile at the right. ViaForm's own panels hang where Fusion puts the matching control:
+    /// Libraries on extensions, the flow graph on notifications, the inspector, BOM and settings
+    /// in the profile menu (and all of them in the menu bar).
     @ToolbarContentBuilder private func toolbar(_ actions: StageActions) -> some ToolbarContent {
         ToolbarItemGroup(placement: .navigation) {
-            Button { showData.toggle() } label: { Label("Projects", systemImage: "folder") }
-                .help("Projects: designs, samples and recent files")
+            Button { showData.toggle() } label: { Label("Show Data Panel", systemImage: "square.grid.3x3.fill") }
+                .help("Show Data Panel: projects, designs, samples and recent files")
+            // M-20: Fusion's app bar, File menu then Save, before Undo and Redo.
+            AppBarFileMenu(model: model)
+            AppBarSaveButton(model: model, edited: ProjectFiles.isEdited(projectContext))
             let u = undoTarget
             Button { u.undo() } label: { Label("Undo", systemImage: "arrow.uturn.backward") }
                 .vfDisabled(!u.canUndo || EngineGate.shared.shut,
@@ -813,30 +958,36 @@ struct ProjectWindow: View {
                 .vfDisabled(!u.canRedo || EngineGate.shared.shut,
                             reason: EngineGate.shared.shut ? EngineGate.reason : String(localized: "Nothing to redo in \(workspace.title)."))
                 .help(u.redoName.map { String(localized: "Redo \($0) (Shift-Command-Z)") } ?? String(localized: "Redo (Shift-Command-Z)"))
+            Button { showStart = true } label: { Label("Home", systemImage: "house") }
+                .help("Home: recent projects and templates")
         }
-        // No stage chips in the toolbar (D-10): the principal slot holds the job capsule while a
-        // job runs, and nothing otherwise.
+        .sharedBackgroundVisibility(.hidden)
         ToolbarItem(placement: .principal) {
-            ToolbarJobCapsule(flow: flow)
+            FusionDocTab(title: title, edited: ProjectFiles.isEdited(projectContext), flow: flow)
         }
+        .sharedBackgroundVisibility(.hidden)
         ToolbarItemGroup(placement: .primaryAction) {
-            CommandSearchField(compact: compactToolbar) { showPalette = true }
-            Button { showGraph.toggle() } label: { Label("Flow Graph", systemImage: "point.3.connected.trianglepath.dotted") }
-                .help("Show the flow graph: what each stage builds from")
-            JobsButton(flow: flow, compact: true)
-            Button { showBom.toggle() } label: { Label("BOM", systemImage: "list.bullet.rectangle") }
-                .help("Bill of materials (Shift-Command-B)")
-                .keyboardShortcut("b", modifiers: [.command, .shift])
+            Button { DocTabs.newTab() } label: { Label("New Design Tab", systemImage: "plus") }
+                .help("New design tab")
+                .disabled(DocTabs.openProjectWindow == nil)
             Button {
                 if showInspector && inspectorMode == .library { showInspector = false } else { inspectorMode = .library; showInspector = true }
-            } label: { Label("Libraries", systemImage: "books.vertical") }
+            } label: { Label("Libraries", systemImage: "puzzlepiece.extension") }
                 .help("Libraries: KiCad, standard hardware, distributors, saved parts (Shift-Command-L)")
-                .keyboardShortcut("l", modifiers: [.command, .shift])
-            Button {
-                if inspectorMode == .library { inspectorMode = .inspector; showInspector = true } else { showInspector.toggle() }
-            } label: { Label("Inspector", systemImage: "sidebar.right") }
-                .help("Show or hide the inspector (Option-Command-I)")
+            JobsButton(flow: flow, compact: true)
+            Button { showGraph.toggle() } label: { Label("Notifications", systemImage: "bell") }
+                .help("Notifications: what is stale in the flow, and the flow graph")
+            Menu {
+                Button("Search Commands\u{2026}") { paletteSBar = false; showPalette = true }
+                Button("Keyboard Shortcuts") { showShortcuts = true }
+            } label: { Label("Help", systemImage: "questionmark.circle") }
+                .menuIndicator(.hidden)
+                .help("Help")
+            FusionProfileMenu(showInspector: { inspectorMode = .inspector; showInspector.toggle() },
+                              inspectorShown: showInspector && inspectorMode == .inspector,
+                              showBom: { showBom.toggle() })
         }
+        .sharedBackgroundVisibility(.hidden)
     }
 
     // MARK: Launch
@@ -844,10 +995,20 @@ struct ProjectWindow: View {
     private func launchHooks() {
         let args = ProcessInfo.processInfo.arguments
         PerfScript.openWorkspace = { workspace = $0 }
+        MacSketchUISelfTest.runIfAsked()
+        MacDocsSelfTest.runIfAsked()
+        // M-20: a tab opened for a file (Open while this window's tab held work) opens it here,
+        // once the window's project is registered.
+        if let url = DocTabs.takePendingOpen() { DispatchQueue.main.async { FileActions.open(url, model) } }
         // Restore the window's layout, launch flags first (screenshots and tests set them).
         if Workspace.fromLaunchArguments() == nil, !storedStage.isEmpty,
            let w = Workspace.allCases.first(where: { $0.stage == storedStage }) { workspace = w }
         if !args.contains("--no-inspector") && !args.contains("--library") { showInspector = storedInspector }
+        // Fusion's window has no inspector: the 3D stages open without it (--inspector shows it).
+        if fusionLayout && !args.contains("--inspector") && !args.contains("--library") && !args.contains(where: { $0.hasPrefix("--library=") }) {
+            stageInspector = showInspector
+            showInspector = false
+        }
         showBottom = storedBottom
         lastFeatures = model.snapshot.timeline.filter { $0.rolled_back != true }.map(\.name)
         if showBom { bom.applyLaunchFlags(); BomSnapshot.runIfAsked(model: bom, design: model, pcb: pcb) }
@@ -872,6 +1033,10 @@ struct ProjectWindow: View {
             assemble.openArm(flow: flow)
         }
         AssembleLaunch.apply(args, assemble: assemble, sim: armSim, flow: flow, open: { workspace = $0 }, showBottom: { showBottom = $0 })
+        if let plane = args.first(where: { $0.hasPrefix("--open-sketch=") })?.dropFirst("--open-sketch=".count) {
+            // Screenshots of the sketch state: a sketch open on a plane (XY, XZ, YZ).
+            DispatchQueue.main.async { model.startSketch(String(plane)) }
+        }
         if args.contains(where: { $0.hasPrefix("--select=") || $0.hasPrefix("--pick-top=") || $0.hasPrefix("--tool=") || $0.hasPrefix("--command=") }) {
             DispatchQueue.main.async { DeskSamples.applySelectionFlags(model) }
         }
@@ -901,6 +1066,20 @@ struct ProjectWindow: View {
             }
         }
         if args.contains("--show-palette") { showPalette = true }
+        if args.contains("--show-sbar") { paletteSBar = true; showPalette = true }
+        if args.contains("--selftest-mac-chrome") {
+            // Runs MacChromeSelfTest alone (until the lead folds it into --selftest) and quits.
+            let r = MacChromeSelfTest.checks()
+            for (ok, name) in r { print("\(ok ? "PASS" : "FAIL") \(name)") }
+            print("mac-chrome \(r.filter(\.0).count)/\(r.count) passed")
+            fflush(stdout)
+            exit(r.allSatisfy(\.0) ? 0 : 1)
+        }
+        if args.contains("--dump-commands") {
+            // The engine registry as tab | panel | id | label | key, for the ribbon layout checks.
+            for c in model.commands { print("\(c.tab) | \(c.panel) | \(c.id) | \(c.label) | \(c.key ?? "")") }
+            fflush(stdout)
+        }
         if args.contains("--show-marking") { model.markingMenu = CGPoint(x: 620, y: 300) }
         if args.contains("--show-data") { showData = true }
         if args.contains("--show-flow-card") || args.contains("--show-flow-graph") {
@@ -957,6 +1136,14 @@ struct CommandSearchField: View {
         .buttonStyle(.plain)
         .help("Search the commands of every stage (Command-K)")
     }
+}
+
+/// What the status bar's live measure follows: the picks and the document's edits.
+struct MeasureKey: Equatable {
+    var selection: [Pick]
+    var bodies: Set<String>
+    var undo: Int
+    var redo: Int
 }
 
 /// The undo and redo depths, watched together to tell an undo from a new edit.

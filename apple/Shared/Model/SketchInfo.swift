@@ -10,6 +10,8 @@ struct SketchInfo: Equatable {
         var id: String
         var at: SIMD2<Double>
         var fixed: Bool
+        /// The solver leaves it no freedom (`fully_constrained` in `sketch.inspect`).
+        var determined = false
     }
 
     struct Curve: Equatable, Identifiable {
@@ -17,6 +19,25 @@ struct SketchInfo: Equatable {
         var kind: String
         var polyline: [SIMD2<Double>]
         var construction: Bool
+        /// The solver leaves it no freedom (`fully_constrained` in `sketch.inspect`).
+        var determined = false
+        /// Its end points and centre, by point id (empty when the curve has none).
+        var ends: [String] = []
+        var center: String?
+        /// Projected or included model geometry that follows its source (`link` in
+        /// `sketch.inspect`), drawn in its own colour (B-11).
+        var linked = false
+    }
+
+    /// One geometric constraint (not a dimension) as `sketch.glyphs` reports it: its kind
+    /// ("Horizontal", "Coincident", "Tangent"...), where its glyph goes in sketch coordinates,
+    /// whether it is failing (part of a conflict) or redundant (implied by the others).
+    struct Glyph: Equatable, Identifiable {
+        var id: String
+        var name: String
+        var at: SIMD2<Double>
+        var failing: Bool
+        var redundant: Bool
     }
 
     struct Profile: Equatable, Identifiable {
@@ -94,6 +115,13 @@ struct SketchInfo: Equatable {
     var curves: [Curve] = []
     var profiles: [Profile] = []
     var dimensions: [Dimension] = []
+    /// Every constraint that is not a dimension, with its glyph anchor.
+    var glyphs: [Glyph] = []
+    /// Degrees of freedom left (nil when the engine did not say).
+    var dof: Int?
+    var fullyConstrained = false
+    /// Constraint ids the solver could not satisfy together: the sketch is over-constrained.
+    var conflicts: [String] = []
 
     /// The sketch `id` (the open one when nil), or nil when the engine has none to show.
     static func load(_ engine: CADEngine, sketch id: Int?, plane open: SketchPlane?) -> SketchInfo? {
@@ -104,7 +132,7 @@ struct SketchInfo: Equatable {
         let rawPoints = r["points"] as? [[String: Any]] ?? []
         let points = rawPoints.compactMap { p -> Point? in
             guard let pid = p["id"] as? String, let at = vec2(p["at"]) else { return nil }
-            return Point(id: pid, at: at, fixed: p["fixed"] as? Bool ?? false)
+            return Point(id: pid, at: at, fixed: p["fixed"] as? Bool ?? false, determined: p["fully_constrained"] as? Bool ?? false)
         }
         guard let plane = open ?? Self.plane(r["plane"]) ?? Self.plane(fromPoints: rawPoints) else { return nil }
         var info = SketchInfo(id: sid, plane: plane, points: points)
@@ -129,6 +157,14 @@ struct SketchInfo: Equatable {
             return Dimension(id: cid, name: d["name"] as? String ?? "LinearDimension", value: v, param: d["param"] as? String,
                              expression: expressions[cid], at: at, driven: d["driven"] as? Bool ?? false, failing: d["failing"] as? Bool ?? false)
         }
+        info.glyphs = (g?["glyphs"] as? [[String: Any]] ?? []).compactMap { d in
+            guard d["dimension"] as? Bool != true, let cid = idText(d["id"]), let at = vec2(d["at"]) else { return nil }
+            return Glyph(id: cid, name: d["name"] as? String ?? "", at: at, failing: d["failing"] as? Bool ?? false,
+                         redundant: d["redundant"] as? Bool ?? false)
+        }
+        info.dof = g?["dof"] as? Int
+        info.fullyConstrained = g?["fully_constrained"] as? Bool ?? false
+        info.conflicts = (g?["conflicts"] as? [Any] ?? []).compactMap(idText)
         return info
     }
 
@@ -222,7 +258,11 @@ struct SketchInfo: Equatable {
             poly = (c["points_at"] as? [Any] ?? []).compactMap(vec2)
         }
         guard poly.count >= 2 else { return nil }
-        return Curve(id: id, kind: kind, polyline: poly, construction: c["construction"] as? Bool ?? false)
+        let ends = ["start", "end"].compactMap { c[$0] as? String }.filter { !$0.isEmpty }
+        let center = (c["center"] as? String).flatMap { $0.isEmpty ? nil : $0 }
+        return Curve(id: id, kind: kind, polyline: poly, construction: c["construction"] as? Bool ?? false,
+                     determined: c["fully_constrained"] as? Bool ?? false, ends: ends, center: center,
+                     linked: c["link"].map { !($0 is NSNull) } ?? false)
     }
 
     private static func arc(_ o: SIMD2<Double>, _ r: Double, _ a0: Double, _ sweep: Double) -> [SIMD2<Double>] {

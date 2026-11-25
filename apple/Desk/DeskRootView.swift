@@ -334,13 +334,17 @@ struct RibbonPanel: View {
 /// A registry command to what runs it: a modelling tool, a direct action or the generic form.
 enum CommandRouter {
     static func run(_ c: CommandInfo, _ m: DesignModel) {
+        if m.routeSketchCommand(c.id) { return }
         switch c.id {
         case "sketch.finish": m.finishSketch(); return
         case "edit.undo": m.undo(); return
         case "edit.redo": m.redo(); return
         case "solid.combine": m.genericCommand = c; return
         case "solid.remove": m.deleteSelection(); return
-        case "inspect.measure": m.measureSelection(); return
+        case "inspect.measure":
+            // The mass properties report (M-21); the window presents it.
+            NotificationCenter.default.post(name: .vfShowMassProperties, object: m)
+            return
         default: break
         }
         if let t = Tool.allCases.first(where: { $0.commandID == c.id }), t != .union, t != .subtract, t != .intersect {
@@ -483,10 +487,17 @@ struct BrowserPanel: View {
 
 // MARK: Command dialog
 
-/// The dialog of the running command, docked at the right of the viewport.
+/// The dialog of the running command, docked at the right of the viewport. Fusion's rows: the
+/// selection buttons with their counts and a clear button, the typed options of the feature
+/// tools (`FeatureDialogFields`), then Cancel and OK. OK stays greyed until the required picks
+/// are made. Return in a field commits the field; the next Return accepts the feature.
 struct CommandDialog: View {
     @Environment(\.viaFormTheme) private var theme
     @Bindable var model: DesignModel
+    /// The main value field has the keyboard focus (Return then belongs to it).
+    @State private var valueFocused = false
+    /// ▸▸ folds the dialog to its header (Fusion).
+    @State private var folded = false
 
     /// Header height, gap between rows and the label column of a selection row.
     private static let headerHeight: CGFloat = 34
@@ -495,76 +506,82 @@ struct CommandDialog: View {
     private static let labelWidth: CGFloat = 70
 
     var body: some View {
+        let session = FeatureSession.of(model)
         VStack(alignment: .leading, spacing: 0) {
-            HStack(spacing: VFSpace.m) {
-                Image(systemName: icon).foregroundStyle(theme.accentText)
-                Text(title.uppercased()).font(VFFont.caps).tracking(VFTypeScale.capsTracking).foregroundStyle(theme.ink)
-                Spacer()
-                Button { close() } label: { Image(systemName: "xmark").font(VFFont.glyph(10, weight: .bold)) }
-                    .buttonStyle(.plain).foregroundStyle(theme.inkSecondary).help("Cancel (Escape)")
-            }
-            .padding(.horizontal, VFSpace.l).frame(height: Self.headerHeight)
-            .overlay(alignment: .bottom) { VFHairline() }
-            if let c = model.genericCommand {
+            // Fusion's dialog header: ⊖, the command in capitals, ▸▸ to fold.
+            FusionCardHeader(title: title, folded: $folded, close: { close() })
+            if folded {
+                EmptyView()
+            } else if let c = model.genericCommand {
                 GenericCommandForm(model: model, command: c)
             } else {
-                VStack(alignment: .leading, spacing: Self.rowGap) { rows }
-                    .padding(VFSpace.l)
-                Divider()
-                HStack(spacing: VFSpace.s) {
-                    Button { model.cancelTool() } label: { Text("Cancel").frame(maxWidth: .infinity) }
-                        .buttonStyle(.bordered)
-                        .keyboardShortcut(.cancelAction)
-                    Button { ok() } label: { Text("Done").frame(maxWidth: .infinity) }
-                        .keyboardShortcut(.defaultAction).buttonStyle(.vfPrimary)
+                VStack(alignment: .leading, spacing: Self.rowGap) {
+                    if FeatureOptions.tools.contains(session.tool) {
+                        FeatureDialogFields(model: model, session: session, labelWidth: Self.labelWidth,
+                                            valueFocus: $valueFocused, onValueReturn: Self.endFieldEditing)
+                    } else {
+                        rows
+                    }
                 }
-                .padding(Self.footerInset)
+                .font(FusionTokens.header)
+                .controlSize(.small)
+                .padding(.horizontal, VFSpace.m)
+                .padding(.vertical, VFSpace.s)
+                // Fusion's footer: (i) at the left, OK and Cancel at the right; OK greyed until
+                // the required inputs are set.
+                let missing = Self.missing(model)
+                HStack(spacing: VFSpace.s) {
+                    Image(systemName: "info.circle.fill").font(VFFont.glyph(11)).foregroundStyle(theme.fusion.ink)
+                        .help(missing ?? String(localized: "Return accepts, Escape cancels."))
+                        .accessibilityLabel("Help")
+                    Spacer(minLength: 0)
+                    Button { ok() } label: { Text("OK").frame(minWidth: 44) }
+                        .keyboardShortcut(valueFocused ? nil : .defaultAction)
+                        .disabled(missing != nil)
+                        .help(missing ?? String(localized: "Accept (Return)"))
+                    Button { close() } label: { Text("Cancel").frame(minWidth: 44) }
+                        .keyboardShortcut(.cancelAction)
+                }
+                .controlSize(.small)
+                .buttonStyle(.bordered)
+                .padding(.horizontal, VFSpace.m)
+                .padding(.vertical, VFSpace.s)
             }
         }
-        .vfSurface(.floating)
+        .background(theme.fusion.card)
+        .overlay(Rectangle().strokeBorder(theme.fusion.line, lineWidth: 1))
+        .modifier(FeatureSessionSync(model: model))
     }
 
-    private var title: String { StageLabels.command(model.genericCommand?.label ?? model.tool.label) }
+    private var title: String {
+        if let e = FeatureSession.of(model).editing { return String(localized: "Edit \(e.name)") }
+        return model.genericCommand?.label ?? model.tool.label
+    }
     private var icon: String { model.genericCommand.map { CommandSymbol.of($0.icon, id: $0.id) } ?? model.tool.symbol }
 
     @ViewBuilder private var rows: some View {
         switch model.tool {
-        case .extrude, .revolve:
-            selectionRow("Profile", model.sketchOpen ? "open sketch" : model.extrudeProfileSummary)
-        case .pressPull, .shell:
-            selectionRow("Faces", "\(model.selection.filter(\.isFace).count) selected")
-        case .fillet, .chamfer:
-            selectionRow("Edges", "\(model.selection.filter(\.isEdge).count) selected")
+        case .pressPull:
+            pickRow("Faces", model.selection.filter(\.isFace).count) { model.selection = []; model.applyPreview() }
         case .move, .mirror:
-            selectionRow("Bodies", "\(model.bodiesInSelection.count) selected")
+            pickRow("Bodies", model.bodiesInSelection.count) { model.selection = []; model.selectedBodies = [] }
         case .box, .cylinder, .sphere, .torus:
             Text("Click in the viewport to place it.").font(.callout).foregroundStyle(theme.inkSecondary)
         default:
             if model.tool.isSketchTool { Text(sketchHint).font(.callout).foregroundStyle(theme.inkSecondary) }
         }
         if let v = model.tool.value {
-            ValueField(label: v.label, unit: v.unit, value: $model.toolValue, step: v.unit == "deg" ? 15 : 1)
-        }
-        if model.tool == .extrude || model.tool == .revolve {
-            Picker("Operation", selection: $model.toolOperation) {
-                Text("Automatic").tag("auto"); Text("New Body").tag("new_body"); Text("Join").tag("join"); Text("Cut").tag("cut"); Text("Intersect").tag("intersect")
+            HStack {
+                Text(v.label).font(.callout).foregroundStyle(theme.inkSecondary)
+                Spacer(minLength: 0)
+                NumberField(v.label, value: $model.toolValue, unit: VFUnit(symbol: v.unit), step: v.unit == "deg" ? 15 : 1, width: 82)
+                    .labelHiddenVisually()
+                    .focusBinding($valueFocused)
+                    .submitNext(.done) { Self.endFieldEditing() }
             }
-            .onChange(of: model.toolOperation) { _, _ in model.applyPreview() }
-        }
-        if model.tool == .revolve {
-            Picker("Axis", selection: $model.revolveAxis) {
-                Text("Sketch X").tag("x"); Text("Sketch Y").tag("y"); Text("X").tag("X"); Text("Y").tag("Y"); Text("Z").tag("Z")
-            }
-            .onChange(of: model.revolveAxis) { _, _ in model.applyPreview() }
         }
         if model.tool == .move {
-            HStack {
-                ForEach(0..<3, id: \.self) { i in
-                    NumberField(String(localized: "Move \(["X", "Y", "Z"][i])"),
-                                value: Binding(get: { model.moveVector[i] }, set: { model.moveVector[i] = $0 }),
-                                unit: .length)
-                }
-            }
+            MoveDialogRows(session: FeatureSession.of(model), labelWidth: Self.labelWidth)
         }
         if model.tool == .mirror {
             Picker("Plane", selection: $model.mirrorPlane) { ForEach(["XY", "XZ", "YZ"], id: \.self) { Text($0) } }.pickerStyle(.segmented)
@@ -586,30 +603,51 @@ struct CommandDialog: View {
         }
     }
 
-    private func selectionRow(_ label: String, _ value: String) -> some View {
-        HStack {
-            Text(label).font(.callout).foregroundStyle(theme.inkSecondary).frame(width: Self.labelWidth, alignment: .leading)
-            Image(systemName: "cursorarrow.click").foregroundStyle(theme.accentText)
-            Text(value).font(.callout)
-        }
+    private func pickRow(_ label: String, _ count: Int, clear: @escaping () -> Void) -> some View {
+        let l = String(localized: String.LocalizationValue(label))
+        return SelectionButtonRow(label: l, text: count == 0 ? String(localized: "Select") : String(localized: "\(count) selected"),
+                                  count: count, active: count == 0, labelWidth: Self.labelWidth, activate: {}, clear: clear)
     }
 
     private func ok() { Self.finish(model) }
 
-    /// What Done does for the running command, from the dialog or the ribbon.
+    /// Return in a field: the field has committed; leave it, so the next Return accepts.
+    static func endFieldEditing() {
+        NSApp.keyWindow?.makeFirstResponder(nil)
+    }
+
+    /// What the running command still needs before OK, or nil.
+    static func missing(_ model: DesignModel) -> String? {
+        if model.genericCommand != nil { return nil }
+        return FeatureSession.of(model).missingInput()
+    }
+
+    /// OK can run now (for the dialog, the ribbon's Done and the marking menu).
+    static func canFinish(_ model: DesignModel) -> Bool {
+        model.genericCommand == nil && model.tool != .select && missing(model) == nil
+    }
+
+    /// What OK does for the running command, from the dialog, the ribbon or the marking menu.
     static func finish(_ model: DesignModel) {
         if model.genericCommand != nil { return }
+        if let why = missing(model) {
+            model.flash(why, error: true)
+            return
+        }
         switch model.tool {
-        case .move: model.moveSelected(); model.tool = .select
+        case .move: FeatureSession.of(model).commitMove()
         case .mirror: model.mirrorSelected(); model.tool = .select
         case .line, .spline: model.endChain(); model.tool = .select
-        default: if model.hasPreview { model.commitTool() } else { model.tool = .select }
+        default: FeatureSession.of(model).commit()
         }
     }
 
-    private func close() {
-        if model.genericCommand != nil { model.genericCommand = nil } else { model.cancelTool() }
+    /// Cancel: the preview (or the edit) goes back and the tool ends.
+    static func cancel(_ model: DesignModel) {
+        if model.genericCommand != nil { model.genericCommand = nil } else { FeatureSession.of(model).cancel() }
     }
+
+    private func close() { Self.cancel(model) }
 }
 
 // MARK: Navigation bar and timeline
@@ -659,7 +697,13 @@ struct TimelineBar: View {
     @Environment(\.viaFormTheme) private var theme
     let model: DesignModel
 
+    @State private var editing: FeatureEditRequest?
+
     var body: some View {
+        content.sheet(item: $editing) { r in EditFeatureSheet(model: model, feature: r.feature) }
+    }
+
+    @ViewBuilder private var content: some View {
         HStack(spacing: VFSpace.m) {
             HStack(spacing: VFSpace.xxs) {
                 control("backward.end.fill") { model.rollTimeline(to: 0) }
@@ -681,6 +725,7 @@ struct TimelineBar: View {
                                         in: RoundedRectangle(cornerRadius: VFRadius.chip, style: .continuous))
                             .opacity(rolled ? 0.4 : 1)
                             .help("\(f.name) (\(f.type))" + (f.error.map { "\n\($0)" } ?? ""))
+                            .onTapGesture(count: 2) { FeatureEditor.edit(model, feature: f.name) { editing = FeatureEditRequest(feature: f.name) } }
                             .onTapGesture { model.rollTimeline(to: i + 1) }
                             .draggable(f.name)
                             .dropDestination(for: String.self) { names, _ in
@@ -690,7 +735,11 @@ struct TimelineBar: View {
                             }
                             .contextMenu {
                                 Button("Roll History Marker Here") { model.rollTimeline(to: i + 1) }
-                                Button("Edit Feature") { model.run("timeline.edit", ["feature": f.name]) }
+                                if f.type.lowercased() == "sketch", let sk = FeatureEditor.sketchID(model, feature: f.name) {
+                                    SketchTileMenuItems(model: model, sketch: sk)
+                                } else {
+                                    Button("Edit Feature") { FeatureEditor.edit(model, feature: f.name) { editing = FeatureEditRequest(feature: f.name) } }
+                                }
                                 Button("Suppress") { model.run("timeline.suppress", ["feature": f.id]) }
                                 Button("Delete") { model.run("timeline.delete", ["feature": f.id]) }
                             }

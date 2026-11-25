@@ -11,7 +11,14 @@ struct Frame {
     float2 viewport;   // drawable pixels
     float pixelScale;  // drawable pixels per point
     float edgeBias;    // clip-space depth pulled toward the eye for edges
+    float4 clipPlane;  // section: xyz the unit normal, w its offset (dot(n, origin))
+    float clipOn;      // 1 while a section cuts the scene (the positive side is hidden)
 };
+
+/// The section hides what lies on the plane's positive side (the engine's convention).
+static inline bool clipped(constant Frame &frame, float3 world, float tolerance) {
+    return frame.clipOn > 0.5 && dot(frame.clipPlane.xyz, world) - frame.clipPlane.w > tolerance;
+}
 
 struct MeshUniform {
     float4 color;
@@ -26,6 +33,7 @@ struct MeshOut {
     float4 position [[position]];
     float3 normal;
     float3 viewPos;
+    float3 worldPos;
     uint face [[flat]];
 };
 
@@ -39,6 +47,7 @@ vertex MeshOut mesh_vertex(uint vid [[vertex_id]],
     o.position = frame.viewProj * float4(p, 1);
     o.normal = (frame.view * float4(float3(normals[vid]), 0)).xyz;
     o.viewPos = (frame.view * float4(p, 1)).xyz;
+    o.worldPos = p;
     o.face = faces[vid];
     return o;
 }
@@ -46,6 +55,7 @@ vertex MeshOut mesh_vertex(uint vid [[vertex_id]],
 fragment float4 mesh_fragment(MeshOut in [[stage_in]], bool front [[front_facing]],
                               constant Frame &frame [[buffer(0)]],
                               constant MeshUniform &u [[buffer(1)]]) {
+    if (clipped(frame, in.worldPos, 0.0)) discard_fragment();
     float3 n = normalize(in.normal);
     if (!front) n = -n;
     float3 v = normalize(-in.viewPos);
@@ -77,6 +87,7 @@ struct Segment {
 struct LineOut {
     float4 position [[position]];
     float4 color;
+    float3 worldPos;
 };
 
 vertex LineOut line_vertex(uint vid [[vertex_id]], uint iid [[instance_id]],
@@ -102,10 +113,56 @@ vertex LineOut line_vertex(uint vid [[vertex_id]], uint iid [[instance_id]],
     LineOut o;
     o.position = p;
     o.color = s.color;
+    o.worldPos = mix(float3(s.a), float3(s.b), c.x);
     return o;
 }
 
-fragment float4 line_fragment(LineOut in [[stage_in]]) { return in.color; }
+fragment float4 line_fragment(LineOut in [[stage_in]], constant Frame &frame [[buffer(0)]]) {
+    // The section outline sits on the plane, nudged to the kept side: a small tolerance keeps it.
+    if (clipped(frame, in.worldPos, 1e-3)) discard_fragment();
+    return in.color;
+}
+
+// MARK: Section caps
+//
+// Each closed body cut by the section gets a cap where the plane lies inside it: the body is
+// drawn into the stencil only (every surface that survives the clip flips the bit, so an odd
+// count along a pixel's ray means the plane is inside the body there), then a quad on the plane
+// draws where the bit is set, and clears it for the next body.
+
+/// Stencil pass: no colour, just the clip.
+fragment void clip_mask_fragment(MeshOut in [[stage_in]], constant Frame &frame [[buffer(0)]]) {
+    if (clipped(frame, in.worldPos, 0.0)) discard_fragment();
+}
+
+struct CapOut {
+    float4 position [[position]];
+};
+
+vertex CapOut cap_vertex(uint vid [[vertex_id]],
+                         const device packed_float3 *corners [[buffer(0)]],
+                         constant Frame &frame [[buffer(1)]]) {
+    CapOut o;
+    o.position = frame.viewProj * float4(float3(corners[vid]), 1);
+    return o;
+}
+
+/// The ViaForm section hatch: the body's colour, shaded down, with 45 degree stripes at a fixed
+/// spacing on screen (7 points, 1.6 points wide), so a cut reads the same at every zoom.
+/// `style.x` is 1 for the hatch, 0 for a plain cap.
+fragment float4 cap_fragment(CapOut in [[stage_in]],
+                             constant Frame &frame [[buffer(0)]],
+                             constant float4 &color [[buffer(1)]],
+                             constant float4 &style [[buffer(2)]]) {
+    float3 base = color.rgb * 0.62;
+    if (style.x < 0.5) return float4(base, 1);
+    float2 pt = in.position.xy / max(frame.pixelScale, 1e-3);
+    float spacing = 7.0, width = 1.6;
+    float d = fmod(pt.x + pt.y, spacing);
+    float stripe = 1.0 - smoothstep(width - 0.6, width + 0.6, min(d, spacing - d) * 2.0);
+    float3 ink = color.rgb * 0.95 + 0.05;
+    return float4(mix(base, ink, stripe), 1);
+}
 
 struct BgOut {
     float4 position [[position]];

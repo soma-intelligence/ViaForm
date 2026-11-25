@@ -23,6 +23,12 @@ enum FileActions {
 
     static func open(_ url: URL, _ model: DesignModel) {
         let replaces = ProjectFiles.isProject(url) || !ProjectFiles.knownInserts.contains(url.pathExtension.lowercased())
+        // M-20: a project or design opens in its own tab when this window already holds work.
+        if replaces && DocTabs.wantsNewTab(model) {
+            NSDocumentController.shared.noteNewRecentDocumentURL(url)
+            DocTabs.openInNewTab(url)
+            return
+        }
         let go = {
             NSDocumentController.shared.noteNewRecentDocumentURL(url)
             ProjectFiles.open(url, design: model, in: ProjectFiles.context(for: model))
@@ -61,7 +67,7 @@ enum FileActions {
                 ok = await saveDesign(model, command ?? "file.save", path: url.path)
                 if ok, let c {
                     if command == "file.save_as" { c.flow.adoptDocument(url.path) }
-                    ProjectFiles.markSaved(c, at: marks)
+                    ProjectFiles.markSaved(c, at: DocTabs.savedMarks(marks, c))
                 }
             }
             report(ok, c: c, url: url, design: model, again: { write(url, model, command: command, then: done) }, then: done)
@@ -100,6 +106,8 @@ enum FileActions {
     }
 
     static func newDesign(_ model: DesignModel) {
+        // M-20: a new design gets its own tab unless this window is still blank.
+        if DocTabs.wantsNewTab(model) { DocTabs.newTab(); return }
         ProjectGuard.confirmDiscard(model, verb: String(localized: "New Design")) {
             ProjectFiles.newDesign(model, in: ProjectFiles.context(for: model))
         }

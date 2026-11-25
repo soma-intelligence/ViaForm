@@ -137,6 +137,24 @@ enum SelfTest {
         for (ok, what) in MainActor.assumeIsolated({ UnitStringsSelfTest.checks() }) { check(ok, what) } // P2-23 unit strings
         for (ok, what) in MainActor.assumeIsolated({ ViewportAccessibilitySelfTest.checks() }) { check(ok, what) }
         for (ok, what) in MainActor.assumeIsolated({ AboutCreditsSelfTest.checks() }) { check(ok, what) } // P3-14 credits
+        // CAD UI gaps (docs/research/cad-ui/gaps.md), 2026-11-24.
+        for (ok, what) in MainActor.assumeIsolated({ SketchSelfTest.checks() }) { check(ok, what) } // B-1 to B-5, B-9
+        for (ok, what) in MainActor.assumeIsolated({ SketchCoreSelfTest.checks() }) { check(ok, what) } // B-6, B-8, B-11, B-12, M-6, M-8, M-9, M-16, T-7, T-8, T-11
+        for (ok, what) in MainActor.assumeIsolated({ ParametersSelfTest.checks() }) { check(ok, what) } // B-10, B-14, M-21
+        for (ok, what) in MainActor.assumeIsolated({ FeatureDialogSelfTest.checks() }) { check(ok, what) } // B-7, M-2, M-4
+        for (ok, what) in MainActor.assumeIsolated({ RenderToolsSelfTest.checks() }) { check(ok, what) } // B-13, B-15
+        for (ok, what) in MainActor.assumeIsolated({ TouchPanelsSelfTest.checks() }) { check(ok, what) } // T-1, T-13, T-14
+        #if os(macOS)
+        for (ok, what) in MainActor.assumeIsolated({ MacChromeSelfTest.checks() }) { check(ok, what) } // M-7, M-12, M-15, M-18, M-19
+        for (ok, what) in MainActor.assumeIsolated({ MacBrowserSelfTest.checks() }) { check(ok, what) } // M-13, M-14
+        for (ok, what) in MainActor.assumeIsolated({ MacSketchUISelfTest.checks() }) { check(ok, what) } // M-1, M-3, M-9, M-10, M-11
+        for (ok, what) in MainActor.assumeIsolated({ MacDocsSelfTest.checks() }) { check(ok, what) } // M-20, sketch ribbon tools
+        #endif
+        #if os(iOS)
+        for (ok, what) in MainActor.assumeIsolated({ TouchChromeSelfTest.checks() }) { check(ok, what) } // T-4, T-5, T-12, T-15
+        for (ok, what) in MainActor.assumeIsolated({ TouchSketchUISelfTest.checks() }) { check(ok, what) } // T-2, T-12, T-14, T-17
+        for (ok, what) in MainActor.assumeIsolated({ TouchSketchToolsSelfTest.checks() }) { check(ok, what) } // B-11 on touch
+        #endif
         #if os(macOS)
         let alertOK = MainActor.assumeIsolated { () -> Bool in
             let a = FileActions.failureAlert(url: URL(fileURLWithPath: "/tmp/x.viaform"), reason: "Disk full")

@@ -25,7 +25,7 @@ struct WorkspaceDropdown: View {
             label(badge)
         }
         .buttonStyle(.plain)
-        .frame(width: 92)
+        .frame(width: short ? 92 : FusionTokens.designBox.width)
         .frame(maxHeight: .infinity)
         .padding(.horizontal, VFSpace.xs)
         .help("Workspaces (Command-0). Command-1 to Command-9 open a stage.")
@@ -59,7 +59,7 @@ struct WorkspaceDropdown: View {
         )
     }
 
-    private func label(_ badge: WorkspaceBadge) -> some View {
+    private func label(_ badge: WorkspaceBadge) -> AnyView {
         let tone = workspace.vfStage
         let content = Group {
             if short {
@@ -71,19 +71,29 @@ struct WorkspaceDropdown: View {
                     chevron
                 }
             } else {
-                VStack(spacing: VFSpace.xxs) {
-                    Image(systemName: workspace.symbol).font(VFFont.glyph(24))
-                        .foregroundStyle(theme.stageFill(tone))
-                        .frame(height: 28)
-                    HStack(spacing: VFSpace.xxs) {
-                        Text(workspace.title.uppercased()).font(VFFont.caps).tracking(VFTypeScale.capsTracking)
-                            .foregroundStyle(theme.ink).lineLimit(1).fixedSize()
-                        chevron
-                    }
+                // Fusion's switcher: the workspace name in capitals and a small triangle, in a
+                // white box spanning the tab row and the panels.
+                HStack(spacing: 3) {
+                    Text(workspace.title.uppercased()).font(FusionTokens.tab.weight(.medium))
+                        .foregroundStyle(theme.fusion.ink).lineLimit(1).fixedSize()
+                    Image(systemName: "arrowtriangle.down.fill").font(VFFont.glyph(5)).foregroundStyle(theme.fusion.ink)
+                        .accessibilityHidden(true)
                 }
             }
         }
-        return content
+        if !short {
+            return AnyView(content
+                .frame(width: FusionTokens.designBox.width, height: FusionTokens.designBox.height)
+                .background(RoundedRectangle(cornerRadius: 3).fill(isOpen || hovered ? theme.fusion.lineSoft : theme.fusion.card))
+                .overlay(RoundedRectangle(cornerRadius: 3).strokeBorder(isOpen ? theme.fusion.blue : theme.fusion.line, lineWidth: 1))
+                .overlay(alignment: .topTrailing) {
+                    WorkspaceBadgeView(badge: badge).offset(x: VFSpace.s, y: -VFSpace.s)
+                }
+                .frame(maxHeight: .infinity)
+                .contentShape(Rectangle())
+                .onHover { hovered = $0 })
+        }
+        return AnyView(content
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .background(
                 RoundedRectangle(cornerRadius: VFRadius.card, style: .continuous)
@@ -98,7 +108,7 @@ struct WorkspaceDropdown: View {
             }
             .padding(.vertical, short ? VFSpace.xs : VFSpace.s)
             .contentShape(Rectangle())
-            .onHover { hovered = $0 }
+            .onHover { hovered = $0 })
     }
 
     private var chevron: some View {

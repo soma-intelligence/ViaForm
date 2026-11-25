@@ -3,15 +3,23 @@ import SwiftUI
 // Viewport navigation presets (decision D-21) and the first-visit stage introduction
 // (FRONTEND-SPEC 7.7).
 
-/// How the mouse and trackpad move the camera. ViaForm is the default; the others match the
-/// tools people come from, so their hands do not have to relearn.
+/// How the mouse and trackpad move the camera. Fusion is the default on the Mac (M-6): middle drag
+/// pans, Shift middle drag orbits, a double middle click fits, and a left drag on empty canvas
+/// draws a selection box. The others match the tools people come from, so their hands do not
+/// have to relearn.
 enum MousePreset: String, CaseIterable, Identifiable, Sendable {
     case viaform, fusion, blender, onshape
 
     static let storageKey = "viaform.navigation.preset"
     static var current: MousePreset {
-        MousePreset(rawValue: UserDefaults.standard.string(forKey: storageKey) ?? "") ?? .viaform
+        MousePreset(rawValue: UserDefaults.standard.string(forKey: storageKey) ?? "") ?? .standard
     }
+
+    /// The preset a new install starts with.
+    static let standard: MousePreset = .fusion
+
+    /// A double middle click fits the view.
+    var doubleMiddleFits: Bool { self == .fusion || self == .viaform }
 
     var id: String { rawValue }
 
@@ -74,6 +82,7 @@ enum MousePreset: String, CaseIterable, Identifiable, Sendable {
                     ("Two fingers", pan), ("Option or Shift two fingers", orbit)]
         case .fusion:
             return [("Middle drag", pan), ("Shift middle drag", orbit), ("Option drag", orbit), ("Scroll wheel or pinch", zoom),
+                    ("Double middle click", String(localized: "Fit")), ("Left drag on empty canvas", String(localized: "Box select")),
                     ("Two fingers", pan), ("Shift two fingers", orbit)]
         case .blender:
             return [("Middle drag", orbit), ("Shift middle drag", pan), ("Control middle drag", zoom), ("Scroll wheel or pinch", zoom),
@@ -87,7 +96,7 @@ enum MousePreset: String, CaseIterable, Identifiable, Sendable {
 
 /// The Navigation settings pane: preset picker and what each gesture does.
 struct NavigationSettings: View {
-    @AppStorage(MousePreset.storageKey) private var preset = MousePreset.viaform.rawValue
+    @AppStorage(MousePreset.storageKey) private var preset = MousePreset.standard.rawValue
 
     var body: some View {
         Form {
@@ -95,12 +104,12 @@ struct NavigationSettings: View {
                 ForEach(MousePreset.allCases) { Text($0.title).tag($0.rawValue) }
             }
             Section("Gestures") {
-                ForEach(Array((MousePreset(rawValue: preset) ?? .viaform).summary.enumerated()), id: \.offset) { _, row in
+                ForEach(Array((MousePreset(rawValue: preset) ?? .standard).summary.enumerated()), id: \.offset) { _, row in
                     LabeledContent(LocalizedStringKey(row.gesture), value: row.move)
                 }
             }
             Section {
-                Text("Click selects, Shift-click adds, Command-click toggles. A right click without a drag opens the marking menu.")
+                Text("Click selects, Shift-click adds, Command-click toggles. A left drag on empty canvas selects with a box: left to right takes what is inside, right to left what it touches. Press and hold lists what is under the pointer. A right click without a drag opens the marking menu.")
                     .font(VFFont.small)
                     .foregroundStyle(.secondary)
             }
