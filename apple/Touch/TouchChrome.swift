@@ -133,10 +133,16 @@ struct TouchTopCapsule: View {
     @Binding var workspacesOpen: Bool
 
     var body: some View {
-        // Wide first, then Items | History in a menu.
-        ViewThatFits(in: .horizontal) {
-            row(switchInline: true)
-            row(switchInline: false)
+        Group {
+            if compact {
+                compactRow
+            } else {
+                // Wide first, then Items | History in a menu.
+                ViewThatFits(in: .horizontal) {
+                    row(switchInline: true)
+                    row(switchInline: false)
+                }
+            }
         }
         .padding(.horizontal, VFSpace.s)
         .frame(minHeight: 56)
@@ -165,6 +171,44 @@ struct TouchTopCapsule: View {
             TouchJobsButton(flow: flow)
             share
         }
+    }
+
+    /// The iPhone bar fits its width: the stage, the title (it truncates), Undo, Redo, Share
+    /// and one menu with the rest (Browser, Items, History, Commands). Nothing runs off screen.
+    private var compactRow: some View {
+        HStack(spacing: 0) {
+            TouchWorkspaceButton(flow: flow, stage: stage, compact: true, isOpen: $workspacesOpen, open: open)
+            Text(title).font(VFFont.rowEmphasis).foregroundStyle(theme.ink).lineLimit(1).truncationMode(.middle)
+                .padding(.horizontal, VFSpace.s)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .layoutPriority(-1)
+                .accessibilityAddTraits(.isHeader)
+            TouchBarButton(symbol: "arrow.uturn.backward", label: undoLabel, action: undo)
+                .vfDisabled(!undoTarget.canUndo, reason: String(localized: "Nothing to undo in \(stage.title)"))
+            TouchBarButton(symbol: "arrow.uturn.forward", label: String(localized: "Redo"), action: redo)
+                .vfDisabled(!undoTarget.canRedo, reason: String(localized: "Nothing to redo in \(stage.title)"))
+            if !flow.queue.isEmpty { TouchJobsButton(flow: flow) }
+            share
+            moreMenu
+        }
+    }
+
+    private var moreMenu: some View {
+        Menu {
+            Button("Browser", systemImage: "sidebar.left", action: showBrowser)
+            if showsSideSwitch {
+                ForEach(TouchSideCard.allCases) { c in
+                    Button { side = side == c ? nil : c } label: { Label(c.title, systemImage: side == c ? "checkmark" : c.symbol) }
+                }
+            }
+            Divider()
+            Button("Commands", systemImage: "magnifyingglass", action: showPalette)
+        } label: {
+            Image(systemName: "ellipsis.circle").font(VFFont.glyph(19, weight: .medium))
+                .foregroundStyle(side == nil ? theme.ink : theme.accentText)
+                .frame(width: VFSize.touchTarget, height: VFSize.touchTarget).contentShape(Rectangle())
+        }
+        .accessibilityLabel(Text("More"))
     }
 
     private var sideMenu: some View {

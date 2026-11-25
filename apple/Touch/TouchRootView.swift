@@ -454,9 +454,12 @@ struct TouchShell: View {
     /// iPhone and narrow windows: one column, tools in a bottom strip.
     private var compactDesign: some View {
         ZStack {
-            Viewport(model: model, theme: theme.viewportTheme.touchGrid(gridVisible)).ignoresSafeArea()
+            // The sketch's defined state sits beside the cube, under the bar: on the canvas's
+            // top edge it ran under the Dynamic Island.
+            Viewport(model: model, theme: theme.viewportTheme.touchGrid(gridVisible), sketchStatus: false).ignoresSafeArea()
             VStack(spacing: VFSpace.m) {
-                HStack {
+                HStack(alignment: .top) {
+                    if model.sketchOpen { SketchStateBadge(model: model) }
                     Spacer()
                     ViewCube(model: model, size: 70)
                 }

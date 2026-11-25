@@ -403,10 +403,15 @@ struct TouchToolColumn: View {
                         .scrollBounceBehavior(.basedOnSize)
                 }
             } else {
-                ScrollView(.horizontal, showsIndicators: false) {
-                    HStack(spacing: VFSpace.xxs) { rows(items) }.padding(VFSpace.s)
+                // Spread across the strip when the tools fit; otherwise they scroll and the next
+                // tile peeks at the edge.
+                ViewThatFits(in: .horizontal) {
+                    HStack(spacing: VFSpace.xxs) { rows(items) }.padding(VFSpace.s).frame(maxWidth: .infinity)
+                    ScrollView(.horizontal, showsIndicators: false) {
+                        HStack(spacing: VFSpace.xxs) { rows(items) }.padding(VFSpace.s)
+                    }
+                    .scrollBounceBehavior(.basedOnSize)
                 }
-                .scrollBounceBehavior(.basedOnSize)
             }
         }
         // The reference's column floats on the canvas with no card; the iPhone strip keeps one.
@@ -553,8 +558,32 @@ struct TouchColumnRowLabel: View {
     var compact = false
 
     var body: some View {
+        if compact { tile } else { row }
+    }
+
+    /// The iPhone strip: the icon over a one-line name, as a tab bar reads, so five tools fit
+    /// the width and the next one peeks at the edge. The subtitle (the group's mode) is spoken.
+    private var tile: some View {
         let ink = item.active ? theme.onAccent : (item.destructive ? theme.danger : theme.ink)
-        HStack(spacing: VFSpace.m) {
+        return VStack(spacing: VFSpace.xxs) {
+            Group {
+                if let t = item.tool { ToolChipIcon(tool: t, size: 22) }
+                else { Image(systemName: item.symbol).font(VFFont.glyph(20, weight: .medium)) }
+            }
+            .frame(width: 28, height: 28)
+            Text(item.kind == .exitSketch ? String(localized: "Finish") : item.title)
+                .font(VFFont.micro.weight(.semibold)).lineLimit(1).minimumScaleFactor(0.75)
+        }
+        .foregroundStyle(ink)
+        .padding(.horizontal, VFSpace.xxs)
+        .frame(width: 66, height: 58)
+        .background(item.active ? theme.accent : .clear, in: RoundedRectangle(cornerRadius: VFRadius.card, style: .continuous))
+        .contentShape(Rectangle())
+    }
+
+    private var row: some View {
+        let ink = item.active ? theme.onAccent : (item.destructive ? theme.danger : theme.ink)
+        return HStack(spacing: VFSpace.m) {
             Group {
                 if let t = item.tool { ToolChipIcon(tool: t, size: 20) }
                 else { Image(systemName: item.symbol).font(VFFont.glyph(18, weight: .medium)) }
@@ -567,11 +596,11 @@ struct TouchColumnRowLabel: View {
                         .lineLimit(1).minimumScaleFactor(0.8)
                 }
             }
-            if !compact { Spacer(minLength: 0) }
+            Spacer(minLength: 0)
         }
         .foregroundStyle(ink)
         .padding(.horizontal, VFSpace.m)
-        .frame(minWidth: compact ? 96 : nil, maxWidth: compact ? nil : .infinity, minHeight: VFSize.touchTarget, alignment: .leading)
+        .frame(maxWidth: .infinity, minHeight: VFSize.touchTarget, alignment: .leading)
         .background(item.active ? theme.accent : .clear, in: RoundedRectangle(cornerRadius: VFRadius.card, style: .continuous))
         .contentShape(Rectangle())
     }
