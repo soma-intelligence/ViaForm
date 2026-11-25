@@ -26,6 +26,21 @@ enum RenderToolsSelfTest {
             out.append((stale.resolved(in: m.scene) == nil, "Highlight drops an edge the chamfer took away"))
         }
 
+        // View cube: a bevelled cube (6 faces, 12 edge strips, 8 corners). Square on to the top
+        // it still shows its bevel round the face; the middle picks Top, the iso view's middle
+        // picks the corner.
+        do {
+            var top = OrbitCamera()
+            top.standard(.top)
+            let shownTop = ViewCube.visible(camera: top, size: 96)
+            let mid = CGPoint(x: 48, y: 48)
+            let iso = OrbitCamera()
+            out.append((ViewCube.regions.count == 26 && shownTop.count == 9 && ViewCube.region(at: mid, camera: top, size: 96)?.view == .top,
+                        "View cube: 26 facets, the top view shows the face and its bevel (\(shownTop.count) facets) and picks Top"))
+            let corner = ViewCube.region(at: mid, camera: iso, size: 96)
+            out.append((corner?.id == "corner1-11", "View cube: the home view's middle is the front right top corner (\(corner?.id ?? "none"))"))
+        }
+
         // Handles: a drag along the arrow maps to millimetres, snapped.
         var cam = OrbitCamera()
         cam.target = .zero
