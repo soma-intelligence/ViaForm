@@ -32,6 +32,67 @@ enum Pick: Equatable {
     }
 
     var points: [Double] { [point.x, point.y, point.z] }
+
+    /// The same face or edge in `scene`, found again by the point the pick landed on. A pick
+    /// names a face or edge by its index in the scene it was made on; a preview or a rebuild
+    /// renumbers them, and the old index then names another face or edge (a chamfer preview
+    /// lit a different edge). Nil when the point is on no face or edge any more (the preview
+    /// rounded that edge away).
+    func resolved(in scene: SceneData) -> Pick? {
+        let tol = Float(max(0.005, Double(scene.radius) * 1e-5))
+        let q = SIMD3<Float>(point)
+        switch self {
+        case let .edge(m, e, p):
+            func near(_ line: [SIMD3<Float>]) -> Bool {
+                guard line.count > 1 else { return false }
+                for i in 0..<(line.count - 1) where Self.distance(q, line[i], line[i + 1]) <= tol { return true }
+                return false
+            }
+            if m < scene.meshes.count, e < scene.meshes[m].edges.count, near(scene.meshes[m].edges[e]) { return self }
+            for (mi, mesh) in scene.meshes.enumerated() {
+                if let ei = mesh.edges.firstIndex(where: near) { return .edge(mesh: mi, edge: ei, point: p) }
+            }
+            return nil
+        case let .face(m, f, p, n):
+            func faceAt(_ mesh: SceneData.Mesh, only: UInt32?) -> UInt32? {
+                guard q.x >= mesh.lo.x - tol, q.y >= mesh.lo.y - tol, q.z >= mesh.lo.z - tol,
+                      q.x <= mesh.hi.x + tol, q.y <= mesh.hi.y + tol, q.z <= mesh.hi.z + tol else { return nil }
+                for t in 0..<min(mesh.triFace.count, mesh.indices.count / 3) {
+                    if let only, mesh.triFace[t] != only { continue }
+                    let a = mesh.positions[Int(mesh.indices[3 * t])]
+                    let b = mesh.positions[Int(mesh.indices[3 * t + 1])]
+                    let c = mesh.positions[Int(mesh.indices[3 * t + 2])]
+                    if Self.onTriangle(q, a, b, c, tol: tol) { return mesh.triFace[t] }
+                }
+                return nil
+            }
+            if m < scene.meshes.count, faceAt(scene.meshes[m], only: f) != nil { return self }
+            for (mi, mesh) in scene.meshes.enumerated() {
+                if let g = faceAt(mesh, only: nil) { return .face(mesh: mi, face: g, point: p, normal: n) }
+            }
+            return nil
+        }
+    }
+
+    /// Distance from `p` to the segment `a`-`b`.
+    private static func distance(_ p: SIMD3<Float>, _ a: SIMD3<Float>, _ b: SIMD3<Float>) -> Float {
+        let ab = b - a
+        let l = simd_length_squared(ab)
+        let t = l > 0 ? simd_clamp(simd_dot(p - a, ab) / l, 0, 1) : 0
+        return simd_distance(p, a + ab * t)
+    }
+
+    /// `p` lies on the triangle, within `tol` of its plane and inside its edges.
+    private static func onTriangle(_ p: SIMD3<Float>, _ a: SIMD3<Float>, _ b: SIMD3<Float>, _ c: SIMD3<Float>, tol: Float) -> Bool {
+        let n = simd_cross(b - a, c - a)
+        let len = simd_length(n)
+        guard len > 0 else { return false }
+        let u = n / len
+        guard abs(simd_dot(p - a, u)) <= tol else { return false }
+        // Inside, or within tol of an edge (a point picked right on a face's border).
+        let inside = simd_dot(simd_cross(b - a, p - a), u) >= 0 && simd_dot(simd_cross(c - b, p - b), u) >= 0 && simd_dot(simd_cross(a - c, p - c), u) >= 0
+        return inside || distance(p, a, b) <= tol || distance(p, b, c) <= tol || distance(p, c, a) <= tol
+    }
 }
 
 enum ScenePicker {

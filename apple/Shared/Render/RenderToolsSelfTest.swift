@@ -8,6 +8,24 @@ enum RenderToolsSelfTest {
         var out: [(Bool, String)] = []
         let size = CGSize(width: 800, height: 600)
 
+        // Highlight: a pick is found again by its point after the scene renumbers its edges
+        // (a chamfer preview lit another edge on the iPad).
+        do {
+            let m = DesignModel()
+            m.run("file.new", quiet: true)
+            m.run("solid.box", ["length": 30, "width": 20, "height": 20, "corner": [0, 0, 0]], quiet: true)
+            let point = SIMD3<Double>(15, 0, 20)
+            let edges = m.scene.meshes.first?.edges ?? []
+            let right = edges.firstIndex { l in l.contains { abs($0.y) < 1e-3 && abs($0.z - 20) < 1e-3 } && l.count > 1 && abs(l[0].x - l[l.count - 1].x) > 1 } ?? -1
+            let wrong = right == 0 ? 1 : 0
+            let stale = Pick.edge(mesh: 0, edge: wrong, point: point)
+            let found = stale.resolved(in: m.scene)
+            out.append((right >= 0 && found == .edge(mesh: 0, edge: right, point: point),
+                        "Highlight follows a stale edge pick to the edge under its point (edge \(right), got \(String(describing: found)))"))
+            m.run("solid.chamfer", ["edges": [[15, 0, 20]], "distance": 2], quiet: true)
+            out.append((stale.resolved(in: m.scene) == nil, "Highlight drops an edge the chamfer took away"))
+        }
+
         // Handles: a drag along the arrow maps to millimetres, snapped.
         var cam = OrbitCamera()
         cam.target = .zero

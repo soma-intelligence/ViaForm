@@ -376,7 +376,8 @@ final class DesignModel {
 
     private func pushHighlight() {
         var h = Highlight()
-        for p in selection {
+        // Lit by where each pick landed: a preview renumbers the faces and edges (see `resolved`).
+        for p in selection.compactMap({ $0.resolved(in: scene) }) {
             switch p {
             case let .face(m, f, _, _): h.faces[m, default: []].append(Int(f))
             case let .edge(m, e, _): h.edges[m, default: []].append(e)
