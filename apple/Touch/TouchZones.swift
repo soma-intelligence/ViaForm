@@ -293,7 +293,7 @@ struct TouchSnapRail: View {
             .accessibilityLabel(Text("Grid"))
             .accessibilityValue(gridVisible ? String(localized: "Shown, \(VFFormat.length(model.gridStep)) squares") : String(localized: "Hidden"))
             Menu {
-                Button("Home View", systemImage: "house") { model.setView(.iso) }
+                Button("Home View", systemImage: "house") { model.flyTo(.iso) }
                 Toggle("Perspective", isOn: $perspective)
                 Button("Zoom to Fit", systemImage: "arrow.up.left.and.down.right.magnifyingglass") { model.zoomToFit() }
                 if model.selection.contains(where: \.isFace) {
@@ -301,7 +301,7 @@ struct TouchSnapRail: View {
                 }
                 Section("Views") {
                     ForEach(StandardView.allCases, id: \.self) { v in
-                        Button(v == .iso ? String(localized: "Isometric") : v.rawValue.capitalized) { model.setView(v) }
+                        Button(v == .iso ? String(localized: "Isometric") : v.rawValue.capitalized) { model.flyTo(v) }
                     }
                 }
                 Picker(selection: Binding(get: { model.selectionFilter }, set: { model.selectionFilter = $0 })) {

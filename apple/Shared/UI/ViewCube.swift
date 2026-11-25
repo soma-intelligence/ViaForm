@@ -164,7 +164,7 @@ struct ViewCube: View {
         .accessibilityHint(Text("Choose a standard view from the actions"))
         .accessibilityActions {
             ForEach(StandardView.allCases, id: \.self) { v in
-                Button(v == .iso ? String(localized: "Home view") : String(localized: "\(v.rawValue.capitalized) view")) { model.setView(v) }
+                Button(v == .iso ? String(localized: "Home view") : String(localized: "\(v.rawValue.capitalized) view")) { model.flyTo(v) }
             }
         }
         .onContinuousHover { phase in
@@ -207,12 +207,12 @@ struct ViewCube: View {
         let py = -(Double(p.y) - c) / s - simd_dot(n * 0.5, u)
         let m00 = simd_dot(a, r), m01 = simd_dot(b, r), m10 = simd_dot(a, u), m11 = simd_dot(b, u)
         let det = m00 * m11 - m01 * m10
-        guard abs(det) > 1e-6 else { model.setView(f.view); return }
+        guard abs(det) > 1e-6 else { model.flyTo(f.view); return }
         let alpha = (px * m11 - m01 * py) / det, beta = (m00 * py - px * m10) / det
         var dir = n
         if abs(alpha) > 0.3 { dir += a * (alpha > 0 ? 1 : -1) }
         if abs(beta) > 0.3 { dir += b * (beta > 0 ? 1 : -1) }
-        if dir == n { model.setView(f.view) } else { model.look(along: simd_normalize(dir)) }
+        if dir == n { model.flyTo(f.view) } else { model.fly(along: simd_normalize(dir)) }
     }
 
     private func face(at p: CGPoint, _ shown: [(Face, [CGPoint])]) -> StandardView? {
@@ -236,10 +236,9 @@ enum ViewCubeHome {
 
     static func go(_ model: DesignModel) {
         if let home = homes[ObjectIdentifier(model)] {
-            model.camera = home
-            model.cameraChanged(final: true)
+            model.fly(to: home)
         } else {
-            model.setView(.iso)
+            model.flyTo(.iso)
         }
     }
 
@@ -249,7 +248,6 @@ enum ViewCubeHome {
               let c = r["camera"], let data = try? JSONSerialization.data(withJSONObject: c),
               var cam = try? JSONDecoder().decode(OrbitCamera.self, from: data) else { return }
         cam.up = model.camera.up
-        model.camera = cam
-        model.cameraChanged(final: true)
+        model.fly(to: cam)
     }
 }

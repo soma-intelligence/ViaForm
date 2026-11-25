@@ -123,6 +123,7 @@
 		63F59E9C12B9AB951DDB1EA9 /* StageDetail.swift in Sources */ = {isa = PBXBuildFile; fileRef = F9540445BAD1E9E04CEA3584 /* StageDetail.swift */; };
 		64CD2BBD8D38E7BE142B57D7 /* TouchPCBView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D08BF28BFF34B87DB2D1D583 /* TouchPCBView.swift */; };
 		6579B17DCCDBF8343189D8A8 /* WorkspaceMenu.swift in Sources */ = {isa = PBXBuildFile; fileRef = 30C8517A3E37CC7D5C50C5FA /* WorkspaceMenu.swift */; };
+		6628EEA6FE380B48C97E14DF /* CameraFlight.swift in Sources */ = {isa = PBXBuildFile; fileRef = E4B7A201EE1C12E3E76D9CE9 /* CameraFlight.swift */; };
 		66D3C2AFE3674E704DE7C8A7 /* BomView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1E5D5350203B9FB4524480A8 /* BomView.swift */; };
 		68DE2AE77FE06DCDB0BF4004 /* Engine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 340F971B7B7DB71EFE71A3AC /* Engine.swift */; };
 		69925C02D3FA537217239D41 /* BomModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = E1C6E78CCAA984C21A0C131E /* BomModel.swift */; };
@@ -295,6 +296,7 @@
 		F0BDD223164E33D60E65EBD8 /* VFFormat.swift in Sources */ = {isa = PBXBuildFile; fileRef = 27BF97E5EDE4A9B8609D480D /* VFFormat.swift */; };
 		F0C7A101C620CAFD938BC516 /* ViewportAccessibility.swift in Sources */ = {isa = PBXBuildFile; fileRef = F4A77374ED99614E8009ED99 /* ViewportAccessibility.swift */; };
 		F2572DB21C6B75A560C993CC /* DocTabs.swift in Sources */ = {isa = PBXBuildFile; fileRef = FD29EAD46F48E0E4F2013803 /* DocTabs.swift */; };
+		F2D5FFD6304BA4820FC86DAC /* CameraFlight.swift in Sources */ = {isa = PBXBuildFile; fileRef = E4B7A201EE1C12E3E76D9CE9 /* CameraFlight.swift */; };
 		F343613AD107424661B185C8 /* TouchChrome.swift in Sources */ = {isa = PBXBuildFile; fileRef = 036AE9C7561FD5F04F4EA6E3 /* TouchChrome.swift */; };
 		F437ABD9342C83057AE58899 /* PCBEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 91C036D6015EFE2DDF1E3A0F /* PCBEngine.swift */; };
 		F482F6BE6603B99E23193703 /* WorkspaceMenu.swift in Sources */ = {isa = PBXBuildFile; fileRef = 30C8517A3E37CC7D5C50C5FA /* WorkspaceMenu.swift */; };
@@ -496,6 +498,7 @@
 		E0E8DD897A03D204970DD017 /* SketchConstraints.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SketchConstraints.swift; sourceTree = "<group>"; };
 		E1C6E78CCAA984C21A0C131E /* BomModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BomModel.swift; sourceTree = "<group>"; };
 		E325639CD6C7A3355D3C095C /* ElectronicsOverlays.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ElectronicsOverlays.swift; sourceTree = "<group>"; };
+		E4B7A201EE1C12E3E76D9CE9 /* CameraFlight.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraFlight.swift; sourceTree = "<group>"; };
 		E82DD3CDC34A46978E781EFF /* DeskPCBView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeskPCBView.swift; sourceTree = "<group>"; };
 		EBAFC253B7A42923CFA29A47 /* SafetyBar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SafetyBar.swift; sourceTree = "<group>"; };
 		ED9E5523A3527309616135D7 /* SketchDrawing.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SketchDrawing.swift; sourceTree = "<group>"; };
@@ -801,6 +804,7 @@
 		D7810C224D88BED3FE789EBF /* Model */ = {
 			isa = PBXGroup;
 			children = (
+				E4B7A201EE1C12E3E76D9CE9 /* CameraFlight.swift */,
 				AC71EA0E9ACCEFAD1EEB0E21 /* DesignInteractions.swift */,
 				AB1FBA106ED4B32C213038A7 /* DesignModel.swift */,
 				0BB8B8615B673902A605B1E8 /* FeatureSession.swift */,
@@ -1046,6 +1050,7 @@
 				88AA1B027D873DF12C8C849E /* BomSelfTest.swift in Sources */,
 				AC078529EF3F007CED72EE0B /* BomSnapshot.swift in Sources */,
 				66D3C2AFE3674E704DE7C8A7 /* BomView.swift in Sources */,
+				6628EEA6FE380B48C97E14DF /* CameraFlight.swift in Sources */,
 				0F74FDFC8AF32599E4450DFD /* CommandIcon.swift in Sources */,
 				84838198DA0E65F9CBCECD87 /* CommonViews.swift in Sources */,
 				77C9C1AE9F85AB273C5BC4A1 /* ConstructForm.swift in Sources */,
@@ -1213,6 +1218,7 @@
 				8B9AF8C706C97D9970BF2D55 /* BomSnapshot.swift in Sources */,
 				6B399A93AACBD2BBC530BA8A /* BomView.swift in Sources */,
 				5433BD75576A4347947609E2 /* BrowserSidebar.swift in Sources */,
+				F2D5FFD6304BA4820FC86DAC /* CameraFlight.swift in Sources */,
 				200615E082B8AE2391FE4018 /* CommandIcon.swift in Sources */,
 				A0DD42C4FFA33E9BEA649C5B /* CommandPalette.swift in Sources */,
 				D8675E5AC73086D322BF07C9 /* CommonViews.swift in Sources */,
