@@ -907,7 +907,10 @@ enum SceneWorker {
     static let threshold = 0.004
 
     static func wantsBackground(lastSeconds: Double) -> Bool {
-        if ProcessInfo.processInfo.arguments.contains("--sync-scene") { return false }
+        // The self tests click right after each change and read the scene at once: a slow
+        // machine (the simulator) must not move their builds to the worker.
+        let args = ProcessInfo.processInfo.arguments
+        if args.contains("--sync-scene") || args.contains("--selftest") { return false }
         if ProcessInfo.processInfo.arguments.contains("--async-scene") { return true }
         return lastSeconds > threshold
     }
