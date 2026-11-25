@@ -250,9 +250,7 @@ struct FeatureDialogFields: View {
                     Toggle(name, isOn: Binding(
                         get: { session.options.targets.isEmpty || session.options.targets.contains(name) },
                         set: { on in session.options.targets = Self.targets(session.options.targets, all: bodies, name: name, on: on) }))
-                        #if os(macOS)
-                        .toggleStyle(.checkbox)
-                        #endif
+                        .toggleStyle(.vfCheck)
                         .font(touch ? VFFont.row : .callout)
                         .frame(minHeight: touch ? VFSize.touchTarget : nil)
                 }
@@ -280,6 +278,7 @@ struct FeatureDialogFields: View {
 
     private func toggle(_ label: String, _ isOn: Binding<Bool>) -> some View {
         Toggle(label, isOn: isOn)
+            .toggleStyle(.vfSwitch)
             .font(touch ? VFFont.row : .callout)
             .foregroundStyle(theme.ink)
             .frame(minHeight: touch ? VFSize.touchTarget : nil)
@@ -289,14 +288,12 @@ struct FeatureDialogFields: View {
         if touch && items.count <= 3 {
             VStack(alignment: .leading, spacing: VFSpace.xxs) {
                 Text(label).font(VFFont.small).foregroundStyle(theme.inkSecondary)
-                Picker(label, selection: selection) { ForEach(items, id: \.self) { Text(title($0)).tag($0) } }
-                    .pickerStyle(.segmented).labelsHidden()
+                VFSegmented(label, selection: selection, items: items, title: title)
                     .frame(minHeight: VFSize.touchTarget)
             }
         } else {
             row(label) {
-                Picker(label, selection: selection) { ForEach(items, id: \.self) { Text(title($0)).tag($0) } }
-                    .pickerStyle(.menu).labelsHidden().fixedSize()
+                VFMenuPicker(label, selection: selection, items: items, title: title)
             }
         }
     }
@@ -395,9 +392,11 @@ struct MoveDialogRows: View {
                     }
                 }
                 Toggle("Set Pivot", isOn: Binding(get: { session.move?.editingPivot ?? false }, set: { session.move?.editingPivot = $0 }))
+                    .toggleStyle(.vfSwitch)
                     .font(touch ? VFFont.row : .callout)
                     .frame(minHeight: touch ? VFSize.touchTarget : nil)
                 Toggle("Create Copy", isOn: Binding(get: { session.move?.copy ?? false }, set: { session.move?.copy = $0 }))
+                    .toggleStyle(.vfSwitch)
                     .font(touch ? VFFont.row : .callout)
                     .frame(minHeight: touch ? VFSize.touchTarget : nil)
             }

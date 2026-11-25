@@ -59,6 +59,7 @@
 		2486103EAA2565E92EA0171D /* StepUndo.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6DE57527FDB6E3599963E1E6 /* StepUndo.swift */; };
 		248F08F3776E38C4DEF796E2 /* AssembleScene.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6521408DCC9EB4E95F5402BD /* AssembleScene.swift */; };
 		276B9F58652CD6E29B45FEF5 /* LibraryEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = F6F39F931A750D8FB4424A5A /* LibraryEngine.swift */; };
+		27C696281C4D2802BAE31136 /* ShaprControls.swift in Sources */ = {isa = PBXBuildFile; fileRef = 243C9CB8898B37C7D9531350 /* ShaprControls.swift */; };
 		28B4AD1D41BD18F50702B973 /* MassPropertiesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BE801A39AAA7F541B41218ED /* MassPropertiesView.swift */; };
 		2A3555426DB19017AC316DB9 /* SBar.swift in Sources */ = {isa = PBXBuildFile; fileRef = 229B7D6D06182084C92BB239 /* SBar.swift */; };
 		2A3F5D455070A65A1C6AFFD7 /* Localizable.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = 745D83EC2D8B367AF2C4D43E /* Localizable.xcstrings */; };
@@ -263,6 +264,7 @@
 		D3EE8A3C3C6BF6D6CED784E0 /* InspectorPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3C631454225F4CE5F91F2235 /* InspectorPanel.swift */; };
 		D3FE12CE344C83E7B6F17AEA /* SketchSelection.swift in Sources */ = {isa = PBXBuildFile; fileRef = CBFE5393C4D3F40064B24E54 /* SketchSelection.swift */; };
 		D5A19D201868F9BD3E45426E /* DeskRootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4703D95C4A9E63AA156A562F /* DeskRootView.swift */; };
+		D5E3F63A4519A6519B15E2FA /* ShaprControls.swift in Sources */ = {isa = PBXBuildFile; fileRef = 243C9CB8898B37C7D9531350 /* ShaprControls.swift */; };
 		D5FEAF7C926A04FD3586CBCC /* AssembleScene.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6521408DCC9EB4E95F5402BD /* AssembleScene.swift */; };
 		D75C2AAD771D48AF6D7F0628 /* AppIcons.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 02026A9A70D2DC6A10CC60AC /* AppIcons.xcassets */; };
 		D8675E5AC73086D322BF07C9 /* CommonViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3AF8D32DFF65087A948E5F3E /* CommonViews.swift */; };
@@ -355,6 +357,7 @@
 		1E5D5350203B9FB4524480A8 /* BomView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BomView.swift; sourceTree = "<group>"; };
 		229B7D6D06182084C92BB239 /* SBar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SBar.swift; sourceTree = "<group>"; };
 		234592B9F6248DFDC2C45FC1 /* GenerateViewport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GenerateViewport.swift; sourceTree = "<group>"; };
+		243C9CB8898B37C7D9531350 /* ShaprControls.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShaprControls.swift; sourceTree = "<group>"; };
 		249981A9858B2A2F57963CF8 /* TouchSketchUI.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TouchSketchUI.swift; sourceTree = "<group>"; };
 		26B01C23D4602757196184E8 /* ThemeScenes.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ThemeScenes.swift; sourceTree = "<group>"; };
 		27BF97E5EDE4A9B8609D480D /* VFFormat.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VFFormat.swift; sourceTree = "<group>"; };
@@ -714,6 +717,7 @@
 				6A1FBD829EC6856397787B86 /* NumberField.swift */,
 				95AF318A7F3AF353FB2772BD /* PrivacySettings.swift */,
 				EBAFC253B7A42923CFA29A47 /* SafetyBar.swift */,
+				243C9CB8898B37C7D9531350 /* ShaprControls.swift */,
 				975EACD0F5598BBF08997A2F /* UnitSettings.swift */,
 				27BF97E5EDE4A9B8609D480D /* VFFormat.swift */,
 			);
@@ -1110,6 +1114,7 @@
 				5D6290E6060AA58AE7AE75B6 /* SelectionModes.swift in Sources */,
 				F752B643B9D84441CE8ECF3B /* SelfTest.swift in Sources */,
 				41D9885A228D29746933D829 /* Shaders.metal in Sources */,
+				27C696281C4D2802BAE31136 /* ShaprControls.swift in Sources */,
 				EB90358ADA7188FD24C3AE48 /* SimEngine.swift in Sources */,
 				D8F29C4200E236CB2085B008 /* SimModel.swift in Sources */,
 				AC305F811880533C875E2B99 /* SimScene.swift in Sources */,
@@ -1303,6 +1308,7 @@
 				58B34EA80417F674DE7BBC80 /* SelectionModes.swift in Sources */,
 				94383F35D21671DD3A6D569A /* SelfTest.swift in Sources */,
 				5E21203224CEE2558532413E /* Shaders.metal in Sources */,
+				D5E3F63A4519A6519B15E2FA /* ShaprControls.swift in Sources */,
 				8322210442B1B3EEADEB1B15 /* SimEngine.swift in Sources */,
 				455205CE334BD19D66A463AE /* SimModel.swift in Sources */,
 				AEF348860BE8B94BC21DF5E4 /* SimScene.swift in Sources */,

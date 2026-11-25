@@ -198,14 +198,11 @@ struct AssembleInspector: View {
         AsmSection("Joints") {
             ForEach(Array(model.joints.enumerated()), id: \.element.id) { i, j in jointRow(i, j, lockable: true) }
         }
-        Toggle("Keep orientation", isOn: $model.ik.keepOrientation).font(VFFont.row).toggleStyle(.switch).controlSize(.small)
+        Toggle("Keep orientation", isOn: $model.ik.keepOrientation).font(VFFont.row).toggleStyle(.vfSwitch)
         HStack {
             Text("Posture").font(VFFont.row).foregroundStyle(theme.inkSecondary)
             Spacer()
-            Picker("Posture", selection: $model.ik.posture) {
-                ForEach(AssembleModel.Posture.allCases) { Text($0.title).tag($0) }
-            }
-            .labelsHidden().frame(width: 130)
+            VFMenuPicker(String(localized: "Posture"), selection: $model.ik.posture, items: AssembleModel.Posture.allCases) { $0.title }
         }
         Button { model.savePose() } label: { Text("Save Pose").frame(maxWidth: .infinity) }
             .buttonStyle(.vfPrimary)
@@ -228,10 +225,15 @@ struct AssembleInspector: View {
                 HStack {
                     Text("Object").font(VFFont.row).foregroundStyle(theme.inkSecondary)
                     Spacer()
-                    Picker("Object", selection: Binding(get: { model.grasp.shape }, set: { model.grasp.shape = $0; model.setUpGrasp() })) {
-                        Text("Cylinder").tag("cylinder"); Text("Box").tag("box"); Text("Sphere").tag("sphere")
+                    VFMenuPicker(String(localized: "Object"),
+                                 selection: Binding(get: { model.grasp.shape }, set: { model.grasp.shape = $0; model.setUpGrasp() }),
+                                 items: ["cylinder", "box", "sphere"]) { s in
+                        switch s {
+                        case "box": String(localized: "Box")
+                        case "sphere": String(localized: "Sphere")
+                        default: String(localized: "Cylinder")
+                        }
                     }
-                    .labelsHidden().frame(width: 110)
                 }
                 let box = model.grasp.shape == "box"
                 AsmNumberRow(verbatim: box ? String(localized: "X") : String(localized: "Diameter"), model.grasp.size.x, "mm", range: 5...500) { v in
@@ -285,7 +287,7 @@ struct AssembleInspector: View {
                     .frame(minWidth: VFSize.minTarget, minHeight: VFSize.minTarget)
                     .contentShape(Rectangle())
             }
-            .menuStyle(.borderlessButton).menuIndicator(.hidden).fixedSize()
+            .menuStyle(.vfPlain)
             .help("Priority: 1 is solved first")
             .accessibilityLabel(Text("Priority of \(f.title)"))
             .accessibilityValue(Text("\(f.priority)"))

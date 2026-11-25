@@ -67,9 +67,8 @@ struct PipelineOutputs: View {
                 let n = outputs.filter { $0.status == .stale || $0.status == .failed }.count
                 if n > 0 {
                     Button("Update All") { actions.updateAll() }
-                        .buttonStyle(.borderless)
+                        .buttonStyle(.vfGhost(tint: theme.accentText))
                         .font(VFFont.micro.weight(.semibold))
-                        .foregroundStyle(theme.accentText)
                         .help("Rebuild the stale stages, upstream first")
                 }
             }
@@ -274,7 +273,7 @@ struct DesignOutline: View {
                             Button(u) { model.run("document.units", ["units": u]) }.disabled(u == model.snapshot.units)
                         }
                     } label: { Image(systemName: "chevron.up.chevron.down").font(VFFont.glyph(9)) }
-                    .menuStyle(.borderlessButton).menuIndicator(.hidden).fixedSize()
+                    .menuStyle(.vfPlain)
                     .help("Change the design's units")
                     .accessibilityLabel("Change units")
                 }
@@ -736,8 +735,8 @@ struct DesignOutline: View {
                 if renamingView == v.name {
                     VStack(alignment: .leading, spacing: VFSpace.xxs) {
                         TextField("View name", text: $draft)
-                            .textFieldStyle(.roundedBorder)
                             .focused($renameFocused)
+                            .vfField()
                             .onSubmit { commitViewRename() }
                             .onExitCommand { endViewRename() }
                             .onChange(of: draft) { _, _ in renameError = nil }
@@ -796,8 +795,8 @@ struct DesignOutline: View {
                 if renaming == b.name {
                     VStack(alignment: .leading, spacing: VFSpace.xxs) {
                         TextField("Body name", text: $draft)
-                            .textFieldStyle(.roundedBorder)
                             .focused($renameFocused)
+                            .vfField()
                             .onSubmit { commitRename() }
                             .onExitCommand { endRename() }
                             .onChange(of: draft) { _, _ in renameError = nil }

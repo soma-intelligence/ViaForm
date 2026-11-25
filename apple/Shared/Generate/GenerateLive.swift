@@ -132,13 +132,14 @@ struct VariantsForm: View {
                     Toggle(name, isOn: Binding(get: { model.variantMaterials.contains(name) }, set: { on in
                         if on { if !model.variantMaterials.contains(name) { model.variantMaterials.append(name) } } else { model.variantMaterials.removeAll { $0 == name } }
                     }))
+                    .toggleStyle(.vfSwitch)
                 }
                 HStack {
                     ForEach(GenerateModel.Route.allCases) { r in
                         Toggle(r.rawValue, isOn: Binding(get: { model.variantRoutes.contains(r) }, set: { on in
                             if on { model.variantRoutes.insert(r) } else { model.variantRoutes.remove(r) }
                         }))
-                        .toggleStyle(.button)
+                        .toggleStyle(.vfChip)
                     }
                 }
                 HStack {
@@ -203,7 +204,7 @@ struct VariantsForm: View {
                 Toggle("\(Int(f * 100))", isOn: Binding(get: { model.variantFractions.contains(f) }, set: { on in
                     if on { model.variantFractions.append(f); model.variantFractions.sort() } else { model.variantFractions.removeAll { $0 == f } }
                 }))
-                .toggleStyle(.button)
+                .toggleStyle(.vfChip)
                 .font(VFFont.small)
                 .accessibilityLabel(Text("\(Int(f * 100)) percent volume"))
             }

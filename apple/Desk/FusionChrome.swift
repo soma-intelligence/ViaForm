@@ -530,7 +530,7 @@ struct FusionProfileMenu: View {
             Button("Bill of Materials", action: showBom)
             Divider()
             Toggle("SolidWorks extras", isOn: $swExtras)
-            ThemeModePicker()
+            ThemeModePicker(inMenu: true)
         } label: {
             Label("Profile", systemImage: "person.crop.circle.fill")
         }

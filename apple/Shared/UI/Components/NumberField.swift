@@ -222,9 +222,11 @@ struct NumberField: View {
                 Text(text.isEmpty ? " " : text)
                     .font(VFFont.row).monospacedDigit()
                     .foregroundStyle(theme.ink)
-                    .frame(minWidth: width * 1.2, maxWidth: width * 1.4, minHeight: VFSize.touchTarget, alignment: .trailing)
+                    .frame(minWidth: width * 0.9, maxWidth: width * 1.4, minHeight: VFSize.touchTarget, alignment: .trailing)
                     .padding(.horizontal, VFSpace.s)
-                    .vfSurface(.well)
+                    // The Shapr3D field: a grey fill, no border.
+                    .background(RoundedRectangle(cornerRadius: VFRadius.well, style: .continuous)
+                        .fill(theme.ink.opacity(theme.isDark ? 0.10 : 0.05)))
             }
             .buttonStyle(.plain)
             .accessibilityLabel(label.isEmpty ? String(localized: "Value") : label)
@@ -274,7 +276,7 @@ struct NumberField: View {
                     .multilineTextAlignment(.trailing)
                     .monospacedDigit()
                     .font(VFFont.row)
-                    .textFieldStyle(.roundedBorder)
+                    .vfField()
                     .focused($focused)
                     .onSubmit { commit(); onSubmitNext?() }
                     .onChange(of: focusRequest?.wrappedValue ?? false) { _, v in if v, !focused { focused = true } }

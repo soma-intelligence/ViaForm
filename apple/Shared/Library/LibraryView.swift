@@ -18,16 +18,13 @@ struct LibraryView: View {
                 Label("Libraries", systemImage: "books.vertical").font(VFFont.title).foregroundStyle(theme.ink)
                 Spacer()
                 #if os(iOS)
-                Button("Done", action: close).font(VFFont.rowEmphasis).frame(minHeight: VFSize.minTarget)
+                Button("Done", action: close).font(VFFont.rowEmphasis).buttonStyle(.vfGhost(tint: theme.accentText))
                 #else
                 VFIconButton("xmark", label: String(localized: "Close Libraries"), action: close)
                 #endif
             }
             .padding(.horizontal, VFSpace.panelPadding).padding(.top, VFSpace.l)
-            Picker("Section", selection: $model.tab) {
-                ForEach(LibraryModel.Tab.allCases, id: \.self) { Text(LocalizedStringKey($0.rawValue)) }
-            }
-            .pickerStyle(.segmented).labelsHidden()
+            VFSegmented(String(localized: "Section"), selection: $model.tab) { String(localized: String.LocalizationValue($0.rawValue)) }
             .padding(.horizontal, VFSpace.panelPadding).padding(.vertical, VFSpace.m)
             if let m = model.message {
                 InlineError(m, severity: model.messageIsError ? .error : .warning, dismiss: { model.say(nil) })
@@ -93,7 +90,7 @@ private struct LibrarySearchTab: View {
                     let shops = model.sources.filter { $0.searchUrl != nil && $0.enabled }
                     FlowRow(shops) { s in
                         Button(s.name) { Task { if let u = await model.searchPage(s.id) { openURL(u) } } }
-                            .controlSize(.small)
+                            .buttonStyle(.vfSecondary)
                             .help("Opens \(s.name) in the browser; save a part from it with its link below")
                     }
                     .vfDisabled(model.query.trimmingCharacters(in: .whitespaces).isEmpty, reason: String(localized: "Type what to search for first"))
@@ -101,7 +98,7 @@ private struct LibrarySearchTab: View {
                 Section("Save a part from its link") {
                     HStack {
                         TextField("Product link", text: $link, prompt: Text("https://www.amazon.com/dp/…, mcmaster.com/…, aliexpress…"))
-                            .textFieldStyle(.roundedBorder)
+                            .vfField()
                             .onSubmit(paste)
                             #if os(iOS)
                             .keyboardType(.URL)
@@ -109,6 +106,7 @@ private struct LibrarySearchTab: View {
                             .autocorrectionDisabled()
                             #endif
                         Button("Add", action: paste)
+                            .buttonStyle(.vfSecondary)
                             .vfDisabled(link.isEmpty, reason: String(localized: "Paste a product link first"))
                     }
                     Text("Only the text of the link is read: the page is never fetched.").font(VFFont.small).foregroundStyle(theme.inkSecondary)
@@ -225,7 +223,7 @@ private struct LibraryRow: View {
             HStack(spacing: VFSpace.s) {
                 ForEach(item.uses, id: \.self) { u in
                     Button { Task { await model.use(u, of: item, design: design, pcb: pcb) } } label: { Label(LocalizedStringKey(u.label), systemImage: u.symbol) }
-                        .buttonStyle(.borderless).controlSize(.small).font(VFFont.small)
+                        .buttonStyle(.vfGhost(tint: theme.accentText)).font(VFFont.small)
                 }
                 Spacer(minLength: 0)
                 if let u = LibraryModel.web(item.url) {
@@ -287,13 +285,13 @@ private struct LibrarySavedTab: View {
         }
         VStack(spacing: 0) {
             HStack {
-                TextField("Filter", text: $filter).textFieldStyle(.roundedBorder)
+                TextField("Filter", text: $filter).vfField()
                 Menu {
                     ForEach(model.sources.filter { $0.access == "manual" }) { s in
                         Button(s.name) { var it = LibraryItem(source: s.id); it.domain = s.domain; model.draft = it }
                     }
                 } label: { Label("Add Part", systemImage: "plus") }
-                .fixedSize()
+                .menuStyle(.vfPill)
             }
             .padding(VFSpace.panelPadding)
             if !model.loaded {
@@ -333,7 +331,7 @@ private struct LibrarySourcesTab: View {
                     }
                 }
                 Button { addingRoot = true } label: { Label("Add a KiCad Library Folder…", systemImage: "folder.badge.plus") }
-                    .buttonStyle(.borderless).font(VFFont.small)
+                    .buttonStyle(.vfGhost(tint: theme.accentText)).font(VFFont.small)
             }
             Section("Official APIs, with your keys") {
                 ForEach(model.sources.filter { $0.access == "api" }) { s in LibrarySourceRow(model: model, source: s) }
@@ -381,7 +379,7 @@ private struct LibrarySourceRow: View {
                         let title = saved ? String(localized: "\(k.label) (saved; type to replace)")
                                           : (k.optional ? String(localized: "\(k.label) (optional)") : k.label)
                         SecureField(title, text: binding(k.id), prompt: Text(k.placeholder ?? (saved ? String(localized: "Saved") : k.label)))
-                            .textFieldStyle(.roundedBorder).font(VFFont.small)
+                            .vfField().font(VFFont.small)
                     }
                     HStack {
                         Button("Save in Keychain") { let t = typed; typed = [:]; Task { await model.setKeys(source, t) } }
@@ -391,13 +389,13 @@ private struct LibrarySourceRow: View {
                             Button("Forget Keys…", role: .destructive) { askForget() }
                         }
                     }
-                    .controlSize(.small)
+                    .buttonStyle(.vfSecondary)
                 }
                 HStack(spacing: VFSpace.l) {
                     if let u = LibraryModel.web(source.signup) { Button("Get Keys") { openURL(u) } }
                     if let u = LibraryModel.web(source.terms) { Button("Terms") { openURL(u) } }
                 }
-                .linkButtons().font(VFFont.small)
+                .buttonStyle(.vfGhost(tint: theme.accentText)).font(VFFont.small)
             }
             .padding(.vertical, VFSpace.xs)
         } label: {
@@ -413,7 +411,7 @@ private struct LibrarySourceRow: View {
                 }
                 Spacer()
                 Toggle(String(localized: "Search \(source.name)"), isOn: Binding(get: { source.enabled }, set: { on in Task { await model.setEnabled(source.id, on) } }))
-                    .toggleStyle(.switch).controlSize(.mini).labelsHidden()
+                    .toggleStyle(.vfSwitch).labelsHidden().fixedSize()
             }
         }
         .confirmSheet($confirm)
@@ -456,8 +454,10 @@ private struct LibraryEditor: View {
         VStack(alignment: .leading, spacing: VFSpace.l) {
             Text(item.key.isEmpty ? "New Part" : "Edit Part").font(VFFont.title).foregroundStyle(theme.ink)
             Form {
-                Picker("Source", selection: $item.source) {
-                    ForEach(model.sources) { s in Text(s.name).tag(s.id) }
+                LabeledContent("Source") {
+                    VFMenuPicker(String(localized: "Source"), selection: $item.source, items: model.sources.map(\.id)) { id in
+                        model.source(id)?.name ?? id
+                    }
                 }
                 .vfDisabled(!item.key.isEmpty, reason: String(localized: "A saved part keeps its source"))
                 TextField("Part number", text: $item.partNumber, prompt: Text("91290A115, B07…, 1005004…"))
@@ -470,8 +470,14 @@ private struct LibraryEditor: View {
                     .textInputAutocapitalization(.never)
                     .autocorrectionDisabled()
                     #endif
-                Picker("Kind", selection: $item.domain) {
-                    Text("Electronics").tag("electronics"); Text("Mechanical").tag("mechanical"); Text("Both").tag("both")
+                LabeledContent("Kind") {
+                    VFMenuPicker(String(localized: "Kind"), selection: $item.domain, items: ["electronics", "mechanical", "both"]) { d in
+                        switch d {
+                        case "electronics": String(localized: "Electronics")
+                        case "mechanical": String(localized: "Mechanical")
+                        default: String(localized: "Both")
+                        }
+                    }
                 }
                 TextField("Notes", text: text(\.notes), prompt: Text("Price, MOQ, size, where it goes…"), axis: .vertical)
                     .lineLimit(3...6)
@@ -483,7 +489,7 @@ private struct LibraryEditor: View {
             }
             HStack {
                 Spacer()
-                Button("Cancel") { dismiss() }.keyboardShortcut(.cancelAction)
+                Button("Cancel") { dismiss() }.buttonStyle(.vfSecondary).keyboardShortcut(.cancelAction)
                 Button("Save Part") {
                     let it = item
                     saving = true
@@ -506,13 +512,3 @@ private struct LibraryEditor: View {
     }
 }
 
-private extension View {
-    /// Link-styled buttons on the Mac; borderless on iPad and iPhone, where `.link` does not exist.
-    @ViewBuilder func linkButtons() -> some View {
-        #if os(macOS)
-        buttonStyle(.link)
-        #else
-        buttonStyle(.borderless)
-        #endif
-    }
-}

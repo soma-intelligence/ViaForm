@@ -80,11 +80,10 @@ struct MotionStudyPanel: View {
                     .foregroundStyle(s.firstContacts.isEmpty ? theme.success : theme.danger)
                     .help(s.firstContacts.map { String(localized: "\(title($0.a)) and \(title($0.b)) first touch at \(VFFormat.value($0.time, .time))") }.joined(separator: "\n"))
             }
-            Picker("Study", selection: $model.studyID) {
-                ForEach(model.studies, id: \.id) { s in Text(s.title).tag(s.id) }
+            VFMenuPicker(String(localized: "Study"), selection: $model.studyID, items: model.studies.map(\.id)) { id in
+                model.studies.first { $0.id == id }?.title ?? id
             }
-            .labelsHidden()
-            .frame(width: 170)
+            .frame(maxWidth: 170)
             .vfDisabled(model.studyProgress != nil, reason: String(localized: "Sampling the study"))
         }
         .frame(minHeight: VFSize.minTarget)

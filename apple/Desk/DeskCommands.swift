@@ -315,6 +315,7 @@ struct DeskSettingsView: View {
                     LabeledContent("Appearance") { ThemeModePicker(showsLabel: false) }
                     Section {
                         Button("Show Stage Introductions Again") { StageIntro.resetAll() }
+                            .buttonStyle(.vfSecondary)
                     } footer: {
                         Text("Each stage shows a short introduction the first time you open it.")
                             .font(VFFont.small)

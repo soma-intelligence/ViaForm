@@ -139,6 +139,7 @@ struct EditFeatureSheet: View {
                 Toggle(label, isOn: Binding(
                     get: { if case .flag(let b) = f.wrappedValue.value { return b }; return false },
                     set: { f.wrappedValue.value = .flag($0) }))
+                .toggleStyle(.vfSwitch)
             case .number:
                 let key = f.wrappedValue.key
                 LabeledContent(label) {
@@ -154,7 +155,7 @@ struct EditFeatureSheet: View {
                         get: { if case .text(let s) = f.wrappedValue.value { return s }; return "" },
                         set: { f.wrappedValue.value = .text($0) }))
                         .labelsHidden()
-                        .textFieldStyle(.roundedBorder)
+                        .vfField()
                         .autocorrectionDisabled()
                         .frame(width: 200)
                 }

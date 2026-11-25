@@ -313,8 +313,8 @@ struct ToolSession: View {
             MoveDialogRows(session: FeatureSession.of(model), touch: true)
         }
         if model.tool == .mirror {
-            Picker("Plane", selection: $model.mirrorPlane) { ForEach(["XY", "XZ", "YZ"], id: \.self) { Text($0) } }
-                .pickerStyle(.segmented).frame(minHeight: VFSize.touchTarget)
+            VFSegmented(String(localized: "Plane"), selection: $model.mirrorPlane, items: ["XY", "XZ", "YZ"], title: { $0 })
+                .frame(minHeight: VFSize.touchTarget)
         }
     }
 

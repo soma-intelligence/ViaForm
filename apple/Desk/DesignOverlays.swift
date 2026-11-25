@@ -130,10 +130,8 @@ struct ValueBadgeField: View {
                         .font(VFFont.small)
                         .foregroundStyle(session.operation == "cut" ? theme.danger : theme.ink)
                 }
-                .menuStyle(.borderlessButton)
-                .fixedSize()
-                .padding(.horizontal, VFSpace.s).frame(height: 24)
-                .vfSurface(.control, radius: VFRadius.control)
+                .menuStyle(.vfPill)
+                .vfSurface(.control, radius: VFControl.height / 2)
                 .help(String(localized: "Operation"))
             }
         }

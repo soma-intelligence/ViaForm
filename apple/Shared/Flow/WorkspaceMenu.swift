@@ -157,7 +157,7 @@ struct WorkspaceMenuList: View {
                         .accessibilityHidden(true)
                     Text(query).font(VFFont.row).foregroundStyle(theme.ink)
                     Spacer()
-                    Button("Clear") { query = "" }.buttonStyle(.borderless).font(VFFont.small)
+                    Button("Clear") { query = "" }.buttonStyle(.vfGhost(tint: theme.accentText)).font(VFFont.small)
                 }
                 .padding(.horizontal, VFSpace.l)
                 .padding(.vertical, VFSpace.s)

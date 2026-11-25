@@ -48,7 +48,6 @@ struct ParametersTable: View {
                 Label(String(localized: "User Parameter"), systemImage: "plus")
             }
             .buttonStyle(.vfSecondary)
-            .controlSize(.small)
             .help(String(localized: "Add a user parameter"))
             Spacer(minLength: 0)
             Text("\(p.userRows.count) user, \(p.modelRows.count) model")
@@ -242,7 +241,7 @@ struct CommitTextField: View {
         TextField(title, text: $text)
             .labelsHidden()
             .font(font)
-            .textFieldStyle(.roundedBorder)
+            .vfField()
             .focused($focused)
             #if os(iOS)
             .autocorrectionDisabled()
@@ -283,7 +282,7 @@ struct ExpressionCell: View {
                 TextField(String(localized: "Expression"), text: $text)
                     .labelsHidden()
                     .font(VFFont.row).monospacedDigit()
-                    .textFieldStyle(.roundedBorder)
+                    .vfField()
                     .focused($focused)
                     #if os(iOS)
                     .autocorrectionDisabled()
@@ -356,43 +355,49 @@ struct AddParameterRow: View {
     /// The units a new parameter takes: a length, an angle, a bare number.
     private static let units: [(String, String)] = [("mm", "mm"), ("deg", "deg"), ("", "No unit")]
 
+    /// The menu title of a unit key, localized as the table's titles were.
+    private static func unitTitle(_ key: String) -> String {
+        switch key {
+        case "mm": String(localized: "mm")
+        case "deg": String(localized: "deg")
+        default: String(localized: "No unit")
+        }
+    }
+
     var body: some View {
         let layout = compact ? AnyLayout(VStackLayout(alignment: .leading, spacing: VFSpace.xs))
                              : AnyLayout(HStackLayout(spacing: VFSpace.s))
         VStack(alignment: .leading, spacing: VFSpace.xs) {
             layout {
                 TextField(String(localized: "Name"), text: $name)
-                    .textFieldStyle(.roundedBorder)
+                    .vfField()
                     #if os(iOS)
                     .autocorrectionDisabled()
                     .textInputAutocapitalization(.never)
                     #endif
                     .accessibilityLabel(Text("New parameter name"))
-                Picker(String(localized: "Unit"), selection: $unit) {
-                    ForEach(Self.units, id: \.0) { u in Text(LocalizedStringKey(u.1)).tag(u.0) }
-                }
-                .labelsHidden()
-                .fixedSize()
+                VFMenuPicker(String(localized: "Unit"), selection: $unit, items: Self.units.map(\.0),
+                             title: { Self.unitTitle($0) })
                 TextField(String(localized: "Expression"), text: $expression)
-                    .textFieldStyle(.roundedBorder)
+                    .vfField()
                     #if os(iOS)
                     .autocorrectionDisabled()
                     .textInputAutocapitalization(.never)
                     #endif
                     .accessibilityLabel(Text("New parameter expression"))
                 TextField(String(localized: "Comment"), text: $comment)
-                    .textFieldStyle(.roundedBorder)
+                    .vfField()
             }
             .font(VFFont.row)
             HStack {
                 Spacer()
                 Button(String(localized: "Cancel")) { model.clearError(); done() }
-                    .buttonStyle(.vfSecondary).controlSize(.small)
+                    .buttonStyle(.vfSecondary)
                     .keyboardShortcut(.cancelAction)
                 Button(String(localized: "Add")) {
                     if model.add(name: name, expression: expression, unit: unit, comment: comment) == nil { done() }
                 }
-                .buttonStyle(.vfPrimary).controlSize(.small)
+                .buttonStyle(.vfPrimary)
                 .disabled(name.trimmingCharacters(in: .whitespaces).isEmpty || expression.trimmingCharacters(in: .whitespaces).isEmpty)
                 .keyboardShortcut(.defaultAction)
             }

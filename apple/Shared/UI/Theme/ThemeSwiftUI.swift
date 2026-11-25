@@ -150,16 +150,24 @@ extension View {
 struct ThemeModePicker: View {
     @AppStorage(ThemeMode.storageKey) private var stored: String = ThemeMode.default.rawValue
     var showsLabel = true
+    /// Inside a Menu the platform draws the choices as menu items, so the native picker stays.
+    var inMenu = false
 
     var body: some View {
-        Picker(selection: $stored) {
-            ForEach(ThemeMode.allCases) { Text($0.title).tag($0.rawValue) }
-        } label: {
-            if showsLabel { Text("Appearance") }
+        if inMenu {
+            Picker(selection: $stored) {
+                ForEach(ThemeMode.allCases) { Text($0.title).tag($0.rawValue) }
+            } label: { Text("Appearance") }
+        } else {
+            HStack(spacing: VFSpace.m) {
+                if showsLabel { Text("Appearance") }
+                VFSegmented("Appearance", selection: Binding(get: { ThemeMode(rawValue: stored) ?? .default },
+                                                             set: { stored = $0.rawValue }),
+                            title: { String(localized: String.LocalizationValue($0.title)) })
+            }
+            .fixedSize()
+            .help("System follows the Mac's or iPad's appearance. Light and Dark pin one.")
         }
-        .pickerStyle(.segmented)
-        .fixedSize()
-        .help("System follows the Mac's or iPad's appearance. Light and Dark pin one.")
     }
 }
 
@@ -233,7 +241,7 @@ enum VFSurface {
     /// near-opaque fill, stroke and shadow. Never glass (HIG: glass is for controls).
     case floating
     /// Navigation and controls floating on the viewport (nav pill, context pill, iPad capsule and
-    /// tool groups, job capsule): Liquid Glass, or a flat fill under Reduce Transparency.
+    /// tool groups, job capsule): an opaque panel with a soft shadow, as in Shapr3D.
     case control
 }
 
@@ -270,15 +278,12 @@ struct VFSurfaceModifier: ViewModifier {
                 .overlay(shape.strokeBorder(theme.floatingStroke, lineWidth: VFSize.hairline))
                 .shadow(color: .black.opacity(theme.isDark ? 0.35 : 0.12), radius: 10, y: 4)
         case .control:
-            if flat {
-                content
-                    .background(shape.fill(Color(vf: theme.palette.floating.over(theme.palette.panel))))
-                    .overlay(shape.strokeBorder(theme.floatingStroke, lineWidth: VFSize.hairline))
-            } else {
-                content
-                    .glassEffect(.regular, in: shape)
-                    .overlay(theme.highContrast ? shape.strokeBorder(theme.floatingStroke, lineWidth: VFSize.hairline) : nil)
-            }
+            // Shapr3D's floating tool groups: an opaque panel with a soft shadow, never glass.
+            content
+                .background(shape.fill(theme.panel))
+                .overlay(shape.strokeBorder(theme.highContrast ? theme.floatingStroke : theme.ink.opacity(theme.isDark ? 0.08 : 0.05),
+                                            lineWidth: VFSize.hairline))
+                .shadow(color: .black.opacity(flat ? 0 : (theme.isDark ? 0.40 : 0.10)), radius: 12, y: 3)
         }
     }
 }
@@ -431,8 +436,9 @@ private struct VFButtonBody: View {
     @State private var hovered = false
 
     var body: some View {
-        let shape = RoundedRectangle(cornerRadius: VFRadius.control, style: .continuous)
-        let fill: Color = prominent ? theme.accent : theme.ink.opacity(0.07)
+        // Capsules, as in Shapr3D: blue for the primary action, a grey wash for the secondary.
+        let shape = Capsule(style: .continuous)
+        let fill: Color = prominent ? theme.accent : theme.ink.opacity(theme.isDark ? 0.12 : 0.07)
         configuration.label
             .font(VFFont.rowEmphasis)
             .foregroundStyle(prominent ? theme.onAccent : theme.ink)

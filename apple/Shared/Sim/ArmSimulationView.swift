@@ -68,10 +68,9 @@ struct ArmSimulationView: View {
             HStack {
                 VFCaption("Scenario")
                 Spacer()
-                Picker("Scenario", selection: $sim.scenarioID) {
-                    ForEach(sim.scenarios) { Text($0.title).tag($0.id) }
+                VFMenuPicker(String(localized: "Scenario"), selection: $sim.scenarioID, items: sim.scenarios.map(\.id)) { id in
+                    sim.scenarios.first { $0.id == id }?.title ?? id
                 }
-                .labelsHidden().frame(width: 120)
                 .vfDisabled(sim.running, reason: String(localized: "Stop the run to change the scenario"))
             }
             Text(sim.scenario.detail).font(VFFont.small).foregroundStyle(theme.inkSecondary).lineLimit(2)
@@ -187,10 +186,8 @@ struct SimTelemetryPanel: View {
             VStack(alignment: .leading, spacing: VFSpace.s) {
                 HStack(spacing: VFSpace.m) {
                     VFCaption("Telemetry")
-                    Picker("Channel", selection: $sim.channel) {
-                        ForEach(ArmSimModel.Channel.allCases) { Text($0.title).tag($0) }
-                    }
-                    .pickerStyle(.segmented).labelsHidden().frame(width: 160)
+                    VFSegmented(String(localized: "Channel"), selection: $sim.channel) { $0.title }
+                        .frame(width: 160)
                     VFIconButton(sim.playing ? "pause.fill" : "play.fill",
                                  label: sim.playing ? String(localized: "Pause") : String(localized: "Play the episode"), isOn: sim.playing) {
                         sim.togglePlay()

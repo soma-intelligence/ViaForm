@@ -111,7 +111,7 @@ struct BomCarts: View {
                         .padding(.horizontal, VFSpace.m).padding(.vertical, VFSpace.xs)
                         .background(theme.well, in: Capsule())
                     }
-                    .menuStyle(.borderlessButton).menuIndicator(.hidden).fixedSize()
+                    .menuStyle(.vfPlain)
                 }
             }
         }
@@ -236,6 +236,7 @@ struct BomDetail: View {
                             .labelsHidden()
                             .multilineTextAlignment(.trailing)
                             .monospacedDigit()
+                            .vfField()
                             .frame(width: 80)
                             .focused($focus, equals: .qty)
                             .onSubmit(commitQty)
@@ -253,6 +254,7 @@ struct BomDetail: View {
                 if r.orderQty != r.need, r.orderQty > 0 { LabeledContent("Ordered", value: "\(r.orderQty)") }
                 if let p = l.placed { LabeledContent("Placed in the design", value: "\(p)") }
                 Toggle("Leave out of the rollup", isOn: Binding(get: { r.excluded }, set: { model.setExcluded(row, $0) }))
+                    .toggleStyle(.vfSwitch)
             }
             if let made = l.made {
                 Section("Made") {
@@ -267,9 +269,10 @@ struct BomDetail: View {
                     let offers = l.offers ?? []
                     if offers.isEmpty { Text("No supplier offer yet").foregroundStyle(theme.inkSecondary) }
                     if offers.count > 1 {
-                        Picker("Supplier", selection: Binding(get: { l.supplier ?? "" }, set: { model.setSupplier(row, $0.isEmpty ? nil : $0) })) {
-                            Text("Cheapest").tag("")
-                            ForEach(offers, id: \.supplier) { Text($0.supplier).tag($0.supplier) }
+                        LabeledContent("Supplier") {
+                            VFMenuPicker(String(localized: "Supplier"),
+                                         selection: Binding(get: { l.supplier ?? "" }, set: { model.setSupplier(row, $0.isEmpty ? nil : $0) }),
+                                         items: [""] + offers.map(\.supplier)) { $0.isEmpty ? String(localized: "Cheapest") : $0 }
                         }
                     }
                     ForEach(offers, id: \.self) { o in offer(o, chosen: o.supplier == r.supplier) }
@@ -306,12 +309,13 @@ struct BomDetail: View {
                     .focused($focus, equals: .notes)
                     .onSubmit(commitNotes)
                 Button("Save Notes", action: commitNotes)
+                    .buttonStyle(.vfSecondary)
                     .vfDisabled(!notesChanged, reason: String(localized: "No changes to save"))
                 if let u = BomModel.web(l.datasheetUrl) { Link("Datasheet", destination: u) }
                 if let u = BomModel.web(l.cadSource) { Link("CAD model (STEP)", destination: u) }
             }
             if l.origin == "manual" {
-                Section { Button("Remove Line", role: .destructive) { model.remove(row) } }
+                Section { Button("Remove Line", role: .destructive) { model.remove(row) }.buttonStyle(.vfSecondary) }
             }
         }
         .formStyle(.grouped)
@@ -402,11 +406,13 @@ struct BomMultiDetail: View {
                 Button("Copy Rows") { BomClipboard.copy(rows.map(\.tsv)) }
                 Button("Copy MPNs") { BomClipboard.copy(rows.map(\.mpn).filter { !$0.isEmpty }) }
             }
+            .buttonStyle(.vfSecondary)
             if !removable.isEmpty {
                 Section {
                     Button(removable.count == 1 ? String(localized: "Remove 1 Line") : String(localized: "Remove \(removable.count) Lines"), role: .destructive) {
                         model.remove(removable)
                     }
+                    .buttonStyle(.vfSecondary)
                 } footer: {
                     if removable.count < rows.count {
                         Text("Only lines added by hand can be removed; imported lines come back with their file.")
@@ -443,7 +449,7 @@ struct BomMeshLink: View {
         Button { NSWorkspace.shared.activateFileViewerSelecting([url]) } label: {
             Label(url.lastPathComponent, systemImage: url.pathExtension.lowercased() == "3mf" ? "cube.transparent" : "cube")
         }
-        .buttonStyle(.link)
+        .buttonStyle(.vfGhost(tint: theme.accentText))
         .vfDisabled(!exists, reason: String(localized: "Not on disk: \(path)"))
         .help(exists ? path : String(localized: "Not on disk: \(path)"))
         #else
@@ -522,6 +528,7 @@ struct BomRefreshButton: View {
                     Text("\(model.refreshDone) of \(model.refreshTotal)").font(VFFont.micro).foregroundStyle(theme.inkSecondary)
                         .fixedSize()
                     Button("Stop") { model.cancelRefresh() }
+                        .buttonStyle(.vfSecondary)
                 }
             } else {
                 Button { model.refreshPrices() } label: {
@@ -529,12 +536,37 @@ struct BomRefreshButton: View {
                           systemImage: network.online ? "arrow.triangle.2.circlepath" : "wifi.slash")
                         .frame(maxWidth: .infinity)
                 }
+                .buttonStyle(.vfSecondary)
                 .vfDisabled(model.rows.isEmpty || !network.online,
                             reason: model.rows.isEmpty ? String(localized: "Add lines first") : String(localized: "Offline: prices are checked once the network is back"))
                 .help("Check price and stock of every part number with the distributors whose keys are in the Keychain")
             }
         }
         .frame(width: 190)
+    }
+}
+
+/// The builds count: minus and plus around a typed value, in place of the platform stepper.
+struct BomBuildsField: View {
+    @Environment(\.viaFormTheme) private var theme
+    let model: BomModel
+    var title: LocalizedStringKey = "Builds"
+
+    var body: some View {
+        let builds = Binding(get: { model.doc.builds }, set: { model.setBuilds($0) })
+        HStack(spacing: VFSpace.xs) {
+            Text(title).foregroundStyle(theme.inkSecondary).lineLimit(1)
+            VFIconButton("minus", label: String(localized: "Fewer builds")) { model.setBuilds(max(model.doc.builds - 1, 1)) }
+                .disabled(model.doc.builds <= 1)
+            TextField("Builds", value: builds, format: .number)
+                .labelsHidden()
+                .multilineTextAlignment(.trailing)
+                .monospacedDigit()
+                .vfField()
+                .frame(width: 64)
+            VFIconButton("plus", label: String(localized: "More builds")) { model.setBuilds(min(model.doc.builds + 1, 100_000)) }
+                .disabled(model.doc.builds >= 100_000)
+        }
     }
 }
 
@@ -555,7 +587,7 @@ struct BomStatusLine: View {
                         .font(VFFont.small)
                         .foregroundStyle(s.failed.isEmpty ? theme.inkSecondary : theme.warning)
                     if !model.refreshFailures.isEmpty {
-                        Button("Retry Failed") { model.retryFailed() }.font(VFFont.small)
+                        Button("Retry Failed") { model.retryFailed() }.font(VFFont.small).buttonStyle(.vfGhost(tint: theme.accentText))
                     }
                 }
                 if let n = model.notice {
@@ -661,7 +693,6 @@ struct BomPanel: View {
                     HStack(spacing: VFSpace.m) { controls; Spacer(minLength: 0) }
                 }
             }
-            .controlSize(.small)
             BomSummary(model: model)
             if !model.rollup.carts.isEmpty { BomCarts(model: model, onExport: export) }
             BomStatusLine(model: model)
@@ -681,25 +712,18 @@ struct BomPanel: View {
 
     private var controls: some View {
         HStack(spacing: VFSpace.m) {
-            Stepper(value: Binding(get: { model.doc.builds }, set: { model.setBuilds($0) }), in: 1...100_000) {
-                HStack(spacing: VFSpace.xs) {
-                    Text("Builds").foregroundStyle(theme.inkSecondary).lineLimit(1)
-                    TextField("Builds", value: Binding(get: { model.doc.builds }, set: { model.setBuilds($0) }), format: .number)
-                        .labelsHidden()
-                        .frame(width: 54).multilineTextAlignment(.trailing)
-                }
-            }
-            .fixedSize()
-            Picker("Group", selection: $model.grouping) { ForEach(BomModel.Grouping.allCases) { Text($0.title).tag($0) } }
+            BomBuildsField(model: model)
                 .fixedSize()
-            Toggle("Flagged", isOn: $model.onlyFlagged).toggleStyle(.button).fixedSize()
-            TextField("Filter", text: $model.filter).textFieldStyle(.roundedBorder).frame(width: 150)
+            VFMenuPicker(String(localized: "Group"), selection: $model.grouping, items: BomModel.Grouping.allCases) { $0.title }
+            Toggle("Flagged", isOn: $model.onlyFlagged).toggleStyle(.vfChip).fixedSize()
+            TextField("Filter", text: $model.filter).vfField().frame(width: 150)
         }
     }
 
     private var actions: some View {
         HStack(spacing: VFSpace.m) {
             BomActions(model: model, design: design, pcb: pcb, importFile: { importing = true }, export: export, saveProject: saveProject, openProject: openProject)
+                .menuStyle(.vfPill)
                 .fixedSize()
             VFIconButton("xmark", label: String(localized: "Close the Bill of Materials"), action: close)
         }
@@ -946,9 +970,11 @@ struct BomPanel: View {
             List(selection: $model.selection) {
                 Section {
                     BomSummary(model: model).listRowBackground(Color.clear)
-                    Stepper("Builds: \(model.doc.builds)", value: Binding(get: { model.doc.builds }, set: { model.setBuilds($0) }), in: 1...100_000)
-                    Picker("Group by", selection: $model.grouping) { ForEach(BomModel.Grouping.allCases) { Text($0.title).tag($0) } }
-                    Toggle("Only flagged lines", isOn: $model.onlyFlagged)
+                    BomBuildsField(model: model)
+                    LabeledContent("Group by") {
+                        VFMenuPicker(String(localized: "Group by"), selection: $model.grouping, items: BomModel.Grouping.allCases) { $0.title }
+                    }
+                    Toggle("Only flagged lines", isOn: $model.onlyFlagged).toggleStyle(.vfSwitch)
                     if !model.rollup.carts.isEmpty { BomCarts(model: model, onExport: export) }
                     BomStatusLine(model: model)
                 }

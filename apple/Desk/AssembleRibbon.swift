@@ -223,7 +223,7 @@ struct AssembleRibbon: View {
         Group {
             if c.posesMenu {
                 Menu { posesItems } label: { label(c.title, c.symbol, labels: labels) }
-                    .menuStyle(.borderlessButton).menuIndicator(.hidden).fixedSize()
+                    .menuStyle(.vfPlain)
             } else {
                 Button { run(c.id) } label: { label(c.title, c.symbol, on: on, labels: labels) }
                     .buttonStyle(.plain)
@@ -273,9 +273,7 @@ struct AssembleRibbon: View {
             .frame(minWidth: 44, minHeight: 50)
             .contentShape(Rectangle())
         }
-        .menuStyle(.borderlessButton)
-        .menuIndicator(.hidden)
-        .fixedSize()
+        .menuStyle(.vfPlain)
         .help(String(localized: "More commands: \(groups.flatMap(\.commands).map(\.title).joined(separator: ", "))"))
         .accessibilityLabel("More Commands")
     }

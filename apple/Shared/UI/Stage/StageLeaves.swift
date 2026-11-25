@@ -149,9 +149,8 @@ struct OutputRow: View {
                     Spacer(minLength: VFSpace.xs)
                     if let a = output.action, let onAction {
                         Button(actionTitle(a)) { onAction(a) }
-                            .buttonStyle(.borderless)
+                            .buttonStyle(.vfGhost(tint: theme.accentText))
                             .font(VFFont.micro.weight(.semibold))
-                            .foregroundStyle(theme.accentText)
                             .help(a.label)
                     }
                 }

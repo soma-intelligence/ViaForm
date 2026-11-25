@@ -295,9 +295,8 @@ struct DeskPCBView: View {
                 panel("ROUTE") {
                     big(PCBSymbol.route, String(localized: "Route (X)"), on: model.tool == .route) { model.tool = .route }
                     big(PCBSymbol.routeAll, String(localized: "Route all airwires")) { model.routeAll() }
-                    Picker("Copper layer", selection: $model.layer) { Text("F.Cu").tag("F.Cu"); Text("B.Cu").tag("B.Cu") }
-                        .labelsHidden()
-                        .pickerStyle(.segmented).frame(width: 100).padding(.top, VFSpace.s)
+                    VFSegmented("Copper layer", selection: $model.layer, items: ["F.Cu", "B.Cu"], title: { $0 })
+                        .frame(width: 110).padding(.top, VFSpace.s)
                 }
                 panel("BOARD") {
                     big(PCBSymbol.update, String(localized: "Update PCB from schematic")) { model.updateBoard() }

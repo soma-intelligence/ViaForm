@@ -237,11 +237,12 @@ struct ConstraintRibbonPanel: View {
                 Divider()
                 PinMenu(commands: panel.commands)
             } label: {
-                VFCaption(StageLabels.panel(panel.name))
+                HStack(spacing: VFSpace.xxs) {
+                    VFCaption(StageLabels.panel(panel.name))
+                    Image(systemName: "chevron.down").font(VFFont.glyph(7, weight: .bold)).foregroundStyle(theme.inkSecondary)
+                }
             }
-            .menuStyle(.borderlessButton)
-            .menuIndicator(.visible)
-            .fixedSize()
+            .menuStyle(.vfPlain)
         }
         .padding(.horizontal, VFSpace.xs)
         .accessibilityElement(children: .contain)
@@ -422,8 +423,7 @@ struct SketchPalette: View {
                     HStack {
                         Spacer()
                         Button("Finish Sketch") { model.finishSketch() }
-                            .buttonStyle(.bordered)
-                            .controlSize(.small)
+                            .buttonStyle(.vfSecondary)
                             .help(String(localized: "Finish the sketch (Return)"))
                     }
                     .padding(VFSpace.s)
@@ -449,7 +449,7 @@ struct SketchPalette: View {
 
     private func check(_ label: LocalizedStringResource, _ on: Binding<Bool>) -> some View {
         fusionLine(String(localized: label)) {
-            Toggle(String(localized: label), isOn: on).labelsHidden().toggleStyle(.checkbox).controlSize(.small)
+            Toggle(String(localized: label), isOn: on).labelsHidden().toggleStyle(.vfCheck)
         }
     }
 
@@ -490,7 +490,7 @@ struct SketchPalette: View {
                 Toggle("Constraints", isOn: Binding(get: { model.showConstraints }, set: { model.showConstraints = $0 }))
                 Toggle("Projected", isOn: $projected)
             }
-            .toggleStyle(.checkbox)
+            .toggleStyle(.vfCheck)
             .font(VFFont.small)
             Button { model.finishSketch() } label: {
                 Text("Finish Sketch").frame(maxWidth: .infinity)

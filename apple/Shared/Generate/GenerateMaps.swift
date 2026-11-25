@@ -444,15 +444,24 @@ struct CandidateMapOverlay: View {
     }
 
     private var picker: some View {
-        Picker(selection: Binding(get: { shown }, set: { state.map = $0 })) {
+        // A plain menu inside the floating control surface: the layers icon, the shown map and a
+        // small chevron; the open menu checks the shown map.
+        Menu {
             ForEach(CandidateMap.allCases.filter { $0 != .stress || preview.coloredByStress }) { m in
-                Label(m.title, systemImage: m.symbol).tag(m)
+                Button { state.map = m } label: {
+                    Label(m.title, systemImage: m == shown ? "checkmark" : m.symbol)
+                }
             }
         } label: {
-            Label("Map", systemImage: "square.3.layers.3d")
+            HStack(spacing: VFSpace.xs) {
+                Image(systemName: "square.3.layers.3d").accessibilityHidden(true)
+                Text(shown.title).lineLimit(1)
+                Image(systemName: "chevron.down").font(VFFont.glyph(9, weight: .bold)).foregroundStyle(theme.inkSecondary)
+                    .accessibilityHidden(true)
+            }
+            .font(VFFont.row)
         }
-        .pickerStyle(.menu)
-        .fixedSize()
+        .menuStyle(.vfPlain)
         .padding(.horizontal, VFSpace.m)
         .frame(minHeight: VFSize.minTarget)
         .vfSurface(.control, radius: VFRadius.control)

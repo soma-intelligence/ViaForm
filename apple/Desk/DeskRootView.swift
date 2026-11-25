@@ -44,15 +44,13 @@ struct DeskRootView: View {
                 Button { showBom.toggle() } label: {
                     Label("BOM", systemImage: "list.bullet.rectangle").font(VFFont.caps)
                 }
-                .buttonStyle(.borderless)
-                .foregroundStyle(showBom ? theme.accentText : theme.ink)
+                .buttonStyle(.vfGhost(tint: showBom ? theme.accentText : theme.ink))
                 .keyboardShortcut("b", modifiers: [.command, .shift])
                 .help("Bill of materials: design parts, PCB components and component files, priced for N builds (Shift-Command-B)")
                 Button { showLibrary.toggle() } label: {
                     Label("Libraries", systemImage: "books.vertical").font(VFFont.caps)
                 }
-                .buttonStyle(.borderless)
-                .foregroundStyle(showLibrary ? theme.accentText : theme.ink)
+                .buttonStyle(.vfGhost(tint: showLibrary ? theme.accentText : theme.ink))
                 .keyboardShortcut("l", modifiers: [.command, .shift])
                 .help("Libraries: KiCad, standard hardware, distributors, marketplaces, saved parts (Shift-Command-L)")
                 .padding(.horizontal, VFSpace.m)
@@ -188,7 +186,7 @@ struct AppBar: View {
                 Button("Save As…") { FileActions.saveAs(model) }.keyboardShortcut("s")
                 Button("Export…") { FileActions.export(model) }.keyboardShortcut("e", modifiers: [.command, .shift])
             } label: { Image(systemName: "doc") }
-            .menuStyle(.borderlessButton).menuIndicator(.visible).fixedSize()
+            .menuStyle(.vfPlain)
             Button { FileActions.save(model) } label: { Image(systemName: "square.and.arrow.down") }.help("Save")
             Button { model.undo() } label: { Image(systemName: "arrow.uturn.backward") }.disabled(model.snapshot.undo == 0).help("Undo")
             Button { model.redo() } label: { Image(systemName: "arrow.uturn.forward") }.disabled(model.snapshot.redo == 0).help("Redo")
@@ -213,7 +211,7 @@ struct AppBar: View {
                 Link("SolidCraft engine", destination: URL(string: "https://github.com/tangency-labs/solidcraft")!)
                 Link("PCBCraft engine", destination: URL(string: "https://github.com/tangency-labs/pcbcraft")!)
             } label: { Image(systemName: "questionmark.circle") }
-            .menuStyle(.borderlessButton).menuIndicator(.hidden).fixedSize()
+            .menuStyle(.vfPlain)
             Image(systemName: "person.crop.circle").font(VFFont.glyph(17)).foregroundStyle(theme.inkSecondary)
         }
         .buttonStyle(.plain)
@@ -318,11 +316,13 @@ struct RibbonPanel: View {
                     }
                 }
             } label: {
-                Text(name).font(VFFont.micro.weight(.bold)).foregroundStyle(theme.inkSecondary)
+                HStack(spacing: VFSpace.xxs) {
+                    Text(name).font(VFFont.micro.weight(.bold))
+                    Image(systemName: "chevron.down").font(VFFont.glyph(7, weight: .bold))
+                }
+                .foregroundStyle(theme.inkSecondary)
             }
-            .menuStyle(.borderlessButton)
-            .menuIndicator(.visible)
-            .fixedSize()
+            .menuStyle(.vfPlain)
         }
         .padding(.horizontal, VFSpace.m)
         .padding(.top, VFSpace.xs)
@@ -536,14 +536,14 @@ struct CommandDialog: View {
                         .accessibilityLabel("Help")
                     Spacer(minLength: 0)
                     Button { ok() } label: { Text("OK").frame(minWidth: 44) }
+                        .buttonStyle(.vfPrimary)
                         .keyboardShortcut(valueFocused ? nil : .defaultAction)
                         .disabled(missing != nil)
                         .help(missing ?? String(localized: "Accept (Return)"))
                     Button { close() } label: { Text("Cancel").frame(minWidth: 44) }
+                        .buttonStyle(.vfSecondary)
                         .keyboardShortcut(.cancelAction)
                 }
-                .controlSize(.small)
-                .buttonStyle(.bordered)
                 .padding(.horizontal, VFSpace.m)
                 .padding(.vertical, VFSpace.s)
             }
@@ -584,11 +584,11 @@ struct CommandDialog: View {
             MoveDialogRows(session: FeatureSession.of(model), labelWidth: Self.labelWidth)
         }
         if model.tool == .mirror {
-            Picker("Plane", selection: $model.mirrorPlane) { ForEach(["XY", "XZ", "YZ"], id: \.self) { Text($0) } }.pickerStyle(.segmented)
+            VFSegmented("Plane", selection: $model.mirrorPlane, items: ["XY", "XZ", "YZ"], title: { $0 })
         }
         if model.tool == .sketch {
             Text("Click a planar face, or a plane:").font(.callout).foregroundStyle(theme.inkSecondary)
-            HStack { ForEach(["XY", "XZ", "YZ"], id: \.self) { p in Button(p) { model.startSketch(p) } } }
+            HStack { ForEach(["XY", "XZ", "YZ"], id: \.self) { p in Button(p) { model.startSketch(p) } } }.buttonStyle(.vfSecondary)
         }
     }
 
@@ -672,7 +672,7 @@ struct NavigationBar: View {
                 Toggle("Perspective", isOn: $perspective)
                 ForEach(StandardView.allCases, id: \.self) { v in Button(v.rawValue.capitalized) { model.setView(v) } }
             } label: { Image(systemName: "cube.transparent") }
-            .menuStyle(.borderlessButton).fixedSize().frame(width: LegacyMetrics.navMenu)
+            .menuStyle(.vfPlain).frame(width: LegacyMetrics.navMenu)
             Menu {
                 Button("Shaded with Edges") { model.run("view.visual_style", ["style": "shaded_with_edges"], quiet: true) }
                 Button("Shaded") { model.run("view.visual_style", ["style": "shaded"], quiet: true) }
@@ -680,7 +680,7 @@ struct NavigationBar: View {
                 Divider()
                 Button("Toggle Grid") { model.run("view.grid", quiet: true) }
             } label: { Image(systemName: "square.grid.3x3.square") }
-            .menuStyle(.borderlessButton).fixedSize().frame(width: LegacyMetrics.navMenu)
+            .menuStyle(.vfPlain).frame(width: LegacyMetrics.navMenu)
         }
         .foregroundStyle(theme.ink)
         .padding(.horizontal, VFSpace.s).frame(height: LegacyMetrics.navBar)

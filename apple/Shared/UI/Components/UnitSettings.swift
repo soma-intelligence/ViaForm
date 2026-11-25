@@ -194,19 +194,21 @@ struct UnitSettingsSection: View {
 
     var body: some View {
         Section {
-            Picker("Length", selection: $length) {
-                ForEach(LengthDisplay.allCases) { Text($0.title).tag($0.rawValue) }
+            LabeledContent("Length") {
+                VFMenuPicker(String(localized: "Length"), selection: $length, items: LengthDisplay.allCases.map(\.rawValue),
+                             title: { LengthDisplay(rawValue: $0)?.title ?? $0 })
             }
-            Picker("Angle", selection: $angle) {
-                ForEach(AngleDisplay.allCases) { Text($0.title).tag($0.rawValue) }
+            LabeledContent("Angle") {
+                VFMenuPicker(String(localized: "Angle"), selection: $angle, items: AngleDisplay.allCases.map(\.rawValue),
+                             title: { AngleDisplay(rawValue: $0)?.title ?? $0 })
             }
-            Picker("Mass", selection: $mass) {
-                ForEach(MassDisplay.allCases) { Text($0.title).tag($0.rawValue) }
+            LabeledContent("Mass") {
+                VFMenuPicker(String(localized: "Mass"), selection: $mass, items: MassDisplay.allCases.map(\.rawValue),
+                             title: { MassDisplay(rawValue: $0)?.title ?? $0 })
             }
-            Picker("Decimal Places", selection: $decimals) {
-                ForEach(UnitSettings.decimalChoices, id: \.self) { n in
-                    if n < 0 { Text("Automatic").tag(n) } else { Text(verbatim: "\(n)").tag(n) }
-                }
+            LabeledContent("Decimal Places") {
+                VFMenuPicker(String(localized: "Decimal Places"), selection: $decimals, items: UnitSettings.decimalChoices,
+                             title: { $0 < 0 ? String(localized: "Automatic") : "\($0)" })
             }
         } header: {
             Text("Display Units")

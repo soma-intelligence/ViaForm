@@ -246,7 +246,7 @@ struct NavPill: View {
                 Button("Zoom In") { model.camera.zoom(1.25); model.cameraChanged(final: true) }
                 Button("Zoom Out") { model.camera.zoom(0.8); model.cameraChanged(final: true) }
             } label: { Label("Zoom options", systemImage: "chevron.down").labelStyle(.iconOnly) }
-            .menuStyle(.borderlessButton).menuIndicator(.hidden).fixedSize().frame(minWidth: 18)
+            .menuStyle(.vfPlain).frame(minWidth: 18)
             .help("Zoom options")
             .accessibilityLabel("Zoom options")
             item("arrow.up.left.and.down.right.magnifyingglass", "Fit") { model.zoomToFit() }
@@ -256,7 +256,7 @@ struct NavPill: View {
                 Toggle("Perspective", isOn: perspective)
                 ForEach(StandardView.allCases, id: \.self) { v in Button(v.rawValue.capitalized) { model.setView(v) } }
             } label: { Label("Views", systemImage: "cube.transparent").labelStyle(.iconOnly) }
-            .menuStyle(.borderlessButton).fixedSize().frame(minWidth: 34)
+            .menuStyle(.vfPlain).frame(minWidth: 34)
             .help("Views")
             .accessibilityLabel("Views")
             Menu {
@@ -266,7 +266,7 @@ struct NavPill: View {
                 Divider()
                 Button("Toggle Grid") { model.run("view.grid", quiet: true) }
             } label: { Label("Visual Style", systemImage: "square.grid.3x3.square").labelStyle(.iconOnly) }
-            .menuStyle(.borderlessButton).fixedSize().frame(minWidth: 34)
+            .menuStyle(.vfPlain).frame(minWidth: 34)
             .help("Visual style")
             .accessibilityLabel("Visual style")
         }
@@ -685,7 +685,7 @@ struct FeatureTimeline: View {
     private func renameField(_ prompt: String) -> some View {
         VStack(alignment: .leading, spacing: VFSpace.xs) {
             TextField(prompt, text: $draft)
-                .textFieldStyle(.roundedBorder)
+                .vfField()
                 .frame(width: 200)
                 .onSubmit { commitRename() }
                 .onExitCommand { renaming = nil }

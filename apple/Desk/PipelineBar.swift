@@ -85,8 +85,7 @@ struct PipelineBar: View {
                 StatusMark(status: flow.stage(workspace)?.status ?? .empty, stale: staleCount, reason: flow.stage(workspace)?.reason)
             }
         }
-        .menuStyle(.borderlessButton)
-        .fixedSize()
+        .menuStyle(.vfPill)
         .help("Workspaces (Command-1 to Command-9)")
     }
 
@@ -199,14 +198,14 @@ struct UpdatePopover: View {
                     .font(VFFont.small).foregroundStyle(theme.inkSecondary)
                     .fixedSize(horizontal: false, vertical: true)
                 HStack {
-                    Button("Show Flow", action: showFlow).buttonStyle(.borderless)
+                    Button("Show Flow", action: showFlow).buttonStyle(.vfGhost(tint: theme.accentText))
                     Spacer()
                     Button(a.label.isEmpty ? String(localized: "Update") : a.label) { update(a.plan) }
                         .buttonStyle(.vfPrimary)
                         .keyboardShortcut(.defaultAction)
                 }
             } else {
-                Button("Show Flow", action: showFlow)
+                Button("Show Flow", action: showFlow).buttonStyle(.vfSecondary)
             }
         }
         .padding(VFSpace.panelPadding)
@@ -345,7 +344,7 @@ struct FlowCard: View {
                 Text(n.name).font(VFFont.rowEmphasis)
                 Spacer()
                 Button(n.revisionName ?? String(localized: "Not built yet")) { showRevisions = showRevisions == n.id ? nil : n.id }
-                    .buttonStyle(.borderless)
+                    .buttonStyle(.vfGhost)
                     .font(VFFont.small)
                     .disabled(n.revisions == 0)
                     .help(n.revisions == 0 ? String(localized: "No revision yet") : String(localized: "Show the revisions"))
@@ -439,7 +438,7 @@ struct RevisionList: View {
                         Text("In use").font(VFFont.micro).foregroundStyle(theme.accentText)
                     } else {
                         Button("Use") { flow.activate(artifact, revision: r.number) }
-                            .controlSize(.mini)
+                            .buttonStyle(.vfGhost(tint: theme.accentText))
                             .accessibilityLabel(String(localized: "Use \(r.name)"))
                     }
                 }
@@ -449,7 +448,7 @@ struct RevisionList: View {
                 Button(showAll ? String(localized: "Show Fewer") : String(localized: "Show All \(list.count)")) {
                     vfWithAnimation { showAll.toggle() }
                 }
-                .buttonStyle(.borderless)
+                .buttonStyle(.vfGhost(tint: theme.accentText))
                 .font(VFFont.small)
             }
         }
@@ -515,7 +514,7 @@ struct StageOverview<Actions: View>: View {
         ScrollView {
             VStack(alignment: .leading, spacing: VFSpace.xl) {
                 Text(note).font(VFFont.row).foregroundStyle(theme.inkSecondary)
-                HStack(spacing: VFSpace.m) { actions }
+                HStack(spacing: VFSpace.m) { actions }.buttonStyle(.vfSecondary)
                 FlowCard(flow: flow, stage: stage, open: open, update: update)
             }
             .padding(VFSpace.xxl)

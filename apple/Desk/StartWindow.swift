@@ -54,7 +54,7 @@ struct StartWindow: View {
             }
             ForEach(recents, id: \.self) { url in recentRow(url) }
             Button("Open\u{2026}") { open(nil) }
-                .buttonStyle(.borderless)
+                .buttonStyle(.vfGhost(tint: theme.accentText))
                 .font(VFFont.row)
                 .keyboardShortcut("o", modifiers: .command)
             Spacer()

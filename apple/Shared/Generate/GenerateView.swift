@@ -144,11 +144,9 @@ struct GenerateView: View {
                     Spacer(minLength: 0)
                     VStack(alignment: .trailing, spacing: VFSpace.m) {
                         HStack(spacing: VFSpace.m) {
-                            Picker("Display", selection: $model.display) {
-                                ForEach(GenerateModel.Display.allCases.filter { $0 != .assembly || model.assemblyLoaded }, id: \.self) { Text($0.title).tag($0) }
-                            }
-                            .pickerStyle(.segmented)
-                            .labelsHidden()
+                            VFSegmented(String(localized: "Display"), selection: $model.display,
+                                        items: GenerateModel.Display.allCases.filter { $0 != .assembly || model.assemblyLoaded },
+                                        title: { $0.title })
                             .fixedSize()
                             .vfDisabled(model.outcome == nil && !model.assemblyLoaded,
                                         reason: String(localized: "Run the study to see a result."))
@@ -626,8 +624,7 @@ struct StressLegend: View {
         } label: {
             Image(systemName: "paintpalette").font(VFFont.glyph(12))
         }
-        .menuStyle(.borderlessButton)
-        .fixedSize()
+        .menuStyle(.vfPlain)
         .help("Heat map colours")
         .accessibilityLabel("Heat map colours")
     }

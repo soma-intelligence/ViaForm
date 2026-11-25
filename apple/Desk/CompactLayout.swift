@@ -104,6 +104,7 @@ struct SidebarAutoCollapse: Equatable {
 /// The ribbon commands that did not fit, with the same labels and enabled state; a disabled
 /// command says why on a second line.
 struct VerbMoreMenu: View {
+    @Environment(\.viaFormTheme) private var theme
     let groups: [RibbonFold.Group<FlowModel.Command>]
     let actions: StageActions
 
@@ -122,14 +123,14 @@ struct VerbMoreMenu: View {
                 }
             }
         } label: {
-            Label("More", systemImage: "ellipsis.circle")
-                .font(VFFont.small)
-                .padding(.horizontal, VFSpace.s)
-                .frame(height: 26)
+            HStack(spacing: VFSpace.xs) {
+                Label("More", systemImage: "ellipsis.circle")
+                Image(systemName: "chevron.down").font(VFFont.glyph(7, weight: .bold)).foregroundStyle(theme.inkSecondary)
+            }
+            .font(VFFont.small)
+            .frame(height: 26)
         }
-        .menuStyle(.borderlessButton)
-        .menuIndicator(.visible)
-        .fixedSize()
+        .menuStyle(.vfPlain)
         .padding(.horizontal, VFSpace.xs)
         .frame(height: 30)
         .vfSurface(.well)

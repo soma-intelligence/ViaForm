@@ -322,11 +322,12 @@ struct RibbonPanelView: View {
                 Divider()
                 PinMenu(commands: panel.commands)
             } label: {
-                VFCaption(StageLabels.panel(panel.name))
+                HStack(spacing: VFSpace.xxs) {
+                    VFCaption(StageLabels.panel(panel.name))
+                    Image(systemName: "chevron.down").font(VFFont.glyph(7, weight: .bold)).foregroundStyle(theme.inkSecondary)
+                }
             }
-            .menuStyle(.borderlessButton)
-            .menuIndicator(.visible)
-            .fixedSize()
+            .menuStyle(.vfPlain)
         }
         .padding(.horizontal, VFSpace.xs)
     }
@@ -394,9 +395,7 @@ struct MorePanel: View {
                 VFCaption("More")
             }
         }
-        .menuStyle(.borderlessButton)
-        .menuIndicator(.hidden)
-        .fixedSize()
+        .menuStyle(.vfPlain)
         .help(panels.map { StageLabels.panel($0.name) }.joined(separator: ", "))
         .accessibilityLabel("More Commands")
     }
@@ -423,7 +422,7 @@ struct VerbStrip: View {
                                 .frame(height: 26)
                                 .contentShape(Rectangle())
                         }
-                        .buttonStyle(.borderless)
+                        .buttonStyle(.vfGhost)
                         .disabled(!actions.canRun(c.id))
                         .help(actions.unavailableReason(c.id) ?? (c.detail.isEmpty ? c.label : c.detail))
                         .accessibilityHint(actions.unavailableReason(c.id) ?? "")

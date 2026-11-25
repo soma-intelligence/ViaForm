@@ -100,8 +100,9 @@ struct NavigationSettings: View {
 
     var body: some View {
         Form {
-            Picker("Mouse and trackpad", selection: $preset) {
-                ForEach(MousePreset.allCases) { Text($0.title).tag($0.rawValue) }
+            LabeledContent("Mouse and trackpad") {
+                VFMenuPicker(String(localized: "Mouse and trackpad"), selection: $preset, items: MousePreset.allCases.map(\.rawValue),
+                             title: { MousePreset(rawValue: $0)?.title ?? $0 })
             }
             Section("Gestures") {
                 ForEach(Array((MousePreset(rawValue: preset) ?? .standard).summary.enumerated()), id: \.offset) { _, row in

@@ -120,10 +120,9 @@ struct LinkCard: View {
                     .frame(minHeight: VFSize.touchTarget)
                     #endif
                 Button(info.host == nil ? String(localized: "Mount…") : String(localized: "Remount…")) { pcb.startMount(design, show: showIn3D) }
+                    .buttonStyle(.vfSecondary)
                     #if os(iOS)
                     .frame(minHeight: VFSize.touchTarget)
-                    #else
-                    .controlSize(.small)
                     #endif
             }
         }

@@ -127,11 +127,7 @@ struct MassPropertiesView: View {
             if let r = report, r.bodyCount > 0 {
                 Text(r.bodies.isEmpty ? String(localized: "All bodies, \(r.bodyCount)") : r.bodies.joined(separator: ", "))
                     .font(VFFont.small).foregroundStyle(theme.inkSecondary).lineLimit(2)
-                Picker(String(localized: "Relative to"), selection: $frame) {
-                    ForEach(MassReport.Frame.allCases) { f in Text(f.title).tag(f) }
-                }
-                .pickerStyle(.segmented)
-                .font(VFFont.row)
+                VFSegmented(String(localized: "Relative to"), selection: $frame, title: { $0.title })
                 group {
                     KVRow(String(localized: "Mass"), VFFormat.mass(r.mass))
                     KVRow(String(localized: "Volume"), VFFormat.volume(r.volume))
@@ -166,7 +162,7 @@ struct MassPropertiesView: View {
                           systemImage: copied ? "checkmark" : "doc.on.doc")
                         .frame(maxWidth: .infinity)
                 }
-                .buttonStyle(.vfSecondary).controlSize(.small)
+                .buttonStyle(.vfSecondary)
             } else {
                 EmptyState(String(localized: "Nothing to measure"), systemImage: "scalemass",
                            message: String(localized: "Add a solid body, then its mass, centre of mass and inertia show here."))

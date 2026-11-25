@@ -317,6 +317,7 @@ struct GenericCommandForm: View {
             if f.optional && f.default == nil {
                 HStack(spacing: VFSpace.m) {
                     Toggle(f.label, isOn: enabledBinding(f.key))
+                        .toggleStyle(.vfCheck)
                     Spacer(minLength: VFSpace.m)
                     if state.enabled.contains(f.key) { numberField(f) }
                 }
@@ -325,15 +326,16 @@ struct GenericCommandForm: View {
             }
         case .bool:
             Toggle(f.label, isOn: Binding(get: { state.flags[f.key] ?? false }, set: { state.flags[f.key] = $0 }))
+                .toggleStyle(.vfSwitch)
         case .enum:
-            Picker(f.label, selection: textBinding(f.key)) {
-                ForEach(f.options ?? [], id: \.self) { o in Text(optionLabel(o)).tag(o) }
+            LabeledContent(f.label) {
+                VFMenuPicker(f.label, selection: textBinding(f.key), items: f.options ?? [], title: { optionLabel($0) })
             }
         case .string:
             LabeledContent(f.label) {
                 TextField(f.label, text: textBinding(f.key))
                     .labelsHidden()
-                    .textFieldStyle(.roundedBorder)
+                    .vfField()
                     .frame(width: 200)
                     #if os(iOS)
                     .autocorrectionDisabled()
@@ -341,9 +343,9 @@ struct GenericCommandForm: View {
                     #endif
             }
         case .body:
-            Picker(f.label, selection: textBinding(f.key)) {
-                Text(f.optional ? String(localized: "None") : String(localized: "Choose a Body")).tag("")
-                ForEach(model.snapshot.bodies) { b in Text(b.name).tag(b.name) }
+            LabeledContent(f.label) {
+                VFMenuPicker(f.label, selection: textBinding(f.key), items: [""] + model.snapshot.bodies.map(\.name),
+                             title: { $0.isEmpty ? (f.optional ? String(localized: "None") : String(localized: "Choose a Body")) : $0 })
             }
         case .bodies:
             LabeledContent(f.label) {
@@ -359,13 +361,15 @@ struct GenericCommandForm: View {
                 } label: {
                     Text(bodiesSummary(state.names[f.key] ?? []))
                 }
-                .fixedSize()
+                .menuStyle(.vfPill)
             }
         case .sketch:
-            Picker(f.label, selection: Binding(get: { state.sketches[f.key] ?? -1 },
-                                               set: { state.sketches[f.key] = $0 < 0 ? nil : $0 })) {
-                Text("Open or Last Sketch").tag(-1)
-                ForEach(model.snapshot.sketches) { s in Text(s.name).tag(s.id) }
+            LabeledContent(f.label) {
+                VFMenuPicker(f.label, selection: Binding(get: { state.sketches[f.key] ?? -1 },
+                                                         set: { state.sketches[f.key] = $0 < 0 ? nil : $0 }),
+                             items: [-1] + model.snapshot.sketches.map(\.id),
+                             title: { id in id < 0 ? String(localized: "Open or Last Sketch")
+                                 : (model.snapshot.sketches.first { $0.id == id }?.name ?? "") })
             }
         case .edges, .faces:
             let edges = f.kind == .edges

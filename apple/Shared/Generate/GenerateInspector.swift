@@ -11,21 +11,18 @@ struct GenerateInspector: View {
     /// The setup panes lock while a study runs; Project, Results and Variants stay usable.
     private var locked: Bool { model.running && [.study, .regions].contains(model.pane) }
 
-    private var panePicker: some View {
-        Picker("Pane", selection: $model.pane) {
-            ForEach(GenerateModel.Pane.allCases, id: \.self) { Text($0.title).tag($0) }
-        }
-        .labelsHidden()
+    private var paneSegments: some View {
+        VFSegmented(String(localized: "Pane"), selection: $model.pane, items: GenerateModel.Pane.allCases, title: { $0.title })
     }
 
     var body: some View {
         VStack(spacing: 0) {
             // Five panes do not fit a 320 pt column as full segments: try the
-            // regular control, then the small one, then a menu, so no title is cut.
+            // segmented track, then a pill menu, so no title is cut.
             ViewThatFits(in: .horizontal) {
-                panePicker.pickerStyle(.segmented).fixedSize()
-                panePicker.pickerStyle(.segmented).controlSize(.small).fixedSize()
-                panePicker.pickerStyle(.menu).frame(maxWidth: .infinity, alignment: .leading)
+                paneSegments.fixedSize()
+                VFMenuPicker(String(localized: "Pane"), selection: $model.pane, items: GenerateModel.Pane.allCases, title: { $0.title })
+                    .frame(maxWidth: .infinity, alignment: .leading)
             }
             .padding(.horizontal, VFSpace.xl)
             .padding(.vertical, VFSpace.m)
@@ -80,7 +77,14 @@ struct IntRow: View {
                 NumberField(label, value: Binding(get: { Double(value) }, set: { value = min(max(Int($0.rounded()), range.lowerBound), range.upperBound) }),
                             unit: unit, range: Double(range.lowerBound)...Double(range.upperBound), step: Double(step), width: 56)
                     .labelHiddenVisually()
-                Stepper(label, value: $value, in: range, step: step).labelsHidden()
+                VFIconButton("minus", label: String(localized: "Decrease \(label)")) {
+                    value = max(value - step, range.lowerBound)
+                }
+                .disabled(value <= range.lowerBound)
+                VFIconButton("plus", label: String(localized: "Increase \(label)")) {
+                    value = min(value + step, range.upperBound)
+                }
+                .disabled(value >= range.upperBound)
             }
         }
     }
@@ -110,9 +114,11 @@ struct StudyForm: View {
                         Button { applyTemplate(t) } label: { Label(t.title, systemImage: t.symbol) }
                     }
                 } label: {
-                    Label("Start from a template", systemImage: "square.on.square")
+                    Label("Start from a template", systemImage: "square.on.square").labelStyle(.titleAndIcon)
                 }
+                .menuStyle(.vfPill)
                 TextField("Body name", text: $model.study.name)
+                    .vfField()
             }
             InspectorSection(.designSpace, String(localized: "Design space"), status: s.status(.designSpace)) {
                 Vec3Row("Min", value: $model.study.min, unit: "mm")
@@ -132,11 +138,11 @@ struct StudyForm: View {
                 Text("World coordinates in \(LengthDisplay.current.plural), Z up. Each voxel is one hexahedral element.")
             }
             InspectorSection(.goal, String(localized: "Goal"), status: s.status(.goal)) {
-                Picker("Method", selection: $model.study.method) {
-                    ForEach(StudyMethod.allCases, id: \.self) { Text($0.label).tag($0) }
+                LabeledContent("Method") {
+                    VFMenuPicker(String(localized: "Method"), selection: $model.study.method, items: StudyMethod.allCases, title: { $0.label })
                 }
-                Picker("Objective", selection: $model.study.objective) {
-                    ForEach(StudyObjective.allCases, id: \.self) { Text($0.label).tag($0) }
+                LabeledContent("Objective") {
+                    VFMenuPicker(String(localized: "Objective"), selection: $model.study.objective, items: StudyObjective.allCases, title: { $0.label })
                 }
                 VStack(alignment: .leading, spacing: VFSpace.xs) {
                     LabeledContent(s.objective == .compliance ? "Volume fraction" : "Volume cap") {
@@ -151,11 +157,13 @@ struct StudyForm: View {
                 IntRow(String(localized: "Smoothing passes"), value: $model.study.smoothing, range: 0...40)
                 IntRow(String(localized: "Bodies allowed"), value: $model.study.maxBodies, range: 1...8)
                 Toggle("Cut round keep-outs exactly", isOn: $model.study.exactKeepOuts)
+                    .toggleStyle(.vfSwitch)
             }
             InspectorSection(.solver, String(localized: "Solver"), status: s.status(.solver)) {
                 OptionalNumberRow(String(localized: "Target mass"), value: $model.study.massTargetG, unit: "g", fallback: 0, label: String(localized: "Target"))
                 Toggle("Hold up to thinner and thicker prints", isOn: Binding(get: { model.study.robustDelta != nil },
                                                                               set: { model.study.robustDelta = $0 ? (model.study.robustDelta ?? 0.15) : nil }))
+                    .toggleStyle(.vfSwitch)
                     .help("Checks the shape as made a little thinner and a little thicker, so it stays strong when the print or the cut is off.")
                 if s.robustDelta != nil {
                     NumberRow(String(localized: "Thickness margin"), value: Binding(get: { (model.study.robustDelta ?? 0.15) * 100 }, set: { model.study.robustDelta = $0 / 100 }), unit: "%", range: 1...45)
@@ -170,11 +178,11 @@ struct StudyForm: View {
                 Text("Without a target mass, the volume fraction decides how much material stays.")
             }
             InspectorSection(.material, String(localized: "Material"), status: s.status(.material)) {
-                Picker("Material", selection: materialName) {
-                    ForEach(StudyMaterial.presets, id: \.name) { Text($0.name).tag($0.name) }
-                    if !StudyMaterial.presets.contains(where: { $0.name == s.material.name }) {
-                        Text(s.material.name).tag(s.material.name)
-                    }
+                LabeledContent("Material") {
+                    // A custom material that is not a preset stays listed so the pill can show it.
+                    let names = StudyMaterial.presets.map(\.name)
+                        + (StudyMaterial.presets.contains(where: { $0.name == s.material.name }) ? [] : [s.material.name])
+                    VFMenuPicker(String(localized: "Material"), selection: materialName, items: names, title: { $0 })
                 }
                 NumberRow(String(localized: "Stiffness (Young's modulus)"), value: $model.study.material.e, unit: "MPa", range: 1...1e7)
                 NumberRow(String(localized: "Poisson's ratio"), value: $model.study.material.nu, unit: "", range: 0...0.49)
@@ -192,13 +200,14 @@ struct StudyForm: View {
                 Text("Stress held at \(Int(s.stressLimit.rounded())) MPa.")
             }
             InspectorSection(.symmetry, String(localized: "Symmetry"), status: s.status(.symmetry)) {
-                Toggle("Mirror across X", isOn: $model.study.symmetry[0])
-                Toggle("Mirror across Y", isOn: $model.study.symmetry[1])
-                Toggle("Mirror across Z", isOn: $model.study.symmetry[2])
+                Toggle("Mirror across X", isOn: $model.study.symmetry[0]).toggleStyle(.vfSwitch)
+                Toggle("Mirror across Y", isOn: $model.study.symmetry[1]).toggleStyle(.vfSwitch)
+                Toggle("Mirror across Z", isOn: $model.study.symmetry[2]).toggleStyle(.vfSwitch)
             }
             InspectorSection(.manufacturing, String(localized: "Manufacturing"), status: s.status(.manufacturing)) {
-                Picker("Process", selection: $model.study.manufacturing.process) {
-                    ForEach(StudyManufacturing.Process.allCases, id: \.self) { Text($0.label).tag($0) }
+                LabeledContent("Process") {
+                    VFMenuPicker(String(localized: "Process"), selection: $model.study.manufacturing.process,
+                                 items: StudyManufacturing.Process.allCases, title: { $0.label })
                 }
                 if s.manufacturing.process != .free {
                     AxisPicker(label: s.manufacturing.process == .additive ? String(localized: "Build direction")
@@ -229,8 +238,15 @@ struct StudyForm: View {
 
 /// Natural modes and impacts.
 struct DynamicsSection: View {
+    @Environment(\.viaFormTheme) private var theme
     @Environment(\.vfToasts) private var toasts
     @Bindable var model: GenerateModel
+
+    /// A load case's name in a menu, or its number when it has none.
+    private func caseTitle(_ i: Int) -> String {
+        let name = model.study.cases[safe: i]?.name ?? ""
+        return name.isEmpty ? String(localized: "Case \(i + 1)") : name
+    }
 
     var body: some View {
         InspectorSection(.dynamics, String(localized: "Dynamics"), status: model.study.status(.dynamics)) {
@@ -238,10 +254,9 @@ struct DynamicsSection: View {
             ForEach($model.study.dynamics.impacts) { $impact in
                 VStack(alignment: .leading, spacing: VFSpace.m) {
                     HStack {
-                        Picker("Impact on", selection: $impact.caseIndex) {
-                            ForEach(Array(model.study.cases.enumerated()), id: \.offset) { i, c in
-                                Text(c.name.isEmpty ? String(localized: "Case \(i + 1)") : c.name).tag(i)
-                            }
+                        LabeledContent("Impact on") {
+                            VFMenuPicker(String(localized: "Impact on"), selection: $impact.caseIndex,
+                                         items: Array(model.study.cases.indices), title: { caseTitle($0) })
                         }
                         RemoveButton(label: String(localized: "Remove Impact")) {
                             model.removeImpact(impact.id)
@@ -256,6 +271,7 @@ struct DynamicsSection: View {
                 }
             }
             Button("Add Impact", systemImage: "plus") { model.addImpact() }
+                .buttonStyle(.vfGhost(tint: theme.accentText))
                 .vfDisabled(model.study.cases.isEmpty, reason: String(localized: "Add a load case first."))
         } footer: {
             Text("An impact applies its load case as a half-sine pulse, then integrates the response over the window.")
@@ -286,11 +302,12 @@ struct RegionsForm: View {
                             Toggle("Y", isOn: $sup.fix[1])
                             Toggle("Z", isOn: $sup.fix[2])
                         }
-                        .toggleStyle(.button)
+                        .toggleStyle(.vfChip)
                         RegionFields(region: $sup.region)
                     }
                 }
                 Button("Add Support", systemImage: "plus") { model.addSupport() }
+                    .buttonStyle(.vfGhost(tint: theme.accentText))
             } footer: {
                 Text("Pick a region here or in the preview, then drag it there to move it.")
             }
@@ -302,6 +319,7 @@ struct RegionsForm: View {
                     }
                 }
                 Button("Add Keep-Out", systemImage: "plus") { model.addKeepOut() }
+                    .buttonStyle(.vfGhost(tint: theme.accentText))
             }
             InspectorSection(.keepIn, String(localized: "Keep in"), status: model.study.status(.keepIn)) {
                 ForEach($model.study.keepIn) { $k in
@@ -310,6 +328,7 @@ struct RegionsForm: View {
                     }
                 }
                 Button("Add Keep-In", systemImage: "plus") { model.addKeepIn() }
+                    .buttonStyle(.vfGhost(tint: theme.accentText))
             }
         }
         .formStyle(.grouped)
@@ -317,19 +336,26 @@ struct RegionsForm: View {
 }
 
 struct LoadCasesSection: View {
+    @Environment(\.viaFormTheme) private var theme
     @Environment(\.vfToasts) private var toasts
     @Bindable var model: GenerateModel
+
+    /// A load case's name in a menu, or its number when it has none.
+    private func caseTitle(_ i: Int) -> String {
+        let name = model.study.cases[safe: i]?.name ?? ""
+        return name.isEmpty ? String(localized: "Case \(i + 1)") : name
+    }
 
     var body: some View {
         InspectorSection(.loads, String(localized: "Load cases"), status: model.study.status(.loads)) {
             if model.study.cases.indices.contains(model.activeCase) {
-                Picker("Case", selection: $model.activeCase) {
-                    ForEach(Array(model.study.cases.enumerated()), id: \.offset) { i, c in
-                        Text(c.name.isEmpty ? String(localized: "Case \(i + 1)") : c.name).tag(i)
-                    }
+                LabeledContent("Case") {
+                    VFMenuPicker(String(localized: "Case"), selection: $model.activeCase,
+                                 items: Array(model.study.cases.indices), title: { caseTitle($0) })
                 }
                 let c = $model.study.cases[model.activeCase]
                 TextField("Name", text: c.name)
+                    .vfField()
                 NumberRow(String(localized: "Weight in the goal"), value: c.weight, unit: "", range: 0...1000)
                 OptionalVec3Row(String(localized: "Acceleration"), value: c.acceleration, unit: "mm/s²", fallback: Vec3(0, 0, -9810))
                 ForEach(c.loads) { $load in
@@ -345,6 +371,7 @@ struct LoadCasesSection: View {
                 } label: {
                     Label("Add Load", systemImage: "plus")
                 }
+                .menuStyle(.vfPill)
             }
             HStack {
                 Button("Add Case", systemImage: "plus.square.on.square") { model.addCase() }
@@ -357,7 +384,7 @@ struct LoadCasesSection: View {
                 }
                 .vfDisabled(model.study.cases.count < 2, reason: String(localized: "A study keeps at least one load case."))
             }
-            .buttonStyle(.borderless)
+            .buttonStyle(.vfGhost(tint: theme.accentText))
         } footer: {
             Text("Forces in N, torques in N·mm about an axis through their centre (right-hand rule), pressures in MPa. Gravity is 0, 0, -9810 mm/s².")
         }
@@ -418,11 +445,8 @@ struct RegionFields: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: VFSpace.m) {
-            Picker("Shape", selection: Binding(get: { region.shape }, set: { region.convert(to: $0) })) {
-                ForEach(StudyRegion.Shape.allCases, id: \.self) { Label($0.label, systemImage: $0.symbol).tag($0) }
-            }
-            .pickerStyle(.segmented)
-            .labelsHidden()
+            VFSegmented(String(localized: "Shape"), selection: Binding(get: { region.shape }, set: { region.convert(to: $0) }),
+                        items: StudyRegion.Shape.allCases, title: { $0.label }, symbol: { $0.symbol })
             switch region.shape {
             case .box:
                 Vec3Row("Min", value: $region.min, unit: "mm")
@@ -448,15 +472,13 @@ struct RegionFields: View {
 
 /// A load's kind and figures.
 struct LoadFields: View {
+    @Environment(\.viaFormTheme) private var theme
     @Binding var load: StudyLoad
 
     var body: some View {
         VStack(alignment: .leading, spacing: VFSpace.m) {
-            Picker("Kind", selection: $load.kind) {
-                ForEach(StudyLoad.Kind.allCases, id: \.self) { Label($0.label, systemImage: $0.symbol).tag($0) }
-            }
-            .pickerStyle(.segmented)
-            .labelsHidden()
+            VFSegmented(String(localized: "Kind"), selection: $load.kind,
+                        items: StudyLoad.Kind.allCases, title: { $0.label }, symbol: { $0.symbol })
             switch load.kind {
             case .force:
                 Vec3Row("Force", value: $load.force, unit: "N")
@@ -465,7 +487,7 @@ struct LoadFields: View {
                 AxisPicker(label: "Axis", value: $load.axis)
                 Vec3Row("Centre", value: $load.center, unit: "mm")
                 Button("Centre on the Region", systemImage: "scope") { load.center = load.region.middle }
-                    .buttonStyle(.borderless)
+                    .buttonStyle(.vfGhost(tint: theme.accentText))
             case .pressure:
                 NumberRow("Pressure", value: $load.pressure, unit: "MPa", range: 0...1e5)
                 AxisPicker(label: "Direction", value: $load.direction)
@@ -524,6 +546,7 @@ struct OptionalNumberRow: View {
 
     var body: some View {
         Toggle(label, isOn: Binding(get: { value != nil }, set: { value = $0 ? (value ?? fallback) : nil }))
+            .toggleStyle(.vfSwitch)
         if value != nil {
             NumberRow(numberLabel, value: Binding(get: { value ?? fallback }, set: { value = $0 }), unit: unit, range: 0...1e9)
         }
@@ -545,6 +568,7 @@ struct OptionalVec3Row: View {
 
     var body: some View {
         Toggle(label, isOn: Binding(get: { value != nil }, set: { value = $0 ? (value ?? fallback) : nil }))
+            .toggleStyle(.vfSwitch)
         if value != nil {
             Vec3Row(String(localized: "Body acceleration"), value: Binding(get: { value ?? fallback }, set: { value = $0 }), unit: unit)
         }
@@ -568,11 +592,10 @@ struct AxisPicker: View {
     }
 
     var body: some View {
-        Picker(label, selection: Binding(get: { current }, set: { name in
-            if let a = Self.axes.first(where: { $0.0 == name }) { value = a.1 } else if current != "other" { value = Vec3(1, 1, 1) / Double(3).squareRoot() }
-        })) {
-            ForEach(Self.axes, id: \.0) { Text(verbatim: $0.0).tag($0.0) }
-            Text("Other").tag("other")
+        LabeledContent(label) {
+            VFMenuPicker(label, selection: Binding(get: { current }, set: { name in
+                if let a = Self.axes.first(where: { $0.0 == name }) { value = a.1 } else if current != "other" { value = Vec3(1, 1, 1) / Double(3).squareRoot() }
+            }), items: Self.axes.map(\.0) + ["other"], title: { $0 == "other" ? String(localized: "Other") : $0 })
         }
         if current == "other" {
             Vec3Row(label, value: $value, unit: "")

@@ -104,10 +104,7 @@ struct TouchPCBView: View {
     /// capsule under the window's own).
     private var header: some View {
         HStack(spacing: 4) {
-            Picker("Sheet", selection: $model.sheet) {
-                ForEach(PCBModel.Sheet.allCases, id: \.self) { Text($0.rawValue).tag($0) }
-            }
-            .pickerStyle(.segmented)
+            VFSegmented(String(localized: "Sheet"), selection: $model.sheet, title: { $0.rawValue })
             .frame(width: compact ? 150 : 170)
             Spacer(minLength: 4)
             // Browser, undo and redo are in the window's top capsule.

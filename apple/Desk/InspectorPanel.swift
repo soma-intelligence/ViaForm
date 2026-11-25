@@ -166,7 +166,7 @@ struct InspectorPanel: View {
                     if let a = n.action, n.status == .stale || n.status == .failed {
                         // Bordered: the canvas banner carries the primary for this action (P1-17).
                         Button { actions.update(a.plan) } label: { Text(a.label).lineLimit(2).frame(maxWidth: .infinity) }
-                            .buttonStyle(.vfSecondary).controlSize(.small)
+                            .buttonStyle(.vfSecondary)
                             .help(a.label)
                             .vfEngineGate()
                     }
@@ -270,7 +270,7 @@ struct InspectorPanel: View {
                     Label(String(localized: "Change Parameters"), systemImage: "tablecells")
                         .frame(maxWidth: .infinity)
                 }
-                .buttonStyle(.vfSecondary).controlSize(.small)
+                .buttonStyle(.vfSecondary)
                 .help(String(localized: "Open the full table: parameter, name, unit, expression, value, comments"))
             }
         case .generate:
@@ -369,7 +369,7 @@ struct InspectorPanel: View {
                     .vfDisabled(safety.moving, reason: String(localized: "Stop the robot to change its limits"))
                 Toggle(String(localized: "Workspace fence from Assemble joint limits"), isOn: $safety.fenceEnabled)
                     .font(VFFont.row)
-                    .toggleStyle(.checkbox)
+                    .toggleStyle(.vfCheck)
                     .vfDisabled(safety.moving, reason: String(localized: "Stop the robot to change its limits"))
                 if !safety.connected {
                     Text("Not applied, no robot. These limits apply once a robot is connected.")
@@ -404,7 +404,7 @@ struct InspectorPanel: View {
                         .lineLimit(1)
                         .frame(maxWidth: .infinity, alignment: .leading)
                 }
-                .controlSize(.small)
+                .buttonStyle(.vfSecondary)
                 .disabled(!actions.canRun(c.id))
                 .vfEngineGate()
             }

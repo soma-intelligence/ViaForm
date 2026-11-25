@@ -371,11 +371,8 @@ struct OutcomesPanel: View {
                     .lineLimit(1)
                     .fixedSize()
                     Spacer(minLength: VFSpace.m)
-                    Picker("Sort by", selection: $model.outcomeSort) {
-                        ForEach(OutcomeSort.allCases) { Text($0.title).tag($0) }
-                    }
-                    .pickerStyle(.menu)
-                    .fixedSize()
+                    VFMenuPicker(String(localized: "Sort by"), selection: $model.outcomeSort,
+                                 items: Array(OutcomeSort.allCases), title: { $0.title })
                     .help("Order of the candidates in the gallery")
                     Button { model.comparing = model.defaultComparePair } label: { Label("Compare…", systemImage: "rectangle.split.2x1") }
                         .buttonStyle(.vfSecondary)
@@ -610,13 +607,13 @@ struct MeshCheckRow: View {
                 CheckStatusLabel(status: item.status)
                 if item.map != nil {
                     Button("Show on Model") { onShow(item) }
-                        .buttonStyle(.borderless)
+                        .buttonStyle(.vfGhost(tint: theme.accentText))
                         .font(VFFont.small)
                         .help("Colour the model by this check and frame its worst spot")
                         .accessibilityLabel(Text("Show \(item.name) on the model"))
                 } else if item.spot != nil, item.status == .warning || item.status == .fail {
                     Button("Show") { onShow(item) }
-                        .buttonStyle(.borderless)
+                        .buttonStyle(.vfGhost(tint: theme.accentText))
                         .font(VFFont.small)
                         .help("Frame this in the preview")
                         .accessibilityLabel(Text("Show \(item.name) in the preview"))
@@ -706,7 +703,7 @@ struct OutcomeExportMenu: View {
         } label: {
             Label(model.exporting ? String(localized: "Exporting…") : String(localized: "Export"), systemImage: "square.and.arrow.up")
         }
-        .fixedSize()
+        .menuStyle(.vfPill)
         .vfDisabled(blocked != nil, reason: blocked ?? "")
         .help(blocked ?? String(localized: "Export this candidate's surface as STL, 3MF or OBJ"))
         .onChange(of: model.retryExport) { _, f in
@@ -830,10 +827,10 @@ struct CompareSheet: View {
 
     private func side(_ title: String, selection: Binding<Int>, candidate c: StudyCandidate?, o: StudyOutcome, study: Study) -> some View {
         VStack(alignment: .leading, spacing: VFSpace.s) {
-            Picker(title, selection: selection) {
-                ForEach(o.candidates.indices, id: \.self) { i in
-                    Text(i == o.best ? String(localized: "Candidate \(i + 1), best") : String(localized: "Candidate \(i + 1)")).tag(i)
-                }
+            LabeledContent(title) {
+                VFMenuPicker(title, selection: selection, items: Array(o.candidates.indices), title: { i in
+                    i == o.best ? String(localized: "Candidate \(i + 1), best") : String(localized: "Candidate \(i + 1)")
+                })
             }
             if let c {
                 CandidateCard(candidate: c, study: study, image: model.thumbnails[selection.wrappedValue],

@@ -60,6 +60,7 @@ struct PrivacySettingsSections: View {
     var body: some View {
         Section {
             Toggle("Share Anonymous Usage Data", isOn: $telemetry)
+                .toggleStyle(.vfSwitch)
         } header: {
             Text("Usage Data")
         } footer: {
@@ -80,6 +81,7 @@ struct PrivacySettingsSections: View {
                             cleared = true
                         })
                 }
+                .buttonStyle(.vfSecondary)
                 .vfDisabled(NSDocumentController.shared.recentDocumentURLs.isEmpty && !cleared,
                             reason: String(localized: "There are no recent projects."))
             } label: {
@@ -93,6 +95,7 @@ struct PrivacySettingsSections: View {
                 LabeledContent {
                     #if os(macOS)
                     Button("Show in Finder") { reveal(place.url) }
+                        .buttonStyle(.vfSecondary)
                     #endif
                 } label: {
                     Text(place.title)

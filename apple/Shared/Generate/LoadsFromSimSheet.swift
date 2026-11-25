@@ -87,6 +87,7 @@ struct LoadsFromSimSheet: View {
                     .font(VFFont.small).foregroundStyle(theme.inkTertiary)
                 Spacer()
                 Button("Cancel") { cancel() }
+                    .buttonStyle(.vfSecondary)
                 Button("Add \(selectedCases.count) load case\(selectedCases.count == 1 ? "" : "s")") { handOff() }
                     .buttonStyle(.vfPrimary)
                     .vfDisabled(selectedCases.isEmpty, reason: String(localized: "Pick at least one instant."))
@@ -150,10 +151,8 @@ struct LoadsFromSimSheet: View {
             HStack {
                 Text("\((wrench?.body ?? body_).replacingOccurrences(of: "_", with: " ").capitalized) forces").font(VFFont.title).foregroundStyle(theme.ink)
                 Spacer()
-                Picker("Body", selection: $body_) {
-                    ForEach(run?.wrenches.map(\.body) ?? [], id: \.self) { Text($0.replacingOccurrences(of: "_", with: " ").capitalized).tag($0) }
-                }
-                .labelsHidden().frame(width: 140)
+                VFMenuPicker(String(localized: "Body"), selection: $body_, items: run?.wrenches.map(\.body) ?? [],
+                             title: { $0.replacingOccurrences(of: "_", with: " ").capitalized })
             }
             if let w = wrench, !w.t.isEmpty {
                 let pts = w.t.indices.map { WP(id: $0, t: w.t[$0], f: w.magnitude($0)) }
@@ -196,10 +195,13 @@ struct LoadsFromSimSheet: View {
 
     private var picks: some View {
         VStack(alignment: .leading, spacing: VFSpace.m) {
-            Picker("Pick", selection: $mode) {
-                Text("Peaks").tag("Peaks"); Text("Envelope").tag("Envelope"); Text("At time").tag("At time")
-            }
-            .pickerStyle(.segmented).labelsHidden()
+            VFSegmented(String(localized: "Pick"), selection: $mode, items: ["Peaks", "Envelope", "At time"], title: { m in
+                switch m {
+                case "Peaks": String(localized: "Peaks")
+                case "Envelope": String(localized: "Envelope")
+                default: String(localized: "At time")
+                }
+            })
             if mode != "At time" {
                 IntRow(String(localized: "Instants"), value: $count, range: 1...12)
                     .font(VFFont.row)
@@ -223,6 +225,7 @@ struct LoadsFromSimSheet: View {
                             }
                             .font(VFFont.row).foregroundStyle(theme.ink)
                         }
+                        .toggleStyle(.vfCheck)
                         .frame(height: 28)
                     }
                 }

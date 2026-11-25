@@ -290,7 +290,7 @@ struct ConstructForm: View {
             HStack(spacing: VFSpace.s) {
                 Text("Name").font(VFFont.row).foregroundStyle(theme.inkSecondary)
                 TextField(String(localized: "Automatic"), text: $draft.name)
-                    .textFieldStyle(.roundedBorder).font(VFFont.row)
+                    .vfField().font(VFFont.row)
                     #if os(iOS)
                     .autocorrectionDisabled()
                     .textInputAutocapitalization(.never)
@@ -306,11 +306,11 @@ struct ConstructForm: View {
                 Spacer()
                 if let onDone {
                     Button(String(localized: "Cancel")) { onDone() }
-                        .buttonStyle(.vfSecondary).controlSize(.small)
+                        .buttonStyle(.vfSecondary)
                         .keyboardShortcut(.cancelAction)
                 }
                 Button(String(localized: "OK")) { run() }
-                    .buttonStyle(.vfPrimary).controlSize(.small)
+                    .buttonStyle(.vfPrimary)
                     .keyboardShortcut(.defaultAction)
                     .vfDisabled(draft.missing != nil, reason: String(localized: "\(draft.missing ?? "") is missing"))
                     .vfEngineGate()
@@ -333,7 +333,7 @@ struct ConstructForm: View {
             Label(draft.kind.title, systemImage: draft.kind.symbol)
                 .font(VFFont.rowEmphasis)
         }
-        .fixedSize()
+        .menuStyle(.vfPill)
         .accessibilityLabel(Text("Construction type, \(draft.kind.title)"))
     }
 
@@ -380,7 +380,7 @@ struct ConstructForm: View {
                         Button(o) {
                             fill(s, s.accepts == .axisBase || s.accepts == .axisRef ? .axis(o) : .plane(o))
                         }
-                        .buttonStyle(.vfSecondary).controlSize(.small)
+                        .buttonStyle(.vfSecondary)
                         .help(String(localized: "Use the origin \(o)"))
                     }
                 }
@@ -409,7 +409,7 @@ struct ConstructForm: View {
                     model.startSketch(name)
                     onDone?()
                 }
-                .buttonStyle(.vfSecondary).controlSize(.small)
+                .buttonStyle(.vfSecondary)
             }
         }
     }

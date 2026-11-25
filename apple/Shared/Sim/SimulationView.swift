@@ -153,16 +153,16 @@ struct SimTransportBar: View {
                     .vfDisabled(model.status?.finished == true, reason: String(localized: "The flight is over. Go back to the start first."))
             }
             Divider().frame(height: VFSize.chip)
-            Picker("Speed", selection: $model.speed) {
-                Text("¼×").tag(0.25)
-                Text("1×").tag(1.0)
-                Text("4×").tag(4.0)
+            VFSegmented(String(localized: "Speed"), selection: $model.speed, items: [0.25, 1.0, 4.0]) { s in
+                switch s {
+                case 0.25: String(localized: "¼×")
+                case 4.0: String(localized: "4×")
+                default: String(localized: "1×")
+                }
             }
-            .pickerStyle(.segmented).fixedSize().labelsHidden()
-            Picker("Camera", selection: $model.camera) {
-                ForEach(SimModel.Camera.allCases, id: \.self) { Text($0.title).tag($0) }
-            }
-            .pickerStyle(.segmented).fixedSize().labelsHidden()
+            .fixedSize()
+            VFSegmented(String(localized: "Camera"), selection: $model.camera) { $0.title }
+                .fixedSize()
             if let showSetup {
                 VFIconButton("slider.horizontal.3", label: String(localized: "Flight setup"), size: 15) { showSetup.wrappedValue = true }
             }
@@ -237,30 +237,40 @@ struct SimInspector: View {
         Form {
             Section("Flight") {
                 if let c = model.catalog {
-                    Picker("Mission", selection: $model.options.mission) {
-                        ForEach(c.missions, id: \.id) { Text($0.name).tag($0.id) }
+                    LabeledContent("Mission") {
+                        VFMenuPicker(String(localized: "Mission"), selection: $model.options.mission, items: c.missions.map(\.id)) { id in
+                            c.missions.first { $0.id == id }?.name ?? id
+                        }
                     }
                     if model.options.mission == "course" {
-                        Picker("Course", selection: $model.options.course) {
-                            ForEach(c.courses, id: \.id) { Text($0.name).tag($0.id) }
+                        LabeledContent("Course") {
+                            VFMenuPicker(String(localized: "Course"), selection: $model.options.course, items: c.courses.map(\.id)) { id in
+                                c.courses.first { $0.id == id }?.name ?? id
+                            }
                         }
                         if model.options.course == "random" {
                             IntRow(String(localized: "Course seed"), value: $model.options.seed, range: 1...999)
                         }
                     }
-                    Picker("Weather", selection: $model.options.weather) {
-                        ForEach(Array(c.weathers.enumerated()), id: \.offset) { i, w in Text(w.name).tag(i) }
+                    LabeledContent("Weather") {
+                        VFMenuPicker(String(localized: "Weather"), selection: $model.options.weather, items: Array(c.weathers.indices)) { i in
+                            c.weathers.indices.contains(i) ? c.weathers[i].name : "\(i)"
+                        }
                     }
-                    Picker("Brain", selection: $model.options.brain) {
-                        ForEach(c.brains, id: \.id) { Text($0.name).tag($0.id) }
-                        if model.options.customBrain != nil { Text("Trained here").tag("custom") }
+                    LabeledContent("Brain") {
+                        VFMenuPicker(String(localized: "Brain"), selection: $model.options.brain,
+                                     items: c.brains.map(\.id) + (model.options.customBrain != nil ? ["custom"] : [])) { id in
+                            id == "custom" && model.options.customBrain != nil ? String(localized: "Trained here") : (c.brains.first { $0.id == id }?.name ?? id)
+                        }
                     }
                     Toggle("Realistic plant and sensors", isOn: model.isStress ? .constant(true) : $model.options.realism)
+                        .toggleStyle(.vfSwitch)
                         .vfDisabled(model.isStress, reason: String(localized: "The stress test always flies the realistic plant."))
                     if model.isManual {
-                        Picker("Sticks", selection: $model.options.pilotMode) {
-                            Text("Position hold").tag("position")
-                            Text("Angle").tag("angle")
+                        LabeledContent("Sticks") {
+                            VFMenuPicker(String(localized: "Sticks"), selection: $model.options.pilotMode, items: ["position", "angle"]) {
+                                $0 == "angle" ? String(localized: "Angle") : String(localized: "Position hold")
+                            }
                         }
                     }
                 } else {
@@ -330,6 +340,7 @@ struct SimDisturbanceSection: View {
                 }
             }
             Toggle("Random hits every few seconds", isOn: Binding(get: { model.stabilization?.timed == true }, set: { _ in model.disturb("timed") }))
+                .toggleStyle(.vfSwitch)
         } header: {
             Text("Disturbances")
         } footer: {
@@ -351,6 +362,7 @@ struct SimFrameSection: View {
                 switch g.airframe {
                 case .success(let a):
                     Toggle("Build the drone from it", isOn: $model.useGeneratedFrame)
+                        .toggleStyle(.vfSwitch)
                     LabeledContent(a.name, value: String(localized: "\(VFFormat.mass(a.frameG)) frame, \(VFFormat.length(a.armMm)) arm"))
                     LabeledContent("All-up", value: String(localized: "\(VFFormat.mass(a.massKg * 1000)), thrust to weight \(String(format: "%.1f", a.thrustToWeight))"))
                 case .failure(let e):
@@ -364,6 +376,7 @@ struct SimFrameSection: View {
             }
             if model.generatedFrame != nil {
                 Button("Check Again") { model.reloadGeneratedFrame() }
+                    .buttonStyle(.vfSecondary)
                     .help("Looks for a newer generated frame")
             }
         } header: {
@@ -385,6 +398,7 @@ struct SimRealPartsSection: View {
                 switch r.vehicle {
                 case .success(let v):
                     Toggle("Build the drone from them", isOn: $model.useRealParts)
+                        .toggleStyle(.vfSwitch)
                     LabeledContent("All-up", value: String(localized: "\(VFFormat.mass(v.massKg * 1000)), thrust to weight \(String(format: "%.1f", v.thrustToWeight))"))
                     LabeledContent("Battery", value: String(localized: "\(Int(v.battery.cells))S, \(Int((v.battery.capacityAh * 1000).rounded())) mAh"))
                     LabeledContent("Placed", value: v.assembly ? String(localized: "\(v.placed) by the assembly, the rest standard") : String(localized: "standard positions"))
@@ -421,13 +435,14 @@ struct SimTrainingSection: View {
 
     var body: some View {
         Section {
-            Picker("Train", selection: $training.target) {
-                ForEach(SimTraining.Target.allCases) { Text($0.name).tag($0) }
+            LabeledContent("Train") {
+                VFMenuPicker(String(localized: "Train"), selection: $training.target, items: SimTraining.Target.allCases) { $0.name }
             }
             if training.target == .stabilize {
-                Picker("Rate loop", selection: $training.rateLoop) {
-                    Text("PID").tag("pid")
-                    Text("INDI").tag("indi")
+                LabeledContent("Rate loop") {
+                    VFMenuPicker(String(localized: "Rate loop"), selection: $training.rateLoop, items: ["pid", "indi"]) {
+                        $0 == "indi" ? String(localized: "INDI") : String(localized: "PID")
+                    }
                 }
             }
             IntRow(String(localized: "Iterations"), value: $training.iterations, range: 1...200)

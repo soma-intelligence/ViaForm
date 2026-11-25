@@ -36,20 +36,19 @@ struct SelectFilterPanel: View {
                     .foregroundStyle(model.selectionFilter == .auto ? theme.ink : theme.accentText)
                     .frame(width: 36, height: 32)
             }
-            .menuStyle(.borderlessButton)
-            .menuIndicator(.hidden)
-            .fixedSize()
+            .menuStyle(.vfPlain)
             .help(String(localized: "Selection filter: \(SelectFilterUI.title(model.selectionFilter))"))
             .accessibilityLabel(String(localized: "Selection filter"))
             .accessibilityValue(SelectFilterUI.title(model.selectionFilter))
             Menu {
                 SelectFilterMenuItems(model: model)
             } label: {
-                VFCaption("Select")
+                HStack(spacing: VFSpace.xxs) {
+                    VFCaption("Select")
+                    Image(systemName: "chevron.down").font(VFFont.glyph(7, weight: .bold)).foregroundStyle(theme.inkSecondary)
+                }
             }
-            .menuStyle(.borderlessButton)
-            .menuIndicator(.visible)
-            .fixedSize()
+            .menuStyle(.vfPlain)
         }
         .padding(.horizontal, VFSpace.xs)
     }
@@ -82,9 +81,7 @@ struct SelectFilterStatusControl: View {
                 .font(VFFont.small)
                 .foregroundStyle(model.selectionFilter == .auto ? theme.inkSecondary : theme.accentText)
         }
-        .menuStyle(.borderlessButton)
-        .menuIndicator(.hidden)
-        .fixedSize()
+        .menuStyle(.vfPlain)
         .help(SelectFilterUI.help(model.selectionFilter))
         .accessibilityLabel(String(localized: "Selection filter"))
         .accessibilityValue(SelectFilterUI.title(model.selectionFilter))

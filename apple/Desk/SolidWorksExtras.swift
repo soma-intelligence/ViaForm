@@ -22,6 +22,7 @@ struct SolidWorksExtrasToggle: View {
     var body: some View {
         Section {
             Toggle("SolidWorks extras", isOn: $on)
+                .toggleStyle(.vfSwitch)
         } footer: {
             Text("Adds the confirmation corner under the view cube and the S key's tool grid above the search.")
                 .font(VFFont.small)

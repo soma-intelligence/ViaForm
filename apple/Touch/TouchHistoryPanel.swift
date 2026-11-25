@@ -302,7 +302,7 @@ struct HistorySidebar: View {
                 if renaming == f.id {
                     TextField(String(localized: "Name"), text: $renameText)
                         .font(VFFont.row)
-                        .textFieldStyle(.roundedBorder)
+                        .vfField()
                         .focused($renameFocused)
                         .submitLabel(.done)
                         .onSubmit { commitRename(f.id) }
@@ -473,6 +473,7 @@ struct HistoryFeatureEditor: View {
                 f.wrappedValue.value = .flag(v)
                 apply()
             }))
+            .toggleStyle(.vfSwitch)
             .font(VFFont.row).foregroundStyle(theme.ink)
             .frame(minHeight: VFSize.touchTarget)
         case .number, .text:
@@ -483,7 +484,7 @@ struct HistoryFeatureEditor: View {
                                                set: { texts[f.wrappedValue.key] = $0 }))
                     .font(VFFont.row)
                     .multilineTextAlignment(.trailing)
-                    .textFieldStyle(.roundedBorder)
+                    .vfField()
                     .autocorrectionDisabled()
                     .textInputAutocapitalization(.never)
                     .submitLabel(.done)
