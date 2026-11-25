@@ -42,6 +42,7 @@ enum CameraFlight {
             var last = start
             while !Task.isCancelled, let model {
                 // Someone else moved the camera (a drag, a pinch): leave it to them.
+                if model.camera != last { break }
                 let d = began.duration(to: clock.now).components
                 let t = min(1, (Double(d.seconds) + Double(d.attoseconds) * 1e-18) / seconds)
                 last = t >= 1 ? target : mix(start, end, ease(t))
