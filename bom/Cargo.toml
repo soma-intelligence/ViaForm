@@ -1,0 +1,20 @@
+[package]
+name = "viaform-bom"
+description = "ViaForm's bill of materials: one BOM per project, built from the design's assemblies, the PCB's components and sourced component files, rolled up for N builds with price breaks, MOQ, mass and supplier carts"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish = false
+
+[dependencies]
+# The library's search results (Hits, Item, PriceBreak) are what a price and stock refresh reads.
+viaform-library.workspace = true
+# The .viaform project the BOM saves into.
+viaform-core.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+zip = { version = "9", default-features = false, features = ["deflate"] }
+
+[dev-dependencies]
+solidcraft-engine.workspace = true
+pcbcraft-engine.workspace = true

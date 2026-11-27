@@ -13,12 +13,16 @@ export interface NativeWorkspace {
   linkPush(): unknown;
   linkMount(body: string, point: number[], normal: number[]): unknown;
   linkState(): unknown;
+  /** Builds candidate `candidate` (else the study's best) of the study `spec`, as one undo step. */
+  generate(spec: unknown, candidate?: number): unknown;
   save(path: string): unknown;
   open(path: string): unknown;
 }
 
 export interface Native {
   Workspace: new (sample?: boolean) => NativeWorkspace;
+  /** Runs a generative study: every candidate's figures and shape, and the best one. */
+  generateStudy(spec: unknown): unknown;
   versions(): { core: string; solidcraft: string; pcbcraft: string; format: number };
 }
 

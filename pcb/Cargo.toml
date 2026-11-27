@@ -1,0 +1,13 @@
+[package]
+name = "viaform-pcb"
+description = "Clean-room PCB engine: schematic, board, rules, routing, KiCad and Gerber output"
+version.workspace = true
+edition.workspace = true
+license = "MIT OR Apache-2.0"
+publish = false
+
+[dependencies]
+serde.workspace = true
+serde_json.workspace = true
+rstar = "0.14"
+i_overlay = "9.2"

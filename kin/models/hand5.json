@@ -1,0 +1,1267 @@
+{
+ "format": "viaform-kin",
+ "version": 1,
+ "name": "Five-finger hand (reference)",
+ "note": "Human-sized reference hand: 2-axis wrist, thumb with 4 motors (motor per joint), index with motors for abduction and MCP plus one motor driving PIP and DIP through a 1 : 0.75 linkage, middle, ring and pinky each with an abduction motor and one flexor tendon across MCP, PIP and DIP (matrix from the routing). Dimensions are approximate adult hand sizes, not a product drawing.",
+ "links": [
+  {
+   "name": "forearm"
+  },
+  {
+   "name": "wrist_link"
+  },
+  {
+   "name": "palm",
+   "inertial": {
+    "mass": 0.25,
+    "com": [
+     0,
+     0,
+     0.045
+    ],
+    "inertia": [
+     0.0003,
+     0.0003,
+     0.00015,
+     0,
+     0,
+     0
+    ]
+   }
+  },
+  {
+   "name": "thumb_meta",
+   "inertial": {
+    "mass": 0.02,
+    "com": [
+     0,
+     0,
+     0.0225
+    ],
+    "inertia": [
+     4.5e-06,
+     4.5e-06,
+     2.2499999999999996e-06,
+     0,
+     0,
+     0
+    ]
+   }
+  },
+  {
+   "name": "thumb_meta2"
+  },
+  {
+   "name": "thumb_prox",
+   "inertial": {
+    "mass": 0.012,
+    "com": [
+     0,
+     0,
+     0.0175
+    ],
+    "inertia": [
+     1.9000000000000002e-06,
+     1.9000000000000002e-06,
+     1.3499999999999998e-06,
+     0,
+     0,
+     0
+    ]
+   }
+  },
+  {
+   "name": "thumb_dist",
+   "inertial": {
+    "mass": 0.008,
+    "com": [
+     0,
+     0,
+     0.014
+    ],
+    "inertia": [
+     9.726666666666668e-07,
+     9.726666666666668e-07,
+     9e-07,
+     0,
+     0,
+     0
+    ]
+   }
+  },
+  {
+   "name": "index_abd_link"
+  },
+  {
+   "name": "index_prox",
+   "inertial": {
+    "mass": 0.012,
+    "com": [
+     0,
+     0,
+     0.022
+    ],
+    "inertia": [
+     2.6109999999999996e-06,
+     2.6109999999999996e-06,
+     1.3499999999999998e-06,
+     0,
+     0,
+     0
+    ]
+   }
+  },
+  {
+   "name": "index_mid",
+   "inertial": {
+    "mass": 0.008,
+    "com": [
+     0,
+     0,
+     0.013
+    ],
+    "inertia": [
+     9.006666666666666e-07,
+     9.006666666666666e-07,
+     9e-07,
+     0,
+     0,
+     0
+    ]
+   }
+  },
+  {
+   "name": "index_dist",
+   "inertial": {
+    "mass": 0.005,
+    "com": [
+     0,
+     0,
+     0.01
+    ],
+    "inertia": [
+     4.479166666666667e-07,
+     4.479166666666667e-07,
+     5.624999999999999e-07,
+     0,
+     0,
+     0
+    ]
+   }
+  },
+  {
+   "name": "middle_abd_link"
+  },
+  {
+   "name": "middle_prox",
+   "inertial": {
+    "mass": 0.012,
+    "com": [
+     0,
+     0,
+     0.024
+    ],
+    "inertia": [
+     2.9789999999999998e-06,
+     2.9789999999999998e-06,
+     1.3499999999999998e-06,
+     0,
+     0,
+     0
+    ]
+   }
+  },
+  {
+   "name": "middle_mid",
+   "inertial": {
+    "mass": 0.008,
+    "com": [
+     0,
+     0,
+     0.0145
+    ],
+    "inertia": [
+     1.0106666666666667e-06,
+     1.0106666666666667e-06,
+     9e-07,
+     0,
+     0,
+     0
+    ]
+   }
+  },
+  {
+   "name": "middle_dist",
+   "inertial": {
+    "mass": 0.005,
+    "com": [
+     0,
+     0,
+     0.0105
+    ],
+    "inertia": [
+     4.65e-07,
+     4.65e-07,
+     5.624999999999999e-07,
+     0,
+     0,
+     0
+    ]
+   }
+  },
+  {
+   "name": "ring_abd_link"
+  },
+  {
+   "name": "ring_prox",
+   "inertial": {
+    "mass": 0.012,
+    "com": [
+     0,
+     0,
+     0.0225
+    ],
+    "inertia": [
+     2.6999999999999996e-06,
+     2.6999999999999996e-06,
+     1.3499999999999998e-06,
+     0,
+     0,
+     0
+    ]
+   }
+  },
+  {
+   "name": "ring_mid",
+   "inertial": {
+    "mass": 0.008,
+    "com": [
+     0,
+     0,
+     0.0135
+    ],
+    "inertia": [
+     9.359999999999999e-07,
+     9.359999999999999e-07,
+     9e-07,
+     0,
+     0,
+     0
+    ]
+   }
+  },
+  {
+   "name": "ring_dist",
+   "inertial": {
+    "mass": 0.005,
+    "com": [
+     0,
+     0,
+     0.01
+    ],
+    "inertia": [
+     4.479166666666667e-07,
+     4.479166666666667e-07,
+     5.624999999999999e-07,
+     0,
+     0,
+     0
+    ]
+   }
+  },
+  {
+   "name": "pinky_abd_link"
+  },
+  {
+   "name": "pinky_prox",
+   "inertial": {
+    "mass": 0.012,
+    "com": [
+     0,
+     0,
+     0.0175
+    ],
+    "inertia": [
+     1.9000000000000002e-06,
+     1.9000000000000002e-06,
+     1.3499999999999998e-06,
+     0,
+     0,
+     0
+    ]
+   }
+  },
+  {
+   "name": "pinky_mid",
+   "inertial": {
+    "mass": 0.008,
+    "com": [
+     0,
+     0,
+     0.01
+    ],
+    "inertia": [
+     7.166666666666668e-07,
+     7.166666666666668e-07,
+     9e-07,
+     0,
+     0,
+     0
+    ]
+   }
+  },
+  {
+   "name": "pinky_dist",
+   "inertial": {
+    "mass": 0.005,
+    "com": [
+     0,
+     0,
+     0.009
+    ],
+    "inertia": [
+     4.1625e-07,
+     4.1625e-07,
+     5.624999999999999e-07,
+     0,
+     0,
+     0
+    ]
+   }
+  }
+ ],
+ "joints": [
+  {
+   "name": "wrist_flex",
+   "kind": "revolute",
+   "parent": 0,
+   "origin": {
+    "xyz": [
+     0,
+     0,
+     0
+    ],
+    "rpy": [
+     0,
+     0,
+     0
+    ]
+   },
+   "axis": [
+    1,
+    0,
+    0
+   ],
+   "limits": {
+    "lower": -1.0471975511965976,
+    "upper": 1.0471975511965976,
+    "velocity": 6.0,
+    "effort": 3.0
+   }
+  },
+  {
+   "name": "wrist_dev",
+   "kind": "revolute",
+   "parent": 1,
+   "origin": {
+    "xyz": [
+     0,
+     0,
+     0
+    ],
+    "rpy": [
+     0,
+     0,
+     0
+    ]
+   },
+   "axis": [
+    0,
+    1,
+    0
+   ],
+   "limits": {
+    "lower": -0.3490658503988659,
+    "upper": 0.5235987755982988,
+    "velocity": 6.0,
+    "effort": 3.0
+   }
+  },
+  {
+   "name": "thumb_cmc_opp",
+   "kind": "revolute",
+   "parent": 2,
+   "origin": {
+    "xyz": [
+     0.03,
+     -0.012,
+     0.02
+    ],
+    "rpy": [
+     0,
+     0.85,
+     0
+    ]
+   },
+   "axis": [
+    1,
+    0,
+    0
+   ],
+   "limits": {
+    "lower": 0.0,
+    "upper": 1.3962634015954636,
+    "velocity": 6.0,
+    "effort": 0.6
+   }
+  },
+  {
+   "name": "thumb_cmc_flex",
+   "kind": "revolute",
+   "parent": 3,
+   "origin": {
+    "xyz": [
+     0,
+     0,
+     0
+    ],
+    "rpy": [
+     0,
+     0,
+     0
+    ]
+   },
+   "axis": [
+    0,
+    1,
+    0
+   ],
+   "limits": {
+    "lower": -0.5235987755982988,
+    "upper": 0.5235987755982988,
+    "velocity": 6.0,
+    "effort": 0.6
+   }
+  },
+  {
+   "name": "thumb_mcp",
+   "kind": "revolute",
+   "parent": 4,
+   "origin": {
+    "xyz": [
+     0,
+     0,
+     0.045
+    ],
+    "rpy": [
+     0,
+     0,
+     0
+    ]
+   },
+   "axis": [
+    1,
+    0,
+    0
+   ],
+   "limits": {
+    "lower": 0.0,
+    "upper": 1.2217304763960306,
+    "velocity": 6.0,
+    "effort": 0.6
+   }
+  },
+  {
+   "name": "thumb_ip",
+   "kind": "revolute",
+   "parent": 5,
+   "origin": {
+    "xyz": [
+     0,
+     0,
+     0.035
+    ],
+    "rpy": [
+     0,
+     0,
+     0
+    ]
+   },
+   "axis": [
+    1,
+    0,
+    0
+   ],
+   "limits": {
+    "lower": 0.0,
+    "upper": 1.3962634015954636,
+    "velocity": 6.0,
+    "effort": 0.6
+   }
+  },
+  {
+   "name": "index_abd",
+   "kind": "revolute",
+   "parent": 2,
+   "origin": {
+    "xyz": [
+     0.024,
+     0,
+     0.09
+    ],
+    "rpy": [
+     0,
+     0,
+     0
+    ]
+   },
+   "axis": [
+    0,
+    1,
+    0
+   ],
+   "limits": {
+    "lower": -0.3490658503988659,
+    "upper": 0.3490658503988659,
+    "velocity": 6.0,
+    "effort": 0.6
+   }
+  },
+  {
+   "name": "index_mcp",
+   "kind": "revolute",
+   "parent": 7,
+   "origin": {
+    "xyz": [
+     0,
+     0,
+     0
+    ],
+    "rpy": [
+     0,
+     0,
+     0
+    ]
+   },
+   "axis": [
+    1,
+    0,
+    0
+   ],
+   "limits": {
+    "lower": -0.3490658503988659,
+    "upper": 1.5707963267948966,
+    "velocity": 6.0,
+    "effort": 0.6
+   }
+  },
+  {
+   "name": "index_pip",
+   "kind": "revolute",
+   "parent": 8,
+   "origin": {
+    "xyz": [
+     0,
+     0,
+     0.044
+    ],
+    "rpy": [
+     0,
+     0,
+     0
+    ]
+   },
+   "axis": [
+    1,
+    0,
+    0
+   ],
+   "limits": {
+    "lower": 0.0,
+    "upper": 1.7453292519943295,
+    "velocity": 6.0,
+    "effort": 0.6
+   }
+  },
+  {
+   "name": "index_dip",
+   "kind": "revolute",
+   "parent": 9,
+   "origin": {
+    "xyz": [
+     0,
+     0,
+     0.026
+    ],
+    "rpy": [
+     0,
+     0,
+     0
+    ]
+   },
+   "axis": [
+    1,
+    0,
+    0
+   ],
+   "limits": {
+    "lower": 0.0,
+    "upper": 1.3962634015954636,
+    "velocity": 6.0,
+    "effort": 0.6
+   }
+  },
+  {
+   "name": "middle_abd",
+   "kind": "revolute",
+   "parent": 2,
+   "origin": {
+    "xyz": [
+     0.004,
+     0,
+     0.094
+    ],
+    "rpy": [
+     0,
+     0,
+     0
+    ]
+   },
+   "axis": [
+    0,
+    1,
+    0
+   ],
+   "limits": {
+    "lower": -0.3490658503988659,
+    "upper": 0.3490658503988659,
+    "velocity": 6.0,
+    "effort": 0.6
+   }
+  },
+  {
+   "name": "middle_mcp",
+   "kind": "revolute",
+   "parent": 11,
+   "origin": {
+    "xyz": [
+     0,
+     0,
+     0
+    ],
+    "rpy": [
+     0,
+     0,
+     0
+    ]
+   },
+   "axis": [
+    1,
+    0,
+    0
+   ],
+   "limits": {
+    "lower": -0.3490658503988659,
+    "upper": 1.5707963267948966,
+    "velocity": 6.0,
+    "effort": 0.6
+   }
+  },
+  {
+   "name": "middle_pip",
+   "kind": "revolute",
+   "parent": 12,
+   "origin": {
+    "xyz": [
+     0,
+     0,
+     0.048
+    ],
+    "rpy": [
+     0,
+     0,
+     0
+    ]
+   },
+   "axis": [
+    1,
+    0,
+    0
+   ],
+   "limits": {
+    "lower": 0.0,
+    "upper": 1.7453292519943295,
+    "velocity": 6.0,
+    "effort": 0.6
+   }
+  },
+  {
+   "name": "middle_dip",
+   "kind": "revolute",
+   "parent": 13,
+   "origin": {
+    "xyz": [
+     0,
+     0,
+     0.029
+    ],
+    "rpy": [
+     0,
+     0,
+     0
+    ]
+   },
+   "axis": [
+    1,
+    0,
+    0
+   ],
+   "limits": {
+    "lower": 0.0,
+    "upper": 1.3962634015954636,
+    "velocity": 6.0,
+    "effort": 0.6
+   }
+  },
+  {
+   "name": "ring_abd",
+   "kind": "revolute",
+   "parent": 2,
+   "origin": {
+    "xyz": [
+     -0.015,
+     0,
+     0.091
+    ],
+    "rpy": [
+     0,
+     0,
+     0
+    ]
+   },
+   "axis": [
+    0,
+    1,
+    0
+   ],
+   "limits": {
+    "lower": -0.3490658503988659,
+    "upper": 0.3490658503988659,
+    "velocity": 6.0,
+    "effort": 0.6
+   }
+  },
+  {
+   "name": "ring_mcp",
+   "kind": "revolute",
+   "parent": 15,
+   "origin": {
+    "xyz": [
+     0,
+     0,
+     0
+    ],
+    "rpy": [
+     0,
+     0,
+     0
+    ]
+   },
+   "axis": [
+    1,
+    0,
+    0
+   ],
+   "limits": {
+    "lower": -0.3490658503988659,
+    "upper": 1.5707963267948966,
+    "velocity": 6.0,
+    "effort": 0.6
+   }
+  },
+  {
+   "name": "ring_pip",
+   "kind": "revolute",
+   "parent": 16,
+   "origin": {
+    "xyz": [
+     0,
+     0,
+     0.045
+    ],
+    "rpy": [
+     0,
+     0,
+     0
+    ]
+   },
+   "axis": [
+    1,
+    0,
+    0
+   ],
+   "limits": {
+    "lower": 0.0,
+    "upper": 1.7453292519943295,
+    "velocity": 6.0,
+    "effort": 0.6
+   }
+  },
+  {
+   "name": "ring_dip",
+   "kind": "revolute",
+   "parent": 17,
+   "origin": {
+    "xyz": [
+     0,
+     0,
+     0.027
+    ],
+    "rpy": [
+     0,
+     0,
+     0
+    ]
+   },
+   "axis": [
+    1,
+    0,
+    0
+   ],
+   "limits": {
+    "lower": 0.0,
+    "upper": 1.3962634015954636,
+    "velocity": 6.0,
+    "effort": 0.6
+   }
+  },
+  {
+   "name": "pinky_abd",
+   "kind": "revolute",
+   "parent": 2,
+   "origin": {
+    "xyz": [
+     -0.032,
+     0,
+     0.083
+    ],
+    "rpy": [
+     0,
+     0,
+     0
+    ]
+   },
+   "axis": [
+    0,
+    1,
+    0
+   ],
+   "limits": {
+    "lower": -0.3490658503988659,
+    "upper": 0.3490658503988659,
+    "velocity": 6.0,
+    "effort": 0.6
+   }
+  },
+  {
+   "name": "pinky_mcp",
+   "kind": "revolute",
+   "parent": 19,
+   "origin": {
+    "xyz": [
+     0,
+     0,
+     0
+    ],
+    "rpy": [
+     0,
+     0,
+     0
+    ]
+   },
+   "axis": [
+    1,
+    0,
+    0
+   ],
+   "limits": {
+    "lower": -0.3490658503988659,
+    "upper": 1.5707963267948966,
+    "velocity": 6.0,
+    "effort": 0.6
+   }
+  },
+  {
+   "name": "pinky_pip",
+   "kind": "revolute",
+   "parent": 20,
+   "origin": {
+    "xyz": [
+     0,
+     0,
+     0.035
+    ],
+    "rpy": [
+     0,
+     0,
+     0
+    ]
+   },
+   "axis": [
+    1,
+    0,
+    0
+   ],
+   "limits": {
+    "lower": 0.0,
+    "upper": 1.7453292519943295,
+    "velocity": 6.0,
+    "effort": 0.6
+   }
+  },
+  {
+   "name": "pinky_dip",
+   "kind": "revolute",
+   "parent": 21,
+   "origin": {
+    "xyz": [
+     0,
+     0,
+     0.02
+    ],
+    "rpy": [
+     0,
+     0,
+     0
+    ]
+   },
+   "axis": [
+    1,
+    0,
+    0
+   ],
+   "limits": {
+    "lower": 0.0,
+    "upper": 1.3962634015954636,
+    "velocity": 6.0,
+    "effort": 0.6
+   }
+  }
+ ],
+ "actuators": [
+  {
+   "name": "index_pip_dip",
+   "drive": "motor",
+   "limits": {
+    "lower": 0.0,
+    "upper": 1.7453292519943295,
+    "velocity": 6.0,
+    "effort": 0.6
+   }
+  },
+  {
+   "name": "middle_flexor",
+   "drive": "tendon",
+   "limits": {
+    "lower": 0.0,
+    "upper": 0.03,
+    "velocity": 0.15,
+    "effort": 40.0
+   }
+  },
+  {
+   "name": "ring_flexor",
+   "drive": "tendon",
+   "limits": {
+    "lower": 0.0,
+    "upper": 0.03,
+    "velocity": 0.15,
+    "effort": 40.0
+   }
+  },
+  {
+   "name": "pinky_flexor",
+   "drive": "tendon",
+   "limits": {
+    "lower": 0.0,
+    "upper": 0.03,
+    "velocity": 0.15,
+    "effort": 40.0
+   }
+  }
+ ],
+ "couplings": [
+  {
+   "name": "index_pip_dip",
+   "kind": {
+    "type": "linear"
+   },
+   "actuators": [
+    0
+   ],
+   "joints": [
+    8,
+    9
+   ],
+   "matrix": [
+    1.0,
+    0.75
+   ]
+  },
+  {
+   "name": "middle_flexor",
+   "kind": {
+    "type": "tendon",
+    "routing": [
+     {
+      "link": 2,
+      "pos": [
+       0.004,
+       -0.009,
+       0.082
+      ]
+     },
+     {
+      "link": 12,
+      "pos": [
+       0,
+       -0.009,
+       0.01
+      ]
+     },
+     {
+      "link": 12,
+      "pos": [
+       0,
+       -0.008,
+       0.04
+      ]
+     },
+     {
+      "link": 13,
+      "pos": [
+       0,
+       -0.008,
+       0.008
+      ]
+     },
+     {
+      "link": 13,
+      "pos": [
+       0,
+       -0.007,
+       0.023
+      ]
+     },
+     {
+      "link": 14,
+      "pos": [
+       0,
+       -0.007,
+       0.006
+      ]
+     }
+    ],
+    "stiffness": 20000.0,
+    "slack": 0.0005
+   },
+   "actuators": [
+    1
+   ],
+   "joints": [
+    11,
+    12,
+    13
+   ]
+  },
+  {
+   "name": "ring_flexor",
+   "kind": {
+    "type": "tendon",
+    "routing": [
+     {
+      "link": 2,
+      "pos": [
+       -0.015,
+       -0.009,
+       0.079
+      ]
+     },
+     {
+      "link": 16,
+      "pos": [
+       0,
+       -0.009,
+       0.01
+      ]
+     },
+     {
+      "link": 16,
+      "pos": [
+       0,
+       -0.008,
+       0.037
+      ]
+     },
+     {
+      "link": 17,
+      "pos": [
+       0,
+       -0.008,
+       0.008
+      ]
+     },
+     {
+      "link": 17,
+      "pos": [
+       0,
+       -0.007,
+       0.020999999999999998
+      ]
+     },
+     {
+      "link": 18,
+      "pos": [
+       0,
+       -0.007,
+       0.006
+      ]
+     }
+    ],
+    "stiffness": 20000.0,
+    "slack": 0.0005
+   },
+   "actuators": [
+    2
+   ],
+   "joints": [
+    15,
+    16,
+    17
+   ]
+  },
+  {
+   "name": "pinky_flexor",
+   "kind": {
+    "type": "tendon",
+    "routing": [
+     {
+      "link": 2,
+      "pos": [
+       -0.032,
+       -0.009,
+       0.07100000000000001
+      ]
+     },
+     {
+      "link": 20,
+      "pos": [
+       0,
+       -0.009,
+       0.01
+      ]
+     },
+     {
+      "link": 20,
+      "pos": [
+       0,
+       -0.008,
+       0.027000000000000003
+      ]
+     },
+     {
+      "link": 21,
+      "pos": [
+       0,
+       -0.008,
+       0.008
+      ]
+     },
+     {
+      "link": 21,
+      "pos": [
+       0,
+       -0.007,
+       0.014
+      ]
+     },
+     {
+      "link": 22,
+      "pos": [
+       0,
+       -0.007,
+       0.006
+      ]
+     }
+    ],
+    "stiffness": 20000.0,
+    "slack": 0.0005
+   },
+   "actuators": [
+    3
+   ],
+   "joints": [
+    19,
+    20,
+    21
+   ]
+  }
+ ],
+ "end_effectors": [
+  {
+   "name": "thumb_tip",
+   "link": 6,
+   "offset": {
+    "xyz": [
+     0,
+     -0.003,
+     0.028
+    ]
+   }
+  },
+  {
+   "name": "index_tip",
+   "link": 10,
+   "offset": {
+    "xyz": [
+     0,
+     -0.002,
+     0.02
+    ]
+   }
+  },
+  {
+   "name": "middle_tip",
+   "link": 14,
+   "offset": {
+    "xyz": [
+     0,
+     -0.002,
+     0.021
+    ]
+   }
+  },
+  {
+   "name": "ring_tip",
+   "link": 18,
+   "offset": {
+    "xyz": [
+     0,
+     -0.002,
+     0.02
+    ]
+   }
+  },
+  {
+   "name": "pinky_tip",
+   "link": 22,
+   "offset": {
+    "xyz": [
+     0,
+     -0.002,
+     0.018
+    ]
+   }
+  }
+ ]
+}

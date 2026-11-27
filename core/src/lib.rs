@@ -4,16 +4,22 @@
 //! A [`Workspace`] holds the two engines side by side: a SolidCraft design (3D CAD) and a
 //! PCBCraft project (schematic and board). Everything that crosses between them lives here, so
 //! both front ends behave as one product: the PCB file commands, the scene the 3D view draws,
-//! the board to 3D link ([`link`]) and the single `.viaform` project file ([`project`]).
+//! the board to 3D link ([`link`]), generative design ([`generative`]) and the single `.viaform`
+//! project file ([`project`]).
 
 use serde_json::{Value, json};
 
+pub mod asm;
+pub mod commands;
+pub mod flow;
+pub mod generative;
 pub mod link;
 pub mod project;
 pub mod scene;
 
 pub use solidcraft_engine;
 pub use pcbcraft_engine;
+pub use viaform_generative;
 
 /// One open ViaForm project: the 3D design and the electronics, edited together.
 #[derive(Default)]
@@ -37,6 +43,12 @@ impl Workspace {
     /// Runs one PCB command, with `undo`, `redo` and the PCB file commands on top of the engine's.
     pub fn pcb_execute(&mut self, id: &str, params: Value) -> Result<Value, String> {
         pcb_execute(&mut self.pcb, id, params)
+    }
+
+    /// Builds candidate `candidate` (else the study's best) of the generative study `spec` into
+    /// the design, as one undo step ([`generative::build`]).
+    pub fn generate(&mut self, spec: &Value, candidate: Option<usize>) -> Result<Value, String> {
+        generative::build(&mut self.cad, spec, candidate)
     }
 
     /// The PCB project's revision: it moves on every change, undo and redo.

@@ -32,7 +32,7 @@ jobs:
         if: steps.sync.outputs.changed == 'true'
         run: |
           cargo test --release -p viaform-core
-          cargo build --release -p solidcraft-ffi
+          cargo build --release -p viaform-ffi
           cd electron
           npm ci
           npm run native

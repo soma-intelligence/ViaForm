@@ -1,0 +1,1489 @@
+{
+  "assembly": "hand",
+  "version": 1,
+  "checked_on": "2026-11-05",
+  "currency": "USD",
+  "summary": {
+    "dof_total": 24,
+    "dof_actuated": 24,
+    "motors": 24,
+    "est_total_cost_usd_one_hand": 3760.9,
+    "cost_rule": "sum over components of ceil(qty/moq)*moq*unit_price of the first offer"
+  },
+  "components": [
+    {
+      "ref": "M1",
+      "qty": 22,
+      "category": "motor",
+      "mpn": "XC330-T288-T",
+      "manufacturer": "ROBOTIS",
+      "description": "DYNAMIXEL X smart servo, TTL bus, 288:1, drives one tendon spool (pull-pull) per finger/thumb/palm DOF",
+      "key_specs": {
+        "voltage_v": "6.5-12.0 (11.1 recommended)",
+        "stall_torque_nm": {
+          "9.0V": 0.76,
+          "11.1V": 0.92,
+          "12.0V": 1.0
+        },
+        "stall_current_a": {
+          "9.0V": 0.61,
+          "11.1V": 0.8,
+          "12.0V": 0.88
+        },
+        "no_load_rpm": {
+          "9.0V": 52,
+          "11.1V": 65,
+          "12.0V": 71
+        },
+        "gear_ratio": "288.35:1",
+        "bus": "TTL half-duplex multidrop, 3-pin",
+        "baud_max_bps": 4000000,
+        "protocol": "DYNAMIXEL 2.0"
+      },
+      "dims_mm": [
+        20.0,
+        34.0,
+        26.0
+      ],
+      "mass_g": 23,
+      "datasheet_url": "https://emanual.robotis.com/docs/en/dxl/x/xc330-t288/",
+      "cad_source": "https://emanual.robotis.com/docs/en/dxl/x/xc330-t288/#drawings",
+      "offers": [
+        {
+          "supplier": "RobotShop",
+          "sku": "RB-Rbi-155",
+          "url": "https://www.robotshop.com/products/robotis-dynamixel-xc330-t288-t-smart-servo-actuator",
+          "unit_price_usd": 103.39,
+          "moq": 1,
+          "stock_note": "out of stock, restocking",
+          "checked_on": "2026-11-04"
+        },
+        {
+          "supplier": "ROBOTIS",
+          "sku": "XC330-T288-T",
+          "url": "https://www.robotis.us/dynamixel-xc330-t288-t/",
+          "unit_price_usd": 103.39,
+          "moq": 1,
+          "stock_note": "price not read (robotis.us returned HTTP 429); RobotShop price used",
+          "checked_on": "2026-11-04"
+        }
+      ],
+      "alternates": [
+        "XC330-T181-T (6.5-12.0 V, 0.80 Nm / 0.88 A / 113 rpm at 12 V, same 20 x 34 x 26 mm case)"
+      ],
+      "used_by": [
+        "index/MCP_abd",
+        "index/MCP_flex",
+        "index/PIP",
+        "index/DIP",
+        "middle/MCP_abd",
+        "middle/MCP_flex",
+        "middle/PIP",
+        "middle/DIP",
+        "ring/MCP_abd",
+        "ring/MCP_flex",
+        "ring/PIP",
+        "ring/DIP",
+        "little/MCP_abd",
+        "little/MCP_flex",
+        "little/PIP",
+        "little/DIP",
+        "thumb/CMC_flex",
+        "thumb/CMC_abd",
+        "thumb/MCP_flex",
+        "thumb/MCP_abd",
+        "thumb/IP",
+        "palm/arch_CMC45"
+      ],
+      "notes": "Forearm-mounted bank. Spool radius 6 mm gives 167 N tendon tension at 12 V stall; the firmware current limits in hand-notes.md keep it far lower. Mouser lists 46 week lead time; RobotShop out of stock on 2026-11-04. XC330-M288-T (the LEAP Hand motor) and XL330-M288-T are 5 V servos (3.7-6.0 V per the ROBOTIS e-manual): not usable on the 12 V rail, they would be destroyed. Voltage-compatible alternate: XC330-T181-T (e-manual read 2026-11-05), less torque, more speed. CAD: ROBOTIS e-manual Drawings section, STEP link not read directly."
+    },
+    {
+      "ref": "M2",
+      "qty": 2,
+      "category": "motor",
+      "mpn": "XM430-W350-T",
+      "manufacturer": "ROBOTIS",
+      "description": "DYNAMIXEL X smart servo, TTL, direct drive of the 2-axis wrist gimbal",
+      "key_specs": {
+        "voltage_v": "10.0-14.8 (12.0 recommended)",
+        "stall_torque_nm": {
+          "11.1V": 3.8,
+          "12.0V": 4.1,
+          "14.8V": 4.8
+        },
+        "stall_current_a": {
+          "12.0V": 2.3
+        },
+        "no_load_rpm": {
+          "12.0V": 46
+        },
+        "gear_ratio": "353.5:1",
+        "bus": "TTL half-duplex multidrop, 3-pin",
+        "protocol": "DYNAMIXEL 2.0"
+      },
+      "dims_mm": [
+        28.5,
+        46.5,
+        34.0
+      ],
+      "mass_g": 82,
+      "datasheet_url": "https://emanual.robotis.com/docs/en/dxl/x/xm430-w350/",
+      "cad_source": "https://emanual.robotis.com/docs/en/dxl/x/xm430-w350/#drawings",
+      "offers": [
+        {
+          "supplier": "RobotShop",
+          "sku": "ROBOTIS XM430-W350-T",
+          "url": "https://www.robotshop.com/products/robotis-dynamixel-xm430-w350-t-smart-servo-actuator",
+          "unit_price_usd": 310.39,
+          "moq": 1,
+          "stock_note": "2 left in stock per search snippet",
+          "checked_on": "2026-11-04"
+        }
+      ],
+      "alternates": [
+        "XH430-W350-T",
+        "XM430-W210-T"
+      ],
+      "used_by": [
+        "wrist/flex_ext",
+        "wrist/radial_ulnar"
+      ],
+      "notes": "ROBOTIS part number 902-0124-000. The finger servo bank stays in the forearm, so the wrist servos only carry the palm and fingers (about 250 g estimated); 4.1 Nm is ample. Tendons cross the gimbal near its center to limit wrist-finger coupling."
+    },
+    {
+      "ref": "U1",
+      "qty": 1,
+      "category": "mcu",
+      "mpn": "OpenRB-150",
+      "manufacturer": "ROBOTIS",
+      "description": "Arduino MKR-format DYNAMIXEL controller (SAMD21), embedded hand controller, reads fingertip FSRs on its analog pins",
+      "key_specs": {
+        "mcu": "SAMD21 Cortex-M0+",
+        "voltage_v": "3.7-12.6 VIN/terminal, 5 USB",
+        "dxl_ports": "4 x TTL, JST B3B-EH-A",
+        "dxl_port_current_max_a": 3.0,
+        "dxl_baud_max_bps": 1000000,
+        "analog_inputs": 7,
+        "adc_bits": 12
+      },
+      "dims_mm": [
+        25.0,
+        66.0,
+        10.0
+      ],
+      "mass_g": 10,
+      "datasheet_url": "https://emanual.robotis.com/docs/en/parts/controller/openrb-150/",
+      "cad_source": null,
+      "offers": [
+        {
+          "supplier": "ROBOTIS",
+          "sku": "OpenRB-150",
+          "url": "https://robotis.us/openrb-150",
+          "unit_price_usd": 52.79,
+          "moq": 1,
+          "stock_note": "1-2 week lead time per search snippet",
+          "checked_on": "2026-11-04"
+        }
+      ],
+      "alternates": [
+        "OpenCR 1.0",
+        "U2D2 + host PC (LEAP Hand style)"
+      ],
+      "used_by": [
+        "control/embedded",
+        "sensing/fingertip FSR ADC"
+      ],
+      "notes": "Port current is capped at 3 A, so servo power is injected by the two U2D2 Power Hub boards (D1); OpenRB only carries data to them. Bus limited to 1 Mbps on OpenRB; 24 servos sync read/write still reach about 200 Hz. Mass and thickness estimated. Its DYNAMIXEL ports share one switched VDD (3 A total): connect it to the hubs with the 2-wire GND + DATA links (C2/C3), never with a full 3-wire Cable-X3P."
+    },
+    {
+      "ref": "D1",
+      "qty": 2,
+      "category": "driver",
+      "mpn": "902-0145-001",
+      "manufacturer": "ROBOTIS",
+      "description": "U2D2 Power Hub Board set: injects 12 V into a DYNAMIXEL TTL chain, passes data through",
+      "key_specs": {
+        "voltage_v": "3.5-24",
+        "current_max_a": 10,
+        "ports": "TTL 3-pin and RS-485 4-pin"
+      },
+      "dims_mm": [
+        46.0,
+        26.0,
+        12.0
+      ],
+      "mass_g": 10,
+      "datasheet_url": "https://emanual.robotis.com/docs/en/parts/interface/u2d2_power_hub/",
+      "cad_source": null,
+      "offers": [
+        {
+          "supplier": "Mouser",
+          "sku": "902-0145-001",
+          "url": "https://www.mouser.com/c/?m=ROBOTIS",
+          "unit_price_usd": 26.96,
+          "moq": 1,
+          "stock_note": "non-stocked, 5 week lead time (search snippet)",
+          "checked_on": "2026-11-04"
+        },
+        {
+          "supplier": "ROBOTIS",
+          "sku": "U2D2 PHB Set",
+          "url": "https://robotis.us/u2d2-power-hub-board-set/",
+          "unit_price_usd": 26.96,
+          "moq": 1,
+          "stock_note": "robotis.us price not read",
+          "checked_on": "2026-11-04"
+        }
+      ],
+      "alternates": [
+        "SMPS2Dynamixel"
+      ],
+      "used_by": [
+        "bus A: index, middle, thumb (13 x XC330)",
+        "bus B: ring, little, palm (9 x XC330) + wrist (2 x XM430)"
+      ],
+      "notes": "Two chains keep each hub under 10 A at the firmware current limit (see notes). ROBOTIS e-manual (read 2026-11-05): 3.5-24 V, 10 A max, TTL pinout 1 GND / 2 VDD / 3 DATA, and a DANGER note against using several power inputs at once. The OpenRB-150 to hub links must therefore carry GND + DATA only (pin 2 empty, lines C2/C3), or the two hubs' 12 V outputs end up in parallel through the OpenRB's shared DXL VDD (3 A). Dims and mass estimated."
+    },
+    {
+      "ref": "D2",
+      "qty": 1,
+      "category": "driver",
+      "mpn": "902-0132-000",
+      "manufacturer": "ROBOTIS",
+      "description": "U2D2 USB to TTL/RS-485 adapter: ID assignment with DYNAMIXEL Wizard, PC teleoperation at 4 Mbps",
+      "key_specs": {
+        "interface": "USB to TTL 3-pin / RS-485 4-pin / UART",
+        "baud_max_bps": 6000000,
+        "note": "does not power servos"
+      },
+      "dims_mm": [
+        48.0,
+        18.0,
+        14.6
+      ],
+      "mass_g": 9,
+      "datasheet_url": "https://emanual.robotis.com/docs/en/parts/interface/u2d2/",
+      "cad_source": null,
+      "offers": [
+        {
+          "supplier": "RobotShop",
+          "sku": "U2D2",
+          "url": "https://www.robotshop.com/es/products/adaptador-usb-a-serial-u2d2-para-dynamixel-de-robotis",
+          "unit_price_usd": 46.76,
+          "moq": 1,
+          "stock_note": "8 in stock (search snippet)",
+          "checked_on": "2026-11-04"
+        }
+      ],
+      "alternates": [],
+      "used_by": [
+        "control/host PC link",
+        "setup/servo ID and baud assignment"
+      ],
+      "notes": "Plugs into a D1 hub in place of the OpenRB for PC control (LEAP Hand style). Dims and mass from memory, not re-read."
+    },
+    {
+      "ref": "C1",
+      "qty": 3,
+      "category": "cable",
+      "mpn": "903-0249-000",
+      "manufacturer": "ROBOTIS",
+      "description": "Robot Cable-X3P 180 mm, pack of 10, daisy-chain cables for the servo bank",
+      "key_specs": {
+        "length_mm": 180,
+        "connector": "JST EHR-03 both ends",
+        "pack": 10
+      },
+      "dims_mm": [
+        180,
+        4,
+        2
+      ],
+      "mass_g": 30,
+      "datasheet_url": "https://robotis.us/robot-cable-x3p-180mm-10pcs/",
+      "cad_source": null,
+      "offers": [
+        {
+          "supplier": "ROBOTIS",
+          "sku": "Robot Cable-X3P 180mm (10pcs)",
+          "url": "https://robotis.us/robot-cable-x3p-180mm-10pcs/",
+          "unit_price_usd": 21.85,
+          "moq": 1,
+          "stock_note": "out of stock per search snippet",
+          "checked_on": "2026-11-04"
+        },
+        {
+          "supplier": "ichome",
+          "sku": "903-0249-000",
+          "url": "https://ichome.com/product-detail/robotis/903-0249-000",
+          "unit_price_usd": 17.3,
+          "moq": 1,
+          "stock_note": "distributor listing",
+          "checked_on": "2026-11-04"
+        }
+      ],
+      "alternates": [
+        "903-0251-000"
+      ],
+      "used_by": [
+        "bus A",
+        "bus B"
+      ],
+      "notes": "qty is packs (30 cables for 24 servos + 2 hubs + spares). Zenode marks 903-0249-000 obsolete; the convertible version 903-0251-000 is the fallback. Mass estimated. Not for the OpenRB/U2D2 to hub links: those use C2/C3 (or an X3P with its pin 2 contact pulled out and cut back)."
+    },
+    {
+      "ref": "C2",
+      "qty": 4,
+      "category": "connector",
+      "mpn": "EHR-03",
+      "manufacturer": "JST",
+      "description": "EH 3-position receptacle housing, 2.5 mm pitch: 2-wire GND + DATA links OpenRB-150 (or U2D2) to hub A and hub B, pin 2 (VDD) left empty",
+      "key_specs": {
+        "pitch_mm": 2.5,
+        "positions": 3
+      },
+      "dims_mm": [
+        7.8,
+        3.8,
+        6.0
+      ],
+      "mass_g": 0.1,
+      "datasheet_url": "https://www.digikey.com/en/products/detail/jst-sales-america-inc/EHR-03/527219",
+      "cad_source": null,
+      "offers": [
+        {
+          "supplier": "DigiKey",
+          "sku": "455-1001-ND",
+          "url": "https://www.digikey.com/en/products/detail/jst-sales-america-inc/EHR-03/527219",
+          "unit_price_usd": 0.1,
+          "moq": 1,
+          "stock_note": "price NOT read (DigiKey 403), assumed",
+          "checked_on": "2026-11-05"
+        }
+      ],
+      "alternates": [
+        "Robot Cable-X3P (C1) with the pin 2 contact pulled and cut back"
+      ],
+      "used_by": [
+        "power/hub links"
+      ],
+      "notes": "2 links x 2 ends. Wire: W1 26 AWG pair or any 24-26 AWG. Needs a JST EH crimper. DigiKey SKU from memory, not confirmed."
+    },
+    {
+      "ref": "C3",
+      "qty": 10,
+      "category": "connector",
+      "mpn": "SEH-001T-P0.6",
+      "manufacturer": "JST",
+      "description": "EH crimp socket contact, 22-26 AWG, for C2",
+      "key_specs": {
+        "awg": "22-26"
+      },
+      "dims_mm": [
+        2,
+        2,
+        8
+      ],
+      "mass_g": 0.05,
+      "datasheet_url": "https://www.digikey.com/en/products/detail/jst-sales-america-inc/SEH-001T-P0-6/527267",
+      "cad_source": null,
+      "offers": [
+        {
+          "supplier": "DigiKey",
+          "sku": "SEH-001T-P0.6 (cut strip)",
+          "url": "https://www.digikey.com/en/products/detail/jst-sales-america-inc/SEH-001T-P0-6/527267",
+          "unit_price_usd": 0.1,
+          "moq": 1,
+          "stock_note": "price NOT read (DigiKey 403); reel tier about USD 0.017-0.025 per snippet, strip price assumed",
+          "checked_on": "2026-11-05"
+        }
+      ],
+      "alternates": [
+        "SEH-001T-P0.6L (loose)"
+      ],
+      "used_by": [
+        "power/hub links"
+      ],
+      "notes": "8 used (2 per housing: GND and DATA), 2 spare."
+    },
+    {
+      "ref": "P1",
+      "qty": 1,
+      "category": "power",
+      "mpn": "LRS-350-12",
+      "manufacturer": "MEAN WELL",
+      "description": "Enclosed AC-DC supply, 12 V 29 A 350 W, feeds both power hubs and the OpenRB",
+      "key_specs": {
+        "output_v": 12,
+        "output_a": 29,
+        "power_w": 350,
+        "input": "90-132 / 180-264 VAC selectable"
+      },
+      "dims_mm": [
+        215.0,
+        115.0,
+        30.0
+      ],
+      "mass_g": 760,
+      "datasheet_url": "https://datasheet.lcsc.com/szlcsc/MEAN-WELL-Enterprises-LRS-350-12_C95190.pdf",
+      "cad_source": null,
+      "offers": [
+        {
+          "supplier": "DigiKey",
+          "sku": "1866-3344-ND",
+          "url": "https://www.digikey.com/en/products/detail/mean-well-usa-inc/LRS-350-12/7705030",
+          "unit_price_usd": 38.24,
+          "moq": 1,
+          "stock_note": "USD price from aggregator snapshot, DigiKey AU shows 1,639 in stock",
+          "checked_on": "2026-11-04"
+        }
+      ],
+      "alternates": [
+        "LRS-150-12 (12.5 A, only with tight current limits)"
+      ],
+      "used_by": [
+        "power/12V rail"
+      ],
+      "notes": "Off-board bench supply, not inside the hand. Sized for 22 x 0.88 A + 2 x 2.3 A worst case (24 A). Dims and mass from memory of the datasheet, not re-read."
+    },
+    {
+      "ref": "P2",
+      "qty": 1,
+      "category": "cable",
+      "mpn": "311013-01",
+      "manufacturer": "Qualtek",
+      "description": "AC cord NEMA 5-15P to bare leads, 2 m, 18 AWG SJT 3-conductor, for P1 screw terminals",
+      "key_specs": {
+        "length_mm": 2000,
+        "awg": 18,
+        "conductors": 3,
+        "plug": "NEMA 5-15P"
+      },
+      "dims_mm": [
+        2000,
+        8,
+        8
+      ],
+      "mass_g": 150,
+      "datasheet_url": "https://www.digikey.com/en/products/detail/qualtek/311013-01/183392",
+      "cad_source": null,
+      "offers": [
+        {
+          "supplier": "DigiKey",
+          "sku": "311013-01",
+          "url": "https://www.digikey.com/en/products/detail/qualtek/311013-01/183392",
+          "unit_price_usd": 6.0,
+          "moq": 1,
+          "stock_note": "USD estimate from AUD 8.81 listing; 23 week lead",
+          "checked_on": "2026-11-04"
+        }
+      ],
+      "alternates": [
+        "211018-06"
+      ],
+      "used_by": [
+        "power/mains"
+      ],
+      "notes": "USD price estimated. Mass estimated."
+    },
+    {
+      "ref": "P3",
+      "qty": 2,
+      "category": "connector",
+      "mpn": "221-415",
+      "manufacturer": "WAGO",
+      "description": "LEVER-NUT 5-conductor splice, 24-12 AWG: one per polarity, 2 feeds from the LRS-350-12 terminals in, hub A, hub B and OpenRB branches out (each branch fused, PF1-PF3)",
+      "key_specs": {
+        "awg": "24-12",
+        "current_a": "20 A UL / 32 A IEC",
+        "poles": 5
+      },
+      "dims_mm": [
+        27.0,
+        13.0,
+        8.0
+      ],
+      "mass_g": 4,
+      "datasheet_url": "https://www.delcity.net/store/wire-connectors-quick-splices/wago-connectors/221-lever-nut-5-conductor/",
+      "cad_source": null,
+      "offers": [
+        {
+          "supplier": "Del City",
+          "sku": "221-415",
+          "url": "https://www.delcity.net/store/wire-connectors-quick-splices/wago-connectors/221-lever-nut-5-conductor/",
+          "unit_price_usd": 0.924,
+          "moq": 1,
+          "stock_note": "search snippet, 1+ price, in stock",
+          "checked_on": "2026-11-05"
+        }
+      ],
+      "alternates": [
+        "none: wire each branch to its own +V/-V terminal pair on the LRS-350-12 and drop this line"
+      ],
+      "used_by": [
+        "power/12V distribution"
+      ],
+      "notes": "221-412 (v1) joins only 2 conductors and could not split the rail. Feed each 221-415 with two 18 AWG runs from two PSU terminals, kept short, since the fuses sit downstream. Dims and mass estimated; UL 20 A from listings, not the WAGO datasheet."
+    },
+    {
+      "ref": "P4",
+      "qty": 2,
+      "category": "cable",
+      "mpn": "18AWG silicone wire, red + black, 3 m each",
+      "manufacturer": "generic (BNTECHGO or equal)",
+      "description": "12 V rail wiring from P1 to the two hubs and OpenRB",
+      "key_specs": {
+        "awg": 18,
+        "insulation": "silicone"
+      },
+      "dims_mm": [
+        3000,
+        2,
+        2
+      ],
+      "mass_g": 40,
+      "datasheet_url": null,
+      "cad_source": null,
+      "offers": [
+        {
+          "supplier": "Amazon",
+          "sku": "search: 18 AWG silicone wire red black",
+          "url": "https://www.amazon.com/s?k=18+awg+silicone+wire+red+black",
+          "unit_price_usd": 5.0,
+          "moq": 1,
+          "stock_note": "NOT VERIFIED, placeholder price",
+          "checked_on": "2026-11-04"
+        }
+      ],
+      "alternates": [],
+      "used_by": [
+        "power/12V rail"
+      ],
+      "notes": "Unverified: no exact MPN or offer was checked."
+    },
+    {
+      "ref": "PF1",
+      "qty": 3,
+      "category": "power",
+      "mpn": "0287010.PXCN",
+      "manufacturer": "Littelfuse",
+      "description": "ATO blade fuse 10 A 32 VDC fast acting: one on each hub branch (+12 V), one spare",
+      "key_specs": {
+        "current_a": 10,
+        "voltage_vdc": 32,
+        "type": "ATO fast"
+      },
+      "dims_mm": [
+        19.1,
+        5.1,
+        18.5
+      ],
+      "mass_g": 1,
+      "datasheet_url": "https://www.digikey.ca/en/products/detail/littelfuse-inc/0287010-PXCN/2519807",
+      "cad_source": null,
+      "offers": [
+        {
+          "supplier": "DigiKey",
+          "sku": "F4199-ND",
+          "url": "https://www.digikey.ca/en/products/detail/littelfuse-inc/0287010-PXCN/2519807",
+          "unit_price_usd": 0.47,
+          "moq": 1,
+          "stock_note": "CAD 0.65 at qty 1 read 2026-11-05, Active, converted at about 0.72",
+          "checked_on": "2026-11-05"
+        }
+      ],
+      "alternates": [
+        "0257010.PXPV (257 series, obsolete per DigiKey, replaced by 287)"
+      ],
+      "used_by": [
+        "power/hub A",
+        "power/hub B"
+      ],
+      "notes": "Each hub is rated 10 A; the fuse stops a short from drawing the LRS-350-12's 29 A through 18 AWG and the hub."
+    },
+    {
+      "ref": "PF2",
+      "qty": 2,
+      "category": "power",
+      "mpn": "0287003.PXCN",
+      "manufacturer": "Littelfuse",
+      "description": "ATO blade fuse 3 A 32 VDC fast acting: OpenRB-150 VIN branch, one spare",
+      "key_specs": {
+        "current_a": 3,
+        "voltage_vdc": 32,
+        "type": "ATO fast"
+      },
+      "dims_mm": [
+        19.1,
+        5.1,
+        18.5
+      ],
+      "mass_g": 1,
+      "datasheet_url": "https://www.digikey.de/en/products/detail/littelfuse-inc/0287003-PXCN/3102553",
+      "cad_source": null,
+      "offers": [
+        {
+          "supplier": "DigiKey",
+          "sku": "F4193-ND",
+          "url": "https://www.digikey.de/en/products/detail/littelfuse-inc/0287003-PXCN/3102553",
+          "unit_price_usd": 0.44,
+          "moq": 1,
+          "stock_note": "aggregator figure (myMectronic, June 2026); DigiKey DE showed 0 in stock",
+          "checked_on": "2026-11-05"
+        }
+      ],
+      "alternates": [
+        "0257003.PXPV (obsolete)"
+      ],
+      "used_by": [
+        "power/OpenRB"
+      ],
+      "notes": "Matches the OpenRB-150's 3 A port limit."
+    },
+    {
+      "ref": "PF3",
+      "qty": 3,
+      "category": "power",
+      "mpn": "FHAC0001ZXJ",
+      "manufacturer": "Littelfuse",
+      "description": "In-line ATO fuse holder, 20 A 32 V, 16 AWG leads, splash proof: one per 12 V branch",
+      "key_specs": {
+        "current_a": 20,
+        "voltage_v": 32,
+        "awg": 16
+      },
+      "dims_mm": [
+        60,
+        25,
+        15
+      ],
+      "mass_g": 12,
+      "datasheet_url": "https://www.digikey.com/en/products/detail/littelfuse-commercial-vehicle-products/FHAC0001ZXJ/2004062",
+      "cad_source": null,
+      "offers": [
+        {
+          "supplier": "DigiKey",
+          "sku": "F3209-ND",
+          "url": "https://www.digikey.com/en/products/detail/littelfuse-commercial-vehicle-products/FHAC0001ZXJ/2004062",
+          "unit_price_usd": 7.58,
+          "moq": 1,
+          "stock_note": "aggregator price (May 2026), DigiKey page returned 403",
+          "checked_on": "2026-11-05"
+        }
+      ],
+      "alternates": [
+        "0FHA0001ZXJ"
+      ],
+      "used_by": [
+        "power/hub A",
+        "power/hub B",
+        "power/OpenRB"
+      ],
+      "notes": "Holder part number 01530008Z from the review could not be found; FHAC0001ZXJ is the 16 AWG Littelfuse ATO holder. Dims and mass estimated."
+    },
+    {
+      "ref": "SW1",
+      "qty": 1,
+      "category": "power",
+      "mpn": "RA1113112R",
+      "manufacturer": "E-Switch",
+      "description": "Rocker switch SPST, 10 A 125 VAC, snap-in panel: mains on/off on the line conductor ahead of P1",
+      "key_specs": {
+        "current_a": "10 A 125 VAC (DigiKey; one listing says 16 A)",
+        "poles": "SPST"
+      },
+      "dims_mm": [
+        21,
+        15,
+        25
+      ],
+      "mass_g": 5,
+      "datasheet_url": "https://www.digikey.com/en/products/detail/e-switch/RA1113112R/3778055",
+      "cad_source": null,
+      "offers": [
+        {
+          "supplier": "DigiKey",
+          "sku": "EG5619-ND",
+          "url": "https://www.digikey.com/en/products/detail/e-switch/RA1113112R/3778055",
+          "unit_price_usd": 0.71,
+          "moq": 1,
+          "stock_note": "search snippet, 8,787 in stock",
+          "checked_on": "2026-11-05"
+        }
+      ],
+      "alternates": [],
+      "used_by": [
+        "power/mains"
+      ],
+      "notes": "LRS-350-12 input current is up to about 6.8 A at 115 VAC (from memory, check the MEAN WELL datasheet). Dims and mass estimated."
+    },
+    {
+      "ref": "ES1",
+      "qty": 1,
+      "category": "power",
+      "mpn": "XALK178",
+      "manufacturer": "Schneider Electric",
+      "description": "Emergency stop control station, 40 mm turn-to-release mushroom, 1 NC, in its enclosure: breaks the mains line ahead of P1",
+      "key_specs": {
+        "contacts": "1 NC",
+        "head_mm": 40
+      },
+      "dims_mm": [
+        68,
+        68,
+        113
+      ],
+      "mass_g": 200,
+      "datasheet_url": "https://www.standardelectricsupply.com/Schneider-Electric-XALK178-Harmony-Pushbutton-Control-Station",
+      "cad_source": null,
+      "offers": [
+        {
+          "supplier": "Standard Electric Supply",
+          "sku": "XALK178",
+          "url": "https://www.standardelectricsupply.com/Schneider-Electric-XALK178-Harmony-Pushbutton-Control-Station",
+          "unit_price_usd": 85.3,
+          "moq": 1,
+          "stock_note": "search snippet; other sellers USD 116-151",
+          "checked_on": "2026-11-05"
+        }
+      ],
+      "alternates": [
+        "XALK178F"
+      ],
+      "used_by": [
+        "power/mains"
+      ],
+      "notes": "Contact rating against the supply's mains current and inrush is not confirmed (Schneider FAQ only gives 24 V 0.5 A for its ZENL1121 block). If it falls short, let the e-stop drop a mains contactor instead. Dims and mass estimated."
+    },
+    {
+      "ref": "S1",
+      "qty": 5,
+      "category": "sensor",
+      "mpn": "34-00004",
+      "manufacturer": "Interlink Electronics",
+      "description": "FSR 400 Short force sensing resistor, 5.6 mm active round, one per fingertip pad",
+      "key_specs": {
+        "active_dia_mm": 5.62,
+        "overall_dia_mm": 7.6,
+        "force_range_n": "0.2-20 (approx)",
+        "termination": "solder tabs"
+      },
+      "dims_mm": [
+        7.6,
+        20.0,
+        0.4
+      ],
+      "mass_g": 0.3,
+      "datasheet_url": "https://xonstorage.blob.core.windows.net/pdf/interlinkelectronics_3400004_sup2manufacturernocatlinknew.pdf",
+      "cad_source": null,
+      "offers": [
+        {
+          "supplier": "Octopart",
+          "sku": "34-00004",
+          "url": "https://octopart.com/part/interlink-electronics/34-00004",
+          "unit_price_usd": 5.47,
+          "moq": 1,
+          "stock_note": "aggregated distributor price, date unknown",
+          "checked_on": "2026-11-04"
+        }
+      ],
+      "alternates": [
+        "30-81794 (FSR 402, 18 mm, DigiKey 1027-1001-ND, USD 7.12, 4,805 in stock)"
+      ],
+      "used_by": [
+        "index/tip",
+        "middle/tip",
+        "ring/tip",
+        "little/tip",
+        "thumb/tip"
+      ],
+      "notes": "Read by OpenRB analog A0-A4 through a 10k divider (R1). Force range from memory of the FSR 400 datasheet. Short-tail length estimated."
+    },
+    {
+      "ref": "R1",
+      "qty": 5,
+      "category": "other",
+      "mpn": "MFR-25FBF52-10K",
+      "manufacturer": "YAGEO",
+      "description": "10 kOhm 1% 0.25 W metal film resistor, FSR voltage divider",
+      "key_specs": {
+        "resistance_ohm": 10000,
+        "tolerance": "1%",
+        "power_w": 0.25
+      },
+      "dims_mm": [
+        6.3,
+        2.4,
+        2.4
+      ],
+      "mass_g": 0.3,
+      "datasheet_url": "https://lcsc.com/datasheet/lcsc_datasheet_2109081830_YAGEO-MFR-25FBF52-10K_C1519255.pdf",
+      "cad_source": null,
+      "offers": [
+        {
+          "supplier": "DigiKey",
+          "sku": "10.0KXBK-ND",
+          "url": "https://www.digikey.com/en/products/detail/yageo/MFR-25FBF52-10K/13219",
+          "unit_price_usd": 0.1,
+          "moq": 1,
+          "stock_note": "USD estimated from JPY 16 listing, 151,880 in stock",
+          "checked_on": "2026-11-04"
+        }
+      ],
+      "alternates": [],
+      "used_by": [
+        "sensing/fingertip FSR divider"
+      ],
+      "notes": "USD price estimated."
+    },
+    {
+      "ref": "W1",
+      "qty": 2,
+      "category": "cable",
+      "mpn": "1881 / 1877",
+      "manufacturer": "Adafruit",
+      "description": "Silicone cover stranded wire 26 AWG, 2 m spools (black 1881, red 1877), FSR leads from fingertips to the forearm",
+      "key_specs": {
+        "awg": 26,
+        "length_mm": 2000
+      },
+      "dims_mm": [
+        2000,
+        1.5,
+        1.5
+      ],
+      "mass_g": 10,
+      "datasheet_url": "https://www.adafruit.com/category/282",
+      "cad_source": null,
+      "offers": [
+        {
+          "supplier": "Adafruit",
+          "sku": "1881",
+          "url": "https://www.adafruit.com/product/1881",
+          "unit_price_usd": 2.95,
+          "moq": 1,
+          "stock_note": "price NOT verified",
+          "checked_on": "2026-11-04"
+        }
+      ],
+      "alternates": [
+        "30AWG 2001-2006"
+      ],
+      "used_by": [
+        "sensing/fingertip FSR"
+      ],
+      "notes": "Product IDs confirmed from the Adafruit category listing; price not confirmed."
+    },
+    {
+      "ref": "B1",
+      "qty": 38,
+      "category": "bearing",
+      "mpn": "693ZZ",
+      "manufacturer": "3RACING (or NSK)",
+      "description": "Deep groove ball bearing 3x8x4 mm, double metal shield, finger and thumb joint pivots (2 per axis)",
+      "key_specs": {
+        "bore_mm": 3,
+        "od_mm": 8,
+        "width_mm": 4,
+        "dynamic_load_n": 615,
+        "static_load_n": 179
+      },
+      "dims_mm": [
+        8,
+        8,
+        4
+      ],
+      "mass_g": 0.9,
+      "datasheet_url": "https://www.oss.nsk.com/products/bearings/ball-bearings/deep-groove-ball-bearings/extra-small-ball-bearings-and-miniature-ball-bearings-metric-series/693zzmc3-apn.html",
+      "cad_source": null,
+      "offers": [
+        {
+          "supplier": "RCJaz",
+          "sku": "3RB-693-ZZ/10",
+          "url": "https://www.rcjaz.ca/3racing-double-metal-shield-bearing-mm-10-pcs-3rb693zz10-p-90002033.html",
+          "unit_price_usd": 0.7,
+          "moq": 10,
+          "stock_note": "CAD 9.63 per 10 read 2026-11-05, converted at about 0.72 USD/CAD; add to cart shown, stock not stated",
+          "checked_on": "2026-11-05"
+        }
+      ],
+      "alternates": [
+        "igus iglidur plain bushing 3 mm bore (not sourced, thinner)",
+        "MR63ZZ only on lightly loaded abduction axes (C0 59-73 N, too low for flexion axes)"
+      ],
+      "used_by": [
+        "index/MCP_abd",
+        "index/MCP_flex",
+        "index/PIP",
+        "index/DIP",
+        "middle/MCP_abd",
+        "middle/MCP_flex",
+        "middle/PIP",
+        "middle/DIP",
+        "ring/MCP_abd",
+        "ring/MCP_flex",
+        "ring/PIP",
+        "ring/DIP",
+        "little/MCP_abd",
+        "little/MCP_flex",
+        "little/PIP",
+        "little/DIP",
+        "thumb/MCP_flex",
+        "thumb/MCP_abd",
+        "thumb/IP"
+      ],
+      "notes": "Replaces MR63ZZ (C0 59-73 N by vendor). Joint reaction is about the active tendon tension plus the antagonist pretension: up to about 167 N at stall, 84 N per bearing, about 65 N at 0.7 A. 693ZZ C0 = 179 N (NSK datasheet): static safety factor about 2.1 at stall, 2.8 at 0.7 A. 683ZZ 3x7x3 was not taken: C0 129 N (NMB), under 150 N. 16 finger axes x 2 = 32, thumb 3 axes x 2 = 6. Buy 40 (4 packs). The generative structure still models 3x6x2.5: clevis and pulley bores must grow to 8 mm OD x 4 mm."
+    },
+    {
+      "ref": "B2",
+      "qty": 6,
+      "category": "bearing",
+      "mpn": "623ZZ",
+      "manufacturer": "VXB",
+      "description": "Deep groove ball bearing 3x10x4 mm shielded, thumb CMC saddle and palm arch hinge",
+      "key_specs": {
+        "bore_mm": 3,
+        "od_mm": 10,
+        "width_mm": 4
+      },
+      "dims_mm": [
+        10,
+        10,
+        4
+      ],
+      "mass_g": 1.6,
+      "datasheet_url": "https://vxb.com/products/623zz-10-bearing-shielded-3x10x4-miniature",
+      "cad_source": null,
+      "offers": [
+        {
+          "supplier": "VXB",
+          "sku": "623ZZ 10-pack",
+          "url": "https://vxb.com/products/623zz-10-bearing-shielded-3x10x4-miniature",
+          "unit_price_usd": 3.0,
+          "moq": 10,
+          "stock_note": "USD 29.99 per 10 (reseller snippet; VXB own page inconsistent)",
+          "checked_on": "2026-11-04"
+        }
+      ],
+      "alternates": [
+        "623-2RS"
+      ],
+      "used_by": [
+        "thumb/CMC_flex",
+        "thumb/CMC_abd",
+        "palm/arch_CMC45"
+      ],
+      "notes": "3 axes x 2. Mass estimated."
+    },
+    {
+      "ref": "B3",
+      "qty": 4,
+      "category": "bearing",
+      "mpn": "688ZZ",
+      "manufacturer": "VXB",
+      "description": "Deep groove ball bearing 8x16x5 mm shielded, wrist gimbal idler side (opposite the servo horn)",
+      "key_specs": {
+        "bore_mm": 8,
+        "od_mm": 16,
+        "width_mm": 5
+      },
+      "dims_mm": [
+        16,
+        16,
+        5
+      ],
+      "mass_g": 4,
+      "datasheet_url": "https://vxb.com/products/688zz-8x16-shielded-8x16x5-miniature-bearing-pack",
+      "cad_source": null,
+      "offers": [
+        {
+          "supplier": "VXB",
+          "sku": "688ZZ 10-pack",
+          "url": "https://vxb.com/products/688zz-8x16-shielded-8x16x5-miniature-bearing-pack",
+          "unit_price_usd": 3.0,
+          "moq": 10,
+          "stock_note": "USD 29.99 per 10",
+          "checked_on": "2026-11-04"
+        }
+      ],
+      "alternates": [
+        "688-2RS"
+      ],
+      "used_by": [
+        "wrist/flex_ext",
+        "wrist/radial_ulnar"
+      ],
+      "notes": "2 per wrist axis. Mass estimated."
+    },
+    {
+      "ref": "SH1",
+      "qty": 22,
+      "category": "shaft",
+      "mpn": "DP7X03016H8-050P1",
+      "manufacturer": "Zoro Select",
+      "description": "Dowel pin 3 mm x 16 mm, 18-8 stainless, ISO 2338 h8, joint axles through MR63ZZ/623ZZ",
+      "key_specs": {
+        "diameter_mm": 3,
+        "length_mm": 16,
+        "tolerance": "h8",
+        "material": "18-8 stainless"
+      },
+      "dims_mm": [
+        3,
+        3,
+        16
+      ],
+      "mass_g": 0.9,
+      "datasheet_url": "https://www.zoro.com/i/G3404177/",
+      "cad_source": null,
+      "offers": [
+        {
+          "supplier": "Zoro",
+          "sku": "G3404177",
+          "url": "https://www.zoro.com/i/G3404177/",
+          "unit_price_usd": 0.3,
+          "moq": 50,
+          "stock_note": "pack of 50, price NOT read (Zoro returned 403)",
+          "checked_on": "2026-11-04"
+        }
+      ],
+      "alternates": [
+        "DP7X03012H8-050P1 (3 x 12 mm, Zoro G0593792)"
+      ],
+      "used_by": [
+        "all finger, thumb and palm axes"
+      ],
+      "notes": "19 MR63 axes + 3 x 623 axes = 22. Press fit in one link, bearings in the other. Pack price assumed USD 15."
+    },
+    {
+      "ref": "SH2",
+      "qty": 2,
+      "category": "shaft",
+      "mpn": "Standard dowel pin 8 x 20 mm stainless",
+      "manufacturer": "Zoro Select",
+      "description": "Dowel pin 8 mm x 20 mm, wrist gimbal idler axles in 688ZZ",
+      "key_specs": {
+        "diameter_mm": 8,
+        "length_mm": 20,
+        "material": "stainless"
+      },
+      "dims_mm": [
+        8,
+        8,
+        20
+      ],
+      "mass_g": 7.9,
+      "datasheet_url": "https://www.zoro.com/i/G3411171/",
+      "cad_source": null,
+      "offers": [
+        {
+          "supplier": "Zoro",
+          "sku": "G3411171",
+          "url": "https://www.zoro.com/i/G3411171/",
+          "unit_price_usd": 1.08,
+          "moq": 10,
+          "stock_note": "USD 10.79 per 10 (search snippet)",
+          "checked_on": "2026-11-04"
+        }
+      ],
+      "alternates": [
+        "SSPIN2338A2DOW08020M6P (Newport ISO 2338 m6, 18-8)"
+      ],
+      "used_by": [
+        "wrist/flex_ext",
+        "wrist/radial_ulnar"
+      ],
+      "notes": "Grade not named on listing; Newport ISO 2338 18-8 alternate is USD 62.99 per 10."
+    },
+    {
+      "ref": "F1",
+      "qty": 240,
+      "category": "fastener",
+      "mpn": "M2-0.4 x 6 SHCS ISO 4762, 18-8 stainless (Newport 315732-100)",
+      "manufacturer": "Newport Fasteners",
+      "description": "M2x6 socket head cap screw: XC330 to forearm bank (4 each), spool to XC330 horn (4 each), finger shells into M2 inserts",
+      "key_specs": {
+        "thread": "M2x0.4",
+        "length_mm": 6,
+        "standard": "ISO 4762 / DIN 912",
+        "material": "18-8 stainless"
+      },
+      "dims_mm": [
+        3.8,
+        3.8,
+        8
+      ],
+      "mass_g": 0.25,
+      "datasheet_url": "https://www.zoro.com/i/G006337305/",
+      "cad_source": null,
+      "offers": [
+        {
+          "supplier": "Zoro",
+          "sku": "G006337305",
+          "url": "https://www.zoro.com/i/G006337305/",
+          "unit_price_usd": 0.1,
+          "moq": 100,
+          "stock_note": "pack of 100, price NOT read",
+          "checked_on": "2026-11-04"
+        }
+      ],
+      "alternates": [
+        "Zoro Select M070000200006 black oxide 100pk",
+        "McMaster 91292A (M2x6 18-8), SKU not confirmed"
+      ],
+      "used_by": [
+        "forearm/servo bank",
+        "forearm/spools",
+        "fingers/shells"
+      ],
+      "notes": "88 + 88 + 60 = 236. Assumes XC330 case and horn take M2 screws; thread depth to be confirmed on the ROBOTIS drawing."
+    },
+    {
+      "ref": "F2",
+      "qty": 16,
+      "category": "fastener",
+      "mpn": "M510500250006",
+      "manufacturer": "Zoro Select",
+      "description": "M2.5-0.45 x 6 SHCS stainless, XM430 wrist servo mounting",
+      "key_specs": {
+        "thread": "M2.5x0.45",
+        "length_mm": 6,
+        "material": "stainless"
+      },
+      "dims_mm": [
+        4.5,
+        4.5,
+        8.5
+      ],
+      "mass_g": 0.4,
+      "datasheet_url": "https://zoro.com/zoro-select-m25-045-socket-head-cap-screw-plain-stainless-steel-6-mm-length-50-pk-m510500250006/i/G5331566",
+      "cad_source": null,
+      "offers": [
+        {
+          "supplier": "Zoro",
+          "sku": "G5331566",
+          "url": "https://zoro.com/zoro-select-m25-045-socket-head-cap-screw-plain-stainless-steel-6-mm-length-50-pk-m510500250006/i/G5331566",
+          "unit_price_usd": 0.043,
+          "moq": 50,
+          "stock_note": "USD 2.15 per 50 (search snippet)",
+          "checked_on": "2026-11-04"
+        }
+      ],
+      "alternates": [],
+      "used_by": [
+        "wrist/flex_ext",
+        "wrist/radial_ulnar"
+      ],
+      "notes": "8 per XM430 (body to bracket). XM430 horn bolts are supplied with the servo (not verified)."
+    },
+    {
+      "ref": "F3",
+      "qty": 60,
+      "category": "fastener",
+      "mpn": "225081",
+      "manufacturer": "OXOXO",
+      "description": "M3-0.5 x 8 SHCS ISO 4762 class 12.9 black oxide, palm, wrist gimbal and forearm shell joints into M3 inserts",
+      "key_specs": {
+        "thread": "M3x0.5",
+        "length_mm": 8,
+        "standard": "ISO 4762",
+        "grade": "12.9"
+      },
+      "dims_mm": [
+        5.5,
+        5.5,
+        11
+      ],
+      "mass_g": 0.8,
+      "datasheet_url": "https://www.zoro.com/oxoxo-m3-05x8-metric-socket-head-cap-screw-class-129-iso-4762-black-ox-100pk-225081/i/G322672739/",
+      "cad_source": null,
+      "offers": [
+        {
+          "supplier": "Zoro",
+          "sku": "G322672739",
+          "url": "https://www.zoro.com/oxoxo-m3-05x8-metric-socket-head-cap-screw-class-129-iso-4762-black-ox-100pk-225081/i/G322672739/",
+          "unit_price_usd": 0.433,
+          "moq": 100,
+          "stock_note": "USD 43.29 per 100 (search snippet)",
+          "checked_on": "2026-11-04"
+        }
+      ],
+      "alternates": [
+        "Holo-Krome 77008 (18-8, 100pk)"
+      ],
+      "used_by": [
+        "palm",
+        "wrist",
+        "forearm"
+      ],
+      "notes": "Count is a budget for generative parts; final count comes from the structural design."
+    },
+    {
+      "ref": "I1",
+      "qty": 60,
+      "category": "insert",
+      "mpn": "94459A120",
+      "manufacturer": "McMaster-Carr",
+      "description": "Heat-set insert for plastic, brass, M2x0.4, 4 mm installed length",
+      "key_specs": {
+        "thread": "M2x0.4",
+        "installed_length_mm": 4.0,
+        "material": "brass"
+      },
+      "dims_mm": [
+        3.6,
+        3.6,
+        4.0
+      ],
+      "mass_g": 0.2,
+      "datasheet_url": "https://www.mcmaster.com/94459A120/",
+      "cad_source": "https://www.mcmaster.com/94459A120/",
+      "offers": [
+        {
+          "supplier": "McMaster-Carr",
+          "sku": "94459A120",
+          "url": "https://www.mcmaster.com/94459A120/",
+          "unit_price_usd": 0.3,
+          "moq": 50,
+          "stock_note": "price NOT read, pack size assumed 50",
+          "checked_on": "2026-11-04"
+        }
+      ],
+      "alternates": [
+        "94459A418 (4.1 mm, 25pk via Zoro)"
+      ],
+      "used_by": [
+        "fingers",
+        "thumb",
+        "palm"
+      ],
+      "notes": "Part number from McMaster family listing; price and OD not confirmed. Install tip McMaster 92160A341 (tool, not in BOM)."
+    },
+    {
+      "ref": "I2",
+      "qty": 60,
+      "category": "insert",
+      "mpn": "94459A140",
+      "manufacturer": "McMaster-Carr",
+      "description": "Heat-set insert for plastic, brass, M3x0.5, 5.7 mm installed length",
+      "key_specs": {
+        "thread": "M3x0.5",
+        "installed_length_mm": 5.7,
+        "material": "brass"
+      },
+      "dims_mm": [
+        4.7,
+        4.7,
+        5.7
+      ],
+      "mass_g": 0.4,
+      "datasheet_url": "https://www.mcmaster.com/product/94459A140/",
+      "cad_source": "https://www.mcmaster.com/product/94459A140/",
+      "offers": [
+        {
+          "supplier": "McMaster-Carr",
+          "sku": "94459A140",
+          "url": "https://www.mcmaster.com/product/94459A140/",
+          "unit_price_usd": 0.35,
+          "moq": 50,
+          "stock_note": "pack of 50, in stock; price NOT read",
+          "checked_on": "2026-11-04"
+        }
+      ],
+      "alternates": [
+        "Prusa heat set inserts M3 standard 100 pcs"
+      ],
+      "used_by": [
+        "palm",
+        "wrist",
+        "forearm"
+      ],
+      "notes": "OD estimated."
+    },
+    {
+      "ref": "T1",
+      "qty": 1,
+      "category": "tendon",
+      "mpn": "21101000150E",
+      "manufacturer": "PowerPro (Shimano)",
+      "description": "Spectra (UHMWPE) braided line, 100 lb test, 0.46 mm, 150 yd: pull-pull flexor/extensor tendons, clamp or splice terminated, never knotted",
+      "key_specs": {
+        "diameter_mm": 0.46,
+        "break_load_n": 445,
+        "break_load_kg": 45,
+        "length_m": 137,
+        "terminated_break_n_est": "178-311 (40-70 % if knotted; clamp or splice to be pull-tested)"
+      },
+      "dims_mm": [
+        137000,
+        0.46,
+        0.46
+      ],
+      "mass_g": 30,
+      "datasheet_url": "https://www.basspro.com/shop/en/powerpro-braided-spectra-fiber-microfilament-line-150-yards",
+      "cad_source": null,
+      "offers": [
+        {
+          "supplier": "Bass Pro Shops",
+          "sku": "21101000150E",
+          "url": "https://www.basspro.com/shop/en/powerpro-braided-spectra-fiber-microfilament-line-150-yards",
+          "unit_price_usd": 30.0,
+          "moq": 1,
+          "stock_note": "price NOT read (assumed USD 30); 100 lb 150 yd green listed at 0.46 mm",
+          "checked_on": "2026-11-05"
+        }
+      ],
+      "alternates": [
+        "Vectran or Dyneema SK99/DM20 braid about 100 lb, about 0.5 mm (low creep, not sourced at that size)",
+        "PowerPro 80 lb 21100800150E (v1, too weak once terminated)"
+      ],
+      "used_by": [
+        "index/MCP_abd",
+        "index/MCP_flex",
+        "index/PIP",
+        "index/DIP",
+        "middle/MCP_abd",
+        "middle/MCP_flex",
+        "middle/PIP",
+        "middle/DIP",
+        "ring/MCP_abd",
+        "ring/MCP_flex",
+        "ring/PIP",
+        "ring/DIP",
+        "little/MCP_abd",
+        "little/MCP_flex",
+        "little/PIP",
+        "little/DIP",
+        "thumb/CMC_flex",
+        "thumb/CMC_abd",
+        "thumb/MCP_flex",
+        "thumb/MCP_abd",
+        "thumb/IP",
+        "palm/arch_CMC45"
+      ],
+      "notes": "22 DOF x 2 strands x about 0.6 m = 26 m. Safety factor counts on the terminated strength, not the line rating: a knot keeps 40-70 %, so 178-311 N against 167 N at stall (v1's 80 lb gave 0.9-1.5). Terminate with a screw clamp on the spool and a splice or clamp at the joint, pull-test 3 samples, and set the firmware current limit so tension stays under 0.5 x the measured terminated strength. Spectra creeps under sustained load, so pull-pull pretension drops during a held grip: re-tension, or move to a low-creep braid. Price NOT read."
+    },
+    {
+      "ref": "T2",
+      "qty": 1,
+      "category": "tendon",
+      "mpn": "BHL200",
+      "manufacturer": "Jagwire",
+      "description": "LEX-SL 4 mm compressionless shift housing (linear steel strands, Slick-Lube liner), 50 m: Bowden sheaths from the forearm spools through the wrist to each joint",
+      "key_specs": {
+        "od_mm": 4.0,
+        "liner": "Slick-Lube (PTFE-type), for 1.1 mm cable",
+        "construction": "linear steel strands, compressionless",
+        "length_m": 50
+      },
+      "dims_mm": [
+        50000,
+        4,
+        4
+      ],
+      "mass_g": 310,
+      "datasheet_url": "https://www.jagwire.com/en/article/151/shift-housing-4mm-lex-sl-slick-lube",
+      "cad_source": null,
+      "offers": [
+        {
+          "supplier": "Northwest Bicycle",
+          "sku": "BHL200",
+          "url": "https://northwestbicycle.com/products/jagwire-4mm-sport-derailleur-housing-slick-lube-liner-50m-file-box-blk",
+          "unit_price_usd": 129.99,
+          "moq": 1,
+          "stock_note": "search snippet, sale price",
+          "checked_on": "2026-11-05"
+        }
+      ],
+      "alternates": [
+        "Shimano OT-SP41 4 mm x 50 m (Y60098580)",
+        "custom stainless close-wound coil about 1.0 ID x 2.0 OD with 0.6 ID PTFE liner (not sourced; ZUSA-HT-4255 only as a liner if the coil ID allows)"
+      ],
+      "used_by": [
+        "index/MCP_abd",
+        "index/MCP_flex",
+        "index/PIP",
+        "index/DIP",
+        "middle/MCP_abd",
+        "middle/MCP_flex",
+        "middle/PIP",
+        "middle/DIP",
+        "ring/MCP_abd",
+        "ring/MCP_flex",
+        "ring/PIP",
+        "ring/DIP",
+        "little/MCP_abd",
+        "little/MCP_flex",
+        "little/PIP",
+        "little/DIP",
+        "thumb/CMC_flex",
+        "thumb/CMC_abd",
+        "thumb/MCP_flex",
+        "thumb/MCP_abd",
+        "thumb/IP",
+        "palm/arch_CMC45"
+      ],
+      "notes": "Replaces bare PTFE ZUSA-HT-4255 1x2 mm: at 167 N its wall stress is 167/(pi x (1.0^2 - 0.5^2)) = 71 MPa (38 MPa at 90 N), far over the 10-15 MPa where PTFE creeps and yields, so the sheath shortened, slack and pretension were lost and joint angle could no longer be read from the servo encoder. 44 sheaths x about 0.35 m = 15.4 m. OD grows from 2 to 4 mm: the wrist passage must clear 44 x 4 mm. Liner ID not published; the 0.46 mm tendon fits a liner sized for 1.1 mm cable. Mass is the installed 15.4 m at an estimated 20 g/m, not the 50 m roll."
+    },
+    {
+      "ref": "T3",
+      "qty": 2,
+      "category": "tendon",
+      "mpn": "GC4FA",
+      "manufacturer": "Jagwire",
+      "description": "4 mm alloy housing end caps (ferrules), bottle of 50: metal sheath stops at both ends of each housing",
+      "key_specs": {
+        "housing_od_mm": 4,
+        "material": "aluminium alloy",
+        "pack": 50
+      },
+      "dims_mm": [
+        6,
+        6,
+        8
+      ],
+      "mass_g": 25,
+      "datasheet_url": "https://bikebug.com/jagwire-4mm-alloy-end-caps-bottle-50.html",
+      "cad_source": null,
+      "offers": [
+        {
+          "supplier": "Bikebug",
+          "sku": "GC4FA",
+          "url": "https://bikebug.com/jagwire-4mm-alloy-end-caps-bottle-50.html",
+          "unit_price_usd": 15.0,
+          "moq": 1,
+          "stock_note": "price NOT read (AUD listing), assumed USD 15 per bottle",
+          "checked_on": "2026-11-05"
+        }
+      ],
+      "alternates": [
+        "BOT192-2BJ (4 mm open alloy, bottle of 50)"
+      ],
+      "used_by": [
+        "index/MCP_abd",
+        "index/MCP_flex",
+        "index/PIP",
+        "index/DIP",
+        "middle/MCP_abd",
+        "middle/MCP_flex",
+        "middle/PIP",
+        "middle/DIP",
+        "ring/MCP_abd",
+        "ring/MCP_flex",
+        "ring/PIP",
+        "ring/DIP",
+        "little/MCP_abd",
+        "little/MCP_flex",
+        "little/PIP",
+        "little/DIP",
+        "thumb/CMC_flex",
+        "thumb/CMC_abd",
+        "thumb/MCP_flex",
+        "thumb/MCP_abd",
+        "thumb/IP",
+        "palm/arch_CMC45"
+      ],
+      "notes": "44 housings x 2 ends = 88, buy 2 bottles. The forearm stop bar and the palm stops seat the cap, not the bare housing. Cap OD and length estimated."
+    }
+  ]
+}

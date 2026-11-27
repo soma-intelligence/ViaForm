@@ -1,0 +1,1020 @@
+{
+  "assembly": "drone",
+  "version": 1,
+  "checked_on": "2026-11-04",
+  "currency": "USD",
+  "summary": {
+    "dof_total": 0,
+    "architecture": "3-inch quad, 4S, F1404 4600KV + GF3016 tri, SpeedyBee F405 Mini 35A 20x20 stack, ELRS RP1 V2, analog Tank Mini VTX + Caddx Ant, XIAO ESP32S3 + 6x VL53L1X companion, generative frame",
+    "est_total_cost_usd": 476.86,
+    "cost_rule": "sum over components of ceil(qty/moq)*moq*unit_price of the first offer; frame excluded",
+    "mass_without_frame_g": 170.3,
+    "max_static_thrust_g": 1378.9,
+    "thrust_source": "T-Motor F1404 KV4600 + GF3016 at 15.64 V, 100% throttle, 17.54 A per motor"
+  },
+  "components": [
+    {
+      "ref": "STK1",
+      "qty": 1,
+      "category": "mcu",
+      "mpn": "SB-F4MINI-STACK",
+      "manufacturer": "SpeedyBee",
+      "description": "F405 Mini BLS 35A 20x20 stack: F405 Mini flight controller + BLS 35A Mini V2 4-in-1 ESC (one SKU, two boards)",
+      "key_specs": {
+        "fc_mcu": "STM32F405",
+        "gyro": "ICM42688P",
+        "barometer": true,
+        "blackbox_mb": 8,
+        "bluetooth": true,
+        "uarts": "UART1-UART6 listed (UART5 for ESC telemetry; ESC itself has no telemetry)",
+        "bec": "5V 2A, 9V 3A, 3.3V 0.5A, 4.5V 1A",
+        "input_cells": "3-6S",
+        "esc_firmware": "BLHeli_S J-H-40",
+        "esc_continuous_a": 35,
+        "esc_burst_a": "45 (5 s)",
+        "esc_protocol": "DSHOT300/600",
+        "mount_pattern_mm": "20x20",
+        "mount_hole_mm": 3.5,
+        "mount_screw": "M2 or M3 (grommets for both included)",
+        "fc_board_mm": [
+          30,
+          32,
+          7.8
+        ],
+        "esc_board_mm": [
+          35,
+          35,
+          5.5
+        ],
+        "fc_mass_g": 9.6,
+        "esc_mass_g": 7.2,
+        "stack_mass_g": 13.5,
+        "in_box": "M2 and M3 screw + silicone grommet sets, Rubycon 470 uF low-ESR capacitor"
+      },
+      "dims_mm": [
+        32,
+        35,
+        14.2
+      ],
+      "mass_g": 13.5,
+      "datasheet_url": "https://www.speedybee.com/speedybee-f405-mini-bls-35a-20x20-stack/",
+      "offers": [
+        {
+          "supplier": "NextFPV",
+          "sku": "speedybee-f405-mini-35a-stack",
+          "url": "https://www.nextfpv.com/products/speedybee-f405-mini-35a-stack",
+          "unit_price_usd": 74.0,
+          "moq": 1,
+          "pack_price_usd": 74.0,
+          "stock_note": "in stock, 2 units; price and stock read from the retailer page via search index on 2026-11-04 (live page fetch rate-limited); recheck before ordering",
+          "checked_on": "2026-11-04"
+        },
+        {
+          "supplier": "WREKD",
+          "sku": "speedybee-f405-mini-flight-controller-with-bls-35a-mini-v2",
+          "url": "https://wrekd.com/products/speedybee-f405-mini-flight-controller-with-bls-35a-mini-v2-20x20-4-in-1-esc-for-rc-fpv-racing-drone",
+          "unit_price_usd": 69.99,
+          "moq": 1,
+          "pack_price_usd": 69.99,
+          "stock_note": "listed in stock but marked pre-order (ships 3-7 days); price and stock read from the retailer page via search index on 2026-11-04 (live page fetch rate-limited); recheck before ordering",
+          "checked_on": "2026-11-04"
+        },
+        {
+          "supplier": "RaceDayQuads",
+          "sku": "21075",
+          "url": "https://www.racedayquads.com/products/speedybee-f4-3-6s-20x20-stack-combo-f405-fc-35a-8bit-4in1-esc",
+          "unit_price_usd": 110.99,
+          "moq": 1,
+          "pack_price_usd": 110.99,
+          "stock_note": "OUT OF STOCK (available=false)",
+          "checked_on": "2026-11-04"
+        }
+      ],
+      "alternates": [
+        "SpeedyBee F405 Mini FC alone (Pyrodrone G1-12231, $31.99) + any 20x20 35A 4-in-1"
+      ],
+      "used_by": [
+        "flight control",
+        "motor drive",
+        "OSD",
+        "MSP link to companion ESP32"
+      ],
+      "notes": "Maker page (speedybee.com, $64.99) now says DISCONTINUED; buy from remaining retail stock or pick an alternate. Maker gives stack mass 13.5 g but board masses 9.6 + 7.2 g (16.8 g): conflict on the maker page itself, 13.5 g used. Stack dims also conflict on the maker page (32x35x14.2 vs 36.5x36.5x7.0). 470 uF cap is in the box. XT30 lead not listed in the box: J1 covers it. Same part the sim lists (Amazon B0FC6F388B).",
+      "cad_source": null
+    },
+    {
+      "ref": "M1",
+      "qty": 4,
+      "category": "motor",
+      "mpn": "F1404 KV4600",
+      "manufacturer": "T-Motor",
+      "description": "1404 brushless outrunner, 4600 KV, 3-inch class",
+      "key_specs": {
+        "kv": 4600,
+        "stator": "14x4 mm",
+        "config": "9N12P",
+        "rated_cells": "3-4S",
+        "internal_resistance_mohm": 138,
+        "idle_current_a_10v": 0.6,
+        "peak_current_a_60s": 20,
+        "max_power_w_60s": 316,
+        "lead": "24 AWG, 150 mm",
+        "shaft_mm": "1.5 (resellers) or 2 (T-Motor/ligpower page): UNCONFIRMED",
+        "prop_mount": "T-mount (KiwiQuads)",
+        "mount_pattern": "9x9 mm M2 per sim: UNCONFIRMED",
+        "thrust_table_gf3016_4s": [
+          {
+            "throttle": 0.5,
+            "thrust_g": 184.21,
+            "voltage_v": 15.93,
+            "current_a": 5.23,
+            "rpm": 26532,
+            "power_w": 83.28
+          },
+          {
+            "throttle": 0.6,
+            "thrust_g": 233.36,
+            "voltage_v": 15.88,
+            "current_a": 7.64,
+            "rpm": 30006,
+            "power_w": 121.4
+          },
+          {
+            "throttle": 0.7,
+            "thrust_g": 268.5,
+            "voltage_v": 15.84,
+            "current_a": 10.01,
+            "rpm": 32770,
+            "power_w": 158.49
+          },
+          {
+            "throttle": 0.8,
+            "thrust_g": 300.59,
+            "voltage_v": 15.78,
+            "current_a": 12.5,
+            "rpm": 35813,
+            "power_w": 197.32
+          },
+          {
+            "throttle": 0.9,
+            "thrust_g": 330.89,
+            "voltage_v": 15.71,
+            "current_a": 14.98,
+            "rpm": 38436,
+            "power_w": 235.41
+          },
+          {
+            "throttle": 1.0,
+            "thrust_g": 344.73,
+            "voltage_v": 15.64,
+            "current_a": 17.54,
+            "rpm": 40053,
+            "power_w": 274.32
+          }
+        ],
+        "test_temp_c": 50
+      },
+      "dims_mm": [
+        17.9,
+        17.9,
+        16.6
+      ],
+      "mass_g": 9.34,
+      "datasheet_url": "https://www.ligpower.com/product/f1404-kv4600-fpv-motor.html",
+      "offers": [
+        {
+          "supplier": "RaceDayQuads",
+          "sku": "t-motor-f1404-4600kv-micro-motor",
+          "url": "https://www.racedayquads.com/products/t-motor-f1404-4600kv-micro-motor",
+          "unit_price_usd": 21.99,
+          "moq": 1,
+          "pack_price_usd": 21.99,
+          "stock_note": "listed; price and stock read from the retailer page via search index on 2026-11-04 (live page fetch rate-limited); recheck before ordering",
+          "checked_on": "2026-11-04"
+        },
+        {
+          "supplier": "Lumenier",
+          "sku": "t-motor-f1404-2900kv-3800kv-4600kv-motor-gray-red",
+          "url": "https://www.lumenier.com/products/t-motor-f1404-2900kv-3800kv-4600kv-motor-gray-red",
+          "unit_price_usd": 21.99,
+          "moq": 1,
+          "pack_price_usd": 21.99,
+          "stock_note": "listed; price and stock read from the retailer page via search index on 2026-11-04 (live page fetch rate-limited); recheck before ordering",
+          "checked_on": "2026-11-04"
+        },
+        {
+          "supplier": "Pyrodrone",
+          "sku": "R7-9308",
+          "url": "https://pyrodrone.com/products/t-motor-f1404-micro-long-range-motors-4600kv",
+          "unit_price_usd": 20.99,
+          "moq": 1,
+          "pack_price_usd": 20.99,
+          "stock_note": "OUT OF STOCK (page read live)",
+          "checked_on": "2026-11-04"
+        }
+      ],
+      "alternates": [
+        "F1404 KV3800 (324.5 g at 4S on GF3016, 16.2 A)"
+      ],
+      "used_by": [
+        "propulsion"
+      ],
+      "notes": "Same motor as the sim. Thrust table is the maker bench data (ligpower = T-Motor). Mass 9.34 g with cable (maker); Pyrodrone lists 7.75 g (likely without leads). Sim's 3S figure (180 g) is a V^2 estimate; at 4S the maker gives 344.7 g. Shaft and mount pattern must be measured on a sample before the generative frame fixes the motor holes. Motor ships alone (no screws listed).",
+      "cad_source": null
+    },
+    {
+      "ref": "P1",
+      "qty": 4,
+      "category": "propeller",
+      "mpn": "Hurricane 3016-3 (1.5mm)",
+      "manufacturer": "Gemfan",
+      "description": "3 in tri-blade durable PC prop, 1.6 in pitch, 1.5 mm hub (2 CW + 2 CCW per pack)",
+      "key_specs": {
+        "diameter_mm": 76.49,
+        "pitch_in": 1.6,
+        "blades": 3,
+        "hub_hole_mm": 1.5,
+        "hub_height_mm": 5.5,
+        "mount": "1.5 mm 3-hole T-mount (one listing)",
+        "material": "PC"
+      },
+      "dims_mm": [
+        76.49,
+        76.49,
+        5.5
+      ],
+      "mass_g": 1.18,
+      "datasheet_url": "https://www.racedayquads.com/products/gemfan-hurricane-3016-durable-tri-blade-3-prop-4-pack-1-5mm-choose-your-color",
+      "offers": [
+        {
+          "supplier": "GetFPV",
+          "sku": "gemfan-hurricane-3016-durable-3-blade-propeller-1-5mm-shaft-set-of-4",
+          "url": "https://www.getfpv.com/gemfan-hurricane-3016-durable-3-blade-propeller-1-5mm-shaft-set-of-4.html",
+          "unit_price_usd": 0.9975,
+          "moq": 4,
+          "pack_price_usd": 3.99,
+          "stock_note": "listed, set of 4; price and stock read from the retailer page via search index on 2026-11-04 (live page fetch rate-limited); recheck before ordering",
+          "checked_on": "2026-11-04"
+        },
+        {
+          "supplier": "RaceDayQuads",
+          "sku": "gemfan-hurricane-3016-1.5mm",
+          "url": "https://www.racedayquads.com/products/gemfan-hurricane-3016-durable-tri-blade-3-prop-4-pack-1-5mm-choose-your-color",
+          "unit_price_usd": 0.9975,
+          "moq": 4,
+          "pack_price_usd": 3.99,
+          "stock_note": "listed $2.59-$3.99 across pages; price and stock read from the retailer page via search index on 2026-11-04 (live page fetch rate-limited); recheck before ordering",
+          "checked_on": "2026-11-04"
+        }
+      ],
+      "alternates": [
+        "Hurricane 3016-3 (2mm) if the motor shaft is 2 mm"
+      ],
+      "used_by": [
+        "propulsion"
+      ],
+      "notes": "Same prop as the sim (GF3016 is also the motor's test prop). Buy 2+ packs for spares. Hub hole must match the motor shaft (see M1).",
+      "cad_source": null
+    },
+    {
+      "ref": "B1",
+      "qty": 1,
+      "category": "battery",
+      "mpn": "GNB 14.8V 4S 650mAh 80C XT30 (square)",
+      "manufacturer": "Gaoneng (GNB)",
+      "description": "4S 650 mAh LiPo, 80C, XT30",
+      "key_specs": {
+        "cells": "4S",
+        "voltage_nominal_v": 14.8,
+        "voltage_full_v": 16.8,
+        "capacity_mah": 650,
+        "c_continuous": 80,
+        "c_burst": 160,
+        "connector": "XT30",
+        "max_continuous_a": 52
+      },
+      "dims_mm": [
+        59,
+        28,
+        26
+      ],
+      "mass_g": 79,
+      "datasheet_url": "https://www.racedayquads.com/products/gaoneng-gnb-14-8v-4s-650mah-80c-lipo-micro-battery-square-type-xt30",
+      "offers": [
+        {
+          "supplier": "RaceDayQuads",
+          "sku": "gaoneng-gnb-14-8v-4s-650mah-80c",
+          "url": "https://www.racedayquads.com/products/gaoneng-gnb-14-8v-4s-650mah-80c-lipo-micro-battery-square-type-xt30",
+          "unit_price_usd": 20.49,
+          "moq": 1,
+          "pack_price_usd": 20.49,
+          "stock_note": "in stock (listing); price and stock read from the retailer page via search index on 2026-11-04 (live page fetch rate-limited); recheck before ordering",
+          "checked_on": "2026-11-04"
+        }
+      ],
+      "alternates": [
+        "GNB 4S 650mAh 120C HV XT30 (70 g, 21x30x63 mm)",
+        "CNHL MiniStar 650mAh 4S 70C XT30"
+      ],
+      "used_by": [
+        "power"
+      ],
+      "notes": "Mass 79 g +/-2 (RDQ). DIMS UNCONFIRMED: 59x28x26 is the RDQ-series 4S 650 80C pack, not confirmed for this GNB SKU. Sim uses a 3S 650 mAh (60 g): owner asked 4S or 6S; 4S chosen because the F1404 4600KV is rated 3-4S.",
+      "cad_source": null
+    },
+    {
+      "ref": "RX1",
+      "qty": 1,
+      "category": "radio",
+      "mpn": "RP1 V2",
+      "manufacturer": "RadioMaster",
+      "description": "ExpressLRS 2.4 GHz nano receiver, CRSF, U.FL with 65 mm T antenna",
+      "key_specs": {
+        "mcu": "ESP8285",
+        "rf": "SX1281",
+        "protocol": "CRSF / ELRS 3.x",
+        "antenna": "U.FL, 65 mm T included",
+        "voltage_v": 5
+      },
+      "dims_mm": [
+        13,
+        11,
+        3
+      ],
+      "mass_g": 2.2,
+      "datasheet_url": "https://www.getfpv.com/radiomaster-rp1-v2-expresslrs-2-4ghz-nano-receiver-w-65mm-ufl-t-antenna.html",
+      "offers": [
+        {
+          "supplier": "RaceDayQuads",
+          "sku": "radiomaster-rp1-v2",
+          "url": "https://www.racedayquads.com/products/radiomaster-rp1-v2-2-4ghz-elrs-nano-receiver",
+          "unit_price_usd": 24.99,
+          "moq": 1,
+          "pack_price_usd": 24.99,
+          "stock_note": "listed; price and stock read from the retailer page via search index on 2026-11-04 (live page fetch rate-limited); recheck before ordering",
+          "checked_on": "2026-11-04"
+        },
+        {
+          "supplier": "WREKD",
+          "sku": "radiomaster-rp1-v2",
+          "url": "https://wrekd.com/products/radiomaster-rp1-v2-2-4ghz-elrs-nano-receiver",
+          "unit_price_usd": 22.99,
+          "moq": 1,
+          "pack_price_usd": 22.99,
+          "stock_note": "listed; price and stock read from the retailer page via search index on 2026-11-04 (live page fetch rate-limited); recheck before ordering",
+          "checked_on": "2026-11-04"
+        }
+      ],
+      "used_by": [
+        "control link"
+      ],
+      "notes": "Sim lists RP1 (V1) at 1.0 g estimate; V2 is current and 2.2 g with antenna.",
+      "alternates": [],
+      "cad_source": null
+    },
+    {
+      "ref": "VTX1",
+      "qty": 1,
+      "category": "radio",
+      "mpn": "Rush Tank Mini (25-800mW, 20x20, MMCX)",
+      "manufacturer": "RushFPV",
+      "description": "Analog 5.8 GHz video transmitter, stacks on the 20x20 pattern",
+      "key_specs": {
+        "power_mw": "PIT/25/200/500/800",
+        "input_v": "7-36",
+        "output": "5V 1A",
+        "control": "SmartAudio",
+        "mount_pattern_mm": "20x20",
+        "antenna": "MMCX"
+      },
+      "dims_mm": [
+        28,
+        28,
+        3.3
+      ],
+      "mass_g": 4.46,
+      "datasheet_url": "https://www.racedayquads.com/products/rush-fpv-tank-mini-25-800mw-20x20-5-8ghz-vtx-mmcx",
+      "offers": [
+        {
+          "supplier": "WREKD",
+          "sku": "rush-tank-mini",
+          "url": "https://wrekd.com/products/rush-tank-mini-vtx-5-8g-smart-audio-20x20-stackable",
+          "unit_price_usd": 37.99,
+          "moq": 1,
+          "pack_price_usd": 37.99,
+          "stock_note": "listed; price and stock read from the retailer page via search index on 2026-11-04 (live page fetch rate-limited); recheck before ordering",
+          "checked_on": "2026-11-04"
+        },
+        {
+          "supplier": "NextFPV",
+          "sku": "rush-tank-mini-ultimate",
+          "url": "https://www.nextfpv.com/products/rush-tank-mini-vtx-5-8g-smart-audio-0-25-200-500-800mw-20x20-stackable",
+          "unit_price_usd": 48.0,
+          "moq": 1,
+          "pack_price_usd": 48.0,
+          "stock_note": "in stock, 5 units; price and stock read from the retailer page via search index on 2026-11-04 (live page fetch rate-limited); recheck before ordering",
+          "checked_on": "2026-11-04"
+        },
+        {
+          "supplier": "RaceDayQuads",
+          "sku": "rush-fpv-tank-mini-25-800mw-mmcx",
+          "url": "https://www.racedayquads.com/products/rush-fpv-tank-mini-25-800mw-20x20-5-8ghz-vtx-mmcx",
+          "unit_price_usd": 39.99,
+          "moq": 1,
+          "pack_price_usd": 39.99,
+          "stock_note": "listed; price and stock read from the retailer page via search index on 2026-11-04 (live page fetch rate-limited); recheck before ordering",
+          "checked_on": "2026-11-04"
+        }
+      ],
+      "alternates": [
+        "Lumenier LUX Mini 20x20 25-800mW (named as the newer edition by GetFPV)"
+      ],
+      "used_by": [
+        "video link"
+      ],
+      "notes": "Not in the sim. 4.46 g bare, 5.40 g with cover. Several shops mark it discontinued; check stock. Power on the 9V or VBAT pad. Check the local rules on 5.8 GHz power and licensing.",
+      "cad_source": null
+    },
+    {
+      "ref": "CAM1",
+      "qty": 1,
+      "category": "camera",
+      "mpn": "Caddx Ant 1200TVL 1.8mm (14x14)",
+      "manufacturer": "Caddx",
+      "description": "Nano analog FPV camera, 1200TVL, 1.8 mm lens, 165 deg FOV, global WDR, OSD",
+      "key_specs": {
+        "format": "nano 14x14 mm",
+        "lens_mm": 1.8,
+        "fov_deg": 165,
+        "tvl": 1200,
+        "input_v": "3.7-18 (Rotorama lists 5-25)",
+        "wdr": "global"
+      },
+      "dims_mm": [
+        14,
+        14,
+        16
+      ],
+      "mass_g": 2.0,
+      "datasheet_url": "https://www.getfpv.com/fpv/cameras/flight-cameras/caddx-ant-1200tvl-1-8mm-fpv-nano-camera-14x14-black.html",
+      "offers": [
+        {
+          "supplier": "GetFPV",
+          "sku": "caddx-ant-1200tvl-1-8mm-14x14-black",
+          "url": "https://www.getfpv.com/fpv/cameras/flight-cameras/caddx-ant-1200tvl-1-8mm-fpv-nano-camera-14x14-black.html",
+          "unit_price_usd": 20.99,
+          "moq": 1,
+          "pack_price_usd": 20.99,
+          "stock_note": "listed; price and stock read from the retailer page via search index on 2026-11-04 (live page fetch rate-limited); recheck before ordering",
+          "checked_on": "2026-11-04"
+        }
+      ],
+      "alternates": [
+        "Caddx Ant Lite (1.7 g)"
+      ],
+      "used_by": [
+        "video link"
+      ],
+      "notes": "Not in the sim. Power from the FC 5V pad, not VBAT (4S full is 16.8 V, close to the 18 V limit). Body depth 16 mm is an estimate: UNCONFIRMED.",
+      "cad_source": null
+    },
+    {
+      "ref": "ANT1",
+      "qty": 1,
+      "category": "radio",
+      "mpn": "Lollipop V4 Plus 5.8GHz straight MMCX LHCP (2 pack)",
+      "manufacturer": "Foxeer",
+      "description": "5.8 GHz omni antenna, 2.6 dBi, MMCX straight",
+      "key_specs": {
+        "band_ghz": 5.8,
+        "gain_dbi": 2.6,
+        "polarization": "LHCP",
+        "connector": "MMCX straight"
+      },
+      "dims_mm": [
+        22,
+        22,
+        85
+      ],
+      "mass_g": 2.8,
+      "datasheet_url": "https://www.racedayquads.com/products/foxeer-lollipop-v4-5-8ghz-straight-mmcx-antenna-lhcp",
+      "offers": [
+        {
+          "supplier": "RaceDayQuads",
+          "sku": "foxeer-lollipop-v4-straight-mmcx-lhcp",
+          "url": "https://www.racedayquads.com/products/foxeer-lollipop-v4-5-8ghz-straight-mmcx-antenna-lhcp",
+          "unit_price_usd": 12.745,
+          "moq": 2,
+          "pack_price_usd": 25.49,
+          "stock_note": "listed $25.49 (one collection page shows $20.89); price and stock read from the retailer page via search index on 2026-11-04 (live page fetch rate-limited); recheck before ordering",
+          "checked_on": "2026-11-04"
+        }
+      ],
+      "alternates": [
+        "Lollipop 4 Plus MMCX 90 deg w/ tube 2 pack ($19.89 RDQ)"
+      ],
+      "used_by": [
+        "video link"
+      ],
+      "notes": "Not in the sim. Mass 2.8 g is for the U.FL 85 mm variant; MMCX mass UNCONFIRMED. Match polarization to the goggles.",
+      "cad_source": null
+    },
+    {
+      "ref": "C1",
+      "qty": 1,
+      "category": "power",
+      "mpn": "EEU-FR1V471",
+      "manufacturer": "Panasonic",
+      "description": "470 uF 35 V low-impedance aluminium electrolytic, radial, across the ESC battery pads",
+      "key_specs": {
+        "capacitance_uf": 470,
+        "voltage_v": 35,
+        "impedance_mohm": 28,
+        "ripple_a_120hz": 1.343,
+        "life": "8000 h at 105 C",
+        "od_mm": 10,
+        "height_mm": 17.5,
+        "lead_pitch_mm": 5
+      },
+      "dims_mm": [
+        10,
+        10,
+        17.5
+      ],
+      "mass_g": 2.0,
+      "datasheet_url": "https://www.digikey.com/en/products/detail/panasonic-electronic-components/EEU-FR1V471/2433575",
+      "offers": [
+        {
+          "supplier": "DigiKey",
+          "sku": "P14441-ND",
+          "url": "https://www.digikey.com/en/products/detail/panasonic-electronic-components/EEU-FR1V471/2433575",
+          "unit_price_usd": 0.91,
+          "moq": 1,
+          "pack_price_usd": 0.91,
+          "stock_note": "active, 1905 in stock (IE site); 31 wk factory lead; price and stock read from the retailer page via search index on 2026-11-04 (live page fetch rate-limited); recheck before ordering",
+          "checked_on": "2026-11-04"
+        }
+      ],
+      "alternates": [
+        "Rubycon 470 uF 35 V supplied in STK1"
+      ],
+      "used_by": [
+        "power"
+      ],
+      "notes": "STK1 already ships one; C1 is the named, buyable equivalent and spare. 35 V is fine for 4S, not for 6S under spikes (use 50 V for 6S). Mass is an estimate.",
+      "cad_source": null
+    },
+    {
+      "ref": "J1",
+      "qty": 1,
+      "category": "connector",
+      "mpn": "XT30U-M pigtail 18AWG 10cm (3 pcs)",
+      "manufacturer": "Amass connector (pigtail by Lumenier/GetFPV)",
+      "description": "XT30U male to bare wire, 18 AWG silicone, 10 cm, battery lead to the ESC",
+      "key_specs": {
+        "connector": "Amass XT30U male",
+        "wire_awg": 18,
+        "length_mm": 100,
+        "rated_a": 30
+      },
+      "dims_mm": [
+        10.2,
+        5.2,
+        100
+      ],
+      "mass_g": 3.0,
+      "datasheet_url": "https://www.getfpv.com/xt30u-18awg-male-female-pigtail-3pcs.html",
+      "offers": [
+        {
+          "supplier": "Lumenier",
+          "sku": "xt30u-18awg-male-female-pigtail-3pcs",
+          "url": "https://www.lumenier.com/products/xt30u-18awg-male-female-pigtail-3pcs",
+          "unit_price_usd": 3.33,
+          "moq": 3,
+          "pack_price_usd": 9.99,
+          "stock_note": "listed; price and stock read from the retailer page via search index on 2026-11-04 (live page fetch rate-limited); recheck before ordering",
+          "checked_on": "2026-11-04"
+        },
+        {
+          "supplier": "GetFPV",
+          "sku": "xt30u-18awg-male-female-pigtail-3pcs",
+          "url": "https://www.getfpv.com/xt30u-18awg-male-female-pigtail-3pcs.html",
+          "unit_price_usd": 3.33,
+          "moq": 3,
+          "pack_price_usd": 9.99,
+          "stock_note": "in stock, few left; price taken from the Lumenier listing (same product); price and stock read from the retailer page via search index on 2026-11-04 (live page fetch rate-limited); recheck before ordering",
+          "checked_on": "2026-11-04"
+        }
+      ],
+      "used_by": [
+        "power"
+      ],
+      "notes": "Mass is an estimate. Battery side is the GNB pack's own XT30 (female).",
+      "alternates": [],
+      "cad_source": null
+    },
+    {
+      "ref": "SO1",
+      "qty": 4,
+      "category": "fastener",
+      "mpn": "M2 knurled aluminium standoff 20mm (5 pcs)",
+      "manufacturer": "Pyrodrone (unbranded)",
+      "description": "M2 female-female round knurled aluminium standoff, 20 mm, between frame bottom and top plates",
+      "key_specs": {
+        "thread": "M2x0.4 F-F",
+        "length_mm": 20,
+        "od_mm": 4,
+        "material": "aluminium"
+      },
+      "dims_mm": [
+        4,
+        4,
+        20
+      ],
+      "mass_g": 0.5,
+      "datasheet_url": "https://pyrodrone.com/products/m2-knurled-aluminum-standoff-5-pcs-choose-lenght",
+      "offers": [
+        {
+          "supplier": "Pyrodrone",
+          "sku": "m2-knurled-aluminum-standoff-20mm",
+          "url": "https://pyrodrone.com/products/m2-knurled-aluminum-standoff-5-pcs-choose-lenght",
+          "unit_price_usd": 0.998,
+          "moq": 5,
+          "pack_price_usd": 4.99,
+          "stock_note": "listed (sale $2.99 seen); price and stock read from the retailer page via search index on 2026-11-04 (live page fetch rate-limited); recheck before ordering",
+          "checked_on": "2026-11-04"
+        }
+      ],
+      "alternates": [
+        "NewBeeDrone M2 aluminium standoff (WREKD/RDQ, $4.99 / 5)"
+      ],
+      "used_by": [
+        "frame"
+      ],
+      "notes": "Count and 20 mm height assume a two-plate frame with a 4-point standoff ring; set the final count and height from the generative frame (stack 14.2 mm + VTX 3.3 mm + gummies must fit under the top plate). Mass is an estimate.",
+      "cad_source": null
+    },
+    {
+      "ref": "SCR1",
+      "qty": 24,
+      "category": "fastener",
+      "mpn": "BH-M2x6MM",
+      "manufacturer": "RMRC (ReadyMadeRC)",
+      "description": "M2x6 steel button head screw: 16 motor screws (4 per motor) + 8 standoff screws (top and bottom)",
+      "key_specs": {
+        "thread": "M2x0.4",
+        "length_mm": 6,
+        "head": "button hex",
+        "material": "steel"
+      },
+      "dims_mm": [
+        3.5,
+        3.5,
+        7
+      ],
+      "mass_g": 0.2,
+      "datasheet_url": "https://www.readymaderc.com/products/details/rmrc-m2-x-6mm-button-head-screw-10pcs",
+      "offers": [
+        {
+          "supplier": "ReadyMadeRC",
+          "sku": "BH-M2x6MM",
+          "url": "https://www.readymaderc.com/products/details/rmrc-m2-x-6mm-button-head-screw-10pcs",
+          "unit_price_usd": 0.139,
+          "moq": 10,
+          "pack_price_usd": 1.39,
+          "stock_note": "only 2 left (page read live)",
+          "checked_on": "2026-11-04"
+        }
+      ],
+      "alternates": [
+        "WREKD M2 socket head 12.9 steel 10-pack (M2x5 $1.95)",
+        "RDQ M2 black steel 280 pc kit"
+      ],
+      "used_by": [
+        "motor mount",
+        "frame"
+      ],
+      "notes": "Motor screw length assumes a 3 mm arm and about 3 mm thread depth in the F1404 base: UNCONFIRMED; a screw that is too long touches the windings. Size from the arm thickness and a measured motor. RMRC stock is low (only 2 packs), need 3.",
+      "cad_source": null
+    },
+    {
+      "ref": "SCR2",
+      "qty": 4,
+      "category": "fastener",
+      "mpn": "M2 Black Steel 280 Piece Nut & Bolt Kit",
+      "manufacturer": "RaceDayQuads",
+      "description": "M2x25 steel socket head stack bolts through bottom plate, ESC, FC and VTX (kit also supplies spare M2 nuts and lengths)",
+      "key_specs": {
+        "thread": "M2x0.4",
+        "length_mm": 25,
+        "head": "socket, 1.5 mm hex",
+        "finish": "black oxide",
+        "kit": "280 pcs incl. 100 M2 nuts; length mix UNCONFIRMED"
+      },
+      "dims_mm": [
+        3.8,
+        3.8,
+        27
+      ],
+      "mass_g": 0.6,
+      "datasheet_url": "https://www.racedayquads.com/products/m2-black-steel-280-piece-nut-bolt-kit",
+      "offers": [
+        {
+          "supplier": "RaceDayQuads",
+          "sku": "m2-black-steel-280-piece-nut-bolt-kit",
+          "url": "https://www.racedayquads.com/products/m2-black-steel-280-piece-nut-bolt-kit",
+          "unit_price_usd": 2.9975,
+          "moq": 4,
+          "pack_price_usd": 11.99,
+          "stock_note": "listed (1 kit covers the 4 bolts); price and stock read from the retailer page via search index on 2026-11-04 (live page fetch rate-limited); recheck before ordering",
+          "checked_on": "2026-11-04"
+        }
+      ],
+      "alternates": [
+        "RDQ M2 x 25mm steel bolt set of 4 (price not read)",
+        "RDQ M2 x 25mm steel bolt 20 pcs ($9.49, out of stock)"
+      ],
+      "used_by": [
+        "stack"
+      ],
+      "notes": "Kit is one purchase unit (moq 1 = whole kit, qty counts bolts used); cost rule counts 1 kit. That the kit holds 25 mm bolts is from the WREKD/RDQ description, lengths not listed: UNCONFIRMED. Bolt length depends on the final plate thickness and stack order.",
+      "cad_source": null
+    },
+    {
+      "ref": "NUT1",
+      "qty": 4,
+      "category": "fastener",
+      "mpn": "M2 Nylock Nut (4 pcs)",
+      "manufacturer": "RaceDayQuads",
+      "description": "M2 nylon-insert lock nut on top of the stack bolts",
+      "key_specs": {
+        "thread": "M2x0.4",
+        "type": "nylon insert lock nut"
+      },
+      "dims_mm": [
+        4,
+        4,
+        2.8
+      ],
+      "mass_g": 0.2,
+      "datasheet_url": "https://www.racedayquads.com/products/m2-nylock-nut-1-piece-choose-your-color",
+      "offers": [
+        {
+          "supplier": "RaceDayQuads",
+          "sku": "m2-nylock-nut",
+          "url": "https://www.racedayquads.com/products/m2-nylock-nut-1-piece-choose-your-color",
+          "unit_price_usd": 0.6225,
+          "moq": 4,
+          "pack_price_usd": 2.49,
+          "stock_note": "in stock (listing); price and stock read from the retailer page via search index on 2026-11-04 (live page fetch rate-limited); recheck before ordering",
+          "checked_on": "2026-11-04"
+        }
+      ],
+      "alternates": [
+        "RDQ M2 nylon nut set of 4 ($1.49)"
+      ],
+      "used_by": [
+        "stack"
+      ],
+      "notes": "Nut dims and mass are typical values, not read.",
+      "cad_source": null
+    },
+    {
+      "ref": "GUM1",
+      "qty": 8,
+      "category": "other",
+      "mpn": "M2 x 6mm Anti-Vibration Mini 20x20 FC Soft Mount Standoff (4 pcs)",
+      "manufacturer": "RaceDayQuads",
+      "description": "Silicone soft-mount gummies, 4 under the ESC and 4 under the FC",
+      "key_specs": {
+        "thread": "M2",
+        "height_mm": 6,
+        "pattern_mm": "20x20",
+        "material": "silicone"
+      },
+      "dims_mm": [
+        5,
+        5,
+        6
+      ],
+      "mass_g": 0.2,
+      "datasheet_url": "https://www.racedayquads.com/products/fc-anti-vibration-standoff-soft-mount-set-m2x5-4-20x20-flight-controller",
+      "offers": [
+        {
+          "supplier": "RaceDayQuads",
+          "sku": "fc-anti-vibration-standoff-soft-mount-set-m2x5-4-20x20",
+          "url": "https://www.racedayquads.com/products/fc-anti-vibration-standoff-soft-mount-set-m2x5-4-20x20-flight-controller",
+          "unit_price_usd": 0.9975,
+          "moq": 4,
+          "pack_price_usd": 3.99,
+          "stock_note": "listed $3.05-$3.99; price and stock read from the retailer page via search index on 2026-11-04 (live page fetch rate-limited); recheck before ordering",
+          "checked_on": "2026-11-04"
+        }
+      ],
+      "alternates": [
+        "grommets in the STK1 box (M2 and M3 sets)"
+      ],
+      "used_by": [
+        "stack"
+      ],
+      "notes": "STK1 ships grommets already; GUM1 is the spare set with a buyable SKU. Mass estimate.",
+      "cad_source": null
+    },
+    {
+      "ref": "STR1",
+      "qty": 1,
+      "category": "other",
+      "mpn": "RDQ 155mm Micro Battery Strap V3 w/ Metal Buckle",
+      "manufacturer": "RaceDayQuads",
+      "description": "Battery strap for 2-3 inch builds, metal buckle",
+      "key_specs": {
+        "length_mm": 155,
+        "width_mm": "10 (assumed)",
+        "buckle": "metal"
+      },
+      "dims_mm": [
+        155,
+        10,
+        1.5
+      ],
+      "mass_g": 1.5,
+      "datasheet_url": "https://racedayquads.com/collections/battery-strap/manufacturer_rdq",
+      "offers": [
+        {
+          "supplier": "RaceDayQuads",
+          "sku": "rdq-155mm-micro-battery-strap-v3",
+          "url": "https://racedayquads.com/collections/battery-strap/manufacturer_rdq",
+          "unit_price_usd": 0.89,
+          "moq": 1,
+          "pack_price_usd": 0.89,
+          "stock_note": "listed in the RDQ strap collection; price and stock read from the retailer page via search index on 2026-11-04 (live page fetch rate-limited); recheck before ordering",
+          "checked_on": "2026-11-04"
+        }
+      ],
+      "alternates": [
+        "Lumenier Kevlar LiPo strap 10x180mm (3 pcs)",
+        "RJX Kevlar strap 130mm"
+      ],
+      "used_by": [
+        "battery mount"
+      ],
+      "notes": "155 mm loops a 26-28 mm tall pack on a 3 mm plate. Width not read: UNCONFIRMED. Strap slots in the generative top plate must match.",
+      "cad_source": null
+    },
+    {
+      "ref": "SCR3",
+      "qty": 2,
+      "category": "fastener",
+      "mpn": "BH-M2x3MM",
+      "manufacturer": "RMRC (ReadyMadeRC)",
+      "description": "M2x3 steel button head screws, camera side mounts (1 per side)",
+      "key_specs": {
+        "thread": "M2x0.4",
+        "length_mm": 3,
+        "head": "button hex",
+        "material": "steel"
+      },
+      "dims_mm": [
+        3.5,
+        3.5,
+        4
+      ],
+      "mass_g": 0.1,
+      "datasheet_url": "https://www.readymaderc.com/products/details/rmrc-m2-x-3mm-button-head-screw-10pcs",
+      "offers": [
+        {
+          "supplier": "ReadyMadeRC",
+          "sku": "BH-M2x3MM",
+          "url": "https://www.readymaderc.com/products/details/rmrc-m2-x-3mm-button-head-screw-10pcs",
+          "unit_price_usd": 0.099,
+          "moq": 10,
+          "pack_price_usd": 0.99,
+          "stock_note": "closeout (page read live)",
+          "checked_on": "2026-11-04"
+        }
+      ],
+      "used_by": [
+        "camera mount"
+      ],
+      "notes": "Caddx Ant side-hole thread (M2 assumed) and the cage wall thickness are UNCONFIRMED; Caddx usually ships its own camera screws.",
+      "alternates": [],
+      "cad_source": null
+    },
+    {
+      "ref": "MCU2",
+      "qty": 1,
+      "category": "mcu",
+      "mpn": "113991114",
+      "manufacturer": "Seeed Studio",
+      "description": "XIAO ESP32S3 companion computer (planner, obstacle detection, MSP to the FC), from the sim",
+      "key_specs": {
+        "soc": "ESP32-S3 dual core 240 MHz",
+        "flash_mb": 8,
+        "psram_mb": 8,
+        "radio": "Wi-Fi 2.4 GHz, BLE 5.0",
+        "supply_v": 5
+      },
+      "dims_mm": [
+        21,
+        17.8,
+        3.5
+      ],
+      "mass_g": 3.0,
+      "datasheet_url": "https://wiki.seeedstudio.com/xiao_esp32s3_getting_started/",
+      "offers": [
+        {
+          "supplier": "Openelab",
+          "sku": "seeed-studio-xiao-esp32s3",
+          "url": "https://openelab.com/products/seeed-studio-xiao-esp32s3",
+          "unit_price_usd": 9.9,
+          "moq": 1,
+          "pack_price_usd": 9.9,
+          "stock_note": "sale price incl. VAT; price and stock read from the retailer page via search index on 2026-11-04 (live page fetch rate-limited); recheck before ordering",
+          "checked_on": "2026-11-04"
+        },
+        {
+          "supplier": "Seeed Studio",
+          "sku": "113991114",
+          "url": "https://www.seeedstudio.com/XIAO-ESP32S3-p-5627.html",
+          "unit_price_usd": 7.49,
+          "moq": 1,
+          "pack_price_usd": 7.49,
+          "stock_note": "list price from the Seeed datasheet distributed by Comet; Seeed store page not read; price and stock read from the retailer page via search index on 2026-11-04 (live page fetch rate-limited); recheck before ordering",
+          "checked_on": "2026-11-04"
+        }
+      ],
+      "used_by": [
+        "autonomy"
+      ],
+      "notes": "Kept from the sim. Mass 3 g is the sim estimate (element14 lists 4 g gross).",
+      "alternates": [],
+      "cad_source": null
+    },
+    {
+      "ref": "TOF1",
+      "qty": 6,
+      "category": "sensor",
+      "mpn": "3415",
+      "manufacturer": "Pololu (ST VL53L1X)",
+      "description": "VL53L1X time-of-flight carrier with regulator, 400 cm max, obstacle sensing ring (from the sim)",
+      "key_specs": {
+        "range_cm": "4-400",
+        "supply_v": "2.6-5.5",
+        "interface": "I2C (default 0x29, XSHUT per sensor)",
+        "fov_deg": 27
+      },
+      "dims_mm": [
+        12.7,
+        17.8,
+        2.2
+      ],
+      "mass_g": 0.5,
+      "datasheet_url": "https://www.pololu.com/product/3415",
+      "offers": [
+        {
+          "supplier": "Pololu",
+          "sku": "3415",
+          "url": "https://www.pololu.com/product/3415",
+          "unit_price_usd": 21.11,
+          "moq": 1,
+          "pack_price_usd": 21.11,
+          "stock_note": "active and preferred, backorders allowed; 1 pc $22.95, 5+ $21.11 (page read live)",
+          "checked_on": "2026-11-04"
+        }
+      ],
+      "alternates": [
+        "generic VL53L1X breakout 3-pack (sim, Amazon B0D4S3YG26, no MPN)"
+      ],
+      "used_by": [
+        "autonomy"
+      ],
+      "notes": "Sim lists a generic Amazon breakout at 1.5 g each; Pololu 3415 is 0.5 g and has a real MPN. Cost uses the 5+ break; the 6th piece also bills at $21.11 because qty >= 5.",
+      "cad_source": null
+    },
+    {
+      "ref": "FR1",
+      "qty": 1,
+      "category": "other",
+      "mpn": "ViaForm generative frame",
+      "manufacturer": "ViaForm (generative/)",
+      "description": "3-inch (~130 mm) frame from the generative design agent; carbon plate cut to the exported DXF",
+      "key_specs": {
+        "wheelbase_mm": "~130",
+        "prop_clearance": "76.5 mm props",
+        "motor_holes": "from M1 (unconfirmed 9x9 M2)",
+        "stack_holes": "20x20, 3.5 mm (M2 with gummies)",
+        "plate": "3 mm carbon per sim"
+      },
+      "dims_mm": null,
+      "mass_g": null,
+      "datasheet_url": null,
+      "offers": [],
+      "used_by": [
+        "frame"
+      ],
+      "notes": "Not a purchasable part; mass and cost come from the generative CAD and the cutter quote.",
+      "alternates": [],
+      "cad_source": null
+    }
+  ]
+}

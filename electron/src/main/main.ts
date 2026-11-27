@@ -1,6 +1,7 @@
 import * as path from "node:path";
 import { app, BrowserWindow, dialog, ipcMain, Menu, shell, type MenuItemConstructorOptions } from "electron";
 import { changes, loadNative, reply, type NativeWorkspace } from "./engine";
+import { startLibrary } from "./library/ipc";
 import { checkNow, currentStatus, installNow, startUpdater } from "./updater";
 import type { DocState } from "../shared/api";
 
@@ -138,6 +139,12 @@ function ipc(): void {
     return r;
   });
   ipcMain.handle("linkState", () => ws.linkState());
+  ipcMain.handle("generate.study", (_e, spec: unknown) => reply(() => native.generateStudy(spec)));
+  ipcMain.handle("generate.build", (_e, spec: unknown, candidate?: number) => {
+    const r = reply(() => ws.generate(spec, candidate ?? undefined));
+    if ("ok" in r) touched();
+    return r;
+  });
   ipcMain.handle("file", (_e, action: string) => fileAction(action));
   ipcMain.handle("doc", () => doc);
   ipcMain.handle("versions", () => ({ ...native.versions(), app: app.getVersion(), electron: process.versions.electron }));
@@ -185,8 +192,12 @@ function menu(): void {
       submenu: [
         { label: "Design", accelerator: "CmdOrCtrl+1", click: send("workspace:design") },
         { label: "Electronics", accelerator: "CmdOrCtrl+2", click: send("workspace:electronics") },
+        { label: "Simulation", accelerator: "CmdOrCtrl+3", click: send("workspace:simulation") },
         { type: "separator" },
-        { label: "Zoom to Fit", accelerator: "F", registerAccelerator: false, click: send("fit") },
+        { label: "Libraries", accelerator: "CmdOrCtrl+L", click: send("library") },
+        { type: "separator" },
+        { label: "Zoom to Fit", accelerator: "F6", registerAccelerator: false, click: send("fit") },
+        { label: "Home View", click: send("view:home") },
         { type: "separator" },
         { role: "toggleDevTools" },
         { role: "togglefullscreen" },
@@ -210,7 +221,7 @@ function createWindow(): void {
     height: 900,
     minWidth: 960,
     minHeight: 600,
-    backgroundColor: "#16181c",
+    backgroundColor: "#1a1c20",
     title: "ViaForm",
     webPreferences: { preload: path.join(__dirname, "..", "preload", "preload.js"), contextIsolation: true, sandbox: true },
   });
@@ -227,14 +238,26 @@ function createWindow(): void {
   });
   win.webContents.on("did-finish-load", () => {
     win?.webContents.send("update", currentStatus());
-    // --screenshot=<file.png> [--workspace=electronics] [--sheet=board]: saves the window and quits (docs, CI smoke test).
+    // --record=<video.mp4> --shots=<shots.json>: films the simulation shot by shot, frame by frame
+    // (deterministic, whatever the machine's speed), and encodes the frames with ffmpeg.
+    const record = process.argv.find((a) => a.startsWith("--record="))?.slice(9);
+    if (record) void recordVideo(win!, record, process.argv.find((a) => a.startsWith("--shots="))?.slice(8));
+    // --screenshot=<file.png> [--workspace=electronics] [--sheet=board] [--sim=...] [--library=...]: saves the window and quits (docs, CI smoke test).
     const shot = process.argv.find((a) => a.startsWith("--screenshot="))?.slice(13);
     if (shot) {
+      // Renderer errors to stderr, so a smoke test that captures a broken page says why.
+      win?.webContents.on("console-message", (e) => { if (e.level === "error" || e.level === "warning") process.stderr.write(`renderer ${e.level}: ${e.message}\n`); });
       const ws = process.argv.find((a) => a.startsWith("--workspace="))?.slice(12);
       setTimeout(() => {
         if (ws) win?.webContents.send("menu", `workspace:${ws}`);
+        // --sim={"weather":3,"at":12,"camera":"chase"}: a simulation scene, flown to that time.
+        const simArg = process.argv.find((a) => a.startsWith("--sim="))?.slice(6);
+        if (simArg) win?.webContents.send("menu", `sim:${simArg}`);
         const sheetArg = process.argv.find((a) => a.startsWith("--sheet="))?.slice(8);
         if (sheetArg) win?.webContents.send("menu", `sheet:${sheetArg}`);
+        // --library=search:M3x12 (or saved, sources:digikey): the Libraries panel on that tab.
+        const libArg = process.argv.find((a) => a.startsWith("--library="))?.slice(10);
+        if (libArg) win?.webContents.send("menu", `library:${libArg}`);
         setTimeout(async () => {
           const img = await win!.webContents.capturePage();
           require("node:fs").writeFileSync(shot, img.toPNG());
@@ -245,6 +268,35 @@ function createWindow(): void {
     }
   });
   title();
+}
+
+type Shot = { weather?: number; mission?: string; brain?: string; camera?: string; seed?: number; assist?: string; at?: number; duration: number; caption?: string };
+
+async function recordVideo(w: BrowserWindow, out: string, shotsFile?: string): Promise<void> {
+  const fs = require("node:fs") as typeof import("node:fs");
+  const os = require("node:os") as typeof import("node:os");
+  const { spawnSync } = require("node:child_process") as typeof import("node:child_process");
+  const shots: Shot[] = JSON.parse(fs.readFileSync(shotsFile ?? path.join(__dirname, "..", "..", "scripts", "sim-shots.json"), "utf8"));
+  const fps = 30;
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "viaform-video-"));
+  w.setContentSize(1600, 900);
+  w.webContents.setBackgroundThrottling(false);
+  await new Promise((r) => setTimeout(r, 2500));
+  let n = 0;
+  for (const shot of shots) {
+    const { duration, ...stage } = shot;
+    await w.webContents.executeJavaScript(`window.__simStage(${JSON.stringify(stage)})`);
+    for (let i = 0; i < duration * fps; i++) {
+      await w.webContents.executeJavaScript(`window.__simStep(${1 / fps}, ${n / fps})`);
+      const img = await w.webContents.capturePage();
+      fs.writeFileSync(path.join(dir, `f${String(n++).padStart(5, "0")}.jpg`), img.toJPEG(92));
+    }
+    process.stdout.write(`shot ${shots.indexOf(shot) + 1}/${shots.length}: ${n} frames\n`);
+  }
+  const r = spawnSync("ffmpeg", ["-y", "-loglevel", "error", "-framerate", String(fps), "-i", path.join(dir, "f%05d.jpg"), "-vf", "scale=1920:-2:flags=lanczos", "-c:v", "libx264", "-pix_fmt", "yuv420p", "-crf", "27", "-preset", "slow", "-movflags", "+faststart", out], { stdio: "inherit" });
+  fs.rmSync(dir, { recursive: true, force: true });
+  doc.dirty = false;
+  app.exit(r.status ?? 1);
 }
 
 // A .viaform opened from the Finder or Explorer before or after launch.
@@ -264,6 +316,8 @@ app.on("second-instance", (_e, argv) => {
 
 void app.whenReady().then(() => {
   ipc();
+  // The standard part tables come from a scratch design, so reading them never touches the project.
+  startLibrary(() => win, () => (new native.Workspace(false).cad("parts.library", {}) as { families: never[] }).families);
   menu();
   createWindow();
   if (pendingOpen) void openPath(pendingOpen);

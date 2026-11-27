@@ -1,54 +1,122 @@
-name: SolidCraftNative
+name: ViaForm
 options:
   bundleIdPrefix: me.somalabs
   deploymentTarget:
-    iOS: "17.0"
-    macOS: "14.0"
+    # D-11: macOS 26, iPadOS 26, iOS 26 (Liquid Glass on navigation and controls).
+    iOS: "26.0"
+    macOS: "26.0"
   createIntermediateGroups: true
+  developmentLanguage: en
 settings:
   base:
     SWIFT_VERSION: "6.0"
     SWIFT_STRICT_CONCURRENCY: minimal
     SWIFT_INCLUDE_PATHS: $(SRCROOT)/../bridge/include
-    OTHER_LDFLAGS: ["-lsolidcraft_ffi", "-lc++"]
+    OTHER_LDFLAGS: ["-lviaform_ffi", "-lc++"]
     DEAD_CODE_STRIPPING: YES
     MARKETING_VERSION: "0.1.0"
     CURRENT_PROJECT_VERSION: "1"
     GENERATE_INFOPLIST_FILE: YES
-    INFOPLIST_KEY_CFBundleDisplayName: SolidCraft
+    INFOPLIST_KEY_CFBundleDisplayName: ViaForm
     ENABLE_USER_SCRIPT_SANDBOXING: NO
+    # D-22: String Catalog (Shared/Resources/Localizable.xcstrings), English and French.
+    SWIFT_EMIT_LOC_STRINGS: YES
+    LOCALIZATION_PREFERS_STRING_CATALOGS: YES
 targets:
-  SolidCraft-iOS:
+  ViaForm-iOS:
     type: application
     platform: iOS
     sources:
       - path: Shared
+        excludes:
+          - "UI/Theme/Tests/**"
       - path: Touch
+      - path: Resources/ToolIcons
+        type: folder
+        optional: true
+        buildPhase: resources
+      - path: Resources/AppIcons.xcassets
     settings:
       base:
-        PRODUCT_NAME: SolidCraft
-        PRODUCT_BUNDLE_IDENTIFIER: me.somalabs.solidcraft
+        PRODUCT_NAME: ViaForm
+        PRODUCT_BUNDLE_IDENTIFIER: me.somalabs.viaform
         TARGETED_DEVICE_FAMILY: "1,2"
         INFOPLIST_KEY_UILaunchScreen_Generation: YES
+        INFOPLIST_KEY_UIApplicationSceneManifest_Generation: YES
         INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad: "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight"
         INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone: "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight"
         INFOPLIST_KEY_UIFileSharingEnabled: YES
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        ASSETCATALOG_COMPILER_ALTERNATE_APPICON_NAMES: AppIcon-Graphite
         INFOPLIST_KEY_LSSupportsOpeningDocumentsInPlace: YES
         "LIBRARY_SEARCH_PATHS[sdk=iphoneos*]": $(SRCROOT)/../target/aarch64-apple-ios/release
         "LIBRARY_SEARCH_PATHS[sdk=iphonesimulator*]": $(SRCROOT)/../target/aarch64-apple-ios-sim/release
         "EXCLUDED_ARCHS[sdk=iphonesimulator*]": x86_64
-  SolidCraft-macOS:
+  ViaForm-macOS:
     type: application
     platform: macOS
     sources:
       - path: Shared
+        excludes:
+          - "UI/Theme/Tests/**"
       - path: Desk
+      - path: Resources/ToolIcons
+        type: folder
+        optional: true
+        buildPhase: resources
+      - path: Resources/AppIcons.xcassets
     settings:
       base:
-        PRODUCT_NAME: SolidCraft
-        PRODUCT_BUNDLE_IDENTIFIER: me.somalabs.solidcraft.mac
+        PRODUCT_NAME: ViaForm
+        PRODUCT_BUNDLE_IDENTIFIER: me.somalabs.viaform.mac
         LIBRARY_SEARCH_PATHS: $(SRCROOT)/../target/aarch64-apple-darwin/release
         ARCHS: arm64
         CODE_SIGN_IDENTITY: "-"
         ENABLE_HARDENED_RUNTIME: NO
         INFOPLIST_KEY_LSApplicationCategoryType: public.app-category.graphics-design
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+  ViaFormThemeTests:
+    type: bundle.unit-test
+    platform: macOS
+    sources:
+      - path: Shared/UI/Theme/ThemeTokens.swift
+      - path: Shared/UI/Theme/Tests
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: me.somalabs.viaform.themetests
+        OTHER_LDFLAGS: []
+        ARCHS: arm64
+        CODE_SIGN_IDENTITY: "-"
+        GENERATE_INFOPLIST_FILE: YES
+  # The robot safety gate (UI-UX-AUDIT P0-14), hosted in the Mac app.
+  ViaFormRobotTests:
+    type: bundle.unit-test
+    platform: macOS
+    sources:
+      - path: RobotTests
+    dependencies:
+      - target: ViaForm-macOS
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: me.somalabs.viaform.robottests
+        TEST_HOST: $(BUILT_PRODUCTS_DIR)/ViaForm.app/Contents/MacOS/ViaForm
+        BUNDLE_LOADER: $(TEST_HOST)
+        OTHER_LDFLAGS: []
+        ARCHS: arm64
+        CODE_SIGN_IDENTITY: "-"
+        GENERATE_INFOPLIST_FILE: YES
+schemes:
+  ViaFormThemeTests:
+    build:
+      targets:
+        ViaFormThemeTests: [test]
+    test:
+      targets:
+        - ViaFormThemeTests
+  ViaFormRobotTests:
+    build:
+      targets:
+        ViaFormRobotTests: [test]
+    test:
+      targets:
+        - ViaFormRobotTests

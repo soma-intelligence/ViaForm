@@ -10,6 +10,7 @@ publish = false
 solidcraft-engine.workspace = true
 pcbcraft-engine.workspace = true
 pcbcraft-io.workspace = true
+viaform-generative.workspace = true
 serde.workspace = true
 serde_json.workspace = true
 zip = { version = "9", default-features = false, features = ["deflate"] }

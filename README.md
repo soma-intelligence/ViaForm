@@ -28,13 +28,20 @@ The Apple apps, prerequisites and every script: [Build ViaForm from source](docs
 3D design and electronics as one app, on open source Rust engines (SolidCraft for CAD,
 PCBCraft for PCB).
 
-- **Windows, Linux and macOS**: an Electron app (`electron/`). Design and Electronics are two
-  workspaces of one project, saved together as a `.viaform` file. It updates itself from this
-  repository's GitHub Releases.
 - **macOS**: a desktop layout with a ribbon of tabs and panels, a browser tree, a timeline,
-  a right-click marking menu, command search on S and a ViewCube.
+  a right-click marking menu, command search on S and a view cube.
 - **iPad and iPhone**: a touch-first layout with a project sidebar, items and history
   sidebars, a tool column (a bottom row on iPhone) and tools suggested from the selection.
+- **Windows, Linux and macOS**: an Electron app (`electron/`), in maintenance (see Platforms).
+  Design and Electronics are two workspaces of one project, saved together as a `.viaform`
+  file. It updates itself from this repository's GitHub Releases.
+
+## Platforms
+
+The Swift apps on Mac and iPad are the product: new stages and features land there first.
+The Electron app is in maintenance. CI still builds and tests it on macOS, Linux and Windows,
+and it gets fixes, but no new stages, until a Windows user needs it (decision D-1 in
+`docs/specs/VIAFORM-SPEC.md`).
 
 The Apple apps draw with Metal, the Electron app with WebGL. All of them run every action
 through the engines' command APIs, and share one Rust core (`core/`) for everything that joins
@@ -106,7 +113,7 @@ the two engines, so the board to 3D link behaves the same everywhere.
 engines/solidcraft   submodule: tangency-labs/solidcraft, parametric 3D CAD in Rust
 engines/pcbcraft     submodule: tangency-labs/pcbcraft, KiCad-compatible PCB engine in Rust
 core/                viaform-core: one workspace over both engines, the board to 3D link, the .viaform file
-bridge/              solidcraft-ffi: a C ABI static library over the core, for the Swift apps
+bridge/              viaform-ffi: a C ABI static library over the core, for the Swift apps
 node/                viaform-node: a Node addon (N-API) over the core, for the Electron app
 electron/            the cross-platform app: main process, preload, renderer (TypeScript, three.js)
 apple/               XcodeGen project: Shared (engine, renderer, model), Desk (macOS), Touch (iOS)
@@ -127,8 +134,115 @@ Electron app (any platform, needs Rust and Node 22):
 cd electron && npm ci && npm start
 ```
 
-`npm test` runs the app's end-to-end tests on the addon; `cargo test -p viaform-core` runs the
-core's. `npm run dist` packages for the current platform.
+`npm test` runs the app's end-to-end tests on the addon; `cargo test --workspace --exclude
+viaform-node` runs every Rust crate's, including the bridge smoke tests (`bridge/tests/smoke.rs`). `npm run test:ui` starts the app and drives its interface (toolbar, browser, view cube,
+timeline, sketch, electronics); it needs a display. `npm run dist` packages for the current platform.
+
+`npm test` includes a flying drone built end to end (`electron/src/test/drone.ts`): a 5-inch X
+frame with motors, propellers and a 4S pack; a flight controller drawn, placed and routed to a
+clean DRC; the board seated on the frame; then mass, balance, thrust to weight, interferences and
+the propellers spun through a full turn against the airframe, with STEP and KiCad exports.
+`npm run sample:drone` writes it to `samples/` as `drone.viaform` (open it in the app),
+`drone.step` and `flight-controller.kicad_pcb`.
+
+![Drone sample, design](docs/drone-design.png)
+![Drone sample, flight controller](docs/drone-board.png)
+
+### Drone simulation
+
+The Simulation workspace (Ctrl+3) flies a small 3-inch drone through an obstacle course, or holds
+it in a hover, in hard weather. The simulation is the Rust crate `sim/`: the SwiftUI apps call it
+through the bridge (`bridge/src/sim.rs`, `vf_sim_*` and `vf_train_*`), and the same crate runs the
+tests (`cargo test -p viaform-sim`) and the training. The TypeScript in `electron/src/shared/sim`
+is the reference it was ported from:
+
+- **Physics.** Rigid-body X quad: motor lag, thrust and torque against the air, drag, ground
+  effect, and crash and collision detection.
+- **Weather.** Seven presets, from indoor to a gale, a 25 mm/h rain storm, snow at −8 °C,
+  freezing fog and hot-and-high at 2 400 m. They set:
+  - wind: mean, turbulence and gusts;
+  - air density: temperature, altitude, humidity;
+  - rain: water film and down-force on the rotors;
+  - snow load and icing on the props;
+  - LiPo: cold internal resistance and voltage sag;
+  - time-of-flight sensors: range, plus false returns from drops and flakes.
+- **Frame by generative design** (`generative.ts`). Beam FEM over a ground structure, optimised
+  for mass under three load cases at full thrust: punch-out, radial crash and side crash. The
+  constraints are prop clearance, deflection and stress. At a 1.5 safety factor the result is a
+  3 mm carbon frame with tapered 60.2 mm arms. The frame weighs 11.0 g and the drone 153 g all up.
+  `node scripts/design-frame.mjs` reruns the study.
+- **Parts** (`parts.ts`). All on Amazon:
+  - SpeedyBee F405 Mini stack;
+  - T-Motor F1404 4600KV motors;
+  - Gemfan 3016 props;
+  - 650 mAh 3S LiPo;
+  - RadioMaster RP1 receiver;
+  - XIAO ESP32S3 companion;
+  - six VL53L1X time-of-flight sensors.
+
+  Links and masses are in the file. Prices and stock were not checked.
+- **Controller.** Cascaded PID: position, velocity, attitude, then rates and the mixer. A small
+  neural net (17-16-3) adds a correction to the acceleration command.
+  `node scripts/train-drone.mjs` trains both in two stages, over randomised weather, mass and
+  thrust:
+  1. tunes the gains (cross-entropy method);
+  2. trains the net (evolution strategies).
+
+  The script writes `trained.ts`. On held-out episodes the velocity-tracking cost was:
+
+  | Controller | Cost |
+  |---|---|
+  | Default PID | 7.53 |
+  | Trained gains | 2.77 |
+  | Trained gains + net | 2.38 |
+- **Autonomy.** Readings from the time-of-flight sensors build a 3D occupancy map in log-odds.
+  Rain and snow returns fade from it; walls stay. A* replans on that map five times a second.
+  Speed limits keep the drone able to stop before what it sees.
+
+Results on the obstacle course (seven weathers, five seeds each):
+
+| Controller | Courses completed |
+|---|---|
+| Default PID | 27/35 |
+| Trained gains | 33/35 |
+| Trained gains + net | 33/35 |
+
+Most failures are walls met in strong wind with short sensor range, such as bright sun at
+altitude. The toolbar's check button reruns this table in the app. `npm test` runs these sim
+tests:
+
+- physics;
+- weather effects;
+- frame constraints;
+- mapping;
+- training gains;
+- a hover in every weather;
+- six course flights from calm to gale.
+
+**Race mode** (mission "Fly it yourself"). You fly the drone through the three gates in order,
+then land on the pad. The trained autopilot flies the same course as a see-through ghost.
+
+Controls:
+- keyboard: W A S D to move, Space and C (or ↑ ↓) for height, Q E (or ← →) to turn, Enter to
+  restart;
+- gamepad: mode 2.
+
+Assist modes:
+- Easy: the drone holds its position when the sticks are centred.
+- Pro: angle mode. The sticks tilt the drone and only its height is held.
+
+The best time for each weather and mode is kept locally.
+
+**Video.** `npx electron . --record=docs/sim-video.mp4` (from `electron/`, after a build) films
+the shots in `electron/scripts/sim-shots.json` frame by frame and encodes them with ffmpeg.
+
+[Simulation video (53 s, 13 MB)](docs/sim-video.mp4)
+
+![Simulation, race mode](docs/sim-game.png)
+![Simulation, rain storm](docs/sim-rain.png)
+![Simulation, snow at −8 °C](docs/sim-snow.png)
+![Simulation, freezing fog](docs/sim-fog.png)
+![Simulation, course overview](docs/sim-course.png)
 
 Apple apps:
 
@@ -137,11 +251,42 @@ scripts/build-bridge.sh
 ```
 
 ```bash
-cd apple && xcodegen generate && open SolidCraftNative.xcodeproj
+cd apple && xcodegen generate && open ViaForm.xcodeproj
 ```
 
-`SolidCraft --selftest` runs the tool paths end to end (sketch, extrude, press pull, fillet,
+`ViaForm --selftest` runs the tool paths end to end (sketch, extrude, press pull, fillet,
 undo, primitives, scene) and exits. `--sample` opens the bracket sample.
+
+## Libraries
+
+The Libraries panel (Ctrl+L, or LIBRARY in the toolbar) searches light side libraries kept beside
+the project, never inside it:
+
+- **KiCad libraries** installed on this machine, plus any folder you add: symbols place in the
+  schematic with their footprint, and the STEP model KiCad ships goes into the design.
+- **Standard hardware** (ISO, ASME, ANSI screws, nuts, washers, pins, bearings), built by the design
+  engine from its tables: search `M3x12`, `nut M5` or `608`.
+- **DigiKey, Mouser and Octopart (Nexar)** through their official APIs: price breaks, stock,
+  datasheets. You create the developer account; the keys are encrypted by the OS keychain
+  (Electron `safeStorage`) in the app's data folder, outside every project and repository.
+- **By hand** for shops without an open API (McMaster-Carr, MISUMI, LCSC, SnapMagic, GrabCAD...):
+  part number, link and notes, with the CAD file you download attached. Sites are never scraped;
+  each has a button that opens its own search page in the browser.
+
+Saved parts, attached files and settings live in `<userData>/library`. The code is in
+`electron/src/main/library` (sources in `electron/src/shared/library/sources.ts`), the panel in
+`electron/src/renderer/library.ts`, the tests in `electron/src/test/library.test.ts`.
+
+![Electron: Libraries](docs/electron-library.png)
+
+In the Apple apps the same Rust crate (`library/`) runs behind the C bridge (`vf_library_*`,
+`bridge/src/library.rs`), with the panel in `apple/Shared/Library`. Saved parts live in
+`~/Library/Application Support/ViaForm/Library`; API keys go to the macOS or iOS Keychain
+(service `me.somalabs.viaform.library`, this device only) and are passed with each search, never
+written to the library folder. Mac: the Libraries button in the toolbar, or `--library` /
+`--library=M3x12` at launch. iPad and iPhone: Libraries in the top bar.
+
+![macOS: Libraries](docs/macos-library.png)
 
 Full steps, prerequisites and Rust targets: [Build ViaForm from source](docs/guides/build-from-source.md).
 
@@ -152,8 +297,8 @@ SolidCraft `Session` (the 3D design) and a PCBCraft `Session` (schematic and boa
 side. `core/src/link.rs` is the board to 3D link, `core/src/project.rs` the `.viaform` file,
 `core/src/scene.rs` the 3D scene flattened to `f32` buffers for the GPU.
 
-- The Swift apps call the core through `bridge/` (`solidcraft-ffi`, a static library with the
-  C header `bridge/include/solidcraft.h`: `sc_*` for CAD, `pcb_*` for PCB, `vf_link_*` for the
+- The Swift apps call the core through `bridge/` (`viaform-ffi`, a static library with the
+  C headers in `bridge/include/` (`viaform.h` and one per module): `sc_*` for CAD, `pcb_*` for PCB, `vf_link_*` for the
   link) and draw with Metal.
 - The Electron app loads `node/` (`viaform-node`, an N-API addon exposing a `Workspace` class)
   in its main process; the renderer reaches it over IPC as `window.viaform` and draws with
@@ -207,7 +352,7 @@ Not yet as a published release. Build it from source; the Release workflow is se
 publish signed builds to GitHub Releases once signing secrets are configured.
 
 **Does ViaForm run on iPad?**
-Yes, from source. The `SolidCraft-iOS` target builds a touch app for iPad and iPhone (iOS 17+).
+Yes, from source. The `ViaForm-iOS` target builds a touch app for iPad and iPhone (iOS 17+).
 GPL rules out App Store distribution. See [PCB design on iPad](docs/guides/pcb-design-on-ipad.md).
 
 **Can ViaForm open KiCad files?**

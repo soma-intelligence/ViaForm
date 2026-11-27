@@ -6,6 +6,15 @@
 //! returns is freed with `sc_string_free`. A panic inside the engine never unwinds into Swift:
 //! each entry point catches it and answers with an error.
 
+mod asm;
+mod bom;
+mod flow;
+mod generate;
+mod kin;
+mod library;
+mod phys;
+mod sim;
+
 use std::ffi::{CStr, CString, c_char};
 use std::panic::{AssertUnwindSafe, catch_unwind};
 
@@ -104,9 +113,11 @@ pub unsafe extern "C" fn sc_execute(s: *mut ScSession, id: *const c_char, params
             Ok(p) => p.unwrap_or_else(|| json!({})),
             Err(e) => return json!({"error": format!("params: {e}")}),
         };
-        match s.session.execute(id, &p) {
+        // Through the core: `command.schema` and the validated `body.rename` run there, the rest
+        // in the engine's registry.
+        match viaform_core::commands::execute(&mut s.session, id, &p) {
             Ok(v) => json!({"ok": v}),
-            Err(e) => json!({"error": e.to_string()}),
+            Err(e) => json!({"error": e}),
         }
     });
     out(&reply)
@@ -136,7 +147,9 @@ pub unsafe extern "C" fn sc_run_script(s: *mut ScSession, script: *const c_char)
     out(&reply)
 }
 
-/// The command registry: id, label, tab, panel, icon, shortcut and params doc of each command.
+/// The command registry: id, label, tab, panel, icon, shortcut and params doc of each command,
+/// and `schema`, the typed fields of its form, for the commands the core describes
+/// (`viaform_core::commands`).
 #[unsafe(no_mangle)]
 pub extern "C" fn sc_commands() -> *mut c_char {
     out(&guard(json!([]), || {
@@ -147,6 +160,7 @@ pub extern "C" fn sc_commands() -> *mut c_char {
                     json!({
                         "id": c.id, "label": c.label, "tab": c.tab, "panel": c.panel,
                         "icon": c.icon, "key": c.shortcut, "params": c.params,
+                        "schema": viaform_core::commands::schema(c.id),
                     })
                 })
                 .collect(),
@@ -162,7 +176,7 @@ pub extern "C" fn sc_commands() -> *mut c_char {
 pub unsafe extern "C" fn sc_home_camera(s: *const ScSession) -> *mut c_char {
     // SAFETY: the caller passes a live session.
     let Some(s) = (unsafe { s.as_ref() }) else { return out(&Value::Null) };
-    out(&guard(Value::Null, || serde_json::to_value(view::home_camera(&s.session)).unwrap_or(Value::Null)))
+    out(&guard(Value::Null, || serde_json::to_value(view::home_camera(&s.session).ok()).unwrap_or(Value::Null)))
 }
 
 /// The design's model bounds as `{"min": [x,y,z], "max": [x,y,z]}`, or null when empty.
@@ -174,7 +188,7 @@ pub unsafe extern "C" fn sc_bounds(s: *const ScSession) -> *mut c_char {
     // SAFETY: the caller passes a live session.
     let Some(s) = (unsafe { s.as_ref() }) else { return out(&Value::Null) };
     out(&guard(Value::Null, || {
-        let b = view::bounds(&s.session);
+        let Ok(b) = view::bounds(&s.session) else { return Value::Null };
         if b.is_empty() {
             Value::Null
         } else {
@@ -192,7 +206,7 @@ pub unsafe extern "C" fn sc_sketch_plane(s: *const ScSession) -> *mut c_char {
     // SAFETY: the caller passes a live session.
     let Some(s) = (unsafe { s.as_ref() }) else { return out(&Value::Null) };
     out(&guard(Value::Null, || {
-        view::open_sketch_plane(&s.session).map_or(Value::Null, |p| {
+        view::open_sketch_plane(&s.session).ok().flatten().map_or(Value::Null, |p| {
             json!({"origin": [p.origin.x, p.origin.y, p.origin.z], "x_dir": [p.x.x, p.x.y, p.x.z], "y_dir": [p.y.x, p.y.y, p.y.z]})
         })
     }))
@@ -457,4 +471,56 @@ pub unsafe extern "C" fn vf_link_revision(sc: *mut ScSession, pcb: *const PcbSes
     // SAFETY: the caller passes live sessions.
     let (Some(sc), Some(pcb)) = (unsafe { sc.as_mut() }, unsafe { pcb.as_ref() }) else { return -1 };
     guard(None, || viaform_core::link::linked_revision(&mut sc.session, &pcb.session)).map_or(-1, |r| r as i64)
+}
+
+// MARK: Generative design (viaform-core), the same code the Electron app runs
+
+/// Runs a generative study (`spec` as JSON). Answers `{"ok": outcome}` or `{"error": message}`.
+///
+/// # Safety
+/// `spec` is a NUL-terminated string.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn sc_generate_study(spec: *const c_char) -> *mut c_char {
+    // SAFETY: NUL-terminated string, per the contract above.
+    let spec = unsafe { text(spec) };
+    link_reply(guard(Err("the engine stopped on this study".into()), || {
+        let spec: Value = serde_json::from_str(spec.ok_or("no spec")?).map_err(|e| format!("spec: {e}"))?;
+        viaform_core::generative::study(&spec)
+    }))
+}
+
+/// Builds candidate `candidate` (-1: the study's best) of the study `spec` into the design `s`, as
+/// one undo step. Answers `{"ok": {candidate, body, commands}}` or `{"error": message}`.
+///
+/// # Safety
+/// `s` is a live session; `spec` is a NUL-terminated string.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn sc_generate(s: *mut ScSession, spec: *const c_char, candidate: i64) -> *mut c_char {
+    // SAFETY: the caller passes a live session.
+    let Some(s) = (unsafe { s.as_mut() }) else { return out(&json!({"error": "no session"})) };
+    // SAFETY: NUL-terminated string, per the contract above.
+    let spec = unsafe { text(spec) };
+    link_reply(guard(Err("the engine stopped while building the candidate".into()), || {
+        let spec: Value = serde_json::from_str(spec.ok_or("no spec")?).map_err(|e| format!("spec: {e}"))?;
+        let pick = usize::try_from(candidate).ok();
+        viaform_core::generative::build(&mut s.session, &spec, pick)
+    }))
+}
+
+/// Inserts a generated assembly (`assembly` as JSON: parts with mesh files and placements,
+/// joints) into the design `s` as one undo step. Answers `{"ok": {parts, joints, occurrences}}`
+/// or `{"error": message}`.
+///
+/// # Safety
+/// `s` is a live session; `assembly` is a NUL-terminated string.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn sc_generate_assembly(s: *mut ScSession, assembly: *const c_char) -> *mut c_char {
+    // SAFETY: the caller passes a live session.
+    let Some(s) = (unsafe { s.as_mut() }) else { return out(&json!({"error": "no session"})) };
+    // SAFETY: NUL-terminated string, per the contract above.
+    let text = unsafe { text(assembly) };
+    link_reply(guard(Err("the engine stopped while inserting the assembly".into()), || {
+        let spec: Value = serde_json::from_str(text.ok_or("no assembly")?).map_err(|e| format!("assembly: {e}"))?;
+        viaform_core::generative::assemble(&mut s.session, &spec)
+    }))
 }

@@ -1,0 +1,4075 @@
+{
+  "all_up_mass_g": 221.68675948979572,
+  "assembly": "drone",
+  "base": "drone_bottom_plate",
+  "bulk": [
+    {
+      "component_ref": "FR1",
+      "mass_g_each": 0.0,
+      "part_number": "ViaForm generative frame",
+      "qty": 1,
+      "use": "made here: drone_bottom_plate + drone_cage (this assembly's generated parts)"
+    }
+  ],
+  "component_file": "docs/components/drone.json",
+  "frame_file": "../drone-frame.json",
+  "joints": [
+    {
+      "axis": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "child": "drone_cage",
+      "name": "drone_cage mount",
+      "origin": [
+        0.0,
+        0.0,
+        24.0
+      ],
+      "parent": "drone_bottom_plate",
+      "type": "rigid"
+    },
+    {
+      "axis": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "child": "Motor 1 (cw)",
+      "name": "Motor 1 (cw) mount",
+      "origin": [
+        45.96,
+        45.96,
+        4.0
+      ],
+      "parent": "drone_bottom_plate",
+      "type": "rigid"
+    },
+    {
+      "axis": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "child": "Prop 1 (cw)",
+      "name": "Prop 1 (cw) mount",
+      "origin": [
+        45.96,
+        45.96,
+        20.6
+      ],
+      "parent": "drone_bottom_plate",
+      "type": "rigid"
+    },
+    {
+      "axis": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "child": "Motor 1 screw 1",
+      "name": "Motor 1 screw 1 mount",
+      "origin": [
+        50.46,
+        50.46,
+        -1.3
+      ],
+      "parent": "drone_bottom_plate",
+      "type": "rigid"
+    },
+    {
+      "axis": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "child": "Motor 1 screw 2",
+      "name": "Motor 1 screw 2 mount",
+      "origin": [
+        50.46,
+        41.46,
+        -1.3
+      ],
+      "parent": "drone_bottom_plate",
+      "type": "rigid"
+    },
+    {
+      "axis": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "child": "Motor 1 screw 3",
+      "name": "Motor 1 screw 3 mount",
+      "origin": [
+        41.46,
+        41.46,
+        -1.3
+      ],
+      "parent": "drone_bottom_plate",
+      "type": "rigid"
+    },
+    {
+      "axis": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "child": "Motor 1 screw 4",
+      "name": "Motor 1 screw 4 mount",
+      "origin": [
+        41.46,
+        50.46,
+        -1.3
+      ],
+      "parent": "drone_bottom_plate",
+      "type": "rigid"
+    },
+    {
+      "axis": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "child": "Motor 2 (ccw)",
+      "name": "Motor 2 (ccw) mount",
+      "origin": [
+        45.96,
+        -45.96,
+        4.0
+      ],
+      "parent": "drone_bottom_plate",
+      "type": "rigid"
+    },
+    {
+      "axis": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "child": "Prop 2 (ccw)",
+      "name": "Prop 2 (ccw) mount",
+      "origin": [
+        45.96,
+        -45.96,
+        20.6
+      ],
+      "parent": "drone_bottom_plate",
+      "type": "rigid"
+    },
+    {
+      "axis": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "child": "Motor 2 screw 1",
+      "name": "Motor 2 screw 1 mount",
+      "origin": [
+        50.46,
+        -41.46,
+        -1.3
+      ],
+      "parent": "drone_bottom_plate",
+      "type": "rigid"
+    },
+    {
+      "axis": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "child": "Motor 2 screw 2",
+      "name": "Motor 2 screw 2 mount",
+      "origin": [
+        50.46,
+        -50.46,
+        -1.3
+      ],
+      "parent": "drone_bottom_plate",
+      "type": "rigid"
+    },
+    {
+      "axis": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "child": "Motor 2 screw 3",
+      "name": "Motor 2 screw 3 mount",
+      "origin": [
+        41.46,
+        -50.46,
+        -1.3
+      ],
+      "parent": "drone_bottom_plate",
+      "type": "rigid"
+    },
+    {
+      "axis": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "child": "Motor 2 screw 4",
+      "name": "Motor 2 screw 4 mount",
+      "origin": [
+        41.46,
+        -41.46,
+        -1.3
+      ],
+      "parent": "drone_bottom_plate",
+      "type": "rigid"
+    },
+    {
+      "axis": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "child": "Motor 3 (cw)",
+      "name": "Motor 3 (cw) mount",
+      "origin": [
+        -45.96,
+        -45.96,
+        4.0
+      ],
+      "parent": "drone_bottom_plate",
+      "type": "rigid"
+    },
+    {
+      "axis": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "child": "Prop 3 (cw)",
+      "name": "Prop 3 (cw) mount",
+      "origin": [
+        -45.96,
+        -45.96,
+        20.6
+      ],
+      "parent": "drone_bottom_plate",
+      "type": "rigid"
+    },
+    {
+      "axis": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "child": "Motor 3 screw 1",
+      "name": "Motor 3 screw 1 mount",
+      "origin": [
+        -41.46,
+        -41.46,
+        -1.3
+      ],
+      "parent": "drone_bottom_plate",
+      "type": "rigid"
+    },
+    {
+      "axis": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "child": "Motor 3 screw 2",
+      "name": "Motor 3 screw 2 mount",
+      "origin": [
+        -41.46,
+        -50.46,
+        -1.3
+      ],
+      "parent": "drone_bottom_plate",
+      "type": "rigid"
+    },
+    {
+      "axis": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "child": "Motor 3 screw 3",
+      "name": "Motor 3 screw 3 mount",
+      "origin": [
+        -50.46,
+        -50.46,
+        -1.3
+      ],
+      "parent": "drone_bottom_plate",
+      "type": "rigid"
+    },
+    {
+      "axis": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "child": "Motor 3 screw 4",
+      "name": "Motor 3 screw 4 mount",
+      "origin": [
+        -50.46,
+        -41.46,
+        -1.3
+      ],
+      "parent": "drone_bottom_plate",
+      "type": "rigid"
+    },
+    {
+      "axis": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "child": "Motor 4 (ccw)",
+      "name": "Motor 4 (ccw) mount",
+      "origin": [
+        -45.96,
+        45.96,
+        4.0
+      ],
+      "parent": "drone_bottom_plate",
+      "type": "rigid"
+    },
+    {
+      "axis": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "child": "Prop 4 (ccw)",
+      "name": "Prop 4 (ccw) mount",
+      "origin": [
+        -45.96,
+        45.96,
+        20.6
+      ],
+      "parent": "drone_bottom_plate",
+      "type": "rigid"
+    },
+    {
+      "axis": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "child": "Motor 4 screw 1",
+      "name": "Motor 4 screw 1 mount",
+      "origin": [
+        -41.46,
+        50.46,
+        -1.3
+      ],
+      "parent": "drone_bottom_plate",
+      "type": "rigid"
+    },
+    {
+      "axis": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "child": "Motor 4 screw 2",
+      "name": "Motor 4 screw 2 mount",
+      "origin": [
+        -41.46,
+        41.46,
+        -1.3
+      ],
+      "parent": "drone_bottom_plate",
+      "type": "rigid"
+    },
+    {
+      "axis": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "child": "Motor 4 screw 3",
+      "name": "Motor 4 screw 3 mount",
+      "origin": [
+        -50.46,
+        41.46,
+        -1.3
+      ],
+      "parent": "drone_bottom_plate",
+      "type": "rigid"
+    },
+    {
+      "axis": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "child": "Motor 4 screw 4",
+      "name": "Motor 4 screw 4 mount",
+      "origin": [
+        -50.46,
+        50.46,
+        -1.3
+      ],
+      "parent": "drone_bottom_plate",
+      "type": "rigid"
+    },
+    {
+      "axis": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "child": "FC + ESC stack",
+      "name": "FC + ESC stack mount",
+      "origin": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "parent": "drone_bottom_plate",
+      "type": "rigid"
+    },
+    {
+      "axis": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "child": "Video transmitter",
+      "name": "Video transmitter mount",
+      "origin": [
+        0.0,
+        0.0,
+        20.65
+      ],
+      "parent": "drone_bottom_plate",
+      "type": "rigid"
+    },
+    {
+      "axis": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "child": "FPV camera",
+      "name": "FPV camera mount",
+      "origin": [
+        23.5,
+        0.0,
+        25.0
+      ],
+      "parent": "drone_bottom_plate",
+      "type": "rigid"
+    },
+    {
+      "axis": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "child": "Receiver",
+      "name": "Receiver mount",
+      "origin": [
+        0.0,
+        0.0,
+        25.5
+      ],
+      "parent": "drone_bottom_plate",
+      "type": "rigid"
+    },
+    {
+      "axis": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "child": "XIAO ESP32S3",
+      "name": "XIAO ESP32S3 mount",
+      "origin": [
+        0.0,
+        0.0,
+        30.15
+      ],
+      "parent": "drone_bottom_plate",
+      "type": "rigid"
+    },
+    {
+      "axis": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "child": "Battery 4S 650 mAh",
+      "name": "Battery 4S 650 mAh mount",
+      "origin": [
+        2.5,
+        0.0,
+        47.5
+      ],
+      "parent": "drone_bottom_plate",
+      "type": "rigid"
+    },
+    {
+      "axis": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "child": "Low-ESR capacitor",
+      "name": "Low-ESR capacitor mount",
+      "origin": [
+        -26.75,
+        18.8,
+        10.0
+      ],
+      "parent": "drone_bottom_plate",
+      "type": "rigid"
+    },
+    {
+      "axis": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "child": "XT30 pigtail",
+      "name": "XT30 pigtail mount",
+      "origin": [
+        -26.75,
+        -18.8,
+        10.0
+      ],
+      "parent": "drone_bottom_plate",
+      "type": "rigid"
+    },
+    {
+      "axis": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "child": "ToF front",
+      "name": "ToF front mount",
+      "origin": [
+        29.4,
+        0.0,
+        10.85
+      ],
+      "parent": "drone_bottom_plate",
+      "type": "rigid"
+    },
+    {
+      "axis": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "child": "ToF rear",
+      "name": "ToF rear mount",
+      "origin": [
+        -38.9,
+        0.0,
+        10.85
+      ],
+      "parent": "drone_bottom_plate",
+      "type": "rigid"
+    },
+    {
+      "axis": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "child": "ToF left",
+      "name": "ToF left mount",
+      "origin": [
+        0.0,
+        21.1,
+        11.35
+      ],
+      "parent": "drone_bottom_plate",
+      "type": "rigid"
+    },
+    {
+      "axis": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "child": "ToF right",
+      "name": "ToF right mount",
+      "origin": [
+        0.0,
+        -21.1,
+        11.35
+      ],
+      "parent": "drone_bottom_plate",
+      "type": "rigid"
+    },
+    {
+      "axis": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "child": "ToF up",
+      "name": "ToF up mount",
+      "origin": [
+        -33.65,
+        0.0,
+        36.0
+      ],
+      "parent": "drone_bottom_plate",
+      "type": "rigid"
+    },
+    {
+      "axis": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "child": "ToF down",
+      "name": "ToF down mount",
+      "origin": [
+        -28.1,
+        0.0,
+        5.1
+      ],
+      "parent": "drone_bottom_plate",
+      "type": "rigid"
+    },
+    {
+      "axis": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "child": "Video antenna",
+      "name": "Video antenna mount",
+      "origin": [
+        -14.0,
+        0.0,
+        20.0
+      ],
+      "parent": "drone_bottom_plate",
+      "type": "rigid"
+    },
+    {
+      "axis": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "child": "Standoff 1",
+      "name": "Standoff 1 mount",
+      "origin": [
+        21.0,
+        10.0,
+        4.0
+      ],
+      "parent": "drone_bottom_plate",
+      "type": "rigid"
+    },
+    {
+      "axis": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "child": "Standoff 1 bottom screw",
+      "name": "Standoff 1 bottom screw mount",
+      "origin": [
+        21.0,
+        10.0,
+        -1.3
+      ],
+      "parent": "drone_bottom_plate",
+      "type": "rigid"
+    },
+    {
+      "axis": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "child": "Standoff 1 top screw",
+      "name": "Standoff 1 top screw mount",
+      "origin": [
+        21.0,
+        10.0,
+        28.3
+      ],
+      "parent": "drone_bottom_plate",
+      "type": "rigid"
+    },
+    {
+      "axis": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "child": "Standoff 2",
+      "name": "Standoff 2 mount",
+      "origin": [
+        21.0,
+        -10.0,
+        4.0
+      ],
+      "parent": "drone_bottom_plate",
+      "type": "rigid"
+    },
+    {
+      "axis": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "child": "Standoff 2 bottom screw",
+      "name": "Standoff 2 bottom screw mount",
+      "origin": [
+        21.0,
+        -10.0,
+        -1.3
+      ],
+      "parent": "drone_bottom_plate",
+      "type": "rigid"
+    },
+    {
+      "axis": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "child": "Standoff 2 top screw",
+      "name": "Standoff 2 top screw mount",
+      "origin": [
+        21.0,
+        -10.0,
+        28.3
+      ],
+      "parent": "drone_bottom_plate",
+      "type": "rigid"
+    },
+    {
+      "axis": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "child": "Standoff 3",
+      "name": "Standoff 3 mount",
+      "origin": [
+        -21.0,
+        -10.0,
+        4.0
+      ],
+      "parent": "drone_bottom_plate",
+      "type": "rigid"
+    },
+    {
+      "axis": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "child": "Standoff 3 bottom screw",
+      "name": "Standoff 3 bottom screw mount",
+      "origin": [
+        -21.0,
+        -10.0,
+        -1.3
+      ],
+      "parent": "drone_bottom_plate",
+      "type": "rigid"
+    },
+    {
+      "axis": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "child": "Standoff 3 top screw",
+      "name": "Standoff 3 top screw mount",
+      "origin": [
+        -21.0,
+        -10.0,
+        28.3
+      ],
+      "parent": "drone_bottom_plate",
+      "type": "rigid"
+    },
+    {
+      "axis": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "child": "Standoff 4",
+      "name": "Standoff 4 mount",
+      "origin": [
+        -21.0,
+        10.0,
+        4.0
+      ],
+      "parent": "drone_bottom_plate",
+      "type": "rigid"
+    },
+    {
+      "axis": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "child": "Standoff 4 bottom screw",
+      "name": "Standoff 4 bottom screw mount",
+      "origin": [
+        -21.0,
+        10.0,
+        -1.3
+      ],
+      "parent": "drone_bottom_plate",
+      "type": "rigid"
+    },
+    {
+      "axis": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "child": "Standoff 4 top screw",
+      "name": "Standoff 4 top screw mount",
+      "origin": [
+        -21.0,
+        10.0,
+        28.3
+      ],
+      "parent": "drone_bottom_plate",
+      "type": "rigid"
+    },
+    {
+      "axis": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "child": "Stack bolt 1",
+      "name": "Stack bolt 1 mount",
+      "origin": [
+        10.0,
+        10.0,
+        -2.0
+      ],
+      "parent": "drone_bottom_plate",
+      "type": "rigid"
+    },
+    {
+      "axis": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "child": "Stack nut 1",
+      "name": "Stack nut 1 mount",
+      "origin": [
+        10.0,
+        10.0,
+        22.4
+      ],
+      "parent": "drone_bottom_plate",
+      "type": "rigid"
+    },
+    {
+      "axis": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "child": "Gummy ESC 1",
+      "name": "Gummy ESC 1 mount",
+      "origin": [
+        10.0,
+        10.0,
+        4.0
+      ],
+      "parent": "drone_bottom_plate",
+      "type": "rigid"
+    },
+    {
+      "axis": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "child": "Gummy FC 1",
+      "name": "Gummy FC 1 mount",
+      "origin": [
+        10.0,
+        10.0,
+        10.5
+      ],
+      "parent": "drone_bottom_plate",
+      "type": "rigid"
+    },
+    {
+      "axis": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "child": "Stack bolt 2",
+      "name": "Stack bolt 2 mount",
+      "origin": [
+        10.0,
+        -10.0,
+        -2.0
+      ],
+      "parent": "drone_bottom_plate",
+      "type": "rigid"
+    },
+    {
+      "axis": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "child": "Stack nut 2",
+      "name": "Stack nut 2 mount",
+      "origin": [
+        10.0,
+        -10.0,
+        22.4
+      ],
+      "parent": "drone_bottom_plate",
+      "type": "rigid"
+    },
+    {
+      "axis": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "child": "Gummy ESC 2",
+      "name": "Gummy ESC 2 mount",
+      "origin": [
+        10.0,
+        -10.0,
+        4.0
+      ],
+      "parent": "drone_bottom_plate",
+      "type": "rigid"
+    },
+    {
+      "axis": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "child": "Gummy FC 2",
+      "name": "Gummy FC 2 mount",
+      "origin": [
+        10.0,
+        -10.0,
+        10.5
+      ],
+      "parent": "drone_bottom_plate",
+      "type": "rigid"
+    },
+    {
+      "axis": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "child": "Stack bolt 3",
+      "name": "Stack bolt 3 mount",
+      "origin": [
+        -10.0,
+        -10.0,
+        -2.0
+      ],
+      "parent": "drone_bottom_plate",
+      "type": "rigid"
+    },
+    {
+      "axis": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "child": "Stack nut 3",
+      "name": "Stack nut 3 mount",
+      "origin": [
+        -10.0,
+        -10.0,
+        22.4
+      ],
+      "parent": "drone_bottom_plate",
+      "type": "rigid"
+    },
+    {
+      "axis": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "child": "Gummy ESC 3",
+      "name": "Gummy ESC 3 mount",
+      "origin": [
+        -10.0,
+        -10.0,
+        4.0
+      ],
+      "parent": "drone_bottom_plate",
+      "type": "rigid"
+    },
+    {
+      "axis": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "child": "Gummy FC 3",
+      "name": "Gummy FC 3 mount",
+      "origin": [
+        -10.0,
+        -10.0,
+        10.5
+      ],
+      "parent": "drone_bottom_plate",
+      "type": "rigid"
+    },
+    {
+      "axis": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "child": "Stack bolt 4",
+      "name": "Stack bolt 4 mount",
+      "origin": [
+        -10.0,
+        10.0,
+        -2.0
+      ],
+      "parent": "drone_bottom_plate",
+      "type": "rigid"
+    },
+    {
+      "axis": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "child": "Stack nut 4",
+      "name": "Stack nut 4 mount",
+      "origin": [
+        -10.0,
+        10.0,
+        22.4
+      ],
+      "parent": "drone_bottom_plate",
+      "type": "rigid"
+    },
+    {
+      "axis": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "child": "Gummy ESC 4",
+      "name": "Gummy ESC 4 mount",
+      "origin": [
+        -10.0,
+        10.0,
+        4.0
+      ],
+      "parent": "drone_bottom_plate",
+      "type": "rigid"
+    },
+    {
+      "axis": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "child": "Gummy FC 4",
+      "name": "Gummy FC 4 mount",
+      "origin": [
+        -10.0,
+        10.0,
+        10.5
+      ],
+      "parent": "drone_bottom_plate",
+      "type": "rigid"
+    },
+    {
+      "axis": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "child": "Camera screw left",
+      "name": "Camera screw left mount",
+      "origin": [
+        23.5,
+        10.0,
+        25.0
+      ],
+      "parent": "drone_bottom_plate",
+      "type": "rigid"
+    },
+    {
+      "axis": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "child": "Camera screw right",
+      "name": "Camera screw right mount",
+      "origin": [
+        23.5,
+        -10.0,
+        25.0
+      ],
+      "parent": "drone_bottom_plate",
+      "type": "rigid"
+    },
+    {
+      "axis": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "child": "Battery strap",
+      "name": "Battery strap mount",
+      "origin": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "parent": "drone_bottom_plate",
+      "type": "rigid"
+    }
+  ],
+  "mass_g": {
+    "bought": 170.33999999999978,
+    "made": 51.34675948979591,
+    "total": 221.6867594897957
+  },
+  "parts": [
+    {
+      "file": "parts/drone_bottom_plate.3mf",
+      "kind": "generative",
+      "mass_g": 37.59882448979591,
+      "material": "Carbon fibre plate, quasi-isotropic T700",
+      "name": "drone_bottom_plate",
+      "pose": [
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0
+      ],
+      "properties": {
+        "category": "made",
+        "mass_g": "37.60",
+        "material": "Carbon fibre plate, quasi-isotropic T700",
+        "process": "CNC routed from 4 mm sheet"
+      },
+      "qty": 1
+    },
+    {
+      "file": "parts/drone_cage.3mf",
+      "kind": "generative",
+      "mass_g": 13.747935,
+      "material": "PA12 carbon filled (SLS)",
+      "name": "drone_cage",
+      "pose": [
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0
+      ],
+      "properties": {
+        "category": "made",
+        "mass_g": "13.75",
+        "material": "PA12 carbon filled (SLS)",
+        "process": "SLS (powder bed, no supports)"
+      },
+      "qty": 1
+    },
+    {
+      "bom_type": "purchased",
+      "component_ref": "M1",
+      "description": "1404 brushless outrunner, 4600 KV, 3-inch class",
+      "file": "components/M1.stl",
+      "kind": "component",
+      "mass_g": 9.34,
+      "material": null,
+      "name": "Motor 1 (cw)",
+      "part_number": "F1404 KV4600",
+      "pose": [
+        1.0,
+        0.0,
+        0.0,
+        45.96,
+        0.0,
+        1.0,
+        0.0,
+        45.96,
+        0.0,
+        0.0,
+        1.0,
+        4.0
+      ],
+      "position_mm": [
+        45.96,
+        45.96,
+        4.0
+      ],
+      "properties": {
+        "category": "motor",
+        "manufacturer": "T-Motor",
+        "mass_g": "9.34",
+        "mpn": "F1404 KV4600"
+      },
+      "qty": 1,
+      "ref": "M1",
+      "role": "motor on the arm pad, four M2 x 6 from below"
+    },
+    {
+      "bom_type": "purchased",
+      "component_ref": "P1",
+      "description": "3 in tri-blade durable PC prop, 1.6 in pitch, 1.5 mm hub (2 CW + 2 CCW per pack)",
+      "file": "components/P1.stl",
+      "kind": "component",
+      "mass_g": 1.18,
+      "material": null,
+      "name": "Prop 1 (cw)",
+      "part_number": "Hurricane 3016-3 (1.5mm)",
+      "pose": [
+        1.0,
+        0.0,
+        0.0,
+        45.96,
+        0.0,
+        1.0,
+        0.0,
+        45.96,
+        0.0,
+        0.0,
+        1.0,
+        20.6
+      ],
+      "position_mm": [
+        45.96,
+        45.96,
+        20.6
+      ],
+      "properties": {
+        "category": "propeller",
+        "manufacturer": "Gemfan",
+        "mass_g": "1.18",
+        "mpn": "Hurricane 3016-3 (1.5mm)"
+      },
+      "qty": 1,
+      "ref": "P1",
+      "role": "prop on the motor shaft"
+    },
+    {
+      "bom_type": "purchased",
+      "component_ref": "SCR1",
+      "description": "M2x6 steel button head screw: 16 motor screws (4 per motor) + 8 standoff screws (top and bottom)",
+      "file": "components/SCR1.stl",
+      "kind": "component",
+      "mass_g": 0.2,
+      "material": null,
+      "name": "Motor 1 screw 1",
+      "part_number": "BH-M2x6MM",
+      "pose": [
+        1.0,
+        0.0,
+        0.0,
+        50.46,
+        0.0,
+        1.0,
+        0.0,
+        50.46,
+        0.0,
+        0.0,
+        1.0,
+        -1.3
+      ],
+      "position_mm": [
+        50.46,
+        50.46,
+        -1.3
+      ],
+      "properties": {
+        "category": "fastener",
+        "manufacturer": "RMRC (ReadyMadeRC)",
+        "mass_g": "0.2",
+        "mpn": "BH-M2x6MM"
+      },
+      "qty": 1,
+      "ref": "SCR1",
+      "role": "M2 x 6 motor screw"
+    },
+    {
+      "bom_type": "purchased",
+      "component_ref": "SCR1",
+      "description": "M2x6 steel button head screw: 16 motor screws (4 per motor) + 8 standoff screws (top and bottom)",
+      "file": "components/SCR1.stl",
+      "kind": "component",
+      "mass_g": 0.2,
+      "material": null,
+      "name": "Motor 1 screw 2",
+      "part_number": "BH-M2x6MM",
+      "pose": [
+        1.0,
+        0.0,
+        0.0,
+        50.46,
+        0.0,
+        1.0,
+        0.0,
+        41.46,
+        0.0,
+        0.0,
+        1.0,
+        -1.3
+      ],
+      "position_mm": [
+        50.46,
+        41.46,
+        -1.3
+      ],
+      "properties": {
+        "category": "fastener",
+        "manufacturer": "RMRC (ReadyMadeRC)",
+        "mass_g": "0.2",
+        "mpn": "BH-M2x6MM"
+      },
+      "qty": 1,
+      "ref": "SCR1",
+      "role": "M2 x 6 motor screw"
+    },
+    {
+      "bom_type": "purchased",
+      "component_ref": "SCR1",
+      "description": "M2x6 steel button head screw: 16 motor screws (4 per motor) + 8 standoff screws (top and bottom)",
+      "file": "components/SCR1.stl",
+      "kind": "component",
+      "mass_g": 0.2,
+      "material": null,
+      "name": "Motor 1 screw 3",
+      "part_number": "BH-M2x6MM",
+      "pose": [
+        1.0,
+        0.0,
+        0.0,
+        41.46,
+        0.0,
+        1.0,
+        0.0,
+        41.46,
+        0.0,
+        0.0,
+        1.0,
+        -1.3
+      ],
+      "position_mm": [
+        41.46,
+        41.46,
+        -1.3
+      ],
+      "properties": {
+        "category": "fastener",
+        "manufacturer": "RMRC (ReadyMadeRC)",
+        "mass_g": "0.2",
+        "mpn": "BH-M2x6MM"
+      },
+      "qty": 1,
+      "ref": "SCR1",
+      "role": "M2 x 6 motor screw"
+    },
+    {
+      "bom_type": "purchased",
+      "component_ref": "SCR1",
+      "description": "M2x6 steel button head screw: 16 motor screws (4 per motor) + 8 standoff screws (top and bottom)",
+      "file": "components/SCR1.stl",
+      "kind": "component",
+      "mass_g": 0.2,
+      "material": null,
+      "name": "Motor 1 screw 4",
+      "part_number": "BH-M2x6MM",
+      "pose": [
+        1.0,
+        0.0,
+        0.0,
+        41.46,
+        0.0,
+        1.0,
+        0.0,
+        50.46,
+        0.0,
+        0.0,
+        1.0,
+        -1.3
+      ],
+      "position_mm": [
+        41.46,
+        50.46,
+        -1.3
+      ],
+      "properties": {
+        "category": "fastener",
+        "manufacturer": "RMRC (ReadyMadeRC)",
+        "mass_g": "0.2",
+        "mpn": "BH-M2x6MM"
+      },
+      "qty": 1,
+      "ref": "SCR1",
+      "role": "M2 x 6 motor screw"
+    },
+    {
+      "bom_type": "purchased",
+      "component_ref": "M1",
+      "description": "1404 brushless outrunner, 4600 KV, 3-inch class",
+      "file": "components/M1.stl",
+      "kind": "component",
+      "mass_g": 9.34,
+      "material": null,
+      "name": "Motor 2 (ccw)",
+      "part_number": "F1404 KV4600",
+      "pose": [
+        1.0,
+        0.0,
+        0.0,
+        45.96,
+        0.0,
+        1.0,
+        0.0,
+        -45.96,
+        0.0,
+        0.0,
+        1.0,
+        4.0
+      ],
+      "position_mm": [
+        45.96,
+        -45.96,
+        4.0
+      ],
+      "properties": {
+        "category": "motor",
+        "manufacturer": "T-Motor",
+        "mass_g": "9.34",
+        "mpn": "F1404 KV4600"
+      },
+      "qty": 1,
+      "ref": "M1",
+      "role": "motor on the arm pad, four M2 x 6 from below"
+    },
+    {
+      "bom_type": "purchased",
+      "component_ref": "P1",
+      "description": "3 in tri-blade durable PC prop, 1.6 in pitch, 1.5 mm hub (2 CW + 2 CCW per pack)",
+      "file": "components/P1.stl",
+      "kind": "component",
+      "mass_g": 1.18,
+      "material": null,
+      "name": "Prop 2 (ccw)",
+      "part_number": "Hurricane 3016-3 (1.5mm)",
+      "pose": [
+        1.0,
+        0.0,
+        0.0,
+        45.96,
+        0.0,
+        1.0,
+        0.0,
+        -45.96,
+        0.0,
+        0.0,
+        1.0,
+        20.6
+      ],
+      "position_mm": [
+        45.96,
+        -45.96,
+        20.6
+      ],
+      "properties": {
+        "category": "propeller",
+        "manufacturer": "Gemfan",
+        "mass_g": "1.18",
+        "mpn": "Hurricane 3016-3 (1.5mm)"
+      },
+      "qty": 1,
+      "ref": "P1",
+      "role": "prop on the motor shaft"
+    },
+    {
+      "bom_type": "purchased",
+      "component_ref": "SCR1",
+      "description": "M2x6 steel button head screw: 16 motor screws (4 per motor) + 8 standoff screws (top and bottom)",
+      "file": "components/SCR1.stl",
+      "kind": "component",
+      "mass_g": 0.2,
+      "material": null,
+      "name": "Motor 2 screw 1",
+      "part_number": "BH-M2x6MM",
+      "pose": [
+        1.0,
+        0.0,
+        0.0,
+        50.46,
+        0.0,
+        1.0,
+        0.0,
+        -41.46,
+        0.0,
+        0.0,
+        1.0,
+        -1.3
+      ],
+      "position_mm": [
+        50.46,
+        -41.46,
+        -1.3
+      ],
+      "properties": {
+        "category": "fastener",
+        "manufacturer": "RMRC (ReadyMadeRC)",
+        "mass_g": "0.2",
+        "mpn": "BH-M2x6MM"
+      },
+      "qty": 1,
+      "ref": "SCR1",
+      "role": "M2 x 6 motor screw"
+    },
+    {
+      "bom_type": "purchased",
+      "component_ref": "SCR1",
+      "description": "M2x6 steel button head screw: 16 motor screws (4 per motor) + 8 standoff screws (top and bottom)",
+      "file": "components/SCR1.stl",
+      "kind": "component",
+      "mass_g": 0.2,
+      "material": null,
+      "name": "Motor 2 screw 2",
+      "part_number": "BH-M2x6MM",
+      "pose": [
+        1.0,
+        0.0,
+        0.0,
+        50.46,
+        0.0,
+        1.0,
+        0.0,
+        -50.46,
+        0.0,
+        0.0,
+        1.0,
+        -1.3
+      ],
+      "position_mm": [
+        50.46,
+        -50.46,
+        -1.3
+      ],
+      "properties": {
+        "category": "fastener",
+        "manufacturer": "RMRC (ReadyMadeRC)",
+        "mass_g": "0.2",
+        "mpn": "BH-M2x6MM"
+      },
+      "qty": 1,
+      "ref": "SCR1",
+      "role": "M2 x 6 motor screw"
+    },
+    {
+      "bom_type": "purchased",
+      "component_ref": "SCR1",
+      "description": "M2x6 steel button head screw: 16 motor screws (4 per motor) + 8 standoff screws (top and bottom)",
+      "file": "components/SCR1.stl",
+      "kind": "component",
+      "mass_g": 0.2,
+      "material": null,
+      "name": "Motor 2 screw 3",
+      "part_number": "BH-M2x6MM",
+      "pose": [
+        1.0,
+        0.0,
+        0.0,
+        41.46,
+        0.0,
+        1.0,
+        0.0,
+        -50.46,
+        0.0,
+        0.0,
+        1.0,
+        -1.3
+      ],
+      "position_mm": [
+        41.46,
+        -50.46,
+        -1.3
+      ],
+      "properties": {
+        "category": "fastener",
+        "manufacturer": "RMRC (ReadyMadeRC)",
+        "mass_g": "0.2",
+        "mpn": "BH-M2x6MM"
+      },
+      "qty": 1,
+      "ref": "SCR1",
+      "role": "M2 x 6 motor screw"
+    },
+    {
+      "bom_type": "purchased",
+      "component_ref": "SCR1",
+      "description": "M2x6 steel button head screw: 16 motor screws (4 per motor) + 8 standoff screws (top and bottom)",
+      "file": "components/SCR1.stl",
+      "kind": "component",
+      "mass_g": 0.2,
+      "material": null,
+      "name": "Motor 2 screw 4",
+      "part_number": "BH-M2x6MM",
+      "pose": [
+        1.0,
+        0.0,
+        0.0,
+        41.46,
+        0.0,
+        1.0,
+        0.0,
+        -41.46,
+        0.0,
+        0.0,
+        1.0,
+        -1.3
+      ],
+      "position_mm": [
+        41.46,
+        -41.46,
+        -1.3
+      ],
+      "properties": {
+        "category": "fastener",
+        "manufacturer": "RMRC (ReadyMadeRC)",
+        "mass_g": "0.2",
+        "mpn": "BH-M2x6MM"
+      },
+      "qty": 1,
+      "ref": "SCR1",
+      "role": "M2 x 6 motor screw"
+    },
+    {
+      "bom_type": "purchased",
+      "component_ref": "M1",
+      "description": "1404 brushless outrunner, 4600 KV, 3-inch class",
+      "file": "components/M1.stl",
+      "kind": "component",
+      "mass_g": 9.34,
+      "material": null,
+      "name": "Motor 3 (cw)",
+      "part_number": "F1404 KV4600",
+      "pose": [
+        1.0,
+        0.0,
+        0.0,
+        -45.96,
+        0.0,
+        1.0,
+        0.0,
+        -45.96,
+        0.0,
+        0.0,
+        1.0,
+        4.0
+      ],
+      "position_mm": [
+        -45.96,
+        -45.96,
+        4.0
+      ],
+      "properties": {
+        "category": "motor",
+        "manufacturer": "T-Motor",
+        "mass_g": "9.34",
+        "mpn": "F1404 KV4600"
+      },
+      "qty": 1,
+      "ref": "M1",
+      "role": "motor on the arm pad, four M2 x 6 from below"
+    },
+    {
+      "bom_type": "purchased",
+      "component_ref": "P1",
+      "description": "3 in tri-blade durable PC prop, 1.6 in pitch, 1.5 mm hub (2 CW + 2 CCW per pack)",
+      "file": "components/P1.stl",
+      "kind": "component",
+      "mass_g": 1.18,
+      "material": null,
+      "name": "Prop 3 (cw)",
+      "part_number": "Hurricane 3016-3 (1.5mm)",
+      "pose": [
+        1.0,
+        0.0,
+        0.0,
+        -45.96,
+        0.0,
+        1.0,
+        0.0,
+        -45.96,
+        0.0,
+        0.0,
+        1.0,
+        20.6
+      ],
+      "position_mm": [
+        -45.96,
+        -45.96,
+        20.6
+      ],
+      "properties": {
+        "category": "propeller",
+        "manufacturer": "Gemfan",
+        "mass_g": "1.18",
+        "mpn": "Hurricane 3016-3 (1.5mm)"
+      },
+      "qty": 1,
+      "ref": "P1",
+      "role": "prop on the motor shaft"
+    },
+    {
+      "bom_type": "purchased",
+      "component_ref": "SCR1",
+      "description": "M2x6 steel button head screw: 16 motor screws (4 per motor) + 8 standoff screws (top and bottom)",
+      "file": "components/SCR1.stl",
+      "kind": "component",
+      "mass_g": 0.2,
+      "material": null,
+      "name": "Motor 3 screw 1",
+      "part_number": "BH-M2x6MM",
+      "pose": [
+        1.0,
+        0.0,
+        0.0,
+        -41.46,
+        0.0,
+        1.0,
+        0.0,
+        -41.46,
+        0.0,
+        0.0,
+        1.0,
+        -1.3
+      ],
+      "position_mm": [
+        -41.46,
+        -41.46,
+        -1.3
+      ],
+      "properties": {
+        "category": "fastener",
+        "manufacturer": "RMRC (ReadyMadeRC)",
+        "mass_g": "0.2",
+        "mpn": "BH-M2x6MM"
+      },
+      "qty": 1,
+      "ref": "SCR1",
+      "role": "M2 x 6 motor screw"
+    },
+    {
+      "bom_type": "purchased",
+      "component_ref": "SCR1",
+      "description": "M2x6 steel button head screw: 16 motor screws (4 per motor) + 8 standoff screws (top and bottom)",
+      "file": "components/SCR1.stl",
+      "kind": "component",
+      "mass_g": 0.2,
+      "material": null,
+      "name": "Motor 3 screw 2",
+      "part_number": "BH-M2x6MM",
+      "pose": [
+        1.0,
+        0.0,
+        0.0,
+        -41.46,
+        0.0,
+        1.0,
+        0.0,
+        -50.46,
+        0.0,
+        0.0,
+        1.0,
+        -1.3
+      ],
+      "position_mm": [
+        -41.46,
+        -50.46,
+        -1.3
+      ],
+      "properties": {
+        "category": "fastener",
+        "manufacturer": "RMRC (ReadyMadeRC)",
+        "mass_g": "0.2",
+        "mpn": "BH-M2x6MM"
+      },
+      "qty": 1,
+      "ref": "SCR1",
+      "role": "M2 x 6 motor screw"
+    },
+    {
+      "bom_type": "purchased",
+      "component_ref": "SCR1",
+      "description": "M2x6 steel button head screw: 16 motor screws (4 per motor) + 8 standoff screws (top and bottom)",
+      "file": "components/SCR1.stl",
+      "kind": "component",
+      "mass_g": 0.2,
+      "material": null,
+      "name": "Motor 3 screw 3",
+      "part_number": "BH-M2x6MM",
+      "pose": [
+        1.0,
+        0.0,
+        0.0,
+        -50.46,
+        0.0,
+        1.0,
+        0.0,
+        -50.46,
+        0.0,
+        0.0,
+        1.0,
+        -1.3
+      ],
+      "position_mm": [
+        -50.46,
+        -50.46,
+        -1.3
+      ],
+      "properties": {
+        "category": "fastener",
+        "manufacturer": "RMRC (ReadyMadeRC)",
+        "mass_g": "0.2",
+        "mpn": "BH-M2x6MM"
+      },
+      "qty": 1,
+      "ref": "SCR1",
+      "role": "M2 x 6 motor screw"
+    },
+    {
+      "bom_type": "purchased",
+      "component_ref": "SCR1",
+      "description": "M2x6 steel button head screw: 16 motor screws (4 per motor) + 8 standoff screws (top and bottom)",
+      "file": "components/SCR1.stl",
+      "kind": "component",
+      "mass_g": 0.2,
+      "material": null,
+      "name": "Motor 3 screw 4",
+      "part_number": "BH-M2x6MM",
+      "pose": [
+        1.0,
+        0.0,
+        0.0,
+        -50.46,
+        0.0,
+        1.0,
+        0.0,
+        -41.46,
+        0.0,
+        0.0,
+        1.0,
+        -1.3
+      ],
+      "position_mm": [
+        -50.46,
+        -41.46,
+        -1.3
+      ],
+      "properties": {
+        "category": "fastener",
+        "manufacturer": "RMRC (ReadyMadeRC)",
+        "mass_g": "0.2",
+        "mpn": "BH-M2x6MM"
+      },
+      "qty": 1,
+      "ref": "SCR1",
+      "role": "M2 x 6 motor screw"
+    },
+    {
+      "bom_type": "purchased",
+      "component_ref": "M1",
+      "description": "1404 brushless outrunner, 4600 KV, 3-inch class",
+      "file": "components/M1.stl",
+      "kind": "component",
+      "mass_g": 9.34,
+      "material": null,
+      "name": "Motor 4 (ccw)",
+      "part_number": "F1404 KV4600",
+      "pose": [
+        1.0,
+        0.0,
+        0.0,
+        -45.96,
+        0.0,
+        1.0,
+        0.0,
+        45.96,
+        0.0,
+        0.0,
+        1.0,
+        4.0
+      ],
+      "position_mm": [
+        -45.96,
+        45.96,
+        4.0
+      ],
+      "properties": {
+        "category": "motor",
+        "manufacturer": "T-Motor",
+        "mass_g": "9.34",
+        "mpn": "F1404 KV4600"
+      },
+      "qty": 1,
+      "ref": "M1",
+      "role": "motor on the arm pad, four M2 x 6 from below"
+    },
+    {
+      "bom_type": "purchased",
+      "component_ref": "P1",
+      "description": "3 in tri-blade durable PC prop, 1.6 in pitch, 1.5 mm hub (2 CW + 2 CCW per pack)",
+      "file": "components/P1.stl",
+      "kind": "component",
+      "mass_g": 1.18,
+      "material": null,
+      "name": "Prop 4 (ccw)",
+      "part_number": "Hurricane 3016-3 (1.5mm)",
+      "pose": [
+        1.0,
+        0.0,
+        0.0,
+        -45.96,
+        0.0,
+        1.0,
+        0.0,
+        45.96,
+        0.0,
+        0.0,
+        1.0,
+        20.6
+      ],
+      "position_mm": [
+        -45.96,
+        45.96,
+        20.6
+      ],
+      "properties": {
+        "category": "propeller",
+        "manufacturer": "Gemfan",
+        "mass_g": "1.18",
+        "mpn": "Hurricane 3016-3 (1.5mm)"
+      },
+      "qty": 1,
+      "ref": "P1",
+      "role": "prop on the motor shaft"
+    },
+    {
+      "bom_type": "purchased",
+      "component_ref": "SCR1",
+      "description": "M2x6 steel button head screw: 16 motor screws (4 per motor) + 8 standoff screws (top and bottom)",
+      "file": "components/SCR1.stl",
+      "kind": "component",
+      "mass_g": 0.2,
+      "material": null,
+      "name": "Motor 4 screw 1",
+      "part_number": "BH-M2x6MM",
+      "pose": [
+        1.0,
+        0.0,
+        0.0,
+        -41.46,
+        0.0,
+        1.0,
+        0.0,
+        50.46,
+        0.0,
+        0.0,
+        1.0,
+        -1.3
+      ],
+      "position_mm": [
+        -41.46,
+        50.46,
+        -1.3
+      ],
+      "properties": {
+        "category": "fastener",
+        "manufacturer": "RMRC (ReadyMadeRC)",
+        "mass_g": "0.2",
+        "mpn": "BH-M2x6MM"
+      },
+      "qty": 1,
+      "ref": "SCR1",
+      "role": "M2 x 6 motor screw"
+    },
+    {
+      "bom_type": "purchased",
+      "component_ref": "SCR1",
+      "description": "M2x6 steel button head screw: 16 motor screws (4 per motor) + 8 standoff screws (top and bottom)",
+      "file": "components/SCR1.stl",
+      "kind": "component",
+      "mass_g": 0.2,
+      "material": null,
+      "name": "Motor 4 screw 2",
+      "part_number": "BH-M2x6MM",
+      "pose": [
+        1.0,
+        0.0,
+        0.0,
+        -41.46,
+        0.0,
+        1.0,
+        0.0,
+        41.46,
+        0.0,
+        0.0,
+        1.0,
+        -1.3
+      ],
+      "position_mm": [
+        -41.46,
+        41.46,
+        -1.3
+      ],
+      "properties": {
+        "category": "fastener",
+        "manufacturer": "RMRC (ReadyMadeRC)",
+        "mass_g": "0.2",
+        "mpn": "BH-M2x6MM"
+      },
+      "qty": 1,
+      "ref": "SCR1",
+      "role": "M2 x 6 motor screw"
+    },
+    {
+      "bom_type": "purchased",
+      "component_ref": "SCR1",
+      "description": "M2x6 steel button head screw: 16 motor screws (4 per motor) + 8 standoff screws (top and bottom)",
+      "file": "components/SCR1.stl",
+      "kind": "component",
+      "mass_g": 0.2,
+      "material": null,
+      "name": "Motor 4 screw 3",
+      "part_number": "BH-M2x6MM",
+      "pose": [
+        1.0,
+        0.0,
+        0.0,
+        -50.46,
+        0.0,
+        1.0,
+        0.0,
+        41.46,
+        0.0,
+        0.0,
+        1.0,
+        -1.3
+      ],
+      "position_mm": [
+        -50.46,
+        41.46,
+        -1.3
+      ],
+      "properties": {
+        "category": "fastener",
+        "manufacturer": "RMRC (ReadyMadeRC)",
+        "mass_g": "0.2",
+        "mpn": "BH-M2x6MM"
+      },
+      "qty": 1,
+      "ref": "SCR1",
+      "role": "M2 x 6 motor screw"
+    },
+    {
+      "bom_type": "purchased",
+      "component_ref": "SCR1",
+      "description": "M2x6 steel button head screw: 16 motor screws (4 per motor) + 8 standoff screws (top and bottom)",
+      "file": "components/SCR1.stl",
+      "kind": "component",
+      "mass_g": 0.2,
+      "material": null,
+      "name": "Motor 4 screw 4",
+      "part_number": "BH-M2x6MM",
+      "pose": [
+        1.0,
+        0.0,
+        0.0,
+        -50.46,
+        0.0,
+        1.0,
+        0.0,
+        50.46,
+        0.0,
+        0.0,
+        1.0,
+        -1.3
+      ],
+      "position_mm": [
+        -50.46,
+        50.46,
+        -1.3
+      ],
+      "properties": {
+        "category": "fastener",
+        "manufacturer": "RMRC (ReadyMadeRC)",
+        "mass_g": "0.2",
+        "mpn": "BH-M2x6MM"
+      },
+      "qty": 1,
+      "ref": "SCR1",
+      "role": "M2 x 6 motor screw"
+    },
+    {
+      "bom_type": "purchased",
+      "component_ref": "STK1",
+      "description": "F405 Mini BLS 35A 20x20 stack: F405 Mini flight controller + BLS 35A Mini V2 4-in-1 ESC (one SKU, two boards)",
+      "file": "components/STK1.stl",
+      "kind": "component",
+      "mass_g": 13.5,
+      "material": null,
+      "name": "FC + ESC stack",
+      "part_number": "SB-F4MINI-STACK",
+      "pose": [
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0
+      ],
+      "position_mm": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "properties": {
+        "category": "mcu",
+        "manufacturer": "SpeedyBee",
+        "mass_g": "13.5",
+        "mpn": "SB-F4MINI-STACK"
+      },
+      "qty": 1,
+      "ref": "STK1",
+      "role": "20 x 20 stack on four M2 x 25 bolts and gummies"
+    },
+    {
+      "bom_type": "purchased",
+      "component_ref": "VTX1",
+      "description": "Analog 5.8 GHz video transmitter, stacks on the 20x20 pattern",
+      "file": "components/VTX1.stl",
+      "kind": "component",
+      "mass_g": 4.46,
+      "material": null,
+      "name": "Video transmitter",
+      "part_number": "Rush Tank Mini (25-800mW, 20x20, MMCX)",
+      "pose": [
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        20.65
+      ],
+      "position_mm": [
+        0.0,
+        0.0,
+        20.65
+      ],
+      "properties": {
+        "category": "radio",
+        "manufacturer": "RushFPV",
+        "mass_g": "4.46",
+        "mpn": "Rush Tank Mini (25-800mW, 20x20, MMCX)"
+      },
+      "qty": 1,
+      "ref": "VTX1",
+      "role": "on the stack bolts"
+    },
+    {
+      "bom_type": "purchased",
+      "component_ref": "CAM1",
+      "description": "Nano analog FPV camera, 1200TVL, 1.8 mm lens, 165 deg FOV, global WDR, OSD",
+      "file": "components/CAM1.stl",
+      "kind": "component",
+      "mass_g": 2.0,
+      "material": null,
+      "name": "FPV camera",
+      "part_number": "Caddx Ant 1200TVL 1.8mm (14x14)",
+      "pose": [
+        1.0,
+        0.0,
+        0.0,
+        23.5,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        25.0
+      ],
+      "position_mm": [
+        23.5,
+        0.0,
+        25.0
+      ],
+      "properties": {
+        "category": "camera",
+        "manufacturer": "Caddx",
+        "mass_g": "2",
+        "mpn": "Caddx Ant 1200TVL 1.8mm (14x14)"
+      },
+      "qty": 1,
+      "ref": "CAM1",
+      "role": "between the cage's camera pads, M2 x 3 each side"
+    },
+    {
+      "bom_type": "purchased",
+      "component_ref": "RX1",
+      "description": "ExpressLRS 2.4 GHz nano receiver, CRSF, U.FL with 65 mm T antenna",
+      "file": "components/RX1.stl",
+      "kind": "component",
+      "mass_g": 2.2,
+      "material": null,
+      "name": "Receiver",
+      "part_number": "RP1 V2",
+      "pose": [
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        25.5
+      ],
+      "position_mm": [
+        0.0,
+        0.0,
+        25.5
+      ],
+      "properties": {
+        "category": "radio",
+        "manufacturer": "RadioMaster",
+        "mass_g": "2.2",
+        "mpn": "RP1 V2"
+      },
+      "qty": 1,
+      "ref": "RX1",
+      "role": "between the stack bolts under the XIAO"
+    },
+    {
+      "bom_type": "purchased",
+      "component_ref": "MCU2",
+      "description": "XIAO ESP32S3 companion computer (planner, obstacle detection, MSP to the FC), from the sim",
+      "file": "components/MCU2.stl",
+      "kind": "component",
+      "mass_g": 3.0,
+      "material": null,
+      "name": "XIAO ESP32S3",
+      "part_number": "113991114",
+      "pose": [
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        30.15
+      ],
+      "position_mm": [
+        0.0,
+        0.0,
+        30.15
+      ],
+      "properties": {
+        "category": "mcu",
+        "manufacturer": "Seeed Studio",
+        "mass_g": "3",
+        "mpn": "113991114"
+      },
+      "qty": 1,
+      "ref": "MCU2",
+      "role": "over the stack under the battery tray"
+    },
+    {
+      "bom_type": "purchased",
+      "component_ref": "B1",
+      "description": "4S 650 mAh LiPo, 80C, XT30",
+      "file": "components/B1.stl",
+      "kind": "component",
+      "mass_g": 79.0,
+      "material": null,
+      "name": "Battery 4S 650 mAh",
+      "part_number": "GNB 14.8V 4S 650mAh 80C XT30 (square)",
+      "pose": [
+        1.0,
+        0.0,
+        0.0,
+        2.5,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        47.5
+      ],
+      "position_mm": [
+        2.5,
+        0.0,
+        47.5
+      ],
+      "properties": {
+        "category": "battery",
+        "manufacturer": "Gaoneng (GNB)",
+        "mass_g": "79",
+        "mpn": "GNB 14.8V 4S 650mAh 80C XT30 (square)"
+      },
+      "qty": 1,
+      "ref": "B1",
+      "role": "on the cage tray, strapped"
+    },
+    {
+      "bom_type": "purchased",
+      "component_ref": "C1",
+      "description": "470 uF 35 V low-impedance aluminium electrolytic, radial, across the ESC battery pads",
+      "file": "components/C1.stl",
+      "kind": "component",
+      "mass_g": 2.0,
+      "material": null,
+      "name": "Low-ESR capacitor",
+      "part_number": "EEU-FR1V471",
+      "pose": [
+        1.0,
+        0.0,
+        0.0,
+        -26.75,
+        0.0,
+        1.0,
+        0.0,
+        18.8,
+        0.0,
+        0.0,
+        1.0,
+        10.0
+      ],
+      "position_mm": [
+        -26.75,
+        18.8,
+        10.0
+      ],
+      "properties": {
+        "category": "power",
+        "manufacturer": "Panasonic",
+        "mass_g": "2",
+        "mpn": "EEU-FR1V471"
+      },
+      "qty": 1,
+      "ref": "C1",
+      "role": "left rear bay, across the ESC battery pads"
+    },
+    {
+      "bom_type": "purchased",
+      "component_ref": "J1",
+      "description": "XT30U male to bare wire, 18 AWG silicone, 10 cm, battery lead to the ESC",
+      "file": "components/J1.stl",
+      "kind": "component",
+      "mass_g": 3.0,
+      "material": null,
+      "name": "XT30 pigtail",
+      "part_number": "XT30U-M pigtail 18AWG 10cm (3 pcs)",
+      "pose": [
+        1.0,
+        0.0,
+        0.0,
+        -26.75,
+        0.0,
+        1.0,
+        0.0,
+        -18.8,
+        0.0,
+        0.0,
+        1.0,
+        10.0
+      ],
+      "position_mm": [
+        -26.75,
+        -18.8,
+        10.0
+      ],
+      "properties": {
+        "category": "connector",
+        "manufacturer": "Amass connector (pigtail by Lumenier/GetFPV)",
+        "mass_g": "3",
+        "mpn": "XT30U-M pigtail 18AWG 10cm (3 pcs)"
+      },
+      "qty": 1,
+      "ref": "J1",
+      "role": "right rear bay (lead not drawn)"
+    },
+    {
+      "bom_type": "purchased",
+      "component_ref": "TOF1",
+      "description": "VL53L1X time-of-flight carrier with regulator, 400 cm max, obstacle sensing ring (from the sim)",
+      "file": "components/TOF1_front.stl",
+      "kind": "component",
+      "mass_g": 0.5,
+      "material": null,
+      "name": "ToF front",
+      "part_number": "3415",
+      "pose": [
+        1.0,
+        0.0,
+        0.0,
+        29.4,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        10.85
+      ],
+      "position_mm": [
+        29.4,
+        0.0,
+        10.85
+      ],
+      "properties": {
+        "category": "sensor",
+        "manufacturer": "Pololu (ST VL53L1X)",
+        "mass_g": "0.5",
+        "mpn": "3415"
+      },
+      "qty": 1,
+      "ref": "TOF1",
+      "role": "ToF board on its cage pad, window in front"
+    },
+    {
+      "bom_type": "purchased",
+      "component_ref": "TOF1",
+      "description": "VL53L1X time-of-flight carrier with regulator, 400 cm max, obstacle sensing ring (from the sim)",
+      "file": "components/TOF1_rear.stl",
+      "kind": "component",
+      "mass_g": 0.5,
+      "material": null,
+      "name": "ToF rear",
+      "part_number": "3415",
+      "pose": [
+        1.0,
+        0.0,
+        0.0,
+        -38.9,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        10.85
+      ],
+      "position_mm": [
+        -38.9,
+        0.0,
+        10.85
+      ],
+      "properties": {
+        "category": "sensor",
+        "manufacturer": "Pololu (ST VL53L1X)",
+        "mass_g": "0.5",
+        "mpn": "3415"
+      },
+      "qty": 1,
+      "ref": "TOF1",
+      "role": "ToF board on its cage pad, window in front"
+    },
+    {
+      "bom_type": "purchased",
+      "component_ref": "TOF1",
+      "description": "VL53L1X time-of-flight carrier with regulator, 400 cm max, obstacle sensing ring (from the sim)",
+      "file": "components/TOF1_left.stl",
+      "kind": "component",
+      "mass_g": 0.5,
+      "material": null,
+      "name": "ToF left",
+      "part_number": "3415",
+      "pose": [
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        21.1,
+        0.0,
+        0.0,
+        1.0,
+        11.35
+      ],
+      "position_mm": [
+        0.0,
+        21.1,
+        11.35
+      ],
+      "properties": {
+        "category": "sensor",
+        "manufacturer": "Pololu (ST VL53L1X)",
+        "mass_g": "0.5",
+        "mpn": "3415"
+      },
+      "qty": 1,
+      "ref": "TOF1",
+      "role": "ToF board on its cage pad, window in front"
+    },
+    {
+      "bom_type": "purchased",
+      "component_ref": "TOF1",
+      "description": "VL53L1X time-of-flight carrier with regulator, 400 cm max, obstacle sensing ring (from the sim)",
+      "file": "components/TOF1_right.stl",
+      "kind": "component",
+      "mass_g": 0.5,
+      "material": null,
+      "name": "ToF right",
+      "part_number": "3415",
+      "pose": [
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        -21.1,
+        0.0,
+        0.0,
+        1.0,
+        11.35
+      ],
+      "position_mm": [
+        0.0,
+        -21.1,
+        11.35
+      ],
+      "properties": {
+        "category": "sensor",
+        "manufacturer": "Pololu (ST VL53L1X)",
+        "mass_g": "0.5",
+        "mpn": "3415"
+      },
+      "qty": 1,
+      "ref": "TOF1",
+      "role": "ToF board on its cage pad, window in front"
+    },
+    {
+      "bom_type": "purchased",
+      "component_ref": "TOF1",
+      "description": "VL53L1X time-of-flight carrier with regulator, 400 cm max, obstacle sensing ring (from the sim)",
+      "file": "components/TOF1_up.stl",
+      "kind": "component",
+      "mass_g": 0.5,
+      "material": null,
+      "name": "ToF up",
+      "part_number": "3415",
+      "pose": [
+        1.0,
+        0.0,
+        0.0,
+        -33.65,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        36.0
+      ],
+      "position_mm": [
+        -33.65,
+        0.0,
+        36.0
+      ],
+      "properties": {
+        "category": "sensor",
+        "manufacturer": "Pololu (ST VL53L1X)",
+        "mass_g": "0.5",
+        "mpn": "3415"
+      },
+      "qty": 1,
+      "ref": "TOF1",
+      "role": "ToF board on its cage pad, window in front"
+    },
+    {
+      "bom_type": "purchased",
+      "component_ref": "TOF1",
+      "description": "VL53L1X time-of-flight carrier with regulator, 400 cm max, obstacle sensing ring (from the sim)",
+      "file": "components/TOF1_down.stl",
+      "kind": "component",
+      "mass_g": 0.5,
+      "material": null,
+      "name": "ToF down",
+      "part_number": "3415",
+      "pose": [
+        1.0,
+        0.0,
+        0.0,
+        -28.1,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        5.1
+      ],
+      "position_mm": [
+        -28.1,
+        0.0,
+        5.1
+      ],
+      "properties": {
+        "category": "sensor",
+        "manufacturer": "Pololu (ST VL53L1X)",
+        "mass_g": "0.5",
+        "mpn": "3415"
+      },
+      "qty": 1,
+      "ref": "TOF1",
+      "role": "ToF board on its cage pad, window in front"
+    },
+    {
+      "bom_type": "purchased",
+      "component_ref": "ANT1",
+      "description": "5.8 GHz omni antenna, 2.6 dBi, MMCX straight",
+      "file": "components/ANT1.stl",
+      "kind": "component",
+      "mass_g": 2.8,
+      "material": null,
+      "name": "Video antenna",
+      "part_number": "Lollipop V4 Plus 5.8GHz straight MMCX LHCP (2 pack)",
+      "pose": [
+        1.0,
+        0.0,
+        0.0,
+        -14.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        20.0
+      ],
+      "position_mm": [
+        -14.0,
+        0.0,
+        20.0
+      ],
+      "properties": {
+        "category": "radio",
+        "manufacturer": "Foxeer",
+        "mass_g": "2.8",
+        "mpn": "Lollipop V4 Plus 5.8GHz straight MMCX LHCP (2 pack)"
+      },
+      "qty": 1,
+      "ref": "ANT1",
+      "role": "MMCX on the VTX, out of the back"
+    },
+    {
+      "bom_type": "purchased",
+      "component_ref": "SO1",
+      "description": "M2 female-female round knurled aluminium standoff, 20 mm, between frame bottom and top plates",
+      "file": "components/SO1.stl",
+      "kind": "component",
+      "mass_g": 0.5,
+      "material": null,
+      "name": "Standoff 1",
+      "part_number": "M2 knurled aluminium standoff 20mm (5 pcs)",
+      "pose": [
+        1.0,
+        0.0,
+        0.0,
+        21.0,
+        0.0,
+        1.0,
+        0.0,
+        10.0,
+        0.0,
+        0.0,
+        1.0,
+        4.0
+      ],
+      "position_mm": [
+        21.0,
+        10.0,
+        4.0
+      ],
+      "properties": {
+        "category": "fastener",
+        "manufacturer": "Pyrodrone (unbranded)",
+        "mass_g": "0.5",
+        "mpn": "M2 knurled aluminium standoff 20mm (5 pcs)"
+      },
+      "qty": 1,
+      "ref": "SO1",
+      "role": "plate to cage"
+    },
+    {
+      "bom_type": "purchased",
+      "component_ref": "SCR1",
+      "description": "M2x6 steel button head screw: 16 motor screws (4 per motor) + 8 standoff screws (top and bottom)",
+      "file": "components/SCR1.stl",
+      "kind": "component",
+      "mass_g": 0.2,
+      "material": null,
+      "name": "Standoff 1 bottom screw",
+      "part_number": "BH-M2x6MM",
+      "pose": [
+        1.0,
+        0.0,
+        0.0,
+        21.0,
+        0.0,
+        1.0,
+        0.0,
+        10.0,
+        0.0,
+        0.0,
+        1.0,
+        -1.3
+      ],
+      "position_mm": [
+        21.0,
+        10.0,
+        -1.3
+      ],
+      "properties": {
+        "category": "fastener",
+        "manufacturer": "RMRC (ReadyMadeRC)",
+        "mass_g": "0.2",
+        "mpn": "BH-M2x6MM"
+      },
+      "qty": 1,
+      "ref": "SCR1",
+      "role": "M2 x 6 up into the standoff"
+    },
+    {
+      "bom_type": "purchased",
+      "component_ref": "SCR1",
+      "description": "M2x6 steel button head screw: 16 motor screws (4 per motor) + 8 standoff screws (top and bottom)",
+      "file": "components/SCR1.stl",
+      "kind": "component",
+      "mass_g": 0.2,
+      "material": null,
+      "name": "Standoff 1 top screw",
+      "part_number": "BH-M2x6MM",
+      "pose": [
+        1.0,
+        0.0,
+        0.0,
+        21.0,
+        0.0,
+        -1.0,
+        -1.2246467991473532e-16,
+        10.0,
+        0.0,
+        1.2246467991473532e-16,
+        -1.0,
+        28.3
+      ],
+      "position_mm": [
+        21.0,
+        10.0,
+        28.3
+      ],
+      "properties": {
+        "category": "fastener",
+        "manufacturer": "RMRC (ReadyMadeRC)",
+        "mass_g": "0.2",
+        "mpn": "BH-M2x6MM"
+      },
+      "qty": 1,
+      "ref": "SCR1",
+      "role": "M2 x 6 down through the cage foot"
+    },
+    {
+      "bom_type": "purchased",
+      "component_ref": "SO1",
+      "description": "M2 female-female round knurled aluminium standoff, 20 mm, between frame bottom and top plates",
+      "file": "components/SO1.stl",
+      "kind": "component",
+      "mass_g": 0.5,
+      "material": null,
+      "name": "Standoff 2",
+      "part_number": "M2 knurled aluminium standoff 20mm (5 pcs)",
+      "pose": [
+        1.0,
+        0.0,
+        0.0,
+        21.0,
+        0.0,
+        1.0,
+        0.0,
+        -10.0,
+        0.0,
+        0.0,
+        1.0,
+        4.0
+      ],
+      "position_mm": [
+        21.0,
+        -10.0,
+        4.0
+      ],
+      "properties": {
+        "category": "fastener",
+        "manufacturer": "Pyrodrone (unbranded)",
+        "mass_g": "0.5",
+        "mpn": "M2 knurled aluminium standoff 20mm (5 pcs)"
+      },
+      "qty": 1,
+      "ref": "SO1",
+      "role": "plate to cage"
+    },
+    {
+      "bom_type": "purchased",
+      "component_ref": "SCR1",
+      "description": "M2x6 steel button head screw: 16 motor screws (4 per motor) + 8 standoff screws (top and bottom)",
+      "file": "components/SCR1.stl",
+      "kind": "component",
+      "mass_g": 0.2,
+      "material": null,
+      "name": "Standoff 2 bottom screw",
+      "part_number": "BH-M2x6MM",
+      "pose": [
+        1.0,
+        0.0,
+        0.0,
+        21.0,
+        0.0,
+        1.0,
+        0.0,
+        -10.0,
+        0.0,
+        0.0,
+        1.0,
+        -1.3
+      ],
+      "position_mm": [
+        21.0,
+        -10.0,
+        -1.3
+      ],
+      "properties": {
+        "category": "fastener",
+        "manufacturer": "RMRC (ReadyMadeRC)",
+        "mass_g": "0.2",
+        "mpn": "BH-M2x6MM"
+      },
+      "qty": 1,
+      "ref": "SCR1",
+      "role": "M2 x 6 up into the standoff"
+    },
+    {
+      "bom_type": "purchased",
+      "component_ref": "SCR1",
+      "description": "M2x6 steel button head screw: 16 motor screws (4 per motor) + 8 standoff screws (top and bottom)",
+      "file": "components/SCR1.stl",
+      "kind": "component",
+      "mass_g": 0.2,
+      "material": null,
+      "name": "Standoff 2 top screw",
+      "part_number": "BH-M2x6MM",
+      "pose": [
+        1.0,
+        0.0,
+        0.0,
+        21.0,
+        0.0,
+        -1.0,
+        -1.2246467991473532e-16,
+        -10.0,
+        0.0,
+        1.2246467991473532e-16,
+        -1.0,
+        28.3
+      ],
+      "position_mm": [
+        21.0,
+        -10.0,
+        28.3
+      ],
+      "properties": {
+        "category": "fastener",
+        "manufacturer": "RMRC (ReadyMadeRC)",
+        "mass_g": "0.2",
+        "mpn": "BH-M2x6MM"
+      },
+      "qty": 1,
+      "ref": "SCR1",
+      "role": "M2 x 6 down through the cage foot"
+    },
+    {
+      "bom_type": "purchased",
+      "component_ref": "SO1",
+      "description": "M2 female-female round knurled aluminium standoff, 20 mm, between frame bottom and top plates",
+      "file": "components/SO1.stl",
+      "kind": "component",
+      "mass_g": 0.5,
+      "material": null,
+      "name": "Standoff 3",
+      "part_number": "M2 knurled aluminium standoff 20mm (5 pcs)",
+      "pose": [
+        1.0,
+        0.0,
+        0.0,
+        -21.0,
+        0.0,
+        1.0,
+        0.0,
+        -10.0,
+        0.0,
+        0.0,
+        1.0,
+        4.0
+      ],
+      "position_mm": [
+        -21.0,
+        -10.0,
+        4.0
+      ],
+      "properties": {
+        "category": "fastener",
+        "manufacturer": "Pyrodrone (unbranded)",
+        "mass_g": "0.5",
+        "mpn": "M2 knurled aluminium standoff 20mm (5 pcs)"
+      },
+      "qty": 1,
+      "ref": "SO1",
+      "role": "plate to cage"
+    },
+    {
+      "bom_type": "purchased",
+      "component_ref": "SCR1",
+      "description": "M2x6 steel button head screw: 16 motor screws (4 per motor) + 8 standoff screws (top and bottom)",
+      "file": "components/SCR1.stl",
+      "kind": "component",
+      "mass_g": 0.2,
+      "material": null,
+      "name": "Standoff 3 bottom screw",
+      "part_number": "BH-M2x6MM",
+      "pose": [
+        1.0,
+        0.0,
+        0.0,
+        -21.0,
+        0.0,
+        1.0,
+        0.0,
+        -10.0,
+        0.0,
+        0.0,
+        1.0,
+        -1.3
+      ],
+      "position_mm": [
+        -21.0,
+        -10.0,
+        -1.3
+      ],
+      "properties": {
+        "category": "fastener",
+        "manufacturer": "RMRC (ReadyMadeRC)",
+        "mass_g": "0.2",
+        "mpn": "BH-M2x6MM"
+      },
+      "qty": 1,
+      "ref": "SCR1",
+      "role": "M2 x 6 up into the standoff"
+    },
+    {
+      "bom_type": "purchased",
+      "component_ref": "SCR1",
+      "description": "M2x6 steel button head screw: 16 motor screws (4 per motor) + 8 standoff screws (top and bottom)",
+      "file": "components/SCR1.stl",
+      "kind": "component",
+      "mass_g": 0.2,
+      "material": null,
+      "name": "Standoff 3 top screw",
+      "part_number": "BH-M2x6MM",
+      "pose": [
+        1.0,
+        0.0,
+        0.0,
+        -21.0,
+        0.0,
+        -1.0,
+        -1.2246467991473532e-16,
+        -10.0,
+        0.0,
+        1.2246467991473532e-16,
+        -1.0,
+        28.3
+      ],
+      "position_mm": [
+        -21.0,
+        -10.0,
+        28.3
+      ],
+      "properties": {
+        "category": "fastener",
+        "manufacturer": "RMRC (ReadyMadeRC)",
+        "mass_g": "0.2",
+        "mpn": "BH-M2x6MM"
+      },
+      "qty": 1,
+      "ref": "SCR1",
+      "role": "M2 x 6 down through the cage foot"
+    },
+    {
+      "bom_type": "purchased",
+      "component_ref": "SO1",
+      "description": "M2 female-female round knurled aluminium standoff, 20 mm, between frame bottom and top plates",
+      "file": "components/SO1.stl",
+      "kind": "component",
+      "mass_g": 0.5,
+      "material": null,
+      "name": "Standoff 4",
+      "part_number": "M2 knurled aluminium standoff 20mm (5 pcs)",
+      "pose": [
+        1.0,
+        0.0,
+        0.0,
+        -21.0,
+        0.0,
+        1.0,
+        0.0,
+        10.0,
+        0.0,
+        0.0,
+        1.0,
+        4.0
+      ],
+      "position_mm": [
+        -21.0,
+        10.0,
+        4.0
+      ],
+      "properties": {
+        "category": "fastener",
+        "manufacturer": "Pyrodrone (unbranded)",
+        "mass_g": "0.5",
+        "mpn": "M2 knurled aluminium standoff 20mm (5 pcs)"
+      },
+      "qty": 1,
+      "ref": "SO1",
+      "role": "plate to cage"
+    },
+    {
+      "bom_type": "purchased",
+      "component_ref": "SCR1",
+      "description": "M2x6 steel button head screw: 16 motor screws (4 per motor) + 8 standoff screws (top and bottom)",
+      "file": "components/SCR1.stl",
+      "kind": "component",
+      "mass_g": 0.2,
+      "material": null,
+      "name": "Standoff 4 bottom screw",
+      "part_number": "BH-M2x6MM",
+      "pose": [
+        1.0,
+        0.0,
+        0.0,
+        -21.0,
+        0.0,
+        1.0,
+        0.0,
+        10.0,
+        0.0,
+        0.0,
+        1.0,
+        -1.3
+      ],
+      "position_mm": [
+        -21.0,
+        10.0,
+        -1.3
+      ],
+      "properties": {
+        "category": "fastener",
+        "manufacturer": "RMRC (ReadyMadeRC)",
+        "mass_g": "0.2",
+        "mpn": "BH-M2x6MM"
+      },
+      "qty": 1,
+      "ref": "SCR1",
+      "role": "M2 x 6 up into the standoff"
+    },
+    {
+      "bom_type": "purchased",
+      "component_ref": "SCR1",
+      "description": "M2x6 steel button head screw: 16 motor screws (4 per motor) + 8 standoff screws (top and bottom)",
+      "file": "components/SCR1.stl",
+      "kind": "component",
+      "mass_g": 0.2,
+      "material": null,
+      "name": "Standoff 4 top screw",
+      "part_number": "BH-M2x6MM",
+      "pose": [
+        1.0,
+        0.0,
+        0.0,
+        -21.0,
+        0.0,
+        -1.0,
+        -1.2246467991473532e-16,
+        10.0,
+        0.0,
+        1.2246467991473532e-16,
+        -1.0,
+        28.3
+      ],
+      "position_mm": [
+        -21.0,
+        10.0,
+        28.3
+      ],
+      "properties": {
+        "category": "fastener",
+        "manufacturer": "RMRC (ReadyMadeRC)",
+        "mass_g": "0.2",
+        "mpn": "BH-M2x6MM"
+      },
+      "qty": 1,
+      "ref": "SCR1",
+      "role": "M2 x 6 down through the cage foot"
+    },
+    {
+      "bom_type": "purchased",
+      "component_ref": "SCR2",
+      "description": "M2x25 steel socket head stack bolts through bottom plate, ESC, FC and VTX (kit also supplies spare M2 nuts and lengths)",
+      "file": "components/SCR2.stl",
+      "kind": "component",
+      "mass_g": 0.6,
+      "material": null,
+      "name": "Stack bolt 1",
+      "part_number": "M2 Black Steel 280 Piece Nut & Bolt Kit",
+      "pose": [
+        1.0,
+        0.0,
+        0.0,
+        10.0,
+        0.0,
+        1.0,
+        0.0,
+        10.0,
+        0.0,
+        0.0,
+        1.0,
+        -2.0
+      ],
+      "position_mm": [
+        10.0,
+        10.0,
+        -2.0
+      ],
+      "properties": {
+        "category": "fastener",
+        "manufacturer": "RaceDayQuads",
+        "mass_g": "0.6",
+        "mpn": "M2 Black Steel 280 Piece Nut & Bolt Kit"
+      },
+      "qty": 1,
+      "ref": "SCR2",
+      "role": "M2 x 25 through plate, ESC, FC, VTX"
+    },
+    {
+      "bom_type": "purchased",
+      "component_ref": "NUT1",
+      "description": "M2 nylon-insert lock nut on top of the stack bolts",
+      "file": "components/NUT1.stl",
+      "kind": "component",
+      "mass_g": 0.2,
+      "material": null,
+      "name": "Stack nut 1",
+      "part_number": "M2 Nylock Nut (4 pcs)",
+      "pose": [
+        1.0,
+        0.0,
+        0.0,
+        10.0,
+        0.0,
+        1.0,
+        0.0,
+        10.0,
+        0.0,
+        0.0,
+        1.0,
+        22.4
+      ],
+      "position_mm": [
+        10.0,
+        10.0,
+        22.4
+      ],
+      "properties": {
+        "category": "fastener",
+        "manufacturer": "RaceDayQuads",
+        "mass_g": "0.2",
+        "mpn": "M2 Nylock Nut (4 pcs)"
+      },
+      "qty": 1,
+      "ref": "NUT1",
+      "role": "nylock on top of the VTX"
+    },
+    {
+      "bom_type": "purchased",
+      "component_ref": "GUM1",
+      "description": "Silicone soft-mount gummies, 4 under the ESC and 4 under the FC",
+      "file": "components/GUM1.stl",
+      "kind": "component",
+      "mass_g": 0.2,
+      "material": null,
+      "name": "Gummy ESC 1",
+      "part_number": "M2 x 6mm Anti-Vibration Mini 20x20 FC Soft Mount Standoff (4 pcs)",
+      "pose": [
+        1.0,
+        0.0,
+        0.0,
+        10.0,
+        0.0,
+        1.0,
+        0.0,
+        10.0,
+        0.0,
+        0.0,
+        1.0,
+        4.0
+      ],
+      "position_mm": [
+        10.0,
+        10.0,
+        4.0
+      ],
+      "properties": {
+        "category": "other",
+        "manufacturer": "RaceDayQuads",
+        "mass_g": "0.2",
+        "mpn": "M2 x 6mm Anti-Vibration Mini 20x20 FC Soft Mount Standoff (4 pcs)"
+      },
+      "qty": 1,
+      "ref": "GUM1",
+      "role": "under the ESC"
+    },
+    {
+      "bom_type": "purchased",
+      "component_ref": "GUM1",
+      "description": "Silicone soft-mount gummies, 4 under the ESC and 4 under the FC",
+      "file": "components/GUM1_2.stl",
+      "kind": "component",
+      "mass_g": 0.2,
+      "material": null,
+      "name": "Gummy FC 1",
+      "part_number": "M2 x 6mm Anti-Vibration Mini 20x20 FC Soft Mount Standoff (4 pcs)",
+      "pose": [
+        1.0,
+        0.0,
+        0.0,
+        10.0,
+        0.0,
+        1.0,
+        0.0,
+        10.0,
+        0.0,
+        0.0,
+        1.0,
+        10.5
+      ],
+      "position_mm": [
+        10.0,
+        10.0,
+        10.5
+      ],
+      "properties": {
+        "category": "other",
+        "manufacturer": "RaceDayQuads",
+        "mass_g": "0.2",
+        "mpn": "M2 x 6mm Anti-Vibration Mini 20x20 FC Soft Mount Standoff (4 pcs)"
+      },
+      "qty": 1,
+      "ref": "GUM1",
+      "role": "between the ESC and the FC"
+    },
+    {
+      "bom_type": "purchased",
+      "component_ref": "SCR2",
+      "description": "M2x25 steel socket head stack bolts through bottom plate, ESC, FC and VTX (kit also supplies spare M2 nuts and lengths)",
+      "file": "components/SCR2.stl",
+      "kind": "component",
+      "mass_g": 0.6,
+      "material": null,
+      "name": "Stack bolt 2",
+      "part_number": "M2 Black Steel 280 Piece Nut & Bolt Kit",
+      "pose": [
+        1.0,
+        0.0,
+        0.0,
+        10.0,
+        0.0,
+        1.0,
+        0.0,
+        -10.0,
+        0.0,
+        0.0,
+        1.0,
+        -2.0
+      ],
+      "position_mm": [
+        10.0,
+        -10.0,
+        -2.0
+      ],
+      "properties": {
+        "category": "fastener",
+        "manufacturer": "RaceDayQuads",
+        "mass_g": "0.6",
+        "mpn": "M2 Black Steel 280 Piece Nut & Bolt Kit"
+      },
+      "qty": 1,
+      "ref": "SCR2",
+      "role": "M2 x 25 through plate, ESC, FC, VTX"
+    },
+    {
+      "bom_type": "purchased",
+      "component_ref": "NUT1",
+      "description": "M2 nylon-insert lock nut on top of the stack bolts",
+      "file": "components/NUT1.stl",
+      "kind": "component",
+      "mass_g": 0.2,
+      "material": null,
+      "name": "Stack nut 2",
+      "part_number": "M2 Nylock Nut (4 pcs)",
+      "pose": [
+        1.0,
+        0.0,
+        0.0,
+        10.0,
+        0.0,
+        1.0,
+        0.0,
+        -10.0,
+        0.0,
+        0.0,
+        1.0,
+        22.4
+      ],
+      "position_mm": [
+        10.0,
+        -10.0,
+        22.4
+      ],
+      "properties": {
+        "category": "fastener",
+        "manufacturer": "RaceDayQuads",
+        "mass_g": "0.2",
+        "mpn": "M2 Nylock Nut (4 pcs)"
+      },
+      "qty": 1,
+      "ref": "NUT1",
+      "role": "nylock on top of the VTX"
+    },
+    {
+      "bom_type": "purchased",
+      "component_ref": "GUM1",
+      "description": "Silicone soft-mount gummies, 4 under the ESC and 4 under the FC",
+      "file": "components/GUM1.stl",
+      "kind": "component",
+      "mass_g": 0.2,
+      "material": null,
+      "name": "Gummy ESC 2",
+      "part_number": "M2 x 6mm Anti-Vibration Mini 20x20 FC Soft Mount Standoff (4 pcs)",
+      "pose": [
+        1.0,
+        0.0,
+        0.0,
+        10.0,
+        0.0,
+        1.0,
+        0.0,
+        -10.0,
+        0.0,
+        0.0,
+        1.0,
+        4.0
+      ],
+      "position_mm": [
+        10.0,
+        -10.0,
+        4.0
+      ],
+      "properties": {
+        "category": "other",
+        "manufacturer": "RaceDayQuads",
+        "mass_g": "0.2",
+        "mpn": "M2 x 6mm Anti-Vibration Mini 20x20 FC Soft Mount Standoff (4 pcs)"
+      },
+      "qty": 1,
+      "ref": "GUM1",
+      "role": "under the ESC"
+    },
+    {
+      "bom_type": "purchased",
+      "component_ref": "GUM1",
+      "description": "Silicone soft-mount gummies, 4 under the ESC and 4 under the FC",
+      "file": "components/GUM1_2.stl",
+      "kind": "component",
+      "mass_g": 0.2,
+      "material": null,
+      "name": "Gummy FC 2",
+      "part_number": "M2 x 6mm Anti-Vibration Mini 20x20 FC Soft Mount Standoff (4 pcs)",
+      "pose": [
+        1.0,
+        0.0,
+        0.0,
+        10.0,
+        0.0,
+        1.0,
+        0.0,
+        -10.0,
+        0.0,
+        0.0,
+        1.0,
+        10.5
+      ],
+      "position_mm": [
+        10.0,
+        -10.0,
+        10.5
+      ],
+      "properties": {
+        "category": "other",
+        "manufacturer": "RaceDayQuads",
+        "mass_g": "0.2",
+        "mpn": "M2 x 6mm Anti-Vibration Mini 20x20 FC Soft Mount Standoff (4 pcs)"
+      },
+      "qty": 1,
+      "ref": "GUM1",
+      "role": "between the ESC and the FC"
+    },
+    {
+      "bom_type": "purchased",
+      "component_ref": "SCR2",
+      "description": "M2x25 steel socket head stack bolts through bottom plate, ESC, FC and VTX (kit also supplies spare M2 nuts and lengths)",
+      "file": "components/SCR2.stl",
+      "kind": "component",
+      "mass_g": 0.6,
+      "material": null,
+      "name": "Stack bolt 3",
+      "part_number": "M2 Black Steel 280 Piece Nut & Bolt Kit",
+      "pose": [
+        1.0,
+        0.0,
+        0.0,
+        -10.0,
+        0.0,
+        1.0,
+        0.0,
+        -10.0,
+        0.0,
+        0.0,
+        1.0,
+        -2.0
+      ],
+      "position_mm": [
+        -10.0,
+        -10.0,
+        -2.0
+      ],
+      "properties": {
+        "category": "fastener",
+        "manufacturer": "RaceDayQuads",
+        "mass_g": "0.6",
+        "mpn": "M2 Black Steel 280 Piece Nut & Bolt Kit"
+      },
+      "qty": 1,
+      "ref": "SCR2",
+      "role": "M2 x 25 through plate, ESC, FC, VTX"
+    },
+    {
+      "bom_type": "purchased",
+      "component_ref": "NUT1",
+      "description": "M2 nylon-insert lock nut on top of the stack bolts",
+      "file": "components/NUT1.stl",
+      "kind": "component",
+      "mass_g": 0.2,
+      "material": null,
+      "name": "Stack nut 3",
+      "part_number": "M2 Nylock Nut (4 pcs)",
+      "pose": [
+        1.0,
+        0.0,
+        0.0,
+        -10.0,
+        0.0,
+        1.0,
+        0.0,
+        -10.0,
+        0.0,
+        0.0,
+        1.0,
+        22.4
+      ],
+      "position_mm": [
+        -10.0,
+        -10.0,
+        22.4
+      ],
+      "properties": {
+        "category": "fastener",
+        "manufacturer": "RaceDayQuads",
+        "mass_g": "0.2",
+        "mpn": "M2 Nylock Nut (4 pcs)"
+      },
+      "qty": 1,
+      "ref": "NUT1",
+      "role": "nylock on top of the VTX"
+    },
+    {
+      "bom_type": "purchased",
+      "component_ref": "GUM1",
+      "description": "Silicone soft-mount gummies, 4 under the ESC and 4 under the FC",
+      "file": "components/GUM1.stl",
+      "kind": "component",
+      "mass_g": 0.2,
+      "material": null,
+      "name": "Gummy ESC 3",
+      "part_number": "M2 x 6mm Anti-Vibration Mini 20x20 FC Soft Mount Standoff (4 pcs)",
+      "pose": [
+        1.0,
+        0.0,
+        0.0,
+        -10.0,
+        0.0,
+        1.0,
+        0.0,
+        -10.0,
+        0.0,
+        0.0,
+        1.0,
+        4.0
+      ],
+      "position_mm": [
+        -10.0,
+        -10.0,
+        4.0
+      ],
+      "properties": {
+        "category": "other",
+        "manufacturer": "RaceDayQuads",
+        "mass_g": "0.2",
+        "mpn": "M2 x 6mm Anti-Vibration Mini 20x20 FC Soft Mount Standoff (4 pcs)"
+      },
+      "qty": 1,
+      "ref": "GUM1",
+      "role": "under the ESC"
+    },
+    {
+      "bom_type": "purchased",
+      "component_ref": "GUM1",
+      "description": "Silicone soft-mount gummies, 4 under the ESC and 4 under the FC",
+      "file": "components/GUM1_2.stl",
+      "kind": "component",
+      "mass_g": 0.2,
+      "material": null,
+      "name": "Gummy FC 3",
+      "part_number": "M2 x 6mm Anti-Vibration Mini 20x20 FC Soft Mount Standoff (4 pcs)",
+      "pose": [
+        1.0,
+        0.0,
+        0.0,
+        -10.0,
+        0.0,
+        1.0,
+        0.0,
+        -10.0,
+        0.0,
+        0.0,
+        1.0,
+        10.5
+      ],
+      "position_mm": [
+        -10.0,
+        -10.0,
+        10.5
+      ],
+      "properties": {
+        "category": "other",
+        "manufacturer": "RaceDayQuads",
+        "mass_g": "0.2",
+        "mpn": "M2 x 6mm Anti-Vibration Mini 20x20 FC Soft Mount Standoff (4 pcs)"
+      },
+      "qty": 1,
+      "ref": "GUM1",
+      "role": "between the ESC and the FC"
+    },
+    {
+      "bom_type": "purchased",
+      "component_ref": "SCR2",
+      "description": "M2x25 steel socket head stack bolts through bottom plate, ESC, FC and VTX (kit also supplies spare M2 nuts and lengths)",
+      "file": "components/SCR2.stl",
+      "kind": "component",
+      "mass_g": 0.6,
+      "material": null,
+      "name": "Stack bolt 4",
+      "part_number": "M2 Black Steel 280 Piece Nut & Bolt Kit",
+      "pose": [
+        1.0,
+        0.0,
+        0.0,
+        -10.0,
+        0.0,
+        1.0,
+        0.0,
+        10.0,
+        0.0,
+        0.0,
+        1.0,
+        -2.0
+      ],
+      "position_mm": [
+        -10.0,
+        10.0,
+        -2.0
+      ],
+      "properties": {
+        "category": "fastener",
+        "manufacturer": "RaceDayQuads",
+        "mass_g": "0.6",
+        "mpn": "M2 Black Steel 280 Piece Nut & Bolt Kit"
+      },
+      "qty": 1,
+      "ref": "SCR2",
+      "role": "M2 x 25 through plate, ESC, FC, VTX"
+    },
+    {
+      "bom_type": "purchased",
+      "component_ref": "NUT1",
+      "description": "M2 nylon-insert lock nut on top of the stack bolts",
+      "file": "components/NUT1.stl",
+      "kind": "component",
+      "mass_g": 0.2,
+      "material": null,
+      "name": "Stack nut 4",
+      "part_number": "M2 Nylock Nut (4 pcs)",
+      "pose": [
+        1.0,
+        0.0,
+        0.0,
+        -10.0,
+        0.0,
+        1.0,
+        0.0,
+        10.0,
+        0.0,
+        0.0,
+        1.0,
+        22.4
+      ],
+      "position_mm": [
+        -10.0,
+        10.0,
+        22.4
+      ],
+      "properties": {
+        "category": "fastener",
+        "manufacturer": "RaceDayQuads",
+        "mass_g": "0.2",
+        "mpn": "M2 Nylock Nut (4 pcs)"
+      },
+      "qty": 1,
+      "ref": "NUT1",
+      "role": "nylock on top of the VTX"
+    },
+    {
+      "bom_type": "purchased",
+      "component_ref": "GUM1",
+      "description": "Silicone soft-mount gummies, 4 under the ESC and 4 under the FC",
+      "file": "components/GUM1.stl",
+      "kind": "component",
+      "mass_g": 0.2,
+      "material": null,
+      "name": "Gummy ESC 4",
+      "part_number": "M2 x 6mm Anti-Vibration Mini 20x20 FC Soft Mount Standoff (4 pcs)",
+      "pose": [
+        1.0,
+        0.0,
+        0.0,
+        -10.0,
+        0.0,
+        1.0,
+        0.0,
+        10.0,
+        0.0,
+        0.0,
+        1.0,
+        4.0
+      ],
+      "position_mm": [
+        -10.0,
+        10.0,
+        4.0
+      ],
+      "properties": {
+        "category": "other",
+        "manufacturer": "RaceDayQuads",
+        "mass_g": "0.2",
+        "mpn": "M2 x 6mm Anti-Vibration Mini 20x20 FC Soft Mount Standoff (4 pcs)"
+      },
+      "qty": 1,
+      "ref": "GUM1",
+      "role": "under the ESC"
+    },
+    {
+      "bom_type": "purchased",
+      "component_ref": "GUM1",
+      "description": "Silicone soft-mount gummies, 4 under the ESC and 4 under the FC",
+      "file": "components/GUM1_2.stl",
+      "kind": "component",
+      "mass_g": 0.2,
+      "material": null,
+      "name": "Gummy FC 4",
+      "part_number": "M2 x 6mm Anti-Vibration Mini 20x20 FC Soft Mount Standoff (4 pcs)",
+      "pose": [
+        1.0,
+        0.0,
+        0.0,
+        -10.0,
+        0.0,
+        1.0,
+        0.0,
+        10.0,
+        0.0,
+        0.0,
+        1.0,
+        10.5
+      ],
+      "position_mm": [
+        -10.0,
+        10.0,
+        10.5
+      ],
+      "properties": {
+        "category": "other",
+        "manufacturer": "RaceDayQuads",
+        "mass_g": "0.2",
+        "mpn": "M2 x 6mm Anti-Vibration Mini 20x20 FC Soft Mount Standoff (4 pcs)"
+      },
+      "qty": 1,
+      "ref": "GUM1",
+      "role": "between the ESC and the FC"
+    },
+    {
+      "bom_type": "purchased",
+      "component_ref": "SCR3",
+      "description": "M2x3 steel button head screws, camera side mounts (1 per side)",
+      "file": "components/SCR3.stl",
+      "kind": "component",
+      "mass_g": 0.1,
+      "material": null,
+      "name": "Camera screw left",
+      "part_number": "BH-M2x3MM",
+      "pose": [
+        1.0,
+        0.0,
+        0.0,
+        23.5,
+        0.0,
+        6.123233995736766e-17,
+        -1.0,
+        10.0,
+        0.0,
+        1.0,
+        6.123233995736766e-17,
+        25.0
+      ],
+      "position_mm": [
+        23.5,
+        10.0,
+        25.0
+      ],
+      "properties": {
+        "category": "fastener",
+        "manufacturer": "RMRC (ReadyMadeRC)",
+        "mass_g": "0.1",
+        "mpn": "BH-M2x3MM"
+      },
+      "qty": 1,
+      "ref": "SCR3",
+      "role": "M2 x 3 through the camera pad"
+    },
+    {
+      "bom_type": "purchased",
+      "component_ref": "SCR3",
+      "description": "M2x3 steel button head screws, camera side mounts (1 per side)",
+      "file": "components/SCR3.stl",
+      "kind": "component",
+      "mass_g": 0.1,
+      "material": null,
+      "name": "Camera screw right",
+      "part_number": "BH-M2x3MM",
+      "pose": [
+        1.0,
+        0.0,
+        0.0,
+        23.5,
+        0.0,
+        6.123233995736766e-17,
+        1.0,
+        -10.0,
+        0.0,
+        -1.0,
+        6.123233995736766e-17,
+        25.0
+      ],
+      "position_mm": [
+        23.5,
+        -10.0,
+        25.0
+      ],
+      "properties": {
+        "category": "fastener",
+        "manufacturer": "RMRC (ReadyMadeRC)",
+        "mass_g": "0.1",
+        "mpn": "BH-M2x3MM"
+      },
+      "qty": 1,
+      "ref": "SCR3",
+      "role": "M2 x 3 through the camera pad"
+    },
+    {
+      "bom_type": "purchased",
+      "component_ref": "STR1",
+      "description": "Battery strap for 2-3 inch builds, metal buckle",
+      "file": "components/STR1.stl",
+      "kind": "component",
+      "mass_g": 1.5,
+      "material": null,
+      "name": "Battery strap",
+      "part_number": "RDQ 155mm Micro Battery Strap V3 w/ Metal Buckle",
+      "pose": [
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0
+      ],
+      "position_mm": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "properties": {
+        "category": "other",
+        "manufacturer": "RaceDayQuads",
+        "mass_g": "1.5",
+        "mpn": "RDQ 155mm Micro Battery Strap V3 w/ Metal Buckle"
+      },
+      "qty": 1,
+      "ref": "STR1",
+      "role": "through the tray's two slots"
+    }
+  ],
+  "quantities": [
+    {
+      "component_ref": "STK1",
+      "file_qty": 1,
+      "matches": true,
+      "placed_or_listed": 1
+    },
+    {
+      "component_ref": "M1",
+      "file_qty": 4,
+      "matches": true,
+      "placed_or_listed": 4
+    },
+    {
+      "component_ref": "P1",
+      "file_qty": 4,
+      "matches": true,
+      "placed_or_listed": 4
+    },
+    {
+      "component_ref": "B1",
+      "file_qty": 1,
+      "matches": true,
+      "placed_or_listed": 1
+    },
+    {
+      "component_ref": "RX1",
+      "file_qty": 1,
+      "matches": true,
+      "placed_or_listed": 1
+    },
+    {
+      "component_ref": "VTX1",
+      "file_qty": 1,
+      "matches": true,
+      "placed_or_listed": 1
+    },
+    {
+      "component_ref": "CAM1",
+      "file_qty": 1,
+      "matches": true,
+      "placed_or_listed": 1
+    },
+    {
+      "component_ref": "ANT1",
+      "file_qty": 1,
+      "matches": true,
+      "placed_or_listed": 1
+    },
+    {
+      "component_ref": "C1",
+      "file_qty": 1,
+      "matches": true,
+      "placed_or_listed": 1
+    },
+    {
+      "component_ref": "J1",
+      "file_qty": 1,
+      "matches": true,
+      "placed_or_listed": 1
+    },
+    {
+      "component_ref": "SO1",
+      "file_qty": 4,
+      "matches": true,
+      "placed_or_listed": 4
+    },
+    {
+      "component_ref": "SCR1",
+      "file_qty": 24,
+      "matches": true,
+      "placed_or_listed": 24
+    },
+    {
+      "component_ref": "SCR2",
+      "file_qty": 4,
+      "matches": true,
+      "placed_or_listed": 4
+    },
+    {
+      "component_ref": "NUT1",
+      "file_qty": 4,
+      "matches": true,
+      "placed_or_listed": 4
+    },
+    {
+      "component_ref": "GUM1",
+      "file_qty": 8,
+      "matches": true,
+      "placed_or_listed": 8
+    },
+    {
+      "component_ref": "STR1",
+      "file_qty": 1,
+      "matches": true,
+      "placed_or_listed": 1
+    },
+    {
+      "component_ref": "SCR3",
+      "file_qty": 2,
+      "matches": true,
+      "placed_or_listed": 2
+    },
+    {
+      "component_ref": "MCU2",
+      "file_qty": 1,
+      "matches": true,
+      "placed_or_listed": 1
+    },
+    {
+      "component_ref": "TOF1",
+      "file_qty": 6,
+      "matches": true,
+      "placed_or_listed": 6
+    },
+    {
+      "component_ref": "FR1",
+      "file_qty": 1,
+      "matches": true,
+      "placed_or_listed": 1
+    }
+  ],
+  "schema": "viaform.assembly/1",
+  "units": {
+    "length": "mm",
+    "mass": "g",
+    "pose": "row-major 3x4, part frame in the assembly frame"
+  }
+}

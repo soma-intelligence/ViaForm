@@ -1,0 +1,13 @@
+[package]
+name = "viaform-fluid"
+description = "ViaForm's lattice Boltzmann fluid engine: D3Q19 on voxels, BGK and regularized collision, Smagorinsky LES, Guo forcing, bounce-back walls and porosity, momentum-exchange forces, D3Q7 passive temperature"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish = false
+
+[dependencies]
+# Same version as the generative engine; rayon is not a workspace dependency yet.
+rayon = "1.12"
+serde.workspace = true
+serde_json.workspace = true

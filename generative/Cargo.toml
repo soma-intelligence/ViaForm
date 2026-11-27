@@ -1,0 +1,22 @@
+[package]
+name = "viaform-generative"
+description = "ViaForm's generative design engine: topology optimisation and ground-structure frames on a finite-element model, emitted as SolidCraft commands"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish = false
+
+[dependencies]
+serde.workspace = true
+serde_json.workspace = true
+rayon = "1.12"
+
+[dev-dependencies]
+solidcraft-engine.workspace = true
+# The loads-from-simulation end-to-end test runs the sample arm scenario. Test-only: the
+# library reads phys records as plain JSON (solid::sim_loads), so there is no dependency.
+viaform-phys.workspace = true
+
+[[bin]]
+name = "viaform-gen"
+path = "src/main.rs"

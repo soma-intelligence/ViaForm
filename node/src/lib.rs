@@ -54,6 +54,12 @@ pub fn versions() -> Value {
     })
 }
 
+/// Runs a generative study (a spec as JSON) and answers its candidates and the best one.
+#[napi(catch_unwind)]
+pub fn generate_study(spec: Value) -> Result<Value> {
+    viaform_core::generative::study(&spec).map_err(fail)
+}
+
 #[napi]
 pub struct Workspace {
     ws: viaform_core::Workspace,
@@ -101,13 +107,13 @@ impl Workspace {
 
     #[napi]
     pub fn bounds(&self) -> Value {
-        let b = view::bounds(&self.ws.cad);
+        let Ok(b) = view::bounds(&self.ws.cad) else { return Value::Null };
         if b.is_empty() { Value::Null } else { json!({"min": [b.min.x, b.min.y, b.min.z], "max": [b.max.x, b.max.y, b.max.z]}) }
     }
 
     #[napi]
     pub fn sketch_plane(&self) -> Value {
-        view::open_sketch_plane(&self.ws.cad).map_or(Value::Null, |p| {
+        view::open_sketch_plane(&self.ws.cad).ok().flatten().map_or(Value::Null, |p| {
             json!({"origin": [p.origin.x, p.origin.y, p.origin.z], "x_dir": [p.x.x, p.x.y, p.x.z], "y_dir": [p.y.x, p.y.y, p.y.z]})
         })
     }
@@ -152,6 +158,12 @@ impl Workspace {
     pub fn link_mount(&mut self, body: String, point: Vec<f64>, normal: Vec<f64>) -> Result<Value> {
         let v3 = |v: &[f64]| -> Result<[f64; 3]> { v.try_into().map_err(|_| fail("a point is three numbers")) };
         viaform_core::link::mount(&mut self.ws.cad, &self.ws.pcb, &body, v3(&point)?, v3(&normal)?).map_err(fail)
+    }
+
+    /// Builds candidate `candidate` (else the best) of the study `spec` as one body, one undo step.
+    #[napi(catch_unwind)]
+    pub fn generate(&mut self, spec: Value, candidate: Option<u32>) -> Result<Value> {
+        self.ws.generate(&spec, candidate.map(|c| c as usize)).map_err(fail)
     }
 
     #[napi]

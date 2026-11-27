@@ -2,7 +2,7 @@
 # copy of each engine.
 [workspace]
 resolver = "3"
-members = ["core", "bridge", "node"]
+members = ["core", "bridge", "node", "generative", "sim", "library", "bom", "fluid", "kin", "phys", "pcb", "mujoco"]
 # The engines are workspaces of their own.
 exclude = ["engines"]
 
@@ -16,16 +16,20 @@ solidcraft-engine = { path = "engines/solidcraft/crates/engine" }
 pcbcraft-engine = { path = "engines/pcbcraft/crates/engine" }
 pcbcraft-io = { path = "engines/pcbcraft/crates/io" }
 viaform-core = { path = "core" }
+viaform-library = { path = "library" }
+viaform-generative = { path = "generative" }
+viaform-sim = { path = "sim" }
+viaform-bom = { path = "bom" }
+viaform-fluid = { path = "fluid" }
+viaform-kin = { path = "kin" }
+viaform-phys = { path = "phys" }
+viaform-mujoco = { path = "mujoco" }
+viaform-pcb = { path = "pcb" }
 serde = { version = "1", features = ["derive"] }
 serde_json = { version = "1", features = ["float_roundtrip"] }
 
-# Same vendored truck fixes as the SolidCraft workspace: patches only apply from the root workspace.
-[patch.crates-io]
-truck-geometry = { path = "engines/solidcraft/vendor/truck-geometry" }
-truck-shapeops = { path = "engines/solidcraft/vendor/truck-shapeops" }
-truck-stepio = { path = "engines/solidcraft/vendor/truck-stepio" }
-truck-meshalgo = { path = "engines/solidcraft/vendor/truck-meshalgo" }
-matext4cgmath = { path = "engines/solidcraft/vendor/matext4cgmath" }
+# SolidCraft's own patches (egui-wgpu, winit, accesskit) only touch its UI crates, which the
+# core does not build, so no patch section is needed here.
 
 [profile.dev.package."*"]
 opt-level = 2

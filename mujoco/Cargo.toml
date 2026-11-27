@@ -1,0 +1,30 @@
+[package]
+name = "viaform-mujoco"
+description = "MuJoCo as a second physics backend: MJCF export of phys models, and the phys JSON facade on the MuJoCo C library (feature mujoco)"
+version.workspace = true
+edition.workspace = true
+# Our code. MuJoCo itself is Apache-2.0 and is linked, never vendored (mujoco/README.md).
+license = "MIT OR Apache-2.0"
+publish = false
+build = "build.rs"
+links = "mujoco"
+
+[features]
+# Off by default: without it the crate is the MJCF exporter plus a stub backend that answers
+# "MuJoCo backend not built", so the workspace builds and tests on machines without MuJoCo.
+mujoco = ["dep:cc"]
+
+[dependencies]
+serde.workspace = true
+serde_json.workspace = true
+viaform-kin.workspace = true
+viaform-phys.workspace = true
+nalgebra = "0.34"
+rayon = "1.12"
+
+[dev-dependencies]
+# The G3 loads module reads a MuJoCo wrench history in the cross test. Test-only (GPL crate).
+viaform-generative.workspace = true
+
+[build-dependencies]
+cc = { version = "1.2", optional = true }

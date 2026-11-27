@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ViaForm v2 Gallery</title>
+<style>
+:root{--bg:#f5f5f7;--card:#fff;--ink:#1d1d1f;--muted:#6e6e73;--line:#d9d9de;--accent:#0a66d8}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#141518;--card:#1c1e22;--ink:#f2f2f4;--muted:#9a9aa2;--line:#2e3036;--accent:#4c9bff}}
+:root[data-theme="dark"]{--bg:#141518;--card:#1c1e22;--ink:#f2f2f4;--muted:#9a9aa2;--line:#2e3036;--accent:#4c9bff}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.45 -apple-system,BlinkMacSystemFont,"SF Pro Text",system-ui,sans-serif}
+main{max-width:1500px;margin:0 auto;padding:24px 16px 64px}
+h1{font-size:26px;margin:0 0 4px}
+.lead{color:var(--muted);margin:0 0 16px}
+nav{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:24px}
+nav a{color:var(--accent);text-decoration:none;border:1px solid var(--line);border-radius:999px;padding:4px 12px;background:var(--card)}
+section{margin:40px 0}
+h2{font-size:20px;margin:0 0 4px}
+.score{color:var(--muted);margin:0 0 14px}
+.score b{color:var(--ink)}
+.rec{color:var(--accent);font-weight:600}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px}
+figure{margin:0;background:var(--card);border:1px solid var(--line);border-radius:10px;overflow:hidden}
+figure img{display:block;width:100%;height:auto}
+figcaption{font-size:12px;color:var(--muted);padding:6px 10px}
+.lbl{font-size:12px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--muted);margin:18px 0 6px}
+.empty{display:flex;align-items:center;justify-content:center;min-height:120px;color:var(--muted);font-size:13px}
+@media (max-width:760px){.row{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<main>
+<h1>ViaForm v2 : directions d'interface</h1>
+<p class="lead">Par direction et par écran : concept à gauche, rendu SwiftUI à droite. Synthèse et plan : <a href="SYNTHESIS.md">SYNTHESIS.md</a>.</p>
+<nav id="nav"></nav>
+<div id="g"></div>
+</main>
+<script>
+const D=[
+ {id:"hybrid-pipeline",name:"Hybrid Pipeline",s:[7,7.5,8],rec:true,ipad:"5-ipad"},
+ {id:"fusion-faithful",name:"Pro Ribbon",s:[8.5,3,7],ipad:"5-ipad-hand"},
+ {id:"shapr-direct",name:"Direct Canvas",s:[6,4,7],ipad:"5-ipad",extra:"6-command-search"},
+ {id:"liquid-studio",name:"Liquid Glass Studio",s:[5,5.5,6.5],ipad:"5-ipad-hand"}
+];
+const nav=document.getElementById("nav"),g=document.getElementById("g");
+const fig=(src,cap)=>`<figure><a href="${src}"><img loading="lazy" src="${src}" alt="${cap}"></a><figcaption>${cap}</figcaption></figure>`;
+for(const d of D){
+ const tot=d.s.reduce((a,b)=>a+b,0).toString().replace(".",",");
+ nav.insertAdjacentHTML("beforeend",`<a href="#${d.id}">${d.name}</a>`);
+ const screens=["1-design","2-generative","3-simulation","4-electronics",d.ipad];
+ let h=`<section id="${d.id}"><h2>${d.name}${d.rec?' <span class="rec">recommandée</span>':''}</h2>
+ <p class="score">Ressemblance <b>${d.s[0]}</b> . Flux <b>${d.s[1]}</b> . Faisabilité <b>${d.s[2]}</b> . Total <b>${tot}</b> / 30</p>`;
+ for(const n of screens){
+  h+=`<div class="lbl">${n}</div><div class="row">${fig(`${d.id}/concepts/${n}.png`,"Concept")}${fig(`${d.id}/swiftui/screens/${n}.png`,"SwiftUI")}</div>`;
+ }
+ if(d.extra){h+=`<div class="lbl">${d.extra}</div><div class="row"><figure class="empty">Pas de concept</figure>${fig(`${d.id}/swiftui/screens/${d.extra}.png`,"SwiftUI")}</div>`;}
+ g.insertAdjacentHTML("beforeend",h+"</section>");
+}
+</script>
+</body>
+</html>

@@ -3,6 +3,10 @@ import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import type { SceneData } from "../shared/api";
 
 /** What a click hit: a body's face, at a world point, with the face's world normal. */
+export type ViewName = "top" | "bottom" | "front" | "back" | "left" | "right" | "home";
+export type NavMode = "select" | "orbit" | "pan" | "zoom";
+export type VisualStyle = "shaded_with_edges" | "shaded" | "wireframe";
+
 export interface Hit {
   body: string;
   face: number;
@@ -13,7 +17,8 @@ export interface Hit {
 const SELECT = new THREE.Color("#ffb347");
 const HOVER = new THREE.Color("#7fb2ff");
 
-/** The 3D view: the engine's meshes and edges, z up, orbit with the right or middle button. */
+/** The 3D view: the engine's meshes and edges, z up. Middle drag pans, Shift + middle drag orbits,
+ *  right drag orbits too (a right click without a drag opens the marking menu). */
 export class Viewport {
   readonly renderer: THREE.WebGLRenderer;
   readonly camera: THREE.PerspectiveCamera;
@@ -26,6 +31,11 @@ export class Viewport {
   private selected = new Set<string>();
   private hovered: string | null = null;
   private fitted = false;
+  private edges: THREE.LineSegments[] = [];
+  private style: VisualStyle = "shaded_with_edges";
+  private tween: { from: THREE.Vector3; to: THREE.Vector3; t0: number } | null = null;
+  /** Called every frame with the camera, for the ViewCube. */
+  onCamera: (camera: THREE.Camera) => void = () => {};
   onClick: (hit: Hit | null, e: MouseEvent) => void = () => {};
   onDoubleClick: (hit: Hit | null) => void = () => {};
   onContext: (hit: Hit | null, e: MouseEvent) => void = () => {};
@@ -44,7 +54,7 @@ export class Viewport {
     this.controls.enableDamping = true;
     this.controls.dampingFactor = 0.18;
     // Left button selects; orbit with the right button, pan with the middle one (or Shift+right).
-    this.controls.mouseButtons = { LEFT: null as unknown as THREE.MOUSE, MIDDLE: THREE.MOUSE.PAN, RIGHT: THREE.MOUSE.ROTATE };
+    this.setNav("select");
 
     this.scene.add(new THREE.HemisphereLight(0xf4f6ff, 0x3a3328, 1.6));
     const key = new THREE.DirectionalLight(0xffffff, 2.2);
@@ -56,7 +66,7 @@ export class Viewport {
     this.camera.add(new THREE.PointLight(0xffffff, 0.4, 0, 0));
     this.scene.add(this.camera);
 
-    this.grid = new THREE.GridHelper(400, 40, 0x3a4150, 0x262b33);
+    this.grid = new THREE.GridHelper(400, 40, 0x5a6372, 0x3a414c);
     this.grid.rotation.x = Math.PI / 2;
     this.scene.add(this.grid);
     this.scene.add(this.model);
@@ -66,8 +76,10 @@ export class Viewport {
     new ResizeObserver(() => this.resize()).observe(host);
     this.resize();
     const loop = () => {
+      this.step();
       this.controls.update();
       this.renderer.render(this.scene, this.camera);
+      this.onCamera(this.camera);
       requestAnimationFrame(loop);
     };
     loop();
@@ -94,10 +106,7 @@ export class Viewport {
       });
     }
     this.meshes = [];
-    const top = s.background.slice(0, 4), bottom = s.background.slice(4, 8);
-    if (top.some((v) => v > 0)) {
-      this.host.style.background = `linear-gradient(${rgb(top)}, ${rgb(bottom)})`;
-    }
+    this.edges = [];
     for (const m of s.meshes) {
       const g = new THREE.BufferGeometry();
       g.setAttribute("position", new THREE.BufferAttribute(m.positions, 3));
@@ -130,7 +139,9 @@ export class Viewport {
       if (seg.length) {
         const eg = new THREE.BufferGeometry();
         eg.setAttribute("position", new THREE.Float32BufferAttribute(seg, 3));
-        this.model.add(new THREE.LineSegments(eg, new THREE.LineBasicMaterial({ color: 0x15181d, transparent: true, opacity: 0.75 })));
+        const lines = new THREE.LineSegments(eg, new THREE.LineBasicMaterial({ color: 0x0d0f12, transparent: true, opacity: 0.8 }));
+        this.model.add(lines);
+        this.edges.push(lines);
       }
     }
     for (const l of s.lines) {
@@ -142,6 +153,7 @@ export class Viewport {
       if (l.onTop) line.renderOrder = 10;
       this.model.add(line);
     }
+    this.applyStyle();
     this.paint();
     if (!this.fitted && s.meshes.length) {
       this.fit();
@@ -163,10 +175,56 @@ export class Viewport {
     this.grid.scale.setScalar(size / 400);
   }
 
-  /** Looks at the model from a named direction. */
-  look(dir: "top" | "front" | "right" | "home"): void {
-    const v = { top: [0, -0.0001, 1], front: [0, -1, 0], right: [1, 0, 0], home: [0.55, -0.7, 0.5] }[dir];
-    this.camera.position.copy(this.controls.target).add(new THREE.Vector3(...v).normalize().multiplyScalar(this.camera.position.distanceTo(this.controls.target)));
+  /** Looks at the model from a named direction, with a short camera move. */
+  look(dir: ViewName): void {
+    const v = {
+      top: [0, -0.0001, 1], bottom: [0, 0.0001, -1], front: [0, -1, 0], back: [0, 1, 0],
+      left: [-1, 0, 0], right: [1, 0, 0], home: [0.55, -0.7, 0.5],
+    }[dir] as [number, number, number];
+    this.lookAlong(new THREE.Vector3(...v));
+  }
+
+  /** Looks straight at a face: the camera goes out along its normal. */
+  lookAlong(normal: THREE.Vector3 | [number, number, number]): void {
+    const n = Array.isArray(normal) ? new THREE.Vector3(...normal) : normal.clone();
+    const d = this.camera.position.distanceTo(this.controls.target);
+    this.tween = { from: this.camera.position.clone().sub(this.controls.target), to: n.normalize().multiplyScalar(d), t0: performance.now() };
+  }
+
+  private step(): void {
+    if (!this.tween) return;
+    const t = Math.min((performance.now() - this.tween.t0) / 260, 1);
+    const k = 1 - Math.pow(1 - t, 3);
+    const a = this.tween.from.clone().normalize(), b = this.tween.to.clone().normalize();
+    const len = THREE.MathUtils.lerp(this.tween.from.length(), this.tween.to.length(), k);
+    const dir = a.lerp(b, k).normalize();
+    if (dir.lengthSq() < 1e-6) dir.copy(b);
+    this.camera.position.copy(this.controls.target).addScaledVector(dir, len);
+    if (t >= 1) this.tween = null;
+  }
+
+  /** What the left button does: select (the default), or orbit, pan or zoom the view. */
+  setNav(mode: NavMode): void {
+    const left = { select: null, orbit: THREE.MOUSE.ROTATE, pan: THREE.MOUSE.PAN, zoom: THREE.MOUSE.DOLLY }[mode];
+    this.controls.mouseButtons = { LEFT: left as unknown as THREE.MOUSE, MIDDLE: THREE.MOUSE.PAN, RIGHT: THREE.MOUSE.ROTATE };
+  }
+
+  setStyle(style: VisualStyle): void {
+    this.style = style;
+    this.applyStyle();
+  }
+
+  private applyStyle(): void {
+    for (const m of this.meshes) (m.material as THREE.MeshStandardMaterial).wireframe = this.style === "wireframe";
+    for (const e of this.edges) e.visible = this.style !== "shaded";
+  }
+
+  set gridVisible(on: boolean) {
+    this.grid.visible = on;
+  }
+
+  get gridVisible(): boolean {
+    return this.grid.visible;
   }
 
   select(bodies: Iterable<string>): void {
@@ -242,10 +300,6 @@ export class Viewport {
   snapshot(): string {
     return this.renderer.domElement.toDataURL("image/png");
   }
-}
-
-function rgb(c: number[]): string {
-  return `rgb(${Math.round(c[0] * 255)}, ${Math.round(c[1] * 255)}, ${Math.round(c[2] * 255)})`;
 }
 
 function axes(): THREE.Group {

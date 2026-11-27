@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mujoco model="arm">
+  <compiler angle="radian" autolimits="true"/>
+  <option gravity="0 0 -9.81"/>
+  <worldbody>
+    <body name="base" pos="0 0 0">
+      <inertial pos="0 0 0.02" mass="0.305" fullinertia="0.0002500774958333333 0.0002566451833333333 0.0004288268458333333 0 0 0"/>
+      <geom name="base_box" type="box" size="0.05 0.05 0.02" pos="0 0 0.02" mass="0"/>
+      <body name="shoulder" pos="0 0 0.04">
+        <joint name="shoulder_pan" type="hinge" axis="0 0 1" range="-1.9198621771937625 1.9198621771937625" actuatorfrcrange="-2.94 2.94" damping="0.02" frictionloss="0.05"/>
+        <inertial pos="0 0 0.027391304347826093" mass="0.11499999999999999" fullinertia="0.000034128220471014494 0.00004069590797101449 0.00003716017916666666 0 0 0"/>
+        <geom name="shoulder_box" type="box" size="0.025 0.025 0.025" pos="0 0 0.025" mass="0"/>
+        <body name="upper_arm" pos="0 0 0.05">
+          <joint name="shoulder_lift" type="hinge" axis="0 1 0" range="-1.7453292519943295 1.7453292519943295" actuatorfrcrange="-2.94 2.94" damping="0.02" frictionloss="0.05"/>
+          <inertial pos="0 0 0.06261904761904759" mass="0.10500000000000001" fullinertia="0.0000727989244047619 0.00007644994523809523 0.00002257684583333333 0 0 0"/>
+          <geom name="upper_arm_box" type="box" size="0.015 0.02 0.049" pos="0 0 0.049" mass="0"/>
+          <body name="forearm" pos="0 0 0.098">
+            <joint name="elbow" type="hinge" axis="0 1 0" range="-0.17453292519943295 2.356194490192345" actuatorfrcrange="-2.94 2.94" damping="0.02" frictionloss="0.05"/>
+            <inertial pos="0 0 0.06563157894736844" mass="0.095" fullinertia="0.0000616262677631579 0.0000681939552631579 0.000018160179166666663 0 0 0"/>
+            <geom name="forearm_box" type="box" size="0.015 0.015 0.05" pos="0 0 0.05" mass="0"/>
+            <body name="wrist" pos="0 0 0.1">
+              <joint name="wrist_pitch" type="hinge" axis="0 1 0" range="-1.7453292519943295 1.7453292519943295" actuatorfrcrange="-2.94 2.94" damping="0.02" frictionloss="0.05"/>
+              <inertial pos="0 0 0.02" mass="0.08499999999999999" fullinertia="0.000014660829166666664 0.000020418516666666664 0.000015850179166666667 0 0 0"/>
+              <geom name="wrist_box" type="box" size="0.012 0.015 0.02" pos="0 0 0.02" mass="0"/>
+              <body name="gripper" pos="0 0 0.04">
+                <joint name="wrist_roll" type="hinge" axis="0 0 1" range="-2.792526803190927 2.792526803190927" actuatorfrcrange="-2.94 2.94" damping="0.02" frictionloss="0.05"/>
+                <inertial pos="0 0 0.023166666666666686" mass="0.09" fullinertia="0.000018519995833333333 0.00002712935 0.000019451845833333333 0 0 0"/>
+                <geom name="gripper_box" type="box" size="0.02 0.015 0.025" pos="0 0 0.025" mass="0"/>
+                <body name="jaw" pos="0.012 0 0.05">
+                  <joint name="gripper" type="hinge" axis="0 1 0" range="-0.17453292519943295 1.7453292519943295" actuatorfrcrange="-2.94 2.94" damping="0.02" frictionloss="0.05"/>
+                  <inertial pos="0.0004999999999999983 0 0.021" mass="0.012" fullinertia="0.000002164 0.000001989 0.0000006249999999999999 0 0 0"/>
+                  <geom name="jaw_box" type="box" size="0.0075 0.01 0.021" pos="0.0005 0 0.021" mass="0"/>
+                </body>
+              </body>
+            </body>
+          </body>
+        </body>
+      </body>
+    </body>
+  </worldbody>
+  <actuator>
+    <position name="shoulder_pan_servo" joint="shoulder_pan" kp="20" ctrlrange="-1.9198621771937625 1.9198621771937625" forcerange="-2.94 2.94"/>
+    <position name="shoulder_lift_servo" joint="shoulder_lift" kp="20" ctrlrange="-1.7453292519943295 1.7453292519943295" forcerange="-2.94 2.94"/>
+    <position name="elbow_servo" joint="elbow" kp="20" ctrlrange="-0.17453292519943295 2.356194490192345" forcerange="-2.94 2.94"/>
+    <position name="wrist_pitch_servo" joint="wrist_pitch" kp="20" ctrlrange="-1.7453292519943295 1.7453292519943295" forcerange="-2.94 2.94"/>
+    <position name="wrist_roll_servo" joint="wrist_roll" kp="20" ctrlrange="-2.792526803190927 2.792526803190927" forcerange="-2.94 2.94"/>
+    <position name="gripper_servo" joint="gripper" kp="20" ctrlrange="-0.17453292519943295 1.7453292519943295" forcerange="-2.94 2.94"/>
+  </actuator>
+  <custom>
+    <text name="vf_motor:shoulder_pan" data="part=lib:feetech/STS3215;bom_line=arm:M1;gear_ratio=345;backlash_deg=0.3;bus_id=1;stall_torque_nm=2.94;no_load_speed_dps=270;voltage_v=12;kp=20"/>
+    <text name="vf_velocity:shoulder_pan" data="v=4.71238898038469"/>
+    <text name="vf_motor:shoulder_lift" data="part=lib:feetech/STS3215;bom_line=arm:M1;gear_ratio=345;backlash_deg=0.3;bus_id=2;stall_torque_nm=2.94;no_load_speed_dps=270;voltage_v=12;kp=20"/>
+    <text name="vf_velocity:shoulder_lift" data="v=4.71238898038469"/>
+    <text name="vf_motor:elbow" data="part=lib:feetech/STS3215;bom_line=arm:M1;gear_ratio=345;backlash_deg=0.3;bus_id=3;stall_torque_nm=2.94;no_load_speed_dps=270;voltage_v=12;kp=20"/>
+    <text name="vf_velocity:elbow" data="v=4.71238898038469"/>
+    <text name="vf_motor:wrist_pitch" data="part=lib:feetech/STS3215;bom_line=arm:M1;gear_ratio=345;backlash_deg=0.3;bus_id=4;stall_torque_nm=2.94;no_load_speed_dps=270;voltage_v=12;kp=20"/>
+    <text name="vf_velocity:wrist_pitch" data="v=4.71238898038469"/>
+    <text name="vf_motor:wrist_roll" data="part=lib:feetech/STS3215;bom_line=arm:M1;gear_ratio=345;backlash_deg=0.3;bus_id=5;stall_torque_nm=2.94;no_load_speed_dps=270;voltage_v=12;kp=20"/>
+    <text name="vf_velocity:wrist_roll" data="v=4.71238898038469"/>
+    <text name="vf_motor:gripper" data="part=lib:feetech/STS3215;bom_line=arm:M1;gear_ratio=345;backlash_deg=0.3;bus_id=6;stall_torque_nm=2.94;no_load_speed_dps=270;voltage_v=12;kp=20"/>
+    <text name="vf_velocity:gripper" data="v=4.71238898038469"/>
+  </custom>
+</mujoco>

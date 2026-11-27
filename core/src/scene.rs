@@ -98,10 +98,18 @@ fn flatten(scene: &Scene, names: Vec<String>) -> FlatScene {
 }
 
 /// The scene seen from `camera` (the home view when `None`). The scene lists visible bodies in
-/// model order, so each mesh carries the name of the body it draws.
+/// model order, so each mesh carries the name of the body it draws. A model the engine cannot
+/// evaluate gives an empty scene, so the views stay up while the error shows elsewhere.
 pub fn build(s: &Session, camera: Option<Camera>) -> FlatScene {
-    let cam = camera.unwrap_or_else(|| view::home_camera(s));
-    let scene = view::scene(s, &cam);
-    let names = s.world_state().bodies.iter().filter(|b| s.body_visible(&b.name)).map(|b| b.name.clone()).collect();
-    flatten(&scene, names)
+    let built = (|| {
+        let cam = match camera {
+            Some(c) => c,
+            None => view::home_camera(s)?,
+        };
+        let scene = view::scene(s, &cam)?;
+        let state = s.world_state()?;
+        let names = state.bodies.iter().filter(|b| s.body_visible(&b.name)).map(|b| b.name.clone()).collect();
+        Ok::<_, solidcraft_engine::EngineError>(flatten(&scene, names))
+    })();
+    built.unwrap_or_else(|_| FlatScene { meshes: vec![], lines: vec![], grid: vec![], radius: 1.0, background: [0.0; 8] })
 }

@@ -1,15 +1,44 @@
 import Foundation
-import SolidCraftFFI
+import ViaFormFFI
 
 /// The PCBCraft engine (schematic, board, KiCad export) behind the C bridge.
-final class PCBEngine {
-    let session: OpaquePointer
+///
+/// The session is not thread safe, so every call holds `lock`, as `CADEngine` does. Code that
+/// takes `session` for its own C calls (the board link) gets it on the main thread, which then
+/// holds the lock until the end of the current run loop turn; a worker uses `withSession` (the
+/// BOM's project save and open).
+final class PCBEngine: @unchecked Sendable {
+    private let raw: OpaquePointer
+    private let lock = NSRecursiveLock()
+    /// The main thread holds the lock for the rest of this run loop turn.
+    private var mainHold = false
 
-    init(sample: Bool = false) {
-        session = pcb_session_new(sample)
+    /// The session pointer for direct C calls. On the main thread, waits for a worker's call and
+    /// keeps the workers out until the run loop turns.
+    var session: OpaquePointer {
+        if Thread.isMainThread && !mainHold {
+            lock.lock()
+            mainHold = true
+            DispatchQueue.main.async { [self] in
+                mainHold = false
+                lock.unlock()
+            }
+        }
+        return raw
     }
 
-    deinit { pcb_session_free(session) }
+    init(sample: Bool = false) {
+        raw = pcb_session_new(sample)
+    }
+
+    deinit { pcb_session_free(raw) }
+
+    /// Runs `body` with the session to itself, on any thread.
+    func withSession<T>(_ body: (OpaquePointer) throws -> T) rethrows -> T {
+        lock.lock()
+        defer { lock.unlock() }
+        return try body(raw)
+    }
 
     private static func take(_ p: UnsafeMutablePointer<CChar>?) -> Data {
         guard let p else { return Data("null".utf8) }
@@ -21,18 +50,46 @@ final class PCBEngine {
     @discardableResult
     func execute(_ id: String, _ params: [String: Any] = [:]) throws -> Any {
         let body = (try? JSONSerialization.data(withJSONObject: params)).map { String(decoding: $0, as: UTF8.self) } ?? "{}"
-        let reply = try JSONSerialization.jsonObject(with: Self.take(pcb_execute(session, id, body)), options: [.fragmentsAllowed])
+        let reply = try JSONSerialization.jsonObject(with: withSession { Self.take(pcb_execute($0, id, body)) }, options: [.fragmentsAllowed])
         guard let obj = reply as? [String: Any] else { throw EngineError(message: "no reply from the PCB engine") }
         if let e = obj["error"] as? String { throw EngineError(message: e) }
+        switch id {
+        case "undo": undoLabels.undid(nil)
+        case "redo": undoLabels.redid(nil)
+        case "file.open": undoLabels.reset()
+        default: if let l = Self.stepNames[id] { undoLabels.ran(l) } else if !Self.reads(id) { undoLabels.ran("") }
+        }
         return obj["ok"] ?? NSNull()
     }
 
+    /// The names of the undo and redo steps: "Undo Move Footprint" in the Edit menu.
+    let undoLabels = UndoLabels(limit: 200)
+
+    /// The top undo and redo step names for the depths `inspect` reports.
+    func undoNames(undo: Int, redo: Int) -> (undo: String?, redo: String?) { undoLabels.labels(undo: undo, redo: redo) }
+
+    private static func reads(_ id: String) -> Bool {
+        id.hasPrefix("file.") || id.hasSuffix(".list") || id.contains("inspect") || id.contains("check")
+    }
+
+    private static let stepNames: [String: String] = [
+        "component.add": String(localized: "Add Component"),
+        "component.move": String(localized: "Move Component"),
+        "component.rotate": String(localized: "Rotate Component"),
+        "footprint.move": String(localized: "Move Footprint"),
+        "footprint.rotate": String(localized: "Rotate Footprint"),
+        "object.delete": String(localized: "Delete"),
+        "wire.connect": String(localized: "Connect Wire"),
+        "track.route": String(localized: "Route Track"),
+        "board.sync": String(localized: "Update Board"),
+    ]
+
     func inspect() -> PCBInspect? {
-        try? JSONDecoder().decode(PCBInspect.self, from: Self.take(pcb_inspect(session)))
+        try? JSONDecoder().decode(PCBInspect.self, from: withSession { Self.take(pcb_inspect($0)) })
     }
 
     func checks() -> PCBChecks? {
-        try? JSONDecoder().decode(PCBChecks.self, from: Self.take(pcb_checks(session)))
+        try? JSONDecoder().decode(PCBChecks.self, from: withSession { Self.take(pcb_checks($0)) })
     }
 }
 

@@ -10,53 +10,93 @@ struct DeskRootView: View {
     @Bindable var model: DesignModel
     let pcb: PCBModel
     @State private var workspace = Workspace.design
+    @State private var sim = SimModel()
+    @State private var generate = GenerateModel()
     @State private var tab = "SOLID"
     @State private var showBrowser = true
     @State private var perspective = false
     @State private var showData = false
+    @State private var library = LibraryModel()
+    @State private var showLibrary = false
+    @State private var bom = BomModel()
+    @State private var showBom = BomModel.launchRequested
+    @State private var flow = FlowModel()
+    @State private var flowCard: Workspace?
 
-    static let theme = ViewportTheme(
-        backgroundTop: SIMD4(0.78, 0.83, 0.88, 1),
-        backgroundBottom: SIMD4(0.98, 0.98, 0.99, 1),
-        highlight: SIMD4(0.13, 0.55, 0.95, 1),
-        hover: SIMD4(0.45, 0.72, 1.0, 1),
-        edge: SIMD4(0.1, 0.1, 0.1, 1)
-    )
+    private func openStage(_ stage: String) {
+        if let w = Workspace(stage: stage) { workspace = w }
+    }
 
-    enum Workspace: String, CaseIterable { case design = "DESIGN", electronics = "ELECTRONICS" }
+    @Environment(\.viaFormTheme) private var theme
+
+    /// The workspaces in pipeline order (`Workspace`, shared with the iPad app); each one is a
+    /// stage of the product flow (`FlowModel`).
+    typealias Workspace = ViaFormWorkspace
 
     var body: some View {
         VStack(spacing: 0) {
             AppBar(model: model, showData: $showData)
+                .disabled(EngineGate.shared.shut)
             HStack(spacing: 0) {
-                Menu(workspace.rawValue) {
-                    ForEach(Workspace.allCases, id: \.self) { w in
-                        Button { workspace = w } label: { Label(w.rawValue.capitalized, systemImage: w == .design ? "cube" : "cpu") }
-                    }
+                PipelineBar(flow: flow, workspace: $workspace, card: $flowCard, showsJobs: true)
+                    .disabled(EngineGate.shared.shut)
+                Divider().frame(height: VFSpace.xl)
+                Button { showBom.toggle() } label: {
+                    Label("BOM", systemImage: "list.bullet.rectangle").font(VFFont.caps)
                 }
-                .menuStyle(.borderlessButton).fixedSize()
-                .font(.system(size: 11, weight: .bold))
-                .foregroundStyle(Color.accentColor)
-                .padding(.horizontal, 10)
-                Divider().frame(height: 16)
-                if workspace == .electronics {
-                    Text("Schematic and board on the PCBCraft engine, KiCad export").font(.system(size: 11)).foregroundStyle(.secondary).padding(.horizontal, 10)
+                .buttonStyle(.vfGhost(tint: showBom ? theme.accentText : theme.ink))
+                .keyboardShortcut("b", modifiers: [.command, .shift])
+                .help("Bill of materials: design parts, PCB components and component files, priced for N builds (Shift-Command-B)")
+                Button { showLibrary.toggle() } label: {
+                    Label("Libraries", systemImage: "books.vertical").font(VFFont.caps)
                 }
-                Spacer()
+                .buttonStyle(.vfGhost(tint: showLibrary ? theme.accentText : theme.ink))
+                .keyboardShortcut("l", modifiers: [.command, .shift])
+                .help("Libraries: KiCad, standard hardware, distributors, marketplaces, saved parts (Shift-Command-L)")
+                .padding(.horizontal, VFSpace.m)
             }
-            .frame(height: 24)
-            .background(Color(nsColor: .windowBackgroundColor))
-            if workspace == .electronics {
+            .frame(height: LegacyMetrics.bar)
+            .background(theme.chrome)
+            switch workspace {
+            case .electronics:
                 DeskPCBView(model: pcb, design: model) { workspace = .design }
-            } else {
+            case .simulation, .train:
+                // Training lives in the simulation workspace for now (its Train panel).
+                SimulationView(model: sim)
+            case .generate:
+                GenerateView(model: generate, design: model, theme: theme.viewportTheme)
+            case .make:
+                StageOverview(flow: flow, stage: "make", note: "Manufacturing gathers the frame, the board, the assembly and the flight policy. Exports available today:", open: openStage) {
+                    Button("Export Design…") { FileActions.export(model) }
+                    Button("Bill of Materials") { showBom = true }
+                }
+            case .robot:
+                StageOverview(flow: flow, stage: "robot", note: "The robot stage connects the real robot, records demonstrations and runs a trained policy. No robot is connected.", open: openStage) {
+                    EmptyView()
+                }
+            case .design, .assemble, .render:
                 designBody
             }
+            if showBom {
+                Divider()
+                BomPanel(model: bom, design: model, pcb: pcb) { showBom = false }.frame(height: LegacyMetrics.bomHeight)
+            }
         }
-        .background(Color(nsColor: .windowBackgroundColor))
+        .background(theme.chrome)
         .onAppear {
             let args = ProcessInfo.processInfo.arguments
+            if showBom { bom.applyLaunchFlags(); BomSnapshot.runIfAsked(model: bom, design: model, pcb: pcb) }
             if args.contains("--electronics") { workspace = .electronics }
+            if args.contains("--simulation") { workspace = .simulation }
+            if args.contains("--generate") { workspace = .generate }
+            generate.launchHooks(design: model)
             if args.contains("--board") { workspace = .electronics; pcb.sheet = .board }
+            if args.contains("--library") { showLibrary = true }
+            if let q = args.first(where: { $0.hasPrefix("--library=") })?.dropFirst(10) {
+                showLibrary = true
+                library.query = String(q)
+                Task { await library.search() }
+            }
             if args.contains("--pcb-3d") {
                 // Demo for the docs: an enclosure, the sample board sent to 3D and mounted on it.
                 model.newDesign()
@@ -67,7 +107,18 @@ struct DeskRootView: View {
                 model.zoomToFit()
             }
         }
-        .onChange(of: workspace) { _, _ in pcb.syncLink(model) }
+        .onChange(of: workspace) { _, w in
+            pcb.syncLink(model)
+            if w == .render, model.commands.contains(where: { $0.tab == "RENDER" }) { tab = "RENDER" }
+        }
+        // What each workspace builds, reported to the pipeline.
+        .reportsToFlow(flow, design: model, pcb: pcb, generate: generate, sim: sim)
+        .projectFilesContext(design: model, pcb: pcb, bom: bom, flow: flow)
+        .focusedSceneValue(\.vfDesk, DeskFocus(workspace: workspace, open: { workspace = $0 }, search: { model.toolboxOpen = true }))
+        .inspector(isPresented: $showLibrary) {
+            LibraryView(model: library, design: model, pcb: pcb) { showLibrary = false }
+                .inspectorColumnWidth(min: VFSize.sidePanel, ideal: LegacyMetrics.libraryIdeal, max: LegacyMetrics.libraryMax)
+        }
     }
 
     @ViewBuilder private var designBody: some View {
@@ -75,14 +126,15 @@ struct DeskRootView: View {
             Ribbon(model: model, tab: $tab)
             Divider()
             ZStack {
-                Viewport(model: model, theme: Self.theme)
+                Viewport(model: model, theme: theme.viewportTheme)
                 VStack {
                     HStack(alignment: .top) {
-                        if showBrowser { BrowserPanel(model: model, shown: $showBrowser).frame(width: 250) }
+                        if showBrowser { BrowserPanel(model: model, shown: $showBrowser).frame(width: LegacyMetrics.browserWidth) }
                         Spacer()
-                        VStack(alignment: .trailing, spacing: 10) {
-                            ViewCube(model: model, size: 104, faceColor: Color(white: 0.97), edgeColor: Color(white: 0.5), textColor: Color(white: 0.28))
-                            if model.tool != .select || model.genericCommand != nil { CommandDialog(model: model).frame(width: 300) }
+                        VStack(alignment: .trailing, spacing: VFSpace.m) {
+                            // Face, edge and label colours come from the theme (ViewCube's defaults).
+                            ViewCube(model: model, size: LegacyMetrics.viewCube)
+                            if model.tool != .select || model.genericCommand != nil { CommandDialog(model: model).frame(width: LegacyMetrics.dialogWidth) }
                         }
                     }
                     Spacer()
@@ -90,20 +142,20 @@ struct DeskRootView: View {
                     MessageBanner(model: model)
                     NavigationBar(model: model, perspective: $perspective)
                 }
-                .padding(10)
+                .padding(VFSpace.m)
                 if let at = model.markingMenu { MarkingMenu(model: model, at: at) }
                 if model.toolboxOpen {
-                    VStack { ToolboxSearch(model: model).padding(.top, 60); Spacer() }
+                    VStack { ToolboxSearch(model: model).padding(.top, VFSpace.paletteTop); Spacer() }
                 }
             }
             .overlay(alignment: .leading) {
                 if showData { DataPanel(model: model, shown: $showData).transition(.move(edge: .leading)) }
             }
-            .animation(.easeOut(duration: 0.18), value: showData)
+            .vfAnimation(.easeOut(duration: VFMotion.standard), value: showData)
             Divider()
             TimelineBar(model: model)
         }
-        .background(Color(nsColor: .windowBackgroundColor))
+        .background(theme.chrome)
         .onAppear {
             // Screenshot hooks for the docs: open the marking menu or the toolbox at launch.
             let args = ProcessInfo.processInfo.arguments
@@ -119,53 +171,55 @@ struct DeskRootView: View {
 // MARK: App bar
 
 struct AppBar: View {
+    @Environment(\.viaFormTheme) private var theme
     let model: DesignModel
     @Binding var showData: Bool
 
     var body: some View {
-        HStack(spacing: 14) {
+        HStack(spacing: VFSpace.l) {
             Button { showData.toggle() } label: { Image(systemName: "square.grid.3x3") }.help("Data Panel")
             Menu {
-                Button("New Design") { model.newDesign() }.keyboardShortcut("n")
+                Button("New Design") { FileActions.newDesign(model) }.keyboardShortcut("n")
                 Button("Open…") { FileActions.open(model) }.keyboardShortcut("o")
                 Button("Sample Bracket") { model.loadSample() }
                 Divider()
-                Button("Save As…") { FileActions.save(model) }.keyboardShortcut("s")
+                Button("Save As…") { FileActions.saveAs(model) }.keyboardShortcut("s")
                 Button("Export…") { FileActions.export(model) }.keyboardShortcut("e", modifiers: [.command, .shift])
             } label: { Image(systemName: "doc") }
-            .menuStyle(.borderlessButton).menuIndicator(.visible).fixedSize()
+            .menuStyle(.vfPlain)
             Button { FileActions.save(model) } label: { Image(systemName: "square.and.arrow.down") }.help("Save")
             Button { model.undo() } label: { Image(systemName: "arrow.uturn.backward") }.disabled(model.snapshot.undo == 0).help("Undo")
             Button { model.redo() } label: { Image(systemName: "arrow.uturn.forward") }.disabled(model.snapshot.redo == 0).help("Redo")
             // Design tabs: one per open design, then the new design button.
             HStack(spacing: 0) {
-                HStack(spacing: 6) {
-                    Image(systemName: "cube").foregroundStyle(.secondary)
-                    Text(model.snapshot.name).font(.system(size: 12, weight: .semibold)).lineLimit(1)
-                    if model.snapshot.dirty { Circle().fill(.secondary).frame(width: 6, height: 6) }
+                HStack(spacing: VFSpace.s) {
+                    Image(systemName: "cube").foregroundStyle(theme.inkSecondary)
+                    Text(model.snapshot.name).font(VFFont.small.weight(.semibold)).lineLimit(1)
+                    if model.snapshot.dirty { Circle().fill(theme.inkSecondary).frame(width: VFSize.dot, height: VFSize.dot) }
                 }
-                .padding(.horizontal, 14).frame(height: 30)
-                .background(Color(nsColor: .windowBackgroundColor))
-                .clipShape(UnevenRoundedRectangle(topLeadingRadius: 6, topTrailingRadius: 6))
-                Button { model.newDesign() } label: { Image(systemName: "plus").frame(width: 28, height: 28) }.help("New Design")
+                .padding(.horizontal, VFSpace.l).frame(height: LegacyMetrics.bar)
+                .background(theme.chrome)
+                .clipShape(UnevenRoundedRectangle(topLeadingRadius: VFRadius.control, topTrailingRadius: VFRadius.control))
+                Button { FileActions.newDesign(model) } label: { Image(systemName: "plus").frame(width: LegacyMetrics.iconButton, height: LegacyMetrics.iconButton) }.help("New Design")
             }
             .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(.top, 4)
+            .padding(.top, VFSpace.xs)
             Button { model.toolboxOpen = true } label: { Image(systemName: "magnifyingglass") }.help("Search commands (S)")
-            Image(systemName: "clock.arrow.circlepath").foregroundStyle(.secondary).help("Job status: \(model.snapshot.bodies.count) bodies, revision \(model.snapshot.revision)")
-            Image(systemName: "bell").foregroundStyle(.secondary)
+            Image(systemName: "clock.arrow.circlepath").foregroundStyle(theme.inkSecondary).help("Job status: \(model.snapshot.bodies.count) bodies, revision \(model.snapshot.revision)")
+            Image(systemName: "bell").foregroundStyle(theme.inkSecondary)
             Menu {
                 Link("SolidCraft engine", destination: URL(string: "https://github.com/tangency-labs/solidcraft")!)
                 Link("PCBCraft engine", destination: URL(string: "https://github.com/tangency-labs/pcbcraft")!)
             } label: { Image(systemName: "questionmark.circle") }
-            .menuStyle(.borderlessButton).menuIndicator(.hidden).fixedSize()
-            Image(systemName: "person.crop.circle").font(.system(size: 17)).foregroundStyle(.secondary)
+            .menuStyle(.vfPlain)
+            Image(systemName: "person.crop.circle").font(VFFont.glyph(17)).foregroundStyle(theme.inkSecondary)
         }
         .buttonStyle(.plain)
-        .font(.system(size: 13))
-        .padding(.horizontal, 12)
-        .frame(height: 36)
-        .background(Color(nsColor: .underPageBackgroundColor))
+        .font(VFFont.row)
+        .foregroundStyle(theme.ink)
+        .padding(.horizontal, VFSpace.l)
+        .frame(height: LegacyMetrics.appBar)
+        .background(theme.chromeDeep)
     }
 }
 
@@ -174,6 +228,7 @@ struct AppBar: View {
 /// Tabs and panels from the registry: each panel shows its main commands as big buttons and
 /// all of them in its drop-down.
 struct Ribbon: View {
+    @Environment(\.viaFormTheme) private var theme
     let model: DesignModel
     @Binding var tab: String
 
@@ -188,7 +243,7 @@ struct Ribbon: View {
     private var panels: [(String, [CommandInfo])] {
         var order: [String] = []
         var by: [String: [CommandInfo]] = [:]
-        for c in model.commands where c.tab == tab {
+        for c in model.commands where c.tab == tab && c.panel != "FINISH SKETCH" {
             if by[c.panel] == nil { order.append(c.panel) }
             by[c.panel, default: []].append(c)
         }
@@ -200,40 +255,36 @@ struct Ribbon: View {
             HStack(spacing: 0) {
                 ForEach(tabs, id: \.self) { t in
                     Button { tab = t } label: {
-                        Text(t).font(.system(size: 11, weight: .semibold))
-                            .padding(.horizontal, 12).padding(.vertical, 6)
-                            .foregroundStyle(tab == t ? Color.accentColor : (t == "SKETCH" ? Color.accentColor.opacity(0.8) : .primary))
-                            .overlay(alignment: .bottom) { if tab == t { Rectangle().fill(Color.accentColor).frame(height: 2) } }
+                        Text(StageLabels.tab(t)).font(VFFont.caps)
+                            .padding(.horizontal, VFSpace.l).padding(.vertical, VFSpace.s)
+                            .foregroundStyle(tab == t ? theme.accentText : (t == "SKETCH" ? theme.accentText.opacity(0.8) : theme.ink))
+                            .overlay(alignment: .bottom) { if tab == t { Rectangle().fill(theme.accent).frame(height: LegacyMetrics.tabUnderline) } }
                     }
                     .buttonStyle(.plain)
                 }
                 Spacer()
             }
-            .frame(height: 28)
+            .frame(height: LegacyMetrics.tabStrip)
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(alignment: .top, spacing: 0) {
                     ForEach(panels, id: \.0) { name, cmds in
                         RibbonPanel(model: model, name: name, commands: cmds)
-                        Divider().frame(height: 54)
+                        Divider().frame(height: LegacyMetrics.panelDivider)
                     }
                     if tab == "SKETCH" {
-                        Button { model.finishSketch() } label: {
-                            VStack(spacing: 3) {
-                                Image(systemName: "checkmark.circle.fill").font(.system(size: 24)).foregroundStyle(.green)
-                                Text("FINISH SKETCH").font(.system(size: 9, weight: .bold))
-                            }.frame(width: 90, height: 60)
-                        }.buttonStyle(.plain)
+                        DoneButton { model.finishSketch() }.padding(.horizontal, VFSpace.l).frame(height: LegacyMetrics.ribbonButtons)
                     }
                 }
-                .padding(.horizontal, 6)
+                .padding(.horizontal, VFSpace.s)
             }
-            .frame(height: 70)
+            .frame(height: LegacyMetrics.ribbonBody)
         }
-        .background(Color(nsColor: .windowBackgroundColor))
+        .background(theme.chrome)
     }
 }
 
 struct RibbonPanel: View {
+    @Environment(\.viaFormTheme) private var theme
     let model: DesignModel
     let name: String
     let commands: [CommandInfo]
@@ -245,35 +296,36 @@ struct RibbonPanel: View {
     }
 
     var body: some View {
-        VStack(spacing: 2) {
-            HStack(spacing: 2) {
+        VStack(spacing: VFSpace.xxs) {
+            HStack(spacing: VFSpace.xxs) {
                 ForEach(main) { c in
                     Button { CommandRouter.run(c, model) } label: {
-                        Image(systemName: CommandSymbol.of(c.icon, id: c.id))
-                            .font(.system(size: 20))
-                            .frame(width: 40, height: 34)
-                            .foregroundStyle(active(c) ? Color.white : Color.primary)
-                            .background(active(c) ? Color.accentColor : Color.clear, in: RoundedRectangle(cornerRadius: 5))
+                        CommandIcon(icon: c.icon, id: c.id)
+                            .frame(width: LegacyMetrics.commandButton.width, height: LegacyMetrics.commandButton.height)
+                            .foregroundStyle(active(c) ? theme.onAccent : theme.ink)
+                            .background(active(c) ? theme.accent : Color.clear, in: RoundedRectangle(cornerRadius: VFRadius.chip, style: .continuous))
                     }
                     .buttonStyle(.plain)
-                    .help(c.label + (c.key.map { "  (\($0))" } ?? ""))
+                    .help(StageLabels.command(c.label) + (c.key.map { "  (\($0))" } ?? ""))
                 }
             }
             Menu {
                 ForEach(commands) { c in
                     Button { CommandRouter.run(c, model) } label: {
-                        Label(c.label, systemImage: CommandSymbol.of(c.icon, id: c.id))
+                        Label(StageLabels.command(c.label), systemImage: CommandSymbol.of(c.icon, id: c.id))
                     }
                 }
             } label: {
-                Text(name).font(.system(size: 9.5, weight: .bold)).foregroundStyle(.secondary)
+                HStack(spacing: VFSpace.xxs) {
+                    Text(name).font(VFFont.micro.weight(.bold))
+                    Image(systemName: "chevron.down").font(VFFont.glyph(7, weight: .bold))
+                }
+                .foregroundStyle(theme.inkSecondary)
             }
-            .menuStyle(.borderlessButton)
-            .menuIndicator(.visible)
-            .fixedSize()
+            .menuStyle(.vfPlain)
         }
-        .padding(.horizontal, 8)
-        .padding(.top, 4)
+        .padding(.horizontal, VFSpace.m)
+        .padding(.top, VFSpace.xs)
     }
 
     private func active(_ c: CommandInfo) -> Bool { model.tool.commandID == c.id && model.tool != .select }
@@ -282,13 +334,17 @@ struct RibbonPanel: View {
 /// A registry command to what runs it: a modelling tool, a direct action or the generic form.
 enum CommandRouter {
     static func run(_ c: CommandInfo, _ m: DesignModel) {
+        if m.routeSketchCommand(c.id) { return }
         switch c.id {
         case "sketch.finish": m.finishSketch(); return
         case "edit.undo": m.undo(); return
         case "edit.redo": m.redo(); return
         case "solid.combine": m.genericCommand = c; return
         case "solid.remove": m.deleteSelection(); return
-        case "inspect.measure": m.measureSelection(); return
+        case "inspect.measure":
+            // The mass properties report (M-21); the window presents it.
+            NotificationCenter.default.post(name: .vfShowMassProperties, object: m)
+            return
         default: break
         }
         if let t = Tool.allCases.first(where: { $0.commandID == c.id }), t != .union, t != .subtract, t != .intersect {
@@ -304,6 +360,7 @@ enum CommandRouter {
 // MARK: Browser
 
 struct BrowserPanel: View {
+    @Environment(\.viaFormTheme) private var theme
     let model: DesignModel
     @Binding var shown: Bool
     @State private var open: Set<String> = ["Components", "Bodies", "Sketches"]
@@ -312,14 +369,15 @@ struct BrowserPanel: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             HStack {
-                Text("BROWSER").font(.system(size: 10, weight: .bold)).foregroundStyle(.secondary)
+                VFCaption("Browser")
                 Spacer()
-                Button { shown = false } label: { Image(systemName: "minus").font(.system(size: 10, weight: .bold)) }.buttonStyle(.plain)
+                Button { shown = false } label: { Image(systemName: "minus").font(VFFont.glyph(10, weight: .bold)) }
+                    .buttonStyle(.plain).foregroundStyle(theme.inkSecondary).help("Hide the browser")
             }
-            .padding(.horizontal, 10).frame(height: 26)
-            .background(Color(nsColor: .controlBackgroundColor))
+            .padding(.horizontal, VFSpace.m).frame(height: VFSize.macRow)
+            .background(theme.chromeDeep)
             ScrollView {
-                VStack(alignment: .leading, spacing: 1) {
+                VStack(alignment: .leading, spacing: 0) {
                     row(0, "doc.fill", "\(model.snapshot.name)", bold: true)
                     folder("Document Settings", "gearshape") {
                         row(2, "ruler", "Units: \(model.snapshot.units)")
@@ -332,15 +390,16 @@ struct BrowserPanel: View {
                     if !model.assembly.isEmpty {
                         folder("Components", "square.stack.3d.up") {
                             ForEach(model.assembly) { c in
-                                HStack(spacing: 5) {
-                                    Image(systemName: c.linkedPCB ? "cpu" : "shippingbox").foregroundStyle(c.linkedPCB ? Color.accentColor : .secondary).frame(width: 14)
+                                HStack(spacing: VFSpace.xs) {
+                                    Image(systemName: c.linkedPCB ? "cpu" : "shippingbox").foregroundStyle(c.linkedPCB ? theme.accentText : theme.inkSecondary).frame(width: LegacyMetrics.rowIcon)
                                     Text(c.occurrence ?? c.name).lineLimit(1)
-                                    if c.grounded { Image(systemName: "pin.fill").font(.system(size: 9)).foregroundStyle(.secondary).help("Grounded") }
-                                    if c.linkedPCB { Image(systemName: "link").font(.system(size: 9)).foregroundStyle(Color.accentColor).help("Linked to the Electronics board") }
+                                    if c.grounded { Image(systemName: "pin.fill").font(VFFont.glyph(9)).foregroundStyle(theme.inkSecondary).help("Grounded") }
+                                    if c.linkedPCB { Image(systemName: "link").font(VFFont.glyph(9)).foregroundStyle(theme.accentText).help("Linked to the Electronics board") }
                                     Spacer()
                                 }
-                                .font(.system(size: 12))
-                                .padding(.leading, 36).frame(height: 20)
+                                .font(VFFont.small)
+                                .foregroundStyle(theme.ink)
+                                .padding(.leading, LegacyMetrics.indent(2)).frame(height: VFSize.macRow)
                                 .contentShape(Rectangle())
                                 .onTapGesture { model.selectedBodies = Set(c.bodies) }
                             }
@@ -372,12 +431,12 @@ struct BrowserPanel: View {
                         }
                     }
                 }
-                .padding(.vertical, 4)
+                .padding(.vertical, VFSpace.xs)
             }
-            .frame(maxHeight: 380)
+            .frame(maxHeight: LegacyMetrics.browserMaxHeight)
         }
-        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 6))
-        .overlay(RoundedRectangle(cornerRadius: 6).stroke(Color.black.opacity(0.12)))
+        .clipShape(RoundedRectangle(cornerRadius: VFRadius.floating, style: .continuous))
+        .vfSurface(.floating)
         .fixedSize(horizontal: false, vertical: true)
     }
 
@@ -386,14 +445,15 @@ struct BrowserPanel: View {
         Button {
             if open.contains(name) { open.remove(name) } else { open.insert(name) }
         } label: {
-            HStack(spacing: 4) {
-                Image(systemName: open.contains(name) ? "chevron.down" : "chevron.right").font(.system(size: 8, weight: .bold)).frame(width: 10)
-                Image(systemName: symbol).foregroundStyle(.secondary)
+            HStack(spacing: VFSpace.xs) {
+                Image(systemName: open.contains(name) ? "chevron.down" : "chevron.right").font(VFFont.glyph(8, weight: .bold)).frame(width: LegacyMetrics.chevron)
+                Image(systemName: symbol).foregroundStyle(theme.inkSecondary)
                 Text(name)
                 Spacer()
             }
-            .font(.system(size: 12))
-            .padding(.leading, 14).frame(height: 20)
+            .font(VFFont.small)
+            .foregroundStyle(theme.ink)
+            .padding(.leading, LegacyMetrics.indentStep).frame(height: VFSize.macRow)
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
@@ -401,110 +461,134 @@ struct BrowserPanel: View {
     }
 
     private func row(_ indent: Int, _ symbol: String, _ text: String, bold: Bool = false, selected: Bool = false, eye body: String? = nil) -> some View {
-        HStack(spacing: 5) {
+        HStack(spacing: VFSpace.xs) {
             if let body {
                 Button {
                     let show = hidden.contains(body)
                     if show { hidden.remove(body) } else { hidden.insert(body) }
                     model.toggleBodyVisibility(body, visible: show)
                 } label: {
-                    Image(systemName: hidden.contains(body) ? "eye.slash" : "eye").font(.system(size: 10)).frame(width: 14)
+                    Image(systemName: hidden.contains(body) ? "eye.slash" : "eye").font(VFFont.glyph(10)).frame(width: LegacyMetrics.rowIcon)
                 }
-                .buttonStyle(.plain).foregroundStyle(.secondary)
+                .buttonStyle(.plain).foregroundStyle(theme.inkSecondary)
+                .help(hidden.contains(body) ? "Show" : "Hide")
             }
-            Image(systemName: symbol).foregroundStyle(.secondary).frame(width: 14)
+            Image(systemName: symbol).foregroundStyle(theme.inkSecondary).frame(width: LegacyMetrics.rowIcon)
             Text(text).fontWeight(bold ? .semibold : .regular).lineLimit(1).opacity(body.map { hidden.contains($0) ? 0.45 : 1 } ?? 1)
             Spacer()
         }
-        .font(.system(size: 12))
-        .padding(.leading, CGFloat(8 + indent * 14)).frame(height: 20)
-        .background(selected ? Color.accentColor.opacity(0.2) : .clear)
+        .font(VFFont.small)
+        .foregroundStyle(theme.ink)
+        .padding(.leading, LegacyMetrics.indent(indent)).frame(height: VFSize.macRow)
+        .background(selected ? theme.selection : .clear)
         .contentShape(Rectangle())
     }
 }
 
 // MARK: Command dialog
 
-/// The dialog of the running command, docked at the right of the viewport.
+/// The dialog of the running command, docked at the right of the viewport. Fusion's rows: the
+/// selection buttons with their counts and a clear button, the typed options of the feature
+/// tools (`FeatureDialogFields`), then Cancel and OK. OK stays greyed until the required picks
+/// are made. Return in a field commits the field; the next Return accepts the feature.
 struct CommandDialog: View {
+    @Environment(\.viaFormTheme) private var theme
     @Bindable var model: DesignModel
+    /// The main value field has the keyboard focus (Return then belongs to it).
+    @State private var valueFocused = false
+    /// ▸▸ folds the dialog to its header (Fusion).
+    @State private var folded = false
+
+    /// Header height, gap between rows and the label column of a selection row.
+    private static let headerHeight: CGFloat = 34
+    private static let rowGap: CGFloat = VFSpace.m + VFSpace.xxs
+    private static let footerInset: CGFloat = VFSpace.m + VFSpace.xxs
+    private static let labelWidth: CGFloat = 70
 
     var body: some View {
+        let session = FeatureSession.of(model)
         VStack(alignment: .leading, spacing: 0) {
-            HStack {
-                Image(systemName: icon)
-                Text(title.uppercased()).font(.system(size: 11, weight: .bold))
-                Spacer()
-                Button { close() } label: { Image(systemName: "xmark").font(.system(size: 10, weight: .bold)) }.buttonStyle(.plain)
-            }
-            .padding(.horizontal, 10).frame(height: 28)
-            .background(Color.accentColor.opacity(0.85)).foregroundStyle(.white)
-            if let c = model.genericCommand {
+            // Fusion's dialog header: ⊖, the command in capitals, ▸▸ to fold.
+            FusionCardHeader(title: title, folded: $folded, close: { close() })
+            if folded {
+                EmptyView()
+            } else if let c = model.genericCommand {
                 GenericCommandForm(model: model, command: c)
             } else {
-                VStack(alignment: .leading, spacing: 10) { rows }
-                    .padding(12)
-                Divider()
-                HStack {
-                    Spacer()
-                    Button("Cancel") { model.cancelTool() }
-                    Button("OK") { ok() }.keyboardShortcut(.defaultAction).buttonStyle(.borderedProminent)
+                VStack(alignment: .leading, spacing: Self.rowGap) {
+                    if FeatureOptions.tools.contains(session.tool) {
+                        FeatureDialogFields(model: model, session: session, labelWidth: Self.labelWidth,
+                                            valueFocus: $valueFocused, onValueReturn: Self.endFieldEditing)
+                    } else {
+                        rows
+                    }
                 }
-                .padding(10)
+                .font(FusionTokens.header)
+                .controlSize(.small)
+                .padding(.horizontal, VFSpace.m)
+                .padding(.vertical, VFSpace.s)
+                // Fusion's footer: (i) at the left, OK and Cancel at the right; OK greyed until
+                // the required inputs are set.
+                let missing = Self.missing(model)
+                HStack(spacing: VFSpace.s) {
+                    Image(systemName: "info.circle.fill").font(VFFont.glyph(11)).foregroundStyle(theme.fusion.ink)
+                        .help(missing ?? String(localized: "Return accepts, Escape cancels."))
+                        .accessibilityLabel("Help")
+                    Spacer(minLength: 0)
+                    Button { ok() } label: { Text("OK").frame(minWidth: 44) }
+                        .buttonStyle(.vfPrimary)
+                        .keyboardShortcut(valueFocused ? nil : .defaultAction)
+                        .disabled(missing != nil)
+                        .help(missing ?? String(localized: "Accept (Return)"))
+                    Button { close() } label: { Text("Cancel").frame(minWidth: 44) }
+                        .buttonStyle(.vfSecondary)
+                        .keyboardShortcut(.cancelAction)
+                }
+                .padding(.horizontal, VFSpace.m)
+                .padding(.vertical, VFSpace.s)
             }
         }
-        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 6))
-        .overlay(RoundedRectangle(cornerRadius: 6).stroke(Color.black.opacity(0.15)))
-        .shadow(color: .black.opacity(0.15), radius: 10, y: 3)
+        .background(theme.fusion.card)
+        .overlay(Rectangle().strokeBorder(theme.fusion.line, lineWidth: 1))
+        .modifier(FeatureSessionSync(model: model))
     }
 
-    private var title: String { model.genericCommand?.label ?? model.tool.label }
+    private var title: String {
+        if let e = FeatureSession.of(model).editing { return String(localized: "Edit \(e.name)") }
+        return model.genericCommand?.label ?? model.tool.label
+    }
     private var icon: String { model.genericCommand.map { CommandSymbol.of($0.icon, id: $0.id) } ?? model.tool.symbol }
 
     @ViewBuilder private var rows: some View {
         switch model.tool {
-        case .extrude, .revolve:
-            selectionRow("Profile", model.sketchOpen ? "open sketch" : "last sketch, all profiles")
-        case .pressPull, .shell:
-            selectionRow("Faces", "\(model.selection.filter(\.isFace).count) selected")
-        case .fillet, .chamfer:
-            selectionRow("Edges", "\(model.selection.filter(\.isEdge).count) selected")
+        case .pressPull:
+            pickRow("Faces", model.selection.filter(\.isFace).count) { model.selection = []; model.applyPreview() }
         case .move, .mirror:
-            selectionRow("Bodies", "\(model.bodiesInSelection.count) selected")
+            pickRow("Bodies", model.bodiesInSelection.count) { model.selection = []; model.selectedBodies = [] }
         case .box, .cylinder, .sphere, .torus:
-            Text("Click in the viewport to place it.").font(.callout).foregroundStyle(.secondary)
+            Text("Click in the viewport to place it.").font(.callout).foregroundStyle(theme.inkSecondary)
         default:
-            if model.tool.isSketchTool { Text(sketchHint).font(.callout).foregroundStyle(.secondary) }
+            if model.tool.isSketchTool { Text(sketchHint).font(.callout).foregroundStyle(theme.inkSecondary) }
         }
         if let v = model.tool.value {
-            ValueField(label: v.label, unit: v.unit, value: $model.toolValue, step: v.unit == "deg" ? 15 : 1)
-        }
-        if model.tool == .extrude || model.tool == .revolve {
-            Picker("Operation", selection: $model.toolOperation) {
-                Text("Automatic").tag("auto"); Text("New Body").tag("new_body"); Text("Join").tag("join"); Text("Cut").tag("cut"); Text("Intersect").tag("intersect")
+            HStack {
+                Text(v.label).font(.callout).foregroundStyle(theme.inkSecondary)
+                Spacer(minLength: 0)
+                NumberField(v.label, value: $model.toolValue, unit: VFUnit(symbol: v.unit), step: v.unit == "deg" ? 15 : 1, width: 82)
+                    .labelHiddenVisually()
+                    .focusBinding($valueFocused)
+                    .submitNext(.done) { Self.endFieldEditing() }
             }
-            .onChange(of: model.toolOperation) { _, _ in model.applyPreview() }
-        }
-        if model.tool == .revolve {
-            Picker("Axis", selection: $model.revolveAxis) {
-                Text("Sketch X").tag("x"); Text("Sketch Y").tag("y"); Text("X").tag("X"); Text("Y").tag("Y"); Text("Z").tag("Z")
-            }
-            .onChange(of: model.revolveAxis) { _, _ in model.applyPreview() }
         }
         if model.tool == .move {
-            HStack {
-                ForEach(0..<3, id: \.self) { i in
-                    TextField(["X", "Y", "Z"][i], value: Binding(get: { model.moveVector[i] }, set: { model.moveVector[i] = $0 }), format: .number)
-                        .textFieldStyle(.roundedBorder)
-                }
-            }
+            MoveDialogRows(session: FeatureSession.of(model), labelWidth: Self.labelWidth)
         }
         if model.tool == .mirror {
-            Picker("Plane", selection: $model.mirrorPlane) { ForEach(["XY", "XZ", "YZ"], id: \.self) { Text($0) } }.pickerStyle(.segmented)
+            VFSegmented("Plane", selection: $model.mirrorPlane, items: ["XY", "XZ", "YZ"], title: { $0 })
         }
         if model.tool == .sketch {
-            Text("Click a planar face, or a plane:").font(.callout).foregroundStyle(.secondary)
-            HStack { ForEach(["XY", "XZ", "YZ"], id: \.self) { p in Button(p) { model.startSketch(p) } } }
+            Text("Click a planar face, or a plane:").font(.callout).foregroundStyle(theme.inkSecondary)
+            HStack { ForEach(["XY", "XZ", "YZ"], id: \.self) { p in Button(p) { model.startSketch(p) } } }.buttonStyle(.vfSecondary)
         }
     }
 
@@ -519,41 +603,67 @@ struct CommandDialog: View {
         }
     }
 
-    private func selectionRow(_ label: String, _ value: String) -> some View {
-        HStack {
-            Text(label).font(.callout).foregroundStyle(.secondary).frame(width: 70, alignment: .leading)
-            Image(systemName: "cursorarrow.click").foregroundStyle(Color.accentColor)
-            Text(value).font(.callout)
-        }
+    private func pickRow(_ label: String, _ count: Int, clear: @escaping () -> Void) -> some View {
+        let l = String(localized: String.LocalizationValue(label))
+        return SelectionButtonRow(label: l, text: count == 0 ? String(localized: "Select") : String(localized: "\(count) selected"),
+                                  count: count, active: count == 0, labelWidth: Self.labelWidth, activate: {}, clear: clear)
     }
 
-    private func ok() {
+    private func ok() { Self.finish(model) }
+
+    /// Return in a field: the field has committed; leave it, so the next Return accepts.
+    static func endFieldEditing() {
+        NSApp.keyWindow?.makeFirstResponder(nil)
+    }
+
+    /// What the running command still needs before OK, or nil.
+    static func missing(_ model: DesignModel) -> String? {
+        if model.genericCommand != nil { return nil }
+        return FeatureSession.of(model).missingInput()
+    }
+
+    /// OK can run now (for the dialog, the ribbon's Done and the marking menu).
+    static func canFinish(_ model: DesignModel) -> Bool {
+        model.genericCommand == nil && model.tool != .select && missing(model) == nil
+    }
+
+    /// What OK does for the running command, from the dialog, the ribbon or the marking menu.
+    static func finish(_ model: DesignModel) {
+        if model.genericCommand != nil { return }
+        if let why = missing(model) {
+            model.flash(why, error: true)
+            return
+        }
         switch model.tool {
-        case .move: model.moveSelected(); model.tool = .select
+        case .move: FeatureSession.of(model).commitMove()
         case .mirror: model.mirrorSelected(); model.tool = .select
         case .line, .spline: model.endChain(); model.tool = .select
-        default: if model.hasPreview { model.commitTool() } else { model.tool = .select }
+        default: FeatureSession.of(model).commit()
         }
     }
 
-    private func close() {
-        if model.genericCommand != nil { model.genericCommand = nil } else { model.cancelTool() }
+    /// Cancel: the preview (or the edit) goes back and the tool ends.
+    static func cancel(_ model: DesignModel) {
+        if model.genericCommand != nil { model.genericCommand = nil } else { FeatureSession.of(model).cancel() }
     }
+
+    private func close() { Self.cancel(model) }
 }
 
 // MARK: Navigation bar and timeline
 
 struct NavigationBar: View {
+    @Environment(\.viaFormTheme) private var theme
     let model: DesignModel
     @Binding var perspective: Bool
 
     var body: some View {
-        HStack(spacing: 2) {
+        HStack(spacing: VFSpace.xxs) {
             item("rotate.3d", "Orbit (right drag or Option drag)") { model.camera.orbit(dx: 40, dy: 0); model.cameraChanged() }
             item("hand.raised", "Pan (middle drag or two fingers)") {}
             item("plus.magnifyingglass", "Zoom in") { model.camera.zoom(1.25); model.cameraChanged() }
             item("arrow.up.left.and.down.right.magnifyingglass", "Fit") { model.zoomToFit() }
-            Divider().frame(height: 18)
+            Divider().frame(height: LegacyMetrics.navDivider)
             item("viewfinder", "Look At") {
                 if case let .face(_, _, _, n)? = model.selection.first(where: \.isFace) { model.look(along: n) }
                 else if let pl = model.sketchPlane { model.look(along: pl.normal) }
@@ -562,7 +672,7 @@ struct NavigationBar: View {
                 Toggle("Perspective", isOn: $perspective)
                 ForEach(StandardView.allCases, id: \.self) { v in Button(v.rawValue.capitalized) { model.setView(v) } }
             } label: { Image(systemName: "cube.transparent") }
-            .menuStyle(.borderlessButton).fixedSize().frame(width: 34)
+            .menuStyle(.vfPlain).frame(width: LegacyMetrics.navMenu)
             Menu {
                 Button("Shaded with Edges") { model.run("view.visual_style", ["style": "shaded_with_edges"], quiet: true) }
                 Button("Shaded") { model.run("view.visual_style", ["style": "shaded"], quiet: true) }
@@ -570,42 +680,52 @@ struct NavigationBar: View {
                 Divider()
                 Button("Toggle Grid") { model.run("view.grid", quiet: true) }
             } label: { Image(systemName: "square.grid.3x3.square") }
-            .menuStyle(.borderlessButton).fixedSize().frame(width: 34)
+            .menuStyle(.vfPlain).frame(width: LegacyMetrics.navMenu)
         }
-        .padding(.horizontal, 6).frame(height: 32)
-        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 6))
-        .overlay(RoundedRectangle(cornerRadius: 6).stroke(Color.black.opacity(0.12)))
+        .foregroundStyle(theme.ink)
+        .padding(.horizontal, VFSpace.s).frame(height: LegacyMetrics.navBar)
+        .vfSurface(.control)
     }
 
     private func item(_ symbol: String, _ help: String, action: @escaping () -> Void) -> some View {
-        Button(action: action) { Image(systemName: symbol).frame(width: 30, height: 26) }
+        Button(action: action) { Image(systemName: symbol).frame(width: LegacyMetrics.navItem.width, height: LegacyMetrics.navItem.height) }
             .buttonStyle(.plain).help(help)
     }
 }
 
 struct TimelineBar: View {
+    @Environment(\.viaFormTheme) private var theme
     let model: DesignModel
 
+    @State private var editing: FeatureEditRequest?
+
     var body: some View {
-        HStack(spacing: 8) {
-            HStack(spacing: 2) {
+        content.sheet(item: $editing) { r in EditFeatureSheet(model: model, feature: r.feature) }
+    }
+
+    @ViewBuilder private var content: some View {
+        HStack(spacing: VFSpace.m) {
+            HStack(spacing: VFSpace.xxs) {
                 control("backward.end.fill") { model.rollTimeline(to: 0) }
                 control("backward.frame.fill") { model.rollTimeline(to: max(0, model.snapshot.marker - 1)) }
                 control("play.fill") { model.run("timeline.roll_to", ["position": "end"], quiet: true) }
                 control("forward.frame.fill") { model.rollTimeline(to: min(model.snapshot.timeline.count, model.snapshot.marker + 1)) }
                 control("forward.end.fill") { model.run("timeline.roll_to", ["position": "end"], quiet: true) }
             }
-            Divider().frame(height: 22)
+            Divider().frame(height: LegacyMetrics.timelineDivider)
             ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 3) {
+                HStack(spacing: VFSpace.xxs) {
                     ForEach(Array(model.snapshot.timeline.enumerated()), id: \.element.id) { i, f in
                         let rolled = f.rolled_back ?? false
                         Image(systemName: FeatureSymbol.of(f.type))
-                            .font(.system(size: 15))
-                            .frame(width: 30, height: 26)
-                            .background(f.error != nil ? Color.red.opacity(0.25) : (rolled ? Color.clear : Color.accentColor.opacity(0.12)), in: RoundedRectangle(cornerRadius: 4))
+                            .font(VFFont.glyph(15))
+                            .foregroundStyle(theme.ink)
+                            .frame(width: LegacyMetrics.navItem.width, height: LegacyMetrics.navItem.height)
+                            .background(f.error != nil ? theme.danger.opacity(0.25) : (rolled ? Color.clear : theme.accent.opacity(0.12)),
+                                        in: RoundedRectangle(cornerRadius: VFRadius.chip, style: .continuous))
                             .opacity(rolled ? 0.4 : 1)
                             .help("\(f.name) (\(f.type))" + (f.error.map { "\n\($0)" } ?? ""))
+                            .onTapGesture(count: 2) { FeatureEditor.edit(model, feature: f.name) { editing = FeatureEditRequest(feature: f.name) } }
                             .onTapGesture { model.rollTimeline(to: i + 1) }
                             .draggable(f.name)
                             .dropDestination(for: String.self) { names, _ in
@@ -615,51 +735,67 @@ struct TimelineBar: View {
                             }
                             .contextMenu {
                                 Button("Roll History Marker Here") { model.rollTimeline(to: i + 1) }
-                                Button("Edit Feature") { model.run("timeline.edit", ["feature": f.name]) }
+                                if f.type.lowercased() == "sketch", let sk = FeatureEditor.sketchID(model, feature: f.name) {
+                                    SketchTileMenuItems(model: model, sketch: sk)
+                                } else {
+                                    Button("Edit Feature") { FeatureEditor.edit(model, feature: f.name) { editing = FeatureEditRequest(feature: f.name) } }
+                                }
                                 Button("Suppress") { model.run("timeline.suppress", ["feature": f.id]) }
                                 Button("Delete") { model.run("timeline.delete", ["feature": f.id]) }
                             }
                         if i + 1 == model.snapshot.marker, model.snapshot.marker < model.snapshot.timeline.count {
-                            Rectangle().fill(Color.orange).frame(width: 3, height: 26)
+                            Rectangle().fill(theme.warning).frame(width: LegacyMetrics.marker, height: LegacyMetrics.navItem.height)
                         }
                     }
                 }
             }
             Spacer()
         }
-        .padding(.horizontal, 10)
-        .frame(height: 38)
-        .background(Color(nsColor: .underPageBackgroundColor))
+        .padding(.horizontal, VFSpace.m)
+        .frame(height: LegacyMetrics.timeline)
+        .background(theme.chromeDeep)
     }
 
     private func control(_ symbol: String, action: @escaping () -> Void) -> some View {
-        Button(action: action) { Image(systemName: symbol).font(.system(size: 11)).frame(width: 24, height: 24) }.buttonStyle(.plain)
+        Button(action: action) { Image(systemName: symbol).font(VFFont.glyph(11)).frame(width: LegacyMetrics.timelineControl, height: LegacyMetrics.timelineControl) }
+            .buttonStyle(.plain).foregroundStyle(theme.ink)
     }
 }
 
-// MARK: Files
-
-enum FileActions {
-    static func open(_ model: DesignModel) {
-        let p = NSOpenPanel()
-        p.allowedContentTypes = ["sc", "solidcraft", "json", "step", "stp", "iges", "igs", "stl", "obj", "3mf", "dxf", "svg"].compactMap { UTType(filenameExtension: $0) }
-        p.allowsOtherFileTypes = true
-        if p.runModal() == .OK, let url = p.url { model.open(url) }
-    }
-
-    static func save(_ model: DesignModel) {
-        if let path = model.snapshot.path { model.run("file.save", ["path": path]); return }
-        let p = NSSavePanel()
-        p.nameFieldStringValue = model.snapshot.name + ".sc"
-        if p.runModal() == .OK, let url = p.url { model.save(to: url) }
-    }
-
-    static func export(_ model: DesignModel) {
-        let p = NSSavePanel()
-        p.nameFieldStringValue = model.snapshot.name + ".step"
-        p.allowedContentTypes = ["step", "stl", "obj", "3mf"].compactMap { UTType(filenameExtension: $0) }
-        p.allowsOtherFileTypes = true
-        if p.runModal() == .OK, let url = p.url { model.export(to: url) }
-    }
+/// Geometry of the legacy layout's own bars and panels (`--legacy-ui`). Colours, type, spacing
+/// and radii come from the theme tokens; these are the few fixed sizes this layout alone uses.
+private enum LegacyMetrics {
+    /// Pipeline row and design tab height.
+    static let bar: CGFloat = 30
+    static let appBar: CGFloat = 36
+    static let iconButton: CGFloat = 28
+    static let tabStrip: CGFloat = 28
+    static let tabUnderline: CGFloat = 2
+    static let ribbonBody: CGFloat = 70
+    static let ribbonButtons: CGFloat = 60
+    static let panelDivider: CGFloat = 54
+    static let commandButton = CGSize(width: 40, height: 34)
+    static let bomHeight: CGFloat = 460
+    static let libraryIdeal: CGFloat = 380
+    static let libraryMax: CGFloat = 560
+    static let browserWidth: CGFloat = 250
+    static let browserMaxHeight: CGFloat = 380
+    static let viewCube: CGFloat = 104
+    static let dialogWidth: CGFloat = 300
+    /// Browser tree: icon column, disclosure chevron and the indent of each level.
+    static let rowIcon: CGFloat = 14
+    static let chevron: CGFloat = 10
+    static let indentStep: CGFloat = 14
+    static func indent(_ level: Int) -> CGFloat { VFSpace.m + CGFloat(level) * indentStep }
+    static let navBar: CGFloat = 32
+    static let navItem = CGSize(width: 30, height: 26)
+    static let navMenu: CGFloat = 34
+    static let navDivider: CGFloat = 18
+    static let timeline: CGFloat = 38
+    static let timelineDivider: CGFloat = 22
+    static let timelineControl: CGFloat = 24
+    /// The history marker between two features.
+    static let marker: CGFloat = 3
 }
+
 #endif

@@ -7,6 +7,15 @@ on:
   workflow_call:
 
 jobs:
+  # UI-UX-AUDIT P1-6 and P1-7: no hard-coded font sizes or literal colours in the Swift apps
+  # outside apple/Shared/UI/Theme (exceptions in scripts/lint-ui-tokens.allow). Shell only.
+  ui-tokens:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: UI token lint
+        run: bash scripts/lint-ui-tokens.sh
+
   test:
     strategy:
       fail-fast: false
@@ -24,8 +33,12 @@ jobs:
           node-version: 22
           cache: npm
           cache-dependency-path: electron/package-lock.json
-      - name: Core tests (link, project file)
-        run: cargo test --release -p viaform-core
+      # Every crate of the workspace (the engines are workspaces of their own and stay out),
+      # including the bridge smoke tests in bridge/tests/smoke.rs. viaform-node is a N-API
+      # cdylib: its symbols come from the Node process, so a test binary cannot link it on
+      # every OS. The Electron step below builds and tests it through Node instead.
+      - name: Workspace tests
+        run: cargo test --release --workspace --exclude viaform-node
       - name: App build and end-to-end tests
         working-directory: electron
         run: |
@@ -34,3 +47,42 @@ jobs:
           npm run typecheck
           npm test
           npm run build:renderer
+      - name: UI test (drives the app)
+        working-directory: electron
+        shell: bash
+        run: |
+          if [ "$RUNNER_OS" = "Linux" ]; then
+            sudo apt-get update && sudo apt-get install -y xvfb
+            xvfb-run -a npm run test:ui
+          else
+            npm run test:ui
+          fi
+
+  # MuJoCo backend (mujoco/README.md): fetches the pinned official release, then builds and
+  # tests viaform-mujoco and the bridge with the feature. macOS and Linux only; separate from
+  # the job above, which builds without MuJoCo.
+  mujoco:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-latest, ubuntu-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - name: Cache MuJoCo
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/Library/Caches/viaform-mujoco
+            ~/.cache/viaform-mujoco
+          key: mujoco-3.17.0-${{ runner.os }}-${{ runner.arch }}
+      - name: Fetch MuJoCo
+        run: bash mujoco/scripts/fetch-mujoco.sh
+      - name: MuJoCo backend tests
+        run: |
+          cargo test --release -p viaform-mujoco --features mujoco -- --nocapture --test-threads 1
+          cargo test --release -p viaform-ffi --features mujoco --lib phys

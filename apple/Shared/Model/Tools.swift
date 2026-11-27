@@ -7,6 +7,11 @@ enum Tool: String, CaseIterable, Identifiable {
     // Sketch
     case line, rectangle, centerRectangle, circle, arc, polygon, slot, spline, point
     case sketchFillet, trim, offset
+    // Sketch tools added for click-to-draw (B-11): see SketchDrawing.swift.
+    case project, sketchMirror, threePointRectangle, twoPointCircle, threePointCircle, ellipse, extend
+    case sketchRectPattern, sketchCircPattern
+    /// Pick one or two sketch entities, then click where the value goes (`sketch.dimension`).
+    case dimension
     // Solid
     case sketch, extrude, revolve, pressPull, fillet, chamfer, shell
     case box, cylinder, sphere, torus
@@ -31,6 +36,16 @@ enum Tool: String, CaseIterable, Identifiable {
         case .sketchFillet: "Sketch Fillet"
         case .trim: "Trim"
         case .offset: "Offset"
+        case .project: "Project"
+        case .sketchMirror: "Sketch Mirror"
+        case .threePointRectangle: "3-Point Rectangle"
+        case .twoPointCircle: "2-Point Circle"
+        case .threePointCircle: "3-Point Circle"
+        case .ellipse: "Ellipse"
+        case .extend: "Extend"
+        case .sketchRectPattern: "Rectangular Pattern"
+        case .sketchCircPattern: "Circular Pattern"
+        case .dimension: "Dimension"
         case .sketch: "Sketch"
         case .extrude: "Extrude"
         case .revolve: "Revolve"
@@ -68,6 +83,16 @@ enum Tool: String, CaseIterable, Identifiable {
         case .sketchFillet: "arrow.turn.down.right"
         case .trim: "scissors"
         case .offset: "square.on.square.dashed"
+        case .project: "arrow.down.to.line"
+        case .sketchMirror: "arrow.left.and.right"
+        case .threePointRectangle: "rectangle.dashed"
+        case .twoPointCircle: "circle.dashed"
+        case .threePointCircle: "circle.dotted"
+        case .ellipse: "oval"
+        case .extend: "arrow.right.to.line"
+        case .sketchRectPattern: "square.grid.3x3"
+        case .sketchCircPattern: "circle.grid.cross"
+        case .dimension: "lines.measurement.horizontal"
         case .sketch: "pencil.and.outline"
         case .extrude: "square.stack.3d.up"
         case .revolve: "arrow.triangle.2.circlepath"
@@ -91,7 +116,9 @@ enum Tool: String, CaseIterable, Identifiable {
 
     var isSketchTool: Bool {
         switch self {
-        case .line, .rectangle, .centerRectangle, .circle, .arc, .polygon, .slot, .spline, .point, .sketchFillet, .trim, .offset: true
+        case .line, .rectangle, .centerRectangle, .circle, .arc, .polygon, .slot, .spline, .point, .sketchFillet, .trim, .offset, .dimension,
+             .project, .sketchMirror, .threePointRectangle, .twoPointCircle, .threePointCircle, .ellipse, .extend,
+             .sketchRectPattern, .sketchCircPattern: true
         default: false
         }
     }
@@ -99,8 +126,8 @@ enum Tool: String, CaseIterable, Identifiable {
     /// Clicks on the sketch plane the tool needs (0 = open-ended, finished by the user).
     var clicks: Int {
         switch self {
-        case .rectangle, .centerRectangle, .circle, .polygon: 2
-        case .arc, .slot: 3
+        case .rectangle, .centerRectangle, .circle, .polygon, .twoPointCircle: 2
+        case .arc, .slot, .threePointRectangle, .threePointCircle, .ellipse: 3
         case .point: 1
         case .line, .spline: 0
         default: 0
@@ -123,6 +150,8 @@ enum Tool: String, CaseIterable, Identifiable {
         case .sphere: ("Diameter", "mm", 20)
         case .torus: ("Major diameter", "mm", 30)
         case .polygon: ("Sides", "", 6)
+        case .sketchRectPattern: ("Count", "", 3)
+        case .sketchCircPattern: ("Count", "", 6)
         default: nil
         }
     }
@@ -142,6 +171,16 @@ enum Tool: String, CaseIterable, Identifiable {
         case .sketchFillet: "sketch.fillet"
         case .trim: "sketch.trim"
         case .offset: "sketch.offset"
+        case .project: "sketch.project"
+        case .sketchMirror: "sketch.mirror"
+        case .threePointRectangle: "sketch.rectangle.three_point"
+        case .twoPointCircle: "sketch.circle.two_point"
+        case .threePointCircle: "sketch.circle.three_point"
+        case .ellipse: "sketch.ellipse"
+        case .extend: "sketch.extend"
+        case .sketchRectPattern: "sketch.pattern.rectangular"
+        case .sketchCircPattern: "sketch.pattern.circular"
+        case .dimension: "sketch.dimension"
         case .sketch: "sketch.create"
         case .extrude: "solid.extrude"
         case .revolve: "solid.revolve"
@@ -162,7 +201,11 @@ enum Tool: String, CaseIterable, Identifiable {
         }
     }
 
-    static let sketchTools: [Tool] = [.line, .rectangle, .centerRectangle, .circle, .arc, .polygon, .slot, .spline, .point, .sketchFillet, .trim, .offset]
+    static let sketchTools: [Tool] = [.line, .rectangle, .centerRectangle, .circle, .arc, .polygon, .slot, .spline, .point, .sketchFillet, .trim, .offset, .dimension]
+    /// The other click-to-draw sketch tools (B-11), in the order of the reference's CREATE and
+    /// MODIFY menus. Kept out of `sketchTools` so existing rails keep their length.
+    static let moreSketchTools: [Tool] = [.project, .sketchMirror, .threePointRectangle, .twoPointCircle, .threePointCircle,
+                                          .ellipse, .extend, .sketchRectPattern, .sketchCircPattern]
     static let solidTools: [Tool] = [.sketch, .extrude, .revolve, .pressPull, .fillet, .chamfer, .shell]
     static let primitiveTools: [Tool] = [.box, .cylinder, .sphere, .torus]
     static let combineTools: [Tool] = [.union, .subtract, .intersect, .move, .mirror, .delete]

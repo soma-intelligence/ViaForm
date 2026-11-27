@@ -1,5 +1,5 @@
 [package]
-name = "solidcraft-ffi"
+name = "viaform-ffi"
 description = "C ABI over the ViaForm core (SolidCraft CAD and PCBCraft PCB) for the native Swift front ends"
 version.workspace = true
 edition.workspace = true
@@ -7,10 +7,21 @@ license.workspace = true
 publish = false
 
 [lib]
-crate-type = ["staticlib"]
+crate-type = ["staticlib", "rlib"]
 
 [dependencies]
 viaform-core.workspace = true
+viaform-library.workspace = true
+viaform-sim.workspace = true
+viaform-bom.workspace = true
+viaform-kin.workspace = true
+viaform-phys.workspace = true
+# MuJoCo backend: without the feature, a stub that answers engine.unavailable (no C library).
+viaform-mujoco.workspace = true
 solidcraft-engine.workspace = true
 pcbcraft-engine.workspace = true
 serde_json.workspace = true
+
+[features]
+# Links the official MuJoCo library (mujoco/README.md) so "engine": "mujoco" runs.
+mujoco = ["viaform-mujoco/mujoco"]

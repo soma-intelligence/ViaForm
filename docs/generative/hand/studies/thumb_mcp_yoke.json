@@ -1,0 +1,603 @@
+{
+  "method": "topology",
+  "objective": "mass",
+  "name": "thumb_mcp_yoke",
+  "min": [
+    -6.8999999999999995,
+    -9.0,
+    -8.0
+  ],
+  "max": [
+    17.1,
+    9.0,
+    8.0
+  ],
+  "voxel": 0.55,
+  "material": {
+    "name": "AlSi10Mg (laser powder bed)",
+    "e": 70000.0,
+    "nu": 0.33,
+    "density": 0.00267,
+    "allowable": 230.0,
+    "color": "#c4c8cc"
+  },
+  "supports": [
+    {
+      "region": {
+        "shape": "tube",
+        "base": [
+          0.0,
+          0.0,
+          -4.0
+        ],
+        "axis": [
+          0.0,
+          0.0,
+          1.0
+        ],
+        "inner": 3.95,
+        "outer": 5.0,
+        "length": 8.0
+      },
+      "fix": [
+        true,
+        true,
+        true
+      ]
+    }
+  ],
+  "cases": [
+    {
+      "name": "flexor at the tendon cap",
+      "loads": [
+        {
+          "type": "force",
+          "region": {
+            "shape": "box",
+            "min": [
+              -1.5,
+              -6.3,
+              -4.6
+            ],
+            "max": [
+              1.5,
+              -4.5,
+              4.6
+            ]
+          },
+          "force": [
+            -89.0,
+            0.0,
+            0.0
+          ]
+        },
+        {
+          "type": "force",
+          "region": {
+            "shape": "box",
+            "min": [
+              -1.5,
+              4.5,
+              -4.6
+            ],
+            "max": [
+              1.5,
+              6.3,
+              4.6
+            ]
+          },
+          "force": [
+            -20.0,
+            0.0,
+            0.0
+          ]
+        },
+        {
+          "type": "force",
+          "region": {
+            "shape": "tube",
+            "base": [
+              12.0,
+              5.0,
+              0.0
+            ],
+            "axis": [
+              0.0,
+              1.0,
+              0.0
+            ],
+            "inner": 1.5,
+            "outer": 4.5,
+            "length": 4.0
+          },
+          "force": [
+            -109.0,
+            17.25,
+            0.0
+          ]
+        },
+        {
+          "type": "force",
+          "region": {
+            "shape": "tube",
+            "base": [
+              12.0,
+              -9.0,
+              0.0
+            ],
+            "axis": [
+              0.0,
+              1.0,
+              0.0
+            ],
+            "inner": 1.5,
+            "outer": 4.5,
+            "length": 4.0
+          },
+          "force": [
+            -109.0,
+            17.25,
+            0.0
+          ]
+        }
+      ],
+      "acceleration": null,
+      "weight": 1.0
+    },
+    {
+      "name": "extensor at the tendon cap",
+      "loads": [
+        {
+          "type": "force",
+          "region": {
+            "shape": "box",
+            "min": [
+              -1.5,
+              4.5,
+              -4.6
+            ],
+            "max": [
+              1.5,
+              6.3,
+              4.6
+            ]
+          },
+          "force": [
+            -89.0,
+            0.0,
+            0.0
+          ]
+        },
+        {
+          "type": "force",
+          "region": {
+            "shape": "box",
+            "min": [
+              -1.5,
+              -6.3,
+              -4.6
+            ],
+            "max": [
+              1.5,
+              -4.5,
+              4.6
+            ]
+          },
+          "force": [
+            -20.0,
+            0.0,
+            0.0
+          ]
+        },
+        {
+          "type": "force",
+          "region": {
+            "shape": "tube",
+            "base": [
+              12.0,
+              5.0,
+              0.0
+            ],
+            "axis": [
+              0.0,
+              1.0,
+              0.0
+            ],
+            "inner": 1.5,
+            "outer": 4.5,
+            "length": 4.0
+          },
+          "force": [
+            -109.0,
+            -17.25,
+            0.0
+          ]
+        },
+        {
+          "type": "force",
+          "region": {
+            "shape": "tube",
+            "base": [
+              12.0,
+              -9.0,
+              0.0
+            ],
+            "axis": [
+              0.0,
+              1.0,
+              0.0
+            ],
+            "inner": 1.5,
+            "outer": 4.5,
+            "length": 4.0
+          },
+          "force": [
+            -109.0,
+            -17.25,
+            0.0
+          ]
+        }
+      ],
+      "acceleration": null,
+      "weight": 1.0
+    },
+    {
+      "name": "side push",
+      "loads": [
+        {
+          "type": "force",
+          "region": {
+            "shape": "box",
+            "min": [
+              -1.5,
+              -6.3,
+              -4.6
+            ],
+            "max": [
+              1.5,
+              -4.5,
+              4.6
+            ]
+          },
+          "force": [
+            -20.0,
+            0.0,
+            0.0
+          ]
+        },
+        {
+          "type": "force",
+          "region": {
+            "shape": "box",
+            "min": [
+              -1.5,
+              4.5,
+              -4.6
+            ],
+            "max": [
+              1.5,
+              6.3,
+              4.6
+            ]
+          },
+          "force": [
+            -20.0,
+            0.0,
+            0.0
+          ]
+        },
+        {
+          "type": "force",
+          "region": {
+            "shape": "tube",
+            "base": [
+              12.0,
+              5.0,
+              0.0
+            ],
+            "axis": [
+              0.0,
+              1.0,
+              0.0
+            ],
+            "inner": 1.5,
+            "outer": 4.5,
+            "length": 4.0
+          },
+          "force": [
+            -40.0,
+            2.5,
+            0.0
+          ]
+        },
+        {
+          "type": "torque",
+          "region": {
+            "shape": "tube",
+            "base": [
+              12.0,
+              5.0,
+              0.0
+            ],
+            "axis": [
+              0.0,
+              1.0,
+              0.0
+            ],
+            "inner": 1.5,
+            "outer": 4.5,
+            "length": 4.0
+          },
+          "center": [
+            12.0,
+            0.0,
+            0.0
+          ],
+          "axis": [
+            0.0,
+            0.0,
+            1.0
+          ],
+          "moment": 162.5
+        },
+        {
+          "type": "force",
+          "region": {
+            "shape": "tube",
+            "base": [
+              12.0,
+              -9.0,
+              0.0
+            ],
+            "axis": [
+              0.0,
+              1.0,
+              0.0
+            ],
+            "inner": 1.5,
+            "outer": 4.5,
+            "length": 4.0
+          },
+          "force": [
+            -40.0,
+            2.5,
+            0.0
+          ]
+        },
+        {
+          "type": "torque",
+          "region": {
+            "shape": "tube",
+            "base": [
+              12.0,
+              -9.0,
+              0.0
+            ],
+            "axis": [
+              0.0,
+              1.0,
+              0.0
+            ],
+            "inner": 1.5,
+            "outer": 4.5,
+            "length": 4.0
+          },
+          "center": [
+            12.0,
+            0.0,
+            0.0
+          ],
+          "axis": [
+            0.0,
+            0.0,
+            1.0
+          ],
+          "moment": 162.5
+        }
+      ],
+      "acceleration": null,
+      "weight": 1.0
+    },
+    {
+      "name": "drop 100 g",
+      "loads": [],
+      "acceleration": [
+        0.0,
+        0.0,
+        -981000.0
+      ],
+      "weight": 0.5
+    }
+  ],
+  "keep_out": [
+    {
+      "shape": "cylinder",
+      "base": [
+        0.0,
+        0.0,
+        -4.0
+      ],
+      "axis": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "radius": 4.0,
+      "length": 8.0
+    },
+    {
+      "shape": "cylinder",
+      "base": [
+        0.0,
+        0.0,
+        -9.0
+      ],
+      "axis": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "radius": 1.8,
+      "length": 18.0
+    },
+    {
+      "shape": "cylinder",
+      "base": [
+        0.0,
+        0.0,
+        5.0
+      ],
+      "axis": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "radius": 5.3,
+      "length": 4.0
+    },
+    {
+      "shape": "cylinder",
+      "base": [
+        0.0,
+        0.0,
+        -9.0
+      ],
+      "axis": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "radius": 5.3,
+      "length": 4.0
+    },
+    {
+      "shape": "cylinder",
+      "base": [
+        12.0,
+        -10.0,
+        0.0
+      ],
+      "axis": [
+        0.0,
+        1.0,
+        0.0
+      ],
+      "radius": 1.5,
+      "length": 20.0
+    },
+    {
+      "shape": "cylinder",
+      "base": [
+        12.0,
+        -5.0,
+        0.0
+      ],
+      "axis": [
+        0.0,
+        1.0,
+        0.0
+      ],
+      "radius": 7.0,
+      "length": 10.0
+    },
+    {
+      "shape": "box",
+      "min": [
+        5.0,
+        -5.0,
+        -9.0
+      ],
+      "max": [
+        18.1,
+        5.0,
+        9.0
+      ]
+    }
+  ],
+  "keep_in": [
+    {
+      "shape": "cylinder",
+      "base": [
+        0.0,
+        0.0,
+        -4.6
+      ],
+      "axis": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "radius": 6.3,
+      "length": 9.2
+    },
+    {
+      "shape": "tube",
+      "base": [
+        12.0,
+        5.0,
+        0.0
+      ],
+      "axis": [
+        0.0,
+        1.0,
+        0.0
+      ],
+      "inner": 1.5,
+      "outer": 4.5,
+      "length": 4.0
+    },
+    {
+      "shape": "tube",
+      "base": [
+        12.0,
+        -9.0,
+        0.0
+      ],
+      "axis": [
+        0.0,
+        1.0,
+        0.0
+      ],
+      "inner": 1.5,
+      "outer": 4.5,
+      "length": 4.0
+    }
+  ],
+  "volume_fraction": 0.5,
+  "max_stress": null,
+  "safety_factor": 2.0,
+  "max_displacement": 0.25,
+  "min_frequency": null,
+  "symmetry": [
+    false,
+    false,
+    false
+  ],
+  "min_member": 1.2,
+  "manufacturing": {
+    "process": "additive",
+    "build": [
+      0.0,
+      0.0,
+      1.0
+    ],
+    "overhang": 45.0
+  },
+  "iterations": 30,
+  "dynamics": {
+    "modes": 3,
+    "impacts": []
+  },
+  "variants": 1,
+  "seed": 1,
+  "smoothing": 10,
+  "robust": null,
+  "frequency_modes": 3,
+  "mass_target_g": null,
+  "max_beta": 16.0,
+  "tolerance": 0.0,
+  "bores": [],
+  "exact_keep_outs": true,
+  "max_bodies": 1,
+  "point_masses": []
+}

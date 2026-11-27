@@ -4,104 +4,119 @@ import SwiftUI
 
 // MARK: Marking menu
 
-/// The right-click wheel: eight commands around the cursor and an overflow list under it.
-/// Drag or click toward a slice to run it; Escape or a click outside closes it.
+/// The right-click wheel (M-7): eight commands on the Fusion compass around the cursor and an
+/// overflow list under it. Moving the pointer toward a slice highlights its wedge and a click
+/// anywhere in the wedge runs it; a right-drag flick runs a slice without the wheel
+/// (`MarkingFlick`). The south slice opens the sketch submenu. Escape or a click outside closes it.
 struct MarkingMenu: View {
+    @Environment(\.viaFormTheme) private var theme
     let model: DesignModel
     let at: CGPoint
-
-    private struct Slot: Identifiable {
-        let id: String
-        let symbol: String
-        let run: (DesignModel) -> Void
-    }
-
-    private var wheel: [Slot] {
-        if model.sketchOpen {
-            return [
-                Slot(id: "Line", symbol: Tool.line.symbol) { $0.tool = .line },
-                Slot(id: "Finish Sketch", symbol: "checkmark.circle") { $0.finishSketch() },
-                Slot(id: "Rectangle", symbol: Tool.rectangle.symbol) { $0.tool = .rectangle },
-                Slot(id: "Redo", symbol: "arrow.uturn.forward") { $0.redo() },
-                Slot(id: "Trim", symbol: Tool.trim.symbol) { $0.tool = .trim },
-                Slot(id: "Delete", symbol: "trash") { $0.deleteSelection() },
-                Slot(id: "Circle", symbol: Tool.circle.symbol) { $0.tool = .circle },
-                Slot(id: "Undo", symbol: "arrow.uturn.backward") { $0.undo() },
-            ]
-        }
-        return [
-            Slot(id: "Sketch", symbol: Tool.sketch.symbol) { m in
-                if m.selection.contains(where: \.isFace) { m.sketchOnSelectedFace() } else { m.tool = .sketch }
-            },
-            Slot(id: "Press Pull", symbol: Tool.pressPull.symbol) { $0.tool = .pressPull },
-            Slot(id: "Extrude", symbol: Tool.extrude.symbol) { $0.tool = .extrude },
-            Slot(id: "Redo", symbol: "arrow.uturn.forward") { $0.redo() },
-            Slot(id: "Move", symbol: Tool.move.symbol) { $0.tool = .move },
-            Slot(id: "Delete", symbol: "trash") { $0.deleteSelection() },
-            Slot(id: "Fillet", symbol: Tool.fillet.symbol) { $0.tool = .fillet },
-            Slot(id: "Undo", symbol: "arrow.uturn.backward") { $0.undo() },
-        ]
-    }
-
-    private var overflow: [Slot] {
-        [
-            Slot(id: "Repeat Last", symbol: "repeat") { m in if let t = m.lastTool { m.tool = t } },
-            Slot(id: "Fit", symbol: "arrow.up.left.and.down.right.magnifyingglass") { $0.zoomToFit() },
-            Slot(id: "Measure", symbol: "ruler") { $0.measureSelection() },
-            Slot(id: "Toolbox Search", symbol: "magnifyingglass") { $0.toolboxOpen = true },
-        ]
-    }
+    /// The slice the pointer points at while the wheel is open.
+    @State private var hover: Int?
+    @State private var subOpen = false
 
     private let radius: CGFloat = 92
-
-    var body: some View {
-        ZStack {
-            Color.black.opacity(0.001)
-                .onTapGesture { model.markingMenu = nil }
-            Circle().fill(.ultraThinMaterial).frame(width: 30, height: 30)
-                .overlay(Circle().stroke(Color.black.opacity(0.2)))
-                .position(at)
-            // Order: top, top right, right, bottom right, bottom, bottom left, left, top left.
-            ForEach(Array(wheel.enumerated()), id: \.element.id) { i, slot in
-                let a = -Double.pi / 2 + Double(i) * .pi / 4
-                pill(slot)
-                    .position(x: at.x + radius * cos(a) * (i % 4 == 0 ? 1 : 1.25), y: at.y + radius * sin(a) * 0.82)
-            }
-            VStack(alignment: .leading, spacing: 0) {
-                ForEach(overflow) { slot in
-                    Button { fire(slot) } label: {
-                        Label(slot.id, systemImage: slot.symbol).frame(maxWidth: .infinity, alignment: .leading)
-                            .padding(.horizontal, 10).frame(height: 24).contentShape(Rectangle())
-                    }
-                    .buttonStyle(.plain)
-                }
-            }
-            .font(.system(size: 12))
-            .frame(width: 170)
-            .padding(.vertical, 4)
-            .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 6))
-            .overlay(RoundedRectangle(cornerRadius: 6).stroke(Color.black.opacity(0.15)))
-            .position(x: at.x, y: at.y + radius + 74)
-        }
+    /// Opened by the --show-marking screenshot hook: for its first 20 s a stray click on the window (the Mac
+    /// is in use while the docs are captured) must not close it. Escape or a slot still does.
+    private static let hookOpened = Date()
+    private static var pinned: Bool {
+        ProcessInfo.processInfo.arguments.contains("--show-marking") && Date().timeIntervalSince(hookOpened) < 20
     }
 
-    private func pill(_ slot: Slot) -> some View {
-        Button { fire(slot) } label: {
-            HStack(spacing: 6) {
-                Image(systemName: slot.symbol).frame(width: 16)
-                Text(slot.id)
+    /// The highlighted slice: the flick's while a right-drag runs, else the pointer's.
+    private var hot: Int? { MarkingFlick.shared.origin != nil ? MarkingFlick.shared.hot : hover }
+
+    var body: some View {
+        let wheel = MarkingWheel.slots(model)
+        let overflow = MarkingWheel.overflow(model)
+        ZStack {
+            let _ = Self.hookOpened
+            Color.clear
+                .contentShape(Rectangle())
+                .onContinuousHover(coordinateSpace: .local) { phase in
+                    if case let .active(p) = phase { hover = MarkingCompass.slice(from: at, to: p) } else { hover = nil }
+                }
+                .onTapGesture(coordinateSpace: .local) { p in
+                    let d = hypot(p.x - at.x, p.y - at.y)
+                    if d < radius * 1.6, let i = MarkingCompass.slice(from: at, to: p) { tap(wheel[i]) }
+                    else if !Self.pinned { model.markingMenu = nil }
+                }
+            if let hot {
+                MarkingCompass.wedge(hot, center: at, inner: 18, outer: radius * 0.78)
+                    .fill(theme.accent.opacity(0.22))
+                    .allowsHitTesting(false)
+                    .accessibilityHidden(true)
             }
-            .font(.system(size: 12))
-            .padding(.horizontal, 10).frame(height: 26)
-            .background(.regularMaterial, in: Capsule())
-            .overlay(Capsule().stroke(Color.black.opacity(0.15)))
-            .shadow(color: .black.opacity(0.12), radius: 4, y: 1)
+            Circle().fill(theme.floating).frame(width: 30, height: 30)
+                .overlay(Circle().stroke(theme.floatingStroke))
+                .position(at)
+                .accessibilityHidden(true)
+            // Order: north, then clockwise.
+            ForEach(Array(wheel.enumerated()), id: \.element.id) { i, slot in
+                let a = -Double.pi / 2 + Double(i) * .pi / 4
+                pill(slot, on: hot == i)
+                    .position(x: at.x + radius * cos(a) * (i % 4 == 0 ? 1 : 1.25), y: at.y + radius * sin(a) * 0.82)
+            }
+            if subOpen, let south = wheel.first(where: { !$0.submenu.isEmpty }) {
+                list(south.submenu)
+                    .position(x: at.x + 150, y: at.y + radius * 0.82 + 20 + CGFloat(south.submenu.count) * (VFSize.macRow - 3) / 2)
+            }
+            list(overflow)
+                .position(x: at.x, y: at.y + radius + 30 + CGFloat(overflow.count) * (VFSize.macRow - 3) / 2)
+        }
+        .onChange(of: model.markingMenu) { _, _ in subOpen = false }
+    }
+
+    private func list(_ slots: [MarkingSlot]) -> some View {
+        VStack(alignment: .leading, spacing: 0) {
+            ForEach(slots) { slot in
+                Button { fire(slot) } label: {
+                    Label { Text(slot.title) } icon: { CommandIcon(art: slot.art, symbol: slot.symbol, size: 12) }
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(.horizontal, VFSpace.m).frame(minHeight: VFSize.macRow - 3).contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .disabled(!slot.enabled)
+                .opacity(slot.enabled ? 1 : 0.45)
+            }
+        }
+        .font(VFFont.row)
+        .foregroundStyle(theme.ink)
+        .frame(width: 190)
+        .padding(.vertical, VFSpace.xs)
+        .vfSurface(.floating, radius: VFRadius.card)
+    }
+
+    private func pill(_ slot: MarkingSlot, on: Bool) -> some View {
+        Button { tap(slot) } label: {
+            HStack(spacing: VFSpace.s) {
+                CommandIcon(art: slot.art, symbol: slot.symbol, size: 12).frame(width: 20)
+                Text(slot.title)
+                if !slot.submenu.isEmpty {
+                    Image(systemName: "chevron.down").font(VFFont.glyph(9, weight: .semibold)).accessibilityHidden(true)
+                }
+            }
+            .font(VFFont.row)
+            .foregroundStyle(theme.ink)
+            .padding(.horizontal, VFSpace.m).frame(minHeight: VFSize.macRow - 3)
+            .vfSurface(.floating, radius: VFRadius.touchCapsule)
+            .overlay(Capsule().strokeBorder(on ? theme.accent : .clear, lineWidth: 1.5))
+            .contentShape(Capsule())
         }
         .buttonStyle(.plain)
         .fixedSize()
+        .accessibilityLabel(slot.title)
+        .accessibilityHint(slot.submenu.isEmpty ? "" : String(localized: "Opens the sketch tools"))
     }
 
-    private func fire(_ slot: Slot) {
+    /// A click on a slice: the submenu slice opens its list, the others run.
+    private func tap(_ slot: MarkingSlot) {
+        if !slot.submenu.isEmpty { subOpen.toggle(); return }
+        fire(slot)
+    }
+
+    private func fire(_ slot: MarkingSlot) {
         model.markingMenu = nil
         slot.run(model)
     }
@@ -111,6 +126,7 @@ struct MarkingMenu: View {
 
 /// S opens a search over every registry command; Return runs the first match.
 struct ToolboxSearch: View {
+    @Environment(\.viaFormTheme) private var theme
     @Bindable var model: DesignModel
     @State private var query = ""
     @FocusState private var focused: Bool
@@ -125,30 +141,35 @@ struct ToolboxSearch: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            HStack(spacing: 8) {
-                Image(systemName: "magnifyingglass").foregroundStyle(.secondary)
+            HStack(spacing: VFSpace.m) {
+                Image(systemName: "magnifyingglass").foregroundStyle(theme.inkSecondary).accessibilityHidden(true)
                 TextField("Search commands", text: $query)
                     .textFieldStyle(.plain)
-                    .font(.system(size: 15))
+                    .font(VFFont.title.weight(.regular))
                     .focused($focused)
                     .onSubmit { if let c = matches.first { run(c) } }
                     .onExitCommand { close() }
             }
-            .padding(.horizontal, 12).frame(height: 40)
+            .padding(.horizontal, VFSpace.l).frame(height: 40)
             Divider()
             ScrollView {
                 VStack(spacing: 0) {
+                    if matches.isEmpty {
+                        Text("No command matches “\(query)”").font(VFFont.row).foregroundStyle(theme.inkSecondary)
+                            .frame(maxWidth: .infinity).padding(VFSpace.l)
+                    }
                     ForEach(matches) { c in
                         Button { run(c) } label: {
-                            HStack(spacing: 8) {
-                                Image(systemName: CommandSymbol.of(c.icon, id: c.id)).frame(width: 18)
-                                Text(c.label)
+                            HStack(spacing: VFSpace.m) {
+                                CommandIcon(icon: c.icon, id: c.id, size: 13).frame(width: 22)
+                                Text(StageLabels.command(c.label))
                                 Spacer()
-                                Text(c.tab.capitalized + " · " + c.panel.capitalized).foregroundStyle(.secondary).font(.system(size: 11))
-                                if let k = c.key { Text(k).font(.system(size: 11, design: .monospaced)).foregroundStyle(.secondary) }
+                                Text("\(c.tab.capitalized) · \(c.panel.capitalized)").foregroundStyle(theme.inkSecondary).font(VFFont.small)
+                                if let k = c.key { Text(k).font(VFFont.mono).foregroundStyle(theme.inkSecondary) }
                             }
-                            .font(.system(size: 13))
-                            .padding(.horizontal, 12).frame(height: 28).contentShape(Rectangle())
+                            .font(VFFont.row)
+                            .foregroundStyle(theme.ink)
+                            .padding(.horizontal, VFSpace.l).frame(minHeight: VFSize.macRow).contentShape(Rectangle())
                         }
                         .buttonStyle(.plain)
                     }
@@ -157,9 +178,7 @@ struct ToolboxSearch: View {
             .frame(maxHeight: 360)
         }
         .frame(width: 520)
-        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 10))
-        .overlay(RoundedRectangle(cornerRadius: 10).stroke(Color.black.opacity(0.15)))
-        .shadow(color: .black.opacity(0.25), radius: 20, y: 8)
+        .vfSurface(.floating, radius: VFRadius.floating)
         .onAppear { focused = true }
     }
 
@@ -178,50 +197,60 @@ struct ToolboxSearch: View {
 
 /// The slide-in file panel: new design, the sample and the recent files.
 struct DataPanel: View {
+    @Environment(\.viaFormTheme) private var theme
     let model: DesignModel
     @Binding var shown: Bool
 
     var body: some View {
+        let recents = NSDocumentController.shared.recentDocumentURLs
         VStack(alignment: .leading, spacing: 0) {
             HStack {
-                Text("Data").font(.system(size: 13, weight: .semibold))
+                Text("Data").font(VFFont.title).foregroundStyle(theme.ink)
                 Spacer()
-                Button { shown = false } label: { Image(systemName: "xmark") }.buttonStyle(.plain)
+                VFIconButton("xmark", label: String(localized: "Close the Data panel")) { shown = false }
             }
-            .padding(12)
+            .padding(VFSpace.l)
             Divider()
-            HStack(spacing: 8) {
-                Button("New Design") { model.newDesign(); shown = false }
+            HStack(spacing: VFSpace.m) {
+                Button("New Design") { FileActions.newDesign(model); shown = false }
                 Button("Open…") { FileActions.open(model); shown = false }
             }
-            .padding(12)
-            Text("SAMPLES").font(.system(size: 10, weight: .bold)).foregroundStyle(.secondary).padding(.horizontal, 12)
-            tile("Bracket", "cube.fill") { model.loadSample(); shown = false }
-            Text("RECENT").font(.system(size: 10, weight: .bold)).foregroundStyle(.secondary).padding(.horizontal, 12).padding(.top, 10)
+            .buttonStyle(.vfSecondary)
+            .padding(VFSpace.l)
+            VFCaption(String(localized: "Samples")).padding(.horizontal, VFSpace.l)
+            tile(String(localized: "Bracket"), "cube.fill") { model.loadSample(); shown = false }
+            VFCaption(String(localized: "Recent")).padding(.horizontal, VFSpace.l).padding(.top, VFSpace.m)
+            if recents.isEmpty {
+                Text("Designs you open or save show here.")
+                    .font(VFFont.small).foregroundStyle(theme.inkSecondary)
+                    .padding(.horizontal, VFSpace.l).padding(.top, VFSpace.xs)
+            }
             ScrollView {
                 VStack(alignment: .leading, spacing: 0) {
-                    ForEach(NSDocumentController.shared.recentDocumentURLs, id: \.self) { url in
-                        tile(url.deletingPathExtension().lastPathComponent, "doc") { model.open(url); shown = false }
+                    ForEach(recents, id: \.self) { url in
+                        tile(url.deletingPathExtension().lastPathComponent, "doc") { FileActions.open(url, model); shown = false }
+                            .help(url.path)
                     }
                 }
             }
             Spacer()
         }
         .frame(width: 260)
-        .background(Color(nsColor: .controlBackgroundColor))
+        .background(theme.panel)
     }
 
     private func tile(_ name: String, _ symbol: String, action: @escaping () -> Void) -> some View {
         Button(action: action) {
-            HStack(spacing: 10) {
+            HStack(spacing: VFSpace.m) {
                 Image(systemName: symbol)
-                    .font(.system(size: 18))
+                    .font(VFFont.glyph(18))
+                    .foregroundStyle(theme.inkSecondary)
                     .frame(width: 44, height: 34)
-                    .background(Color(nsColor: .windowBackgroundColor), in: RoundedRectangle(cornerRadius: 4))
-                Text(name).font(.system(size: 12)).lineLimit(1)
+                    .background(theme.well, in: RoundedRectangle(cornerRadius: VFRadius.control, style: .continuous))
+                Text(name).font(VFFont.row).foregroundStyle(theme.ink).lineLimit(1)
                 Spacer()
             }
-            .padding(.horizontal, 12).padding(.vertical, 4).contentShape(Rectangle())
+            .padding(.horizontal, VFSpace.l).padding(.vertical, VFSpace.xs).contentShape(Rectangle())
         }
         .buttonStyle(.plain)
     }

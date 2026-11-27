@@ -1,0 +1,8452 @@
+{
+  "assembly": "hand",
+  "base": "forearm_frame",
+  "bulk": [
+    {
+      "component_ref": "C1",
+      "mass_g_each": 30.0,
+      "part_number": "903-0249-000",
+      "qty": 3,
+      "use": "bus cables: bus A, bus B, hub links"
+    },
+    {
+      "component_ref": "P2",
+      "mass_g_each": 150.0,
+      "part_number": "311013-01",
+      "qty": 1,
+      "use": "mains cord to the supply"
+    },
+    {
+      "component_ref": "P3",
+      "mass_g_each": 4.0,
+      "part_number": "221-415",
+      "qty": 2,
+      "use": "12 V distribution lever connectors, one per polarity"
+    },
+    {
+      "component_ref": "P4",
+      "mass_g_each": 40.0,
+      "part_number": "18AWG silicone wire, red + black, 3 m each",
+      "qty": 2,
+      "use": "12 V rail, red and black"
+    },
+    {
+      "component_ref": "R1",
+      "mass_g_each": 0.3,
+      "part_number": "MFR-25FBF52-10K",
+      "qty": 5,
+      "use": "FSR dividers on the OpenRB-150"
+    },
+    {
+      "component_ref": "W1",
+      "mass_g_each": 10.0,
+      "part_number": "1881 / 1877",
+      "qty": 2,
+      "use": "FSR leads"
+    },
+    {
+      "component_ref": "T1",
+      "mass_g_each": 30.0,
+      "part_number": "21101000150E",
+      "qty": 1,
+      "use": "tendon line: 44 tendons, flexor and extensor per DOF"
+    },
+    {
+      "component_ref": "T2",
+      "mass_g_each": 310.0,
+      "part_number": "BHL200",
+      "qty": 1,
+      "use": "PTFE sheaths: forearm stop bar to the palm's stops"
+    },
+    {
+      "component_ref": "F1",
+      "mass_g_each": 0.25,
+      "part_number": "M2-0.4 x 6 SHCS ISO 4762, 18-8 stainless (Newport 315732-100)",
+      "qty": 240,
+      "use": "M2 x 6: 88 servo pads (4 holes each), 88 spools to horns, the rest spare"
+    },
+    {
+      "component_ref": "F2",
+      "mass_g_each": 0.4,
+      "part_number": "M510500250006",
+      "qty": 16,
+      "use": "M2.5 x 6: 2 XM430 x (4 case plate holes + 4 horn holes)"
+    },
+    {
+      "component_ref": "F3",
+      "mass_g_each": 0.8,
+      "part_number": "225081",
+      "qty": 60,
+      "use": "M3 x 8: 4 forearm flange holes, the rest to the arm and spare"
+    },
+    {
+      "component_ref": "I1",
+      "mass_g_each": 0.2,
+      "part_number": "94459A120",
+      "qty": 60,
+      "use": "M2 inserts (fingers, thumb, palm) as needed"
+    },
+    {
+      "component_ref": "I2",
+      "mass_g_each": 0.4,
+      "part_number": "94459A140",
+      "qty": 60,
+      "use": "M3 inserts on the arm side of the flange"
+    },
+    {
+      "component_ref": "C2",
+      "mass_g_each": 0.1,
+      "part_number": "EHR-03",
+      "qty": 4,
+      "use": "EH housings: OpenRB-150 and hub bus links"
+    },
+    {
+      "component_ref": "C3",
+      "mass_g_each": 0.05,
+      "part_number": "SEH-001T-P0.6",
+      "qty": 10,
+      "use": "EH crimp contacts for the housings, spares included"
+    },
+    {
+      "component_ref": "PF1",
+      "mass_g_each": 1.0,
+      "part_number": "0287010.PXCN",
+      "qty": 3,
+      "use": "10 A fuses, one per hub branch and a spare"
+    },
+    {
+      "component_ref": "PF2",
+      "mass_g_each": 1.0,
+      "part_number": "0287003.PXCN",
+      "qty": 2,
+      "use": "3 A fuses, OpenRB-150 branch and a spare"
+    },
+    {
+      "component_ref": "PF3",
+      "mass_g_each": 12.0,
+      "part_number": "FHAC0001ZXJ",
+      "qty": 3,
+      "use": "in-line fuse holders, one per branch"
+    },
+    {
+      "component_ref": "SW1",
+      "mass_g_each": 5.0,
+      "part_number": "RA1113112R",
+      "qty": 1,
+      "use": "mains rocker switch, off the hand at the supply"
+    },
+    {
+      "component_ref": "ES1",
+      "mass_g_each": 200.0,
+      "part_number": "XALK178",
+      "qty": 1,
+      "use": "emergency stop station, off the hand at the operator"
+    },
+    {
+      "component_ref": "T3",
+      "mass_g_each": 25.0,
+      "part_number": "GC4FA",
+      "qty": 2,
+      "use": "sheath end caps (bottles of 50): every sheath end at the stop bar and the palm stops"
+    }
+  ],
+  "component_file": "docs/components/hand.json",
+  "dof": 24,
+  "joints": [
+    {
+      "axis": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "child": "index_knuckle",
+      "limits_deg": [
+        -2.0,
+        15.0
+      ],
+      "limits_from_straight_deg": [
+        -2.0,
+        15.0
+      ],
+      "name": "index/MCP_abd",
+      "origin": [
+        80.0,
+        18.0,
+        0.0
+      ],
+      "parent": "palm",
+      "rest_deg": 0.0,
+      "type": "revolute"
+    },
+    {
+      "axis": [
+        -0.0697564737441253,
+        0.9975640502598242,
+        0.0
+      ],
+      "child": "index_proximal",
+      "limits_deg": [
+        -20.0,
+        80.0
+      ],
+      "limits_from_straight_deg": [
+        -10.0,
+        90.0
+      ],
+      "name": "index/MCP_flex",
+      "origin": [
+        92.96833265337771,
+        18.90683415867363,
+        0.0
+      ],
+      "parent": "index_knuckle",
+      "rest_deg": 10.0,
+      "type": "revolute"
+    },
+    {
+      "axis": [
+        -0.0697564737441253,
+        0.9975640502598242,
+        0.0
+      ],
+      "child": "index_middle",
+      "limits_deg": [
+        -14.999999999999998,
+        90.0
+      ],
+      "limits_from_straight_deg": [
+        0.0,
+        105.0
+      ],
+      "name": "index/PIP",
+      "origin": [
+        138.15913795119593,
+        22.06688310230996,
+        -7.987816172678795
+      ],
+      "parent": "index_proximal",
+      "rest_deg": 14.999999999999998,
+      "type": "revolute"
+    },
+    {
+      "axis": [
+        -0.0697564737441253,
+        0.9975640502598242,
+        0.0
+      ],
+      "child": "index_distal",
+      "limits_deg": [
+        -10.0,
+        70.0
+      ],
+      "limits_from_straight_deg": [
+        0.0,
+        80.0
+      ],
+      "name": "index/DIP",
+      "origin": [
+        161.6657396884717,
+        23.710624821423437,
+        -18.97589097793698
+      ],
+      "parent": "index_middle",
+      "rest_deg": 10.0,
+      "type": "revolute"
+    },
+    {
+      "axis": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "child": "middle_knuckle",
+      "limits_deg": [
+        -2.0,
+        2.0
+      ],
+      "limits_from_straight_deg": [
+        -2.0,
+        2.0
+      ],
+      "name": "middle/MCP_abd",
+      "origin": [
+        82.0,
+        0.0,
+        0.0
+      ],
+      "parent": "palm",
+      "rest_deg": 0.0,
+      "type": "revolute"
+    },
+    {
+      "axis": [
+        0.0,
+        1.0,
+        0.0
+      ],
+      "child": "middle_proximal",
+      "limits_deg": [
+        -24.0,
+        76.0
+      ],
+      "limits_from_straight_deg": [
+        -10.0,
+        90.0
+      ],
+      "name": "middle/MCP_flex",
+      "origin": [
+        95.0,
+        0.0,
+        0.0
+      ],
+      "parent": "middle_knuckle",
+      "rest_deg": 14.0,
+      "type": "revolute"
+    },
+    {
+      "axis": [
+        0.0,
+        1.0,
+        0.0
+      ],
+      "child": "middle_middle",
+      "limits_deg": [
+        -20.0,
+        85.0
+      ],
+      "limits_from_straight_deg": [
+        0.0,
+        105.0
+      ],
+      "name": "middle/PIP",
+      "origin": [
+        144.4850820400758,
+        0.0,
+        -12.338016675583054
+      ],
+      "parent": "middle_proximal",
+      "rest_deg": 20.0,
+      "type": "revolute"
+    },
+    {
+      "axis": [
+        0.0,
+        1.0,
+        0.0
+      ],
+      "child": "middle_distal",
+      "limits_deg": [
+        -12.000000000000002,
+        68.0
+      ],
+      "limits_from_straight_deg": [
+        0.0,
+        80.0
+      ],
+      "name": "middle/DIP",
+      "origin": [
+        169.35620921672705,
+        0.0,
+        -29.113803779705457
+      ],
+      "parent": "middle_middle",
+      "rest_deg": 12.000000000000002,
+      "type": "revolute"
+    },
+    {
+      "axis": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "child": "ring_knuckle",
+      "limits_deg": [
+        -3.0,
+        2.0
+      ],
+      "limits_from_straight_deg": [
+        -3.0,
+        2.0
+      ],
+      "name": "ring/MCP_abd",
+      "origin": [
+        79.0,
+        -18.0,
+        0.0
+      ],
+      "parent": "palm_ulnar",
+      "rest_deg": 0.0,
+      "type": "revolute"
+    },
+    {
+      "axis": [
+        0.0697564737441253,
+        0.9975640502598242,
+        0.0
+      ],
+      "child": "ring_proximal",
+      "limits_deg": [
+        -28.0,
+        72.0
+      ],
+      "limits_from_straight_deg": [
+        -10.0,
+        90.0
+      ],
+      "name": "ring/MCP_flex",
+      "origin": [
+        91.96833265337771,
+        -18.90683415867363,
+        0.0
+      ],
+      "parent": "ring_knuckle",
+      "rest_deg": 18.0,
+      "type": "revolute"
+    },
+    {
+      "axis": [
+        0.0697564737441253,
+        0.9975640502598242,
+        0.0
+      ],
+      "child": "ring_middle",
+      "limits_deg": [
+        -26.0,
+        79.0
+      ],
+      "limits_from_straight_deg": [
+        0.0,
+        105.0
+      ],
+      "name": "ring/PIP",
+      "origin": [
+        137.50784259360452,
+        -22.091266906263492,
+        -14.832815729997474
+      ],
+      "parent": "ring_proximal",
+      "rest_deg": 26.0,
+      "type": "revolute"
+    },
+    {
+      "axis": [
+        0.0697564737441253,
+        0.9975640502598242,
+        0.0
+      ],
+      "child": "ring_distal",
+      "limits_deg": [
+        -14.0,
+        66.0
+      ],
+      "limits_from_straight_deg": [
+        0.0,
+        80.0
+      ],
+      "name": "ring/DIP",
+      "origin": [
+        158.31788081103315,
+        -23.54644653523089,
+        -34.97790847330839
+      ],
+      "parent": "ring_middle",
+      "rest_deg": 14.0,
+      "type": "revolute"
+    },
+    {
+      "axis": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "child": "little_knuckle",
+      "limits_deg": [
+        -15.0,
+        3.0
+      ],
+      "limits_from_straight_deg": [
+        -15.0,
+        3.0
+      ],
+      "name": "little/MCP_abd",
+      "origin": [
+        72.0,
+        -35.0,
+        0.0
+      ],
+      "parent": "palm_ulnar",
+      "rest_deg": 0.0,
+      "type": "revolute"
+    },
+    {
+      "axis": [
+        0.15643446504023087,
+        0.9876883405951378,
+        0.0
+      ],
+      "child": "little_proximal",
+      "limits_deg": [
+        -32.0,
+        68.0
+      ],
+      "limits_from_straight_deg": [
+        -10.0,
+        90.0
+      ],
+      "name": "little/MCP_flex",
+      "origin": [
+        84.83994842773679,
+        -37.033648045523,
+        0.0
+      ],
+      "parent": "little_knuckle",
+      "rest_deg": 22.0,
+      "type": "revolute"
+    },
+    {
+      "axis": [
+        0.15643446504023087,
+        0.9876883405951378,
+        0.0
+      ],
+      "child": "little_middle",
+      "limits_deg": [
+        -29.999999999999996,
+        75.0
+      ],
+      "limits_from_straight_deg": [
+        0.0,
+        105.0
+      ],
+      "name": "little/PIP",
+      "origin": [
+        119.63915837199639,
+        -42.545301436280596,
+        -14.235050549804656
+      ],
+      "parent": "little_proximal",
+      "rest_deg": 29.999999999999996,
+      "type": "revolute"
+    },
+    {
+      "axis": [
+        0.15643446504023087,
+        0.9876883405951378,
+        0.0
+      ],
+      "child": "little_distal",
+      "limits_deg": [
+        -16.0,
+        64.0
+      ],
+      "limits_from_straight_deg": [
+        0.0,
+        80.0
+      ],
+      "name": "little/DIP",
+      "origin": [
+        132.40887325158423,
+        -44.56782558058802,
+        -30.783276375545817
+      ],
+      "parent": "little_middle",
+      "rest_deg": 16.0,
+      "type": "revolute"
+    },
+    {
+      "axis": [
+        -0.2919193392814522,
+        0.5718498507216201,
+        0.7666621469611897
+      ],
+      "child": "thumb_cmc_saddle",
+      "limits_deg": [
+        -30.0,
+        45.0
+      ],
+      "limits_from_straight_deg": [
+        -30.0,
+        45.0
+      ],
+      "name": "thumb/CMC_abd",
+      "origin": [
+        18.0,
+        31.0,
+        -5.0
+      ],
+      "parent": "palm",
+      "rest_deg": 0.0,
+      "type": "revolute"
+    },
+    {
+      "axis": [
+        -0.7800346052768619,
+        0.32150815707397484,
+        -0.5368226145622653
+      ],
+      "child": "thumb_metacarpal",
+      "limits_deg": [
+        -35.0,
+        45.0
+      ],
+      "limits_from_straight_deg": [
+        -20.0,
+        60.0
+      ],
+      "name": "thumb/CMC_flex",
+      "origin": [
+        26.855521055508646,
+        43.075710530239064,
+        -10.635331580778228
+      ],
+      "parent": "thumb_cmc_saddle",
+      "rest_deg": 14.999999999999998,
+      "type": "revolute"
+    },
+    {
+      "axis": [
+        -0.1387238350381947,
+        0.7477035313447443,
+        0.6493805716272195
+      ],
+      "child": "thumb_mcp_yoke",
+      "limits_deg": [
+        -15.0,
+        15.0
+      ],
+      "limits_from_straight_deg": [
+        -15.0,
+        15.0
+      ],
+      "name": "thumb/MCP_abd",
+      "origin": [
+        59.19428277369276,
+        73.86920924386256,
+        -39.18292215351444
+      ],
+      "parent": "thumb_metacarpal",
+      "rest_deg": 0.0,
+      "type": "revolute"
+    },
+    {
+      "axis": [
+        -0.7800346052768619,
+        0.32150815707397484,
+        -0.5368226145622653
+      ],
+      "child": "thumb_proximal",
+      "limits_deg": [
+        -14.999999999999998,
+        55.0
+      ],
+      "limits_from_straight_deg": [
+        0.0,
+        70.0
+      ],
+      "name": "thumb/MCP_flex",
+      "origin": [
+        66.516266558942,
+        80.84132216015468,
+        -45.64652756620943
+      ],
+      "parent": "thumb_mcp_yoke",
+      "rest_deg": 14.999999999999998,
+      "type": "revolute"
+    },
+    {
+      "axis": [
+        -0.7800346052768619,
+        0.32150815707397484,
+        -0.5368226145622653
+      ],
+      "child": "thumb_distal",
+      "limits_deg": [
+        -10.0,
+        70.0
+      ],
+      "limits_from_straight_deg": [
+        0.0,
+        80.0
+      ],
+      "name": "thumb/IP",
+      "origin": [
+        90.27686122510846,
+        94.81362120528782,
+        -71.80391658926587
+      ],
+      "parent": "thumb_proximal",
+      "rest_deg": 10.0,
+      "type": "revolute"
+    },
+    {
+      "axis": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "child": "palm",
+      "limits_deg": [
+        -25.0,
+        25.0
+      ],
+      "limits_from_straight_deg": [
+        -25.0,
+        25.0
+      ],
+      "name": "wrist/radial_ulnar",
+      "origin": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "parent": "wrist_cross",
+      "rest_deg": 0.0,
+      "type": "revolute"
+    },
+    {
+      "axis": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "child": "palm_ulnar",
+      "limits_deg": [
+        -25.0,
+        0.0
+      ],
+      "limits_from_straight_deg": [
+        -25.0,
+        0.0
+      ],
+      "name": "palm/arch_CMC45",
+      "origin": [
+        38.0,
+        -12.0,
+        0.0
+      ],
+      "parent": "palm",
+      "rest_deg": 0.0,
+      "type": "revolute"
+    },
+    {
+      "axis": [
+        0.0,
+        1.0,
+        0.0
+      ],
+      "child": "wrist_cross",
+      "limits_deg": [
+        -40.0,
+        40.0
+      ],
+      "limits_from_straight_deg": [
+        -40.0,
+        40.0
+      ],
+      "name": "wrist/flex_ext",
+      "origin": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "parent": "forearm_frame",
+      "rest_deg": 0.0,
+      "type": "revolute"
+    },
+    {
+      "axis": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "child": "index/MCP_abd bearing 1",
+      "name": "index/MCP_abd bearing 1 mount",
+      "origin": [
+        80.0,
+        18.0,
+        -4.0
+      ],
+      "parent": "index_knuckle",
+      "type": "rigid"
+    },
+    {
+      "axis": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "child": "index/MCP_abd bearing 2",
+      "name": "index/MCP_abd bearing 2 mount",
+      "origin": [
+        80.0,
+        18.0,
+        0.0
+      ],
+      "parent": "index_knuckle",
+      "type": "rigid"
+    },
+    {
+      "axis": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "child": "index/MCP_abd pin",
+      "name": "index/MCP_abd pin mount",
+      "origin": [
+        80.0,
+        18.0,
+        0.0
+      ],
+      "parent": "palm",
+      "type": "rigid"
+    },
+    {
+      "axis": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "child": "index/MCP_flex bearing 1",
+      "name": "index/MCP_flex bearing 1 mount",
+      "origin": [
+        93.24735854835421,
+        14.916577957634331,
+        0.0
+      ],
+      "parent": "index_proximal",
+      "type": "rigid"
+    },
+    {
+      "axis": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "child": "index/MCP_flex bearing 2",
+      "name": "index/MCP_flex bearing 2 mount",
+      "origin": [
+        92.96833265337771,
+        18.90683415867363,
+        0.0
+      ],
+      "parent": "index_proximal",
+      "type": "rigid"
+    },
+    {
+      "axis": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "child": "index/MCP_flex pin",
+      "name": "index/MCP_flex pin mount",
+      "origin": [
+        92.96833265337771,
+        18.90683415867363,
+        0.0
+      ],
+      "parent": "index_knuckle",
+      "type": "rigid"
+    },
+    {
+      "axis": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "child": "index/PIP bearing 1",
+      "name": "index/PIP bearing 1 mount",
+      "origin": [
+        138.43816384617244,
+        18.07662690127066,
+        -7.987816172678795
+      ],
+      "parent": "index_middle",
+      "type": "rigid"
+    },
+    {
+      "axis": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "child": "index/PIP bearing 2",
+      "name": "index/PIP bearing 2 mount",
+      "origin": [
+        138.15913795119593,
+        22.06688310230996,
+        -7.987816172678795
+      ],
+      "parent": "index_middle",
+      "type": "rigid"
+    },
+    {
+      "axis": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "child": "index/PIP pin",
+      "name": "index/PIP pin mount",
+      "origin": [
+        138.15913795119593,
+        22.06688310230996,
+        -7.987816172678795
+      ],
+      "parent": "index_proximal",
+      "type": "rigid"
+    },
+    {
+      "axis": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "child": "index/DIP bearing 1",
+      "name": "index/DIP bearing 1 mount",
+      "origin": [
+        161.9447655834482,
+        19.72036862038414,
+        -18.97589097793698
+      ],
+      "parent": "index_distal",
+      "type": "rigid"
+    },
+    {
+      "axis": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "child": "index/DIP bearing 2",
+      "name": "index/DIP bearing 2 mount",
+      "origin": [
+        161.6657396884717,
+        23.710624821423437,
+        -18.97589097793698
+      ],
+      "parent": "index_distal",
+      "type": "rigid"
+    },
+    {
+      "axis": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "child": "index/DIP pin",
+      "name": "index/DIP pin mount",
+      "origin": [
+        161.6657396884717,
+        23.710624821423437,
+        -18.97589097793698
+      ],
+      "parent": "index_middle",
+      "type": "rigid"
+    },
+    {
+      "axis": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "child": "middle/MCP_abd bearing 1",
+      "name": "middle/MCP_abd bearing 1 mount",
+      "origin": [
+        82.0,
+        0.0,
+        -4.0
+      ],
+      "parent": "middle_knuckle",
+      "type": "rigid"
+    },
+    {
+      "axis": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "child": "middle/MCP_abd bearing 2",
+      "name": "middle/MCP_abd bearing 2 mount",
+      "origin": [
+        82.0,
+        0.0,
+        0.0
+      ],
+      "parent": "middle_knuckle",
+      "type": "rigid"
+    },
+    {
+      "axis": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "child": "middle/MCP_abd pin",
+      "name": "middle/MCP_abd pin mount",
+      "origin": [
+        82.0,
+        0.0,
+        0.0
+      ],
+      "parent": "palm",
+      "type": "rigid"
+    },
+    {
+      "axis": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "child": "middle/MCP_flex bearing 1",
+      "name": "middle/MCP_flex bearing 1 mount",
+      "origin": [
+        95.0,
+        -4.0,
+        0.0
+      ],
+      "parent": "middle_proximal",
+      "type": "rigid"
+    },
+    {
+      "axis": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "child": "middle/MCP_flex bearing 2",
+      "name": "middle/MCP_flex bearing 2 mount",
+      "origin": [
+        95.0,
+        0.0,
+        0.0
+      ],
+      "parent": "middle_proximal",
+      "type": "rigid"
+    },
+    {
+      "axis": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "child": "middle/MCP_flex pin",
+      "name": "middle/MCP_flex pin mount",
+      "origin": [
+        95.0,
+        0.0,
+        0.0
+      ],
+      "parent": "middle_knuckle",
+      "type": "rigid"
+    },
+    {
+      "axis": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "child": "middle/PIP bearing 1",
+      "name": "middle/PIP bearing 1 mount",
+      "origin": [
+        144.4850820400758,
+        -4.0,
+        -12.338016675583054
+      ],
+      "parent": "middle_middle",
+      "type": "rigid"
+    },
+    {
+      "axis": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "child": "middle/PIP bearing 2",
+      "name": "middle/PIP bearing 2 mount",
+      "origin": [
+        144.4850820400758,
+        0.0,
+        -12.338016675583054
+      ],
+      "parent": "middle_middle",
+      "type": "rigid"
+    },
+    {
+      "axis": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "child": "middle/PIP pin",
+      "name": "middle/PIP pin mount",
+      "origin": [
+        144.4850820400758,
+        0.0,
+        -12.338016675583054
+      ],
+      "parent": "middle_proximal",
+      "type": "rigid"
+    },
+    {
+      "axis": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "child": "middle/DIP bearing 1",
+      "name": "middle/DIP bearing 1 mount",
+      "origin": [
+        169.35620921672705,
+        -4.0,
+        -29.113803779705457
+      ],
+      "parent": "middle_distal",
+      "type": "rigid"
+    },
+    {
+      "axis": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "child": "middle/DIP bearing 2",
+      "name": "middle/DIP bearing 2 mount",
+      "origin": [
+        169.35620921672705,
+        0.0,
+        -29.113803779705457
+      ],
+      "parent": "middle_distal",
+      "type": "rigid"
+    },
+    {
+      "axis": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "child": "middle/DIP pin",
+      "name": "middle/DIP pin mount",
+      "origin": [
+        169.35620921672705,
+        0.0,
+        -29.113803779705457
+      ],
+      "parent": "middle_middle",
+      "type": "rigid"
+    },
+    {
+      "axis": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "child": "ring/MCP_abd bearing 1",
+      "name": "ring/MCP_abd bearing 1 mount",
+      "origin": [
+        79.0,
+        -18.0,
+        -4.0
+      ],
+      "parent": "ring_knuckle",
+      "type": "rigid"
+    },
+    {
+      "axis": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "child": "ring/MCP_abd bearing 2",
+      "name": "ring/MCP_abd bearing 2 mount",
+      "origin": [
+        79.0,
+        -18.0,
+        0.0
+      ],
+      "parent": "ring_knuckle",
+      "type": "rigid"
+    },
+    {
+      "axis": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "child": "ring/MCP_abd pin",
+      "name": "ring/MCP_abd pin mount",
+      "origin": [
+        79.0,
+        -18.0,
+        0.0
+      ],
+      "parent": "palm_ulnar",
+      "type": "rigid"
+    },
+    {
+      "axis": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "child": "ring/MCP_flex bearing 1",
+      "name": "ring/MCP_flex bearing 1 mount",
+      "origin": [
+        91.68930675840122,
+        -22.897090359712926,
+        0.0
+      ],
+      "parent": "ring_proximal",
+      "type": "rigid"
+    },
+    {
+      "axis": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "child": "ring/MCP_flex bearing 2",
+      "name": "ring/MCP_flex bearing 2 mount",
+      "origin": [
+        91.96833265337771,
+        -18.90683415867363,
+        0.0
+      ],
+      "parent": "ring_proximal",
+      "type": "rigid"
+    },
+    {
+      "axis": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "child": "ring/MCP_flex pin",
+      "name": "ring/MCP_flex pin mount",
+      "origin": [
+        91.96833265337771,
+        -18.90683415867363,
+        0.0
+      ],
+      "parent": "ring_knuckle",
+      "type": "rigid"
+    },
+    {
+      "axis": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "child": "ring/PIP bearing 1",
+      "name": "ring/PIP bearing 1 mount",
+      "origin": [
+        137.228816698628,
+        -26.08152310730279,
+        -14.832815729997474
+      ],
+      "parent": "ring_middle",
+      "type": "rigid"
+    },
+    {
+      "axis": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "child": "ring/PIP bearing 2",
+      "name": "ring/PIP bearing 2 mount",
+      "origin": [
+        137.50784259360452,
+        -22.091266906263492,
+        -14.832815729997474
+      ],
+      "parent": "ring_middle",
+      "type": "rigid"
+    },
+    {
+      "axis": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "child": "ring/PIP pin",
+      "name": "ring/PIP pin mount",
+      "origin": [
+        137.50784259360452,
+        -22.091266906263492,
+        -14.832815729997474
+      ],
+      "parent": "ring_proximal",
+      "type": "rigid"
+    },
+    {
+      "axis": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "child": "ring/DIP bearing 1",
+      "name": "ring/DIP bearing 1 mount",
+      "origin": [
+        158.03885491605664,
+        -27.536702736270186,
+        -34.97790847330839
+      ],
+      "parent": "ring_distal",
+      "type": "rigid"
+    },
+    {
+      "axis": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "child": "ring/DIP bearing 2",
+      "name": "ring/DIP bearing 2 mount",
+      "origin": [
+        158.31788081103315,
+        -23.54644653523089,
+        -34.97790847330839
+      ],
+      "parent": "ring_distal",
+      "type": "rigid"
+    },
+    {
+      "axis": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "child": "ring/DIP pin",
+      "name": "ring/DIP pin mount",
+      "origin": [
+        158.31788081103315,
+        -23.54644653523089,
+        -34.97790847330839
+      ],
+      "parent": "ring_middle",
+      "type": "rigid"
+    },
+    {
+      "axis": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "child": "little/MCP_abd bearing 1",
+      "name": "little/MCP_abd bearing 1 mount",
+      "origin": [
+        72.0,
+        -35.0,
+        -4.0
+      ],
+      "parent": "little_knuckle",
+      "type": "rigid"
+    },
+    {
+      "axis": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "child": "little/MCP_abd bearing 2",
+      "name": "little/MCP_abd bearing 2 mount",
+      "origin": [
+        72.0,
+        -35.0,
+        0.0
+      ],
+      "parent": "little_knuckle",
+      "type": "rigid"
+    },
+    {
+      "axis": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "child": "little/MCP_abd pin",
+      "name": "little/MCP_abd pin mount",
+      "origin": [
+        72.0,
+        -35.0,
+        0.0
+      ],
+      "parent": "palm_ulnar",
+      "type": "rigid"
+    },
+    {
+      "axis": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "child": "little/MCP_flex bearing 1",
+      "name": "little/MCP_flex bearing 1 mount",
+      "origin": [
+        84.21421056757586,
+        -40.984401407903555,
+        0.0
+      ],
+      "parent": "little_proximal",
+      "type": "rigid"
+    },
+    {
+      "axis": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "child": "little/MCP_flex bearing 2",
+      "name": "little/MCP_flex bearing 2 mount",
+      "origin": [
+        84.83994842773679,
+        -37.033648045523,
+        0.0
+      ],
+      "parent": "little_proximal",
+      "type": "rigid"
+    },
+    {
+      "axis": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "child": "little/MCP_flex pin",
+      "name": "little/MCP_flex pin mount",
+      "origin": [
+        84.83994842773679,
+        -37.033648045523,
+        0.0
+      ],
+      "parent": "little_knuckle",
+      "type": "rigid"
+    },
+    {
+      "axis": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "child": "little/PIP bearing 1",
+      "name": "little/PIP bearing 1 mount",
+      "origin": [
+        119.01342051183546,
+        -46.49605479866115,
+        -14.235050549804656
+      ],
+      "parent": "little_middle",
+      "type": "rigid"
+    },
+    {
+      "axis": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "child": "little/PIP bearing 2",
+      "name": "little/PIP bearing 2 mount",
+      "origin": [
+        119.63915837199639,
+        -42.545301436280596,
+        -14.235050549804656
+      ],
+      "parent": "little_middle",
+      "type": "rigid"
+    },
+    {
+      "axis": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "child": "little/PIP pin",
+      "name": "little/PIP pin mount",
+      "origin": [
+        119.63915837199639,
+        -42.545301436280596,
+        -14.235050549804656
+      ],
+      "parent": "little_proximal",
+      "type": "rigid"
+    },
+    {
+      "axis": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "child": "little/DIP bearing 1",
+      "name": "little/DIP bearing 1 mount",
+      "origin": [
+        131.78313539142331,
+        -48.518578942968574,
+        -30.783276375545817
+      ],
+      "parent": "little_distal",
+      "type": "rigid"
+    },
+    {
+      "axis": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "child": "little/DIP bearing 2",
+      "name": "little/DIP bearing 2 mount",
+      "origin": [
+        132.40887325158423,
+        -44.56782558058802,
+        -30.783276375545817
+      ],
+      "parent": "little_distal",
+      "type": "rigid"
+    },
+    {
+      "axis": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "child": "little/DIP pin",
+      "name": "little/DIP pin mount",
+      "origin": [
+        132.40887325158423,
+        -44.56782558058802,
+        -30.783276375545817
+      ],
+      "parent": "little_middle",
+      "type": "rigid"
+    },
+    {
+      "axis": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "child": "thumb/CMC_abd bearing 1",
+      "name": "thumb/CMC_abd bearing 1 mount",
+      "origin": [
+        19.167677357125807,
+        28.71260059711352,
+        -8.066648587844758
+      ],
+      "parent": "thumb_cmc_saddle",
+      "type": "rigid"
+    },
+    {
+      "axis": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "child": "thumb/CMC_abd bearing 2",
+      "name": "thumb/CMC_abd bearing 2 mount",
+      "origin": [
+        18.0,
+        31.0,
+        -5.0
+      ],
+      "parent": "thumb_cmc_saddle",
+      "type": "rigid"
+    },
+    {
+      "axis": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "child": "thumb/CMC_abd pin",
+      "name": "thumb/CMC_abd pin mount",
+      "origin": [
+        18.0,
+        31.0,
+        -5.0
+      ],
+      "parent": "palm",
+      "type": "rigid"
+    },
+    {
+      "axis": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "child": "thumb/CMC_flex bearing 1",
+      "name": "thumb/CMC_flex bearing 1 mount",
+      "origin": [
+        29.975659476616094,
+        41.789677901943165,
+        -8.488041122529166
+      ],
+      "parent": "thumb_metacarpal",
+      "type": "rigid"
+    },
+    {
+      "axis": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "child": "thumb/CMC_flex bearing 2",
+      "name": "thumb/CMC_flex bearing 2 mount",
+      "origin": [
+        26.855521055508646,
+        43.075710530239064,
+        -10.635331580778228
+      ],
+      "parent": "thumb_metacarpal",
+      "type": "rigid"
+    },
+    {
+      "axis": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "child": "thumb/CMC_flex pin",
+      "name": "thumb/CMC_flex pin mount",
+      "origin": [
+        26.855521055508646,
+        43.075710530239064,
+        -10.635331580778228
+      ],
+      "parent": "thumb_cmc_saddle",
+      "type": "rigid"
+    },
+    {
+      "axis": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "child": "thumb/MCP_abd bearing 1",
+      "name": "thumb/MCP_abd bearing 1 mount",
+      "origin": [
+        59.74917811384554,
+        70.87839511848358,
+        -41.78044444002332
+      ],
+      "parent": "thumb_mcp_yoke",
+      "type": "rigid"
+    },
+    {
+      "axis": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "child": "thumb/MCP_abd bearing 2",
+      "name": "thumb/MCP_abd bearing 2 mount",
+      "origin": [
+        59.19428277369276,
+        73.86920924386256,
+        -39.18292215351444
+      ],
+      "parent": "thumb_mcp_yoke",
+      "type": "rigid"
+    },
+    {
+      "axis": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "child": "thumb/MCP_abd pin",
+      "name": "thumb/MCP_abd pin mount",
+      "origin": [
+        59.19428277369276,
+        73.86920924386256,
+        -39.18292215351444
+      ],
+      "parent": "thumb_metacarpal",
+      "type": "rigid"
+    },
+    {
+      "axis": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "child": "thumb/MCP_flex bearing 1",
+      "name": "thumb/MCP_flex bearing 1 mount",
+      "origin": [
+        69.63640498004943,
+        79.55528953185878,
+        -43.49923710796037
+      ],
+      "parent": "thumb_proximal",
+      "type": "rigid"
+    },
+    {
+      "axis": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "child": "thumb/MCP_flex bearing 2",
+      "name": "thumb/MCP_flex bearing 2 mount",
+      "origin": [
+        66.516266558942,
+        80.84132216015468,
+        -45.64652756620943
+      ],
+      "parent": "thumb_proximal",
+      "type": "rigid"
+    },
+    {
+      "axis": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "child": "thumb/MCP_flex pin",
+      "name": "thumb/MCP_flex pin mount",
+      "origin": [
+        66.516266558942,
+        80.84132216015468,
+        -45.64652756620943
+      ],
+      "parent": "thumb_mcp_yoke",
+      "type": "rigid"
+    },
+    {
+      "axis": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "child": "thumb/IP bearing 1",
+      "name": "thumb/IP bearing 1 mount",
+      "origin": [
+        93.3969996462159,
+        93.52758857699192,
+        -69.65662613101681
+      ],
+      "parent": "thumb_distal",
+      "type": "rigid"
+    },
+    {
+      "axis": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "child": "thumb/IP bearing 2",
+      "name": "thumb/IP bearing 2 mount",
+      "origin": [
+        90.27686122510846,
+        94.81362120528782,
+        -71.80391658926587
+      ],
+      "parent": "thumb_distal",
+      "type": "rigid"
+    },
+    {
+      "axis": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "child": "thumb/IP pin",
+      "name": "thumb/IP pin mount",
+      "origin": [
+        90.27686122510846,
+        94.81362120528782,
+        -71.80391658926587
+      ],
+      "parent": "thumb_proximal",
+      "type": "rigid"
+    },
+    {
+      "axis": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "child": "palm/arch_CMC45 bearing 1",
+      "name": "palm/arch_CMC45 bearing 1 mount",
+      "origin": [
+        34.0,
+        -12.0,
+        0.0
+      ],
+      "parent": "palm_ulnar",
+      "type": "rigid"
+    },
+    {
+      "axis": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "child": "palm/arch_CMC45 bearing 2",
+      "name": "palm/arch_CMC45 bearing 2 mount",
+      "origin": [
+        38.0,
+        -12.0,
+        0.0
+      ],
+      "parent": "palm_ulnar",
+      "type": "rigid"
+    },
+    {
+      "axis": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "child": "palm/arch_CMC45 pin",
+      "name": "palm/arch_CMC45 pin mount",
+      "origin": [
+        35.0,
+        -12.0,
+        0.0
+      ],
+      "parent": "palm",
+      "type": "rigid"
+    },
+    {
+      "axis": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "child": "wrist_cross 688ZZ 1",
+      "name": "wrist_cross 688ZZ 1 mount",
+      "origin": [
+        0.0,
+        10.0,
+        0.0
+      ],
+      "parent": "wrist_cross",
+      "type": "rigid"
+    },
+    {
+      "axis": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "child": "wrist_cross 688ZZ 2",
+      "name": "wrist_cross 688ZZ 2 mount",
+      "origin": [
+        0.0,
+        15.0,
+        0.0
+      ],
+      "parent": "wrist_cross",
+      "type": "rigid"
+    },
+    {
+      "axis": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "child": "forearm_frame 8 mm pin",
+      "name": "forearm_frame 8 mm pin mount",
+      "origin": [
+        0.0,
+        16.4,
+        0.0
+      ],
+      "parent": "forearm_frame",
+      "type": "rigid"
+    },
+    {
+      "axis": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "child": "palm 688ZZ 1",
+      "name": "palm 688ZZ 1 mount",
+      "origin": [
+        0.0,
+        0.0,
+        -4.6
+      ],
+      "parent": "palm",
+      "type": "rigid"
+    },
+    {
+      "axis": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "child": "palm 688ZZ 2",
+      "name": "palm 688ZZ 2 mount",
+      "origin": [
+        0.0,
+        0.0,
+        -9.6
+      ],
+      "parent": "palm",
+      "type": "rigid"
+    },
+    {
+      "axis": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "child": "wrist_cross 8 mm pin",
+      "name": "wrist_cross 8 mm pin mount",
+      "origin": [
+        0.0,
+        0.0,
+        -11.0
+      ],
+      "parent": "wrist_cross",
+      "type": "rigid"
+    },
+    {
+      "axis": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "child": "XC330 index/MCP_abd (top r1 c1)",
+      "name": "XC330 index/MCP_abd (top r1 c1) mount",
+      "origin": [
+        -106.5,
+        -22.0,
+        15.0
+      ],
+      "parent": "forearm_frame",
+      "type": "rigid"
+    },
+    {
+      "axis": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "child": "spool index/MCP_abd",
+      "name": "spool index/MCP_abd mount",
+      "origin": [
+        -99.5,
+        -22.0,
+        28.0
+      ],
+      "parent": "forearm_frame",
+      "type": "rigid"
+    },
+    {
+      "axis": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "child": "XC330 index/MCP_flex (top r1 c2)",
+      "name": "XC330 index/MCP_flex (top r1 c2) mount",
+      "origin": [
+        -106.5,
+        0.0,
+        15.0
+      ],
+      "parent": "forearm_frame",
+      "type": "rigid"
+    },
+    {
+      "axis": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "child": "spool index/MCP_flex",
+      "name": "spool index/MCP_flex mount",
+      "origin": [
+        -99.5,
+        0.0,
+        28.0
+      ],
+      "parent": "forearm_frame",
+      "type": "rigid"
+    },
+    {
+      "axis": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "child": "XC330 index/PIP (top r1 c3)",
+      "name": "XC330 index/PIP (top r1 c3) mount",
+      "origin": [
+        -106.5,
+        22.0,
+        15.0
+      ],
+      "parent": "forearm_frame",
+      "type": "rigid"
+    },
+    {
+      "axis": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "child": "spool index/PIP",
+      "name": "spool index/PIP mount",
+      "origin": [
+        -99.5,
+        22.0,
+        28.0
+      ],
+      "parent": "forearm_frame",
+      "type": "rigid"
+    },
+    {
+      "axis": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "child": "XC330 index/DIP (top r2 c1)",
+      "name": "XC330 index/DIP (top r2 c1) mount",
+      "origin": [
+        -143.5,
+        -22.0,
+        15.0
+      ],
+      "parent": "forearm_frame",
+      "type": "rigid"
+    },
+    {
+      "axis": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "child": "spool index/DIP",
+      "name": "spool index/DIP mount",
+      "origin": [
+        -136.5,
+        -22.0,
+        28.0
+      ],
+      "parent": "forearm_frame",
+      "type": "rigid"
+    },
+    {
+      "axis": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "child": "XC330 middle/MCP_abd (top r2 c2)",
+      "name": "XC330 middle/MCP_abd (top r2 c2) mount",
+      "origin": [
+        -143.5,
+        0.0,
+        15.0
+      ],
+      "parent": "forearm_frame",
+      "type": "rigid"
+    },
+    {
+      "axis": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "child": "spool middle/MCP_abd",
+      "name": "spool middle/MCP_abd mount",
+      "origin": [
+        -136.5,
+        0.0,
+        28.0
+      ],
+      "parent": "forearm_frame",
+      "type": "rigid"
+    },
+    {
+      "axis": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "child": "XC330 middle/MCP_flex (top r2 c3)",
+      "name": "XC330 middle/MCP_flex (top r2 c3) mount",
+      "origin": [
+        -143.5,
+        22.0,
+        15.0
+      ],
+      "parent": "forearm_frame",
+      "type": "rigid"
+    },
+    {
+      "axis": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "child": "spool middle/MCP_flex",
+      "name": "spool middle/MCP_flex mount",
+      "origin": [
+        -136.5,
+        22.0,
+        28.0
+      ],
+      "parent": "forearm_frame",
+      "type": "rigid"
+    },
+    {
+      "axis": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "child": "XC330 middle/PIP (top r3 c1)",
+      "name": "XC330 middle/PIP (top r3 c1) mount",
+      "origin": [
+        -180.5,
+        -22.0,
+        15.0
+      ],
+      "parent": "forearm_frame",
+      "type": "rigid"
+    },
+    {
+      "axis": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "child": "spool middle/PIP",
+      "name": "spool middle/PIP mount",
+      "origin": [
+        -173.5,
+        -22.0,
+        28.0
+      ],
+      "parent": "forearm_frame",
+      "type": "rigid"
+    },
+    {
+      "axis": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "child": "XC330 middle/DIP (top r3 c2)",
+      "name": "XC330 middle/DIP (top r3 c2) mount",
+      "origin": [
+        -180.5,
+        0.0,
+        15.0
+      ],
+      "parent": "forearm_frame",
+      "type": "rigid"
+    },
+    {
+      "axis": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "child": "spool middle/DIP",
+      "name": "spool middle/DIP mount",
+      "origin": [
+        -173.5,
+        0.0,
+        28.0
+      ],
+      "parent": "forearm_frame",
+      "type": "rigid"
+    },
+    {
+      "axis": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "child": "XC330 ring/MCP_abd (top r3 c3)",
+      "name": "XC330 ring/MCP_abd (top r3 c3) mount",
+      "origin": [
+        -180.5,
+        22.0,
+        15.0
+      ],
+      "parent": "forearm_frame",
+      "type": "rigid"
+    },
+    {
+      "axis": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "child": "spool ring/MCP_abd",
+      "name": "spool ring/MCP_abd mount",
+      "origin": [
+        -173.5,
+        22.0,
+        28.0
+      ],
+      "parent": "forearm_frame",
+      "type": "rigid"
+    },
+    {
+      "axis": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "child": "XC330 ring/MCP_flex (top r4 c1)",
+      "name": "XC330 ring/MCP_flex (top r4 c1) mount",
+      "origin": [
+        -217.5,
+        -22.0,
+        15.0
+      ],
+      "parent": "forearm_frame",
+      "type": "rigid"
+    },
+    {
+      "axis": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "child": "spool ring/MCP_flex",
+      "name": "spool ring/MCP_flex mount",
+      "origin": [
+        -210.5,
+        -22.0,
+        28.0
+      ],
+      "parent": "forearm_frame",
+      "type": "rigid"
+    },
+    {
+      "axis": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "child": "XC330 ring/PIP (top r4 c2)",
+      "name": "XC330 ring/PIP (top r4 c2) mount",
+      "origin": [
+        -217.5,
+        0.0,
+        15.0
+      ],
+      "parent": "forearm_frame",
+      "type": "rigid"
+    },
+    {
+      "axis": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "child": "spool ring/PIP",
+      "name": "spool ring/PIP mount",
+      "origin": [
+        -210.5,
+        0.0,
+        28.0
+      ],
+      "parent": "forearm_frame",
+      "type": "rigid"
+    },
+    {
+      "axis": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "child": "XC330 ring/DIP (top r4 c3)",
+      "name": "XC330 ring/DIP (top r4 c3) mount",
+      "origin": [
+        -217.5,
+        22.0,
+        15.0
+      ],
+      "parent": "forearm_frame",
+      "type": "rigid"
+    },
+    {
+      "axis": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "child": "spool ring/DIP",
+      "name": "spool ring/DIP mount",
+      "origin": [
+        -210.5,
+        22.0,
+        28.0
+      ],
+      "parent": "forearm_frame",
+      "type": "rigid"
+    },
+    {
+      "axis": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "child": "XC330 little/MCP_abd (bottom r1 c1)",
+      "name": "XC330 little/MCP_abd (bottom r1 c1) mount",
+      "origin": [
+        -106.5,
+        -22.0,
+        -15.0
+      ],
+      "parent": "forearm_frame",
+      "type": "rigid"
+    },
+    {
+      "axis": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "child": "spool little/MCP_abd",
+      "name": "spool little/MCP_abd mount",
+      "origin": [
+        -99.5,
+        -22.0,
+        -28.0
+      ],
+      "parent": "forearm_frame",
+      "type": "rigid"
+    },
+    {
+      "axis": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "child": "XC330 little/MCP_flex (bottom r1 c2)",
+      "name": "XC330 little/MCP_flex (bottom r1 c2) mount",
+      "origin": [
+        -106.5,
+        0.0,
+        -15.0
+      ],
+      "parent": "forearm_frame",
+      "type": "rigid"
+    },
+    {
+      "axis": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "child": "spool little/MCP_flex",
+      "name": "spool little/MCP_flex mount",
+      "origin": [
+        -99.5,
+        0.0,
+        -28.0
+      ],
+      "parent": "forearm_frame",
+      "type": "rigid"
+    },
+    {
+      "axis": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "child": "XC330 little/PIP (bottom r1 c3)",
+      "name": "XC330 little/PIP (bottom r1 c3) mount",
+      "origin": [
+        -106.5,
+        22.0,
+        -15.0
+      ],
+      "parent": "forearm_frame",
+      "type": "rigid"
+    },
+    {
+      "axis": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "child": "spool little/PIP",
+      "name": "spool little/PIP mount",
+      "origin": [
+        -99.5,
+        22.0,
+        -28.0
+      ],
+      "parent": "forearm_frame",
+      "type": "rigid"
+    },
+    {
+      "axis": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "child": "XC330 little/DIP (bottom r2 c1)",
+      "name": "XC330 little/DIP (bottom r2 c1) mount",
+      "origin": [
+        -143.5,
+        -22.0,
+        -15.0
+      ],
+      "parent": "forearm_frame",
+      "type": "rigid"
+    },
+    {
+      "axis": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "child": "spool little/DIP",
+      "name": "spool little/DIP mount",
+      "origin": [
+        -136.5,
+        -22.0,
+        -28.0
+      ],
+      "parent": "forearm_frame",
+      "type": "rigid"
+    },
+    {
+      "axis": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "child": "XC330 thumb/CMC_abd (bottom r2 c2)",
+      "name": "XC330 thumb/CMC_abd (bottom r2 c2) mount",
+      "origin": [
+        -143.5,
+        0.0,
+        -15.0
+      ],
+      "parent": "forearm_frame",
+      "type": "rigid"
+    },
+    {
+      "axis": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "child": "spool thumb/CMC_abd",
+      "name": "spool thumb/CMC_abd mount",
+      "origin": [
+        -136.5,
+        0.0,
+        -28.0
+      ],
+      "parent": "forearm_frame",
+      "type": "rigid"
+    },
+    {
+      "axis": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "child": "XC330 thumb/CMC_flex (bottom r2 c3)",
+      "name": "XC330 thumb/CMC_flex (bottom r2 c3) mount",
+      "origin": [
+        -143.5,
+        22.0,
+        -15.0
+      ],
+      "parent": "forearm_frame",
+      "type": "rigid"
+    },
+    {
+      "axis": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "child": "spool thumb/CMC_flex",
+      "name": "spool thumb/CMC_flex mount",
+      "origin": [
+        -136.5,
+        22.0,
+        -28.0
+      ],
+      "parent": "forearm_frame",
+      "type": "rigid"
+    },
+    {
+      "axis": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "child": "XC330 thumb/MCP_abd (bottom r3 c1)",
+      "name": "XC330 thumb/MCP_abd (bottom r3 c1) mount",
+      "origin": [
+        -180.5,
+        -22.0,
+        -15.0
+      ],
+      "parent": "forearm_frame",
+      "type": "rigid"
+    },
+    {
+      "axis": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "child": "spool thumb/MCP_abd",
+      "name": "spool thumb/MCP_abd mount",
+      "origin": [
+        -173.5,
+        -22.0,
+        -28.0
+      ],
+      "parent": "forearm_frame",
+      "type": "rigid"
+    },
+    {
+      "axis": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "child": "XC330 thumb/MCP_flex (bottom r3 c2)",
+      "name": "XC330 thumb/MCP_flex (bottom r3 c2) mount",
+      "origin": [
+        -180.5,
+        0.0,
+        -15.0
+      ],
+      "parent": "forearm_frame",
+      "type": "rigid"
+    },
+    {
+      "axis": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "child": "spool thumb/MCP_flex",
+      "name": "spool thumb/MCP_flex mount",
+      "origin": [
+        -173.5,
+        0.0,
+        -28.0
+      ],
+      "parent": "forearm_frame",
+      "type": "rigid"
+    },
+    {
+      "axis": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "child": "XC330 thumb/IP (bottom r3 c3)",
+      "name": "XC330 thumb/IP (bottom r3 c3) mount",
+      "origin": [
+        -180.5,
+        22.0,
+        -15.0
+      ],
+      "parent": "forearm_frame",
+      "type": "rigid"
+    },
+    {
+      "axis": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "child": "spool thumb/IP",
+      "name": "spool thumb/IP mount",
+      "origin": [
+        -173.5,
+        22.0,
+        -28.0
+      ],
+      "parent": "forearm_frame",
+      "type": "rigid"
+    },
+    {
+      "axis": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "child": "XC330 palm/arch_CMC45 (bottom r4 c2)",
+      "name": "XC330 palm/arch_CMC45 (bottom r4 c2) mount",
+      "origin": [
+        -217.5,
+        0.0,
+        -15.0
+      ],
+      "parent": "forearm_frame",
+      "type": "rigid"
+    },
+    {
+      "axis": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "child": "spool palm/arch_CMC45",
+      "name": "spool palm/arch_CMC45 mount",
+      "origin": [
+        -210.5,
+        0.0,
+        -28.0
+      ],
+      "parent": "forearm_frame",
+      "type": "rigid"
+    },
+    {
+      "axis": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "child": "XM430 wrist flexion",
+      "name": "XM430 wrist flexion mount",
+      "origin": [
+        -12.0,
+        -32.0,
+        0.0
+      ],
+      "parent": "forearm_frame",
+      "type": "rigid"
+    },
+    {
+      "axis": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "child": "XM430 wrist deviation",
+      "name": "XM430 wrist deviation mount",
+      "origin": [
+        -12.0,
+        0.0,
+        32.0
+      ],
+      "parent": "wrist_cross",
+      "type": "rigid"
+    },
+    {
+      "axis": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "child": "OpenRB-150",
+      "name": "OpenRB-150 mount",
+      "origin": [
+        -201.0,
+        -40.0,
+        0.0
+      ],
+      "parent": "forearm_frame",
+      "type": "rigid"
+    },
+    {
+      "axis": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "child": "Power Hub A",
+      "name": "Power Hub A mount",
+      "origin": [
+        -141.0,
+        -39.0,
+        0.0
+      ],
+      "parent": "forearm_frame",
+      "type": "rigid"
+    },
+    {
+      "axis": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "child": "Power Hub B",
+      "name": "Power Hub B mount",
+      "origin": [
+        -91.0,
+        -39.0,
+        0.0
+      ],
+      "parent": "forearm_frame",
+      "type": "rigid"
+    },
+    {
+      "axis": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "child": "U2D2",
+      "name": "U2D2 mount",
+      "origin": [
+        -210.0,
+        -42.0,
+        21.3
+      ],
+      "parent": "forearm_frame",
+      "type": "rigid"
+    },
+    {
+      "axis": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "child": "FSR index",
+      "name": "FSR index mount",
+      "origin": [
+        169.294822097702,
+        24.244102232355228,
+        -32.96419435773248
+      ],
+      "parent": "index_distal",
+      "type": "rigid"
+    },
+    {
+      "axis": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "child": "FSR middle",
+      "name": "FSR middle mount",
+      "origin": [
+        174.88897531630926,
+        0.0,
+        -45.02369464316879
+      ],
+      "parent": "middle_distal",
+      "type": "rigid"
+    },
+    {
+      "axis": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "child": "FSR ring",
+      "name": "FSR ring mount",
+      "origin": [
+        159.888136717494,
+        -23.656249524705164,
+        -50.84240870784863
+      ],
+      "parent": "ring_distal",
+      "type": "rigid"
+    },
+    {
+      "axis": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "child": "FSR little",
+      "name": "FSR little mount",
+      "origin": [
+        130.47905033735705,
+        -44.26217165839268,
+        -44.825729409099836
+      ],
+      "parent": "little_distal",
+      "type": "rigid"
+    },
+    {
+      "axis": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "child": "FSR thumb",
+      "name": "FSR thumb mount",
+      "origin": [
+        102.2323941250134,
+        92.54021716688352,
+        -90.5375672521094
+      ],
+      "parent": "thumb_distal",
+      "type": "rigid"
+    }
+  ],
+  "mass_g": {
+    "bought": 2702.7,
+    "made": 619.4484432357807,
+    "total": 3322.1484432357806
+  },
+  "parts": [
+    {
+      "file": "parts/index_knuckle.3mf",
+      "kind": "generative",
+      "mass_g": 2.94777985741618,
+      "material": "AlSi10Mg (laser powder bed)",
+      "name": "index_knuckle",
+      "pose": [
+        0.9975640502598242,
+        -0.0697564737441253,
+        0.0,
+        80.0,
+        0.0697564737441253,
+        0.9975640502598242,
+        0.0,
+        18.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0
+      ],
+      "properties": {
+        "category": "made",
+        "mass_g": "2.95",
+        "material": "AlSi10Mg (laser powder bed)",
+        "process": "laser powder bed fusion, build +z"
+      },
+      "qty": 1
+    },
+    {
+      "file": "parts/index_proximal.3mf",
+      "kind": "generative",
+      "mass_g": 7.718369341563787,
+      "material": "AlSi10Mg (laser powder bed)",
+      "name": "index_proximal",
+      "pose": [
+        0.9824088108221348,
+        -0.0697564737441253,
+        0.17322517943366056,
+        92.96833265337771,
+        0.06869671616600713,
+        0.9975640502598242,
+        0.012113084546138431,
+        18.90683415867363,
+        -0.17364817766693033,
+        0.0,
+        0.984807753012208,
+        0.0
+      ],
+      "properties": {
+        "category": "made",
+        "mass_g": "7.72",
+        "material": "AlSi10Mg (laser powder bed)",
+        "process": "laser powder bed fusion, build +z"
+      },
+      "qty": 1
+    },
+    {
+      "file": "parts/index_middle.3mf",
+      "kind": "generative",
+      "mass_g": 4.615330728960002,
+      "material": "AlSi10Mg (laser powder bed)",
+      "name": "index_middle",
+      "pose": [
+        0.9041000668182988,
+        -0.0697564737441253,
+        0.4215887848958185,
+        138.15913795119593,
+        0.06322083535051838,
+        0.9975640502598242,
+        0.029480359678902973,
+        22.06688310230996,
+        -0.4226182617406994,
+        0.0,
+        0.9063077870366499,
+        -7.987816172678795
+      ],
+      "properties": {
+        "category": "made",
+        "mass_g": "4.62",
+        "material": "AlSi10Mg (laser powder bed)",
+        "process": "laser powder bed fusion, build +z"
+      },
+      "qty": 1
+    },
+    {
+      "file": "parts/index_distal.3mf",
+      "kind": "generative",
+      "mass_g": 3.8018926336351164,
+      "material": "AlSi10Mg (laser powder bed)",
+      "name": "index_distal",
+      "pose": [
+        0.8171566310795415,
+        -0.0697564737441253,
+        0.5721792329799457,
+        161.6657396884717,
+        0.057141158069891625,
+        0.9975640502598242,
+        0.0400106696225707,
+        23.710624821423437,
+        -0.573576436351046,
+        0.0,
+        0.8191520442889917,
+        -18.97589097793698
+      ],
+      "properties": {
+        "category": "made",
+        "mass_g": "3.80",
+        "material": "AlSi10Mg (laser powder bed)",
+        "process": "laser powder bed fusion, build +z"
+      },
+      "qty": 1
+    },
+    {
+      "file": "parts/middle_knuckle.3mf",
+      "kind": "generative",
+      "mass_g": 3.10140564137521,
+      "material": "AlSi10Mg (laser powder bed)",
+      "name": "middle_knuckle",
+      "pose": [
+        1.0,
+        0.0,
+        0.0,
+        82.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0
+      ],
+      "properties": {
+        "category": "made",
+        "mass_g": "3.10",
+        "material": "AlSi10Mg (laser powder bed)",
+        "process": "laser powder bed fusion, build +z"
+      },
+      "qty": 1
+    },
+    {
+      "file": "parts/middle_proximal.3mf",
+      "kind": "generative",
+      "mass_g": 14.230193225332547,
+      "material": "AlSi10Mg (laser powder bed)",
+      "name": "middle_proximal",
+      "pose": [
+        0.9702957262759965,
+        0.0,
+        0.24192189559966773,
+        95.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        -0.24192189559966773,
+        0.0,
+        0.9702957262759965,
+        0.0
+      ],
+      "properties": {
+        "category": "made",
+        "mass_g": "14.23",
+        "material": "AlSi10Mg (laser powder bed)",
+        "process": "laser powder bed fusion, build +z"
+      },
+      "qty": 1
+    },
+    {
+      "file": "parts/middle_middle.3mf",
+      "kind": "generative",
+      "mass_g": 3.678947973120001,
+      "material": "AlSi10Mg (laser powder bed)",
+      "name": "middle_middle",
+      "pose": [
+        0.8290375725550417,
+        0.0,
+        0.5591929034707468,
+        144.4850820400758,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        -0.5591929034707468,
+        0.0,
+        0.8290375725550417,
+        -12.338016675583054
+      ],
+      "properties": {
+        "category": "made",
+        "mass_g": "3.68",
+        "material": "AlSi10Mg (laser powder bed)",
+        "process": "laser powder bed fusion, build +z"
+      },
+      "qty": 1
+    },
+    {
+      "file": "parts/middle_distal.3mf",
+      "kind": "generative",
+      "mass_g": 3.969773730004572,
+      "material": "AlSi10Mg (laser powder bed)",
+      "name": "middle_distal",
+      "pose": [
+        0.6946583704589974,
+        0.0,
+        0.7193398003386512,
+        169.35620921672705,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        -0.7193398003386512,
+        0.0,
+        0.6946583704589974,
+        -29.113803779705457
+      ],
+      "properties": {
+        "category": "made",
+        "mass_g": "3.97",
+        "material": "AlSi10Mg (laser powder bed)",
+        "process": "laser powder bed fusion, build +z"
+      },
+      "qty": 1
+    },
+    {
+      "file": "parts/ring_knuckle.3mf",
+      "kind": "generative",
+      "mass_g": 2.94357888,
+      "material": "AlSi10Mg (laser powder bed)",
+      "name": "ring_knuckle",
+      "pose": [
+        0.9975640502598242,
+        0.0697564737441253,
+        0.0,
+        79.0,
+        -0.0697564737441253,
+        0.9975640502598242,
+        0.0,
+        -18.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0
+      ],
+      "properties": {
+        "category": "made",
+        "mass_g": "2.94",
+        "material": "AlSi10Mg (laser powder bed)",
+        "process": "laser powder bed fusion, build +z"
+      },
+      "qty": 1
+    },
+    {
+      "file": "parts/ring_proximal.3mf",
+      "kind": "generative",
+      "mass_g": 9.892641848174831,
+      "material": "AlSi10Mg (laser powder bed)",
+      "name": "ring_proximal",
+      "pose": [
+        0.9487397904213919,
+        0.0697564737441253,
+        0.30826424450778983,
+        91.96833265337771,
+        -0.06634234890812216,
+        0.9975640502598242,
+        -0.021555935854604535,
+        -18.90683415867363,
+        -0.3090169943749474,
+        0.0,
+        0.9510565162951535,
+        0.0
+      ],
+      "properties": {
+        "category": "made",
+        "mass_g": "9.89",
+        "material": "AlSi10Mg (laser powder bed)",
+        "process": "laser powder bed fusion, build +z"
+      },
+      "qty": 1
+    },
+    {
+      "file": "parts/ring_middle.3mf",
+      "kind": "generative",
+      "mass_g": 3.6728523417600014,
+      "material": "AlSi10Mg (laser powder bed)",
+      "name": "ring_middle",
+      "pose": [
+        0.7175875247389182,
+        0.0697564737441253,
+        0.6929662175819667,
+        137.50784259360452,
+        -0.050178607895427454,
+        0.9975640502598242,
+        -0.04845691838005991,
+        -22.091266906263492,
+        -0.6946583704589973,
+        0.0,
+        0.7193398003386511,
+        -14.832815729997474
+      ],
+      "properties": {
+        "category": "made",
+        "mass_g": "3.67",
+        "material": "AlSi10Mg (laser powder bed)",
+        "process": "laser powder bed fusion, build +z"
+      },
+      "qty": 1
+    },
+    {
+      "file": "parts/ring_distal.3mf",
+      "kind": "generative",
+      "mass_g": 3.8018926336351164,
+      "material": "AlSi10Mg (laser powder bed)",
+      "name": "ring_distal",
+      "pose": [
+        0.528628407539182,
+        0.0697564737441253,
+        0.8459822936169372,
+        158.31788081103315,
+        -0.036965299241989755,
+        0.9975640502598242,
+        -0.05915684475329117,
+        -23.54644653523089,
+        -0.8480480961564258,
+        0.0,
+        0.5299192642332049,
+        -34.97790847330839
+      ],
+      "properties": {
+        "category": "made",
+        "mass_g": "3.80",
+        "material": "AlSi10Mg (laser powder bed)",
+        "process": "laser powder bed fusion, build +z"
+      },
+      "qty": 1
+    },
+    {
+      "file": "parts/little_knuckle.3mf",
+      "kind": "generative",
+      "mass_g": 2.4652427977315696,
+      "material": "AlSi10Mg (laser powder bed)",
+      "name": "little_knuckle",
+      "pose": [
+        0.9876883405951378,
+        0.15643446504023087,
+        0.0,
+        72.0,
+        -0.15643446504023087,
+        0.9876883405951378,
+        0.0,
+        -35.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0
+      ],
+      "properties": {
+        "category": "made",
+        "mass_g": "2.47",
+        "material": "AlSi10Mg (laser powder bed)",
+        "process": "laser powder bed fusion, build +z"
+      },
+      "qty": 1
+    },
+    {
+      "file": "parts/little_proximal.3mf",
+      "kind": "generative",
+      "mass_g": 6.657836129280002,
+      "material": "AlSi10Mg (laser powder bed)",
+      "name": "little_proximal",
+      "pose": [
+        0.9157686827436738,
+        0.15643446504023087,
+        0.3699945646269596,
+        84.83994842773679,
+        -0.14504351028309462,
+        0.9876883405951378,
+        -0.05860138204156147,
+        -37.033648045523,
+        -0.374606593415912,
+        0.0,
+        0.9271838545667874,
+        0.0
+      ],
+      "properties": {
+        "category": "made",
+        "mass_g": "6.66",
+        "material": "AlSi10Mg (laser powder bed)",
+        "process": "laser powder bed fusion, build +z"
+      },
+      "qty": 1
+    },
+    {
+      "file": "parts/little_middle.3mf",
+      "kind": "generative",
+      "mass_g": 2.673637693440001,
+      "material": "AlSi10Mg (laser powder bed)",
+      "name": "little_middle",
+      "pose": [
+        0.608081660932754,
+        0.15643446504023087,
+        0.7783090336009472,
+        119.63915837199639,
+        -0.09631067353844869,
+        0.9876883405951378,
+        -0.12327204068641673,
+        -42.545301436280596,
+        -0.7880107536067219,
+        0.0,
+        0.6156614753256584,
+        -14.235050549804656
+      ],
+      "properties": {
+        "category": "made",
+        "mass_g": "2.67",
+        "material": "AlSi10Mg (laser powder bed)",
+        "process": "laser powder bed fusion, build +z"
+      },
+      "qty": 1
+    },
+    {
+      "file": "parts/little_distal.3mf",
+      "kind": "generative",
+      "mass_g": 3.870819425233958,
+      "material": "AlSi10Mg (laser powder bed)",
+      "name": "little_distal",
+      "pose": [
+        0.3699945646269598,
+        0.15643446504023087,
+        0.9157686827436738,
+        132.40887325158423,
+        -0.05860138204156152,
+        0.9876883405951378,
+        -0.14504351028309462,
+        -44.56782558058802,
+        -0.9271838545667874,
+        0.0,
+        0.3746065934159122,
+        -30.783276375545817
+      ],
+      "properties": {
+        "category": "made",
+        "mass_g": "3.87",
+        "material": "AlSi10Mg (laser powder bed)",
+        "process": "laser powder bed fusion, build +z"
+      },
+      "qty": 1
+    },
+    {
+      "file": "parts/thumb_cmc_saddle.3mf",
+      "kind": "generative",
+      "mass_g": 5.488505254177518,
+      "material": "AlSi10Mg (laser powder bed)",
+      "name": "thumb_cmc_saddle",
+      "pose": [
+        0.5534700659692904,
+        -0.7800346052768619,
+        -0.2919193392814522,
+        18.0,
+        0.7547319081399414,
+        0.32150815707397484,
+        0.5718498507216201,
+        31.0,
+        -0.3522082237986393,
+        -0.5368226145622653,
+        0.7666621469611897,
+        -5.0
+      ],
+      "properties": {
+        "category": "made",
+        "mass_g": "5.49",
+        "material": "AlSi10Mg (laser powder bed)",
+        "process": "laser powder bed fusion, build +z"
+      },
+      "qty": 1
+    },
+    {
+      "file": "parts/thumb_metacarpal.3mf",
+      "kind": "generative",
+      "mass_g": 15.707011943732365,
+      "material": "AlSi10Mg (laser powder bed)",
+      "name": "thumb_metacarpal",
+      "pose": [
+        0.6101653154374361,
+        -0.7800346052768619,
+        -0.1387238350381947,
+        26.855521055508646,
+        0.5810094096910093,
+        0.32150815707397484,
+        0.7477035313447443,
+        43.075710530239064,
+        -0.5386337843912493,
+        -0.5368226145622653,
+        0.6493805716272195,
+        -10.635331580778228
+      ],
+      "properties": {
+        "category": "made",
+        "mass_g": "15.71",
+        "material": "AlSi10Mg (laser powder bed)",
+        "process": "laser powder bed fusion, build +z"
+      },
+      "qty": 1
+    },
+    {
+      "file": "parts/thumb_mcp_yoke.3mf",
+      "kind": "generative",
+      "mass_g": 2.85324548607979,
+      "material": "AlSi10Mg (laser powder bed)",
+      "name": "thumb_mcp_yoke",
+      "pose": [
+        0.6101653154374361,
+        -0.7800346052768619,
+        -0.1387238350381947,
+        59.19428277369276,
+        0.5810094096910093,
+        0.32150815707397484,
+        0.7477035313447443,
+        73.86920924386256,
+        -0.5386337843912493,
+        -0.5368226145622653,
+        0.6493805716272195,
+        -39.18292215351444
+      ],
+      "properties": {
+        "category": "made",
+        "mass_g": "2.85",
+        "material": "AlSi10Mg (laser powder bed)",
+        "process": "laser powder bed fusion, build +z"
+      },
+      "qty": 1
+    },
+    {
+      "file": "parts/thumb_proximal.3mf",
+      "kind": "generative",
+      "mass_g": 7.338230844702663,
+      "material": "AlSi10Mg (laser powder bed)",
+      "name": "thumb_proximal",
+      "pose": [
+        0.6252788070043807,
+        -0.7800346052768619,
+        0.023925469310938974,
+        66.516266558942,
+        0.3676920801350826,
+        0.32150815707397484,
+        0.8726024519452328,
+        80.84132216015468,
+        -0.6883523427120114,
+        -0.5368226145622653,
+        0.4878447834889893,
+        -45.64652756620943
+      ],
+      "properties": {
+        "category": "made",
+        "mass_g": "7.34",
+        "material": "AlSi10Mg (laser powder bed)",
+        "process": "laser powder bed fusion, build +z"
+      },
+      "qty": 1
+    },
+    {
+      "file": "parts/thumb_distal.3mf",
+      "kind": "generative",
+      "mass_g": 4.3554375,
+      "material": "AlSi10Mg (laser powder bed)",
+      "name": "thumb_distal",
+      "pose": [
+        0.6116248027864676,
+        -0.7800346052768619,
+        0.13214051304193128,
+        90.27686122510846,
+        0.21058018563023057,
+        0.32150815707397484,
+        0.923194719631148,
+        94.81362120528782,
+        -0.7626080815440864,
+        -0.5368226145622653,
+        0.36090219514181554,
+        -71.80391658926587
+      ],
+      "properties": {
+        "category": "made",
+        "mass_g": "4.36",
+        "material": "AlSi10Mg (laser powder bed)",
+        "process": "laser powder bed fusion, build +z"
+      },
+      "qty": 1
+    },
+    {
+      "file": "parts/palm.3mf",
+      "kind": "generative",
+      "mass_g": 66.72063,
+      "material": "AlSi10Mg (laser powder bed)",
+      "name": "palm",
+      "pose": [
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0
+      ],
+      "properties": {
+        "category": "made",
+        "mass_g": "66.72",
+        "material": "AlSi10Mg (laser powder bed)",
+        "process": "laser powder bed fusion, build +z"
+      },
+      "qty": 1
+    },
+    {
+      "file": "parts/palm_ulnar.3mf",
+      "kind": "generative",
+      "mass_g": 18.332930127723515,
+      "material": "AlSi10Mg (laser powder bed)",
+      "name": "palm_ulnar",
+      "pose": [
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0
+      ],
+      "properties": {
+        "category": "made",
+        "mass_g": "18.33",
+        "material": "AlSi10Mg (laser powder bed)",
+        "process": "laser powder bed fusion, build +z"
+      },
+      "qty": 1
+    },
+    {
+      "file": "parts/wrist_cross.3mf",
+      "kind": "generative",
+      "mass_g": 21.43493620667336,
+      "material": "AlSi10Mg (laser powder bed)",
+      "name": "wrist_cross",
+      "pose": [
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0
+      ],
+      "properties": {
+        "category": "made",
+        "mass_g": "21.43",
+        "material": "AlSi10Mg (laser powder bed)",
+        "process": "laser powder bed fusion, build +z"
+      },
+      "qty": 1
+    },
+    {
+      "file": "parts/forearm_frame.3mf",
+      "kind": "generative",
+      "mass_g": 370.7753209920276,
+      "material": "AlSi10Mg (laser powder bed)",
+      "name": "forearm_frame",
+      "pose": [
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0
+      ],
+      "properties": {
+        "category": "made",
+        "mass_g": "370.78",
+        "material": "AlSi10Mg (laser powder bed)",
+        "process": "laser powder bed fusion, build +z"
+      },
+      "qty": 1
+    },
+    {
+      "bom_type": "purchased",
+      "component_ref": "B1",
+      "description": "Deep groove ball bearing 3x8x4 mm, double metal shield, finger and thumb joint pivots (2 per axis)",
+      "file": "components/B1.stl",
+      "kind": "component",
+      "mass_g": 0.9,
+      "material": null,
+      "name": "index/MCP_abd bearing 1",
+      "part_number": "693ZZ",
+      "pose": [
+        0.0,
+        1.0,
+        0.0,
+        80.0,
+        -1.0,
+        0.0,
+        0.0,
+        18.0,
+        0.0,
+        -0.0,
+        1.0,
+        -4.0
+      ],
+      "position_mm": [
+        80.0,
+        18.0,
+        -4.0
+      ],
+      "properties": {
+        "category": "bearing",
+        "manufacturer": "3RACING (or NSK)",
+        "mass_g": "0.9",
+        "mpn": "693ZZ"
+      },
+      "qty": 1,
+      "ref": "B1",
+      "role": "bearing in the child's tongue"
+    },
+    {
+      "bom_type": "purchased",
+      "component_ref": "B1",
+      "description": "Deep groove ball bearing 3x8x4 mm, double metal shield, finger and thumb joint pivots (2 per axis)",
+      "file": "components/B1.stl",
+      "kind": "component",
+      "mass_g": 0.9,
+      "material": null,
+      "name": "index/MCP_abd bearing 2",
+      "part_number": "693ZZ",
+      "pose": [
+        0.0,
+        1.0,
+        0.0,
+        80.0,
+        -1.0,
+        0.0,
+        0.0,
+        18.0,
+        0.0,
+        -0.0,
+        1.0,
+        0.0
+      ],
+      "position_mm": [
+        80.0,
+        18.0,
+        0.0
+      ],
+      "properties": {
+        "category": "bearing",
+        "manufacturer": "3RACING (or NSK)",
+        "mass_g": "0.9",
+        "mpn": "693ZZ"
+      },
+      "qty": 1,
+      "ref": "B1",
+      "role": "bearing in the child's tongue"
+    },
+    {
+      "bom_type": "purchased",
+      "component_ref": "SH1",
+      "description": "Dowel pin 3 mm x 16 mm, 18-8 stainless, ISO 2338 h8, joint axles through MR63ZZ/623ZZ",
+      "file": "components/SH1.stl",
+      "kind": "component",
+      "mass_g": 0.9,
+      "material": null,
+      "name": "index/MCP_abd pin",
+      "part_number": "DP7X03016H8-050P1",
+      "pose": [
+        0.0,
+        1.0,
+        0.0,
+        80.0,
+        -1.0,
+        0.0,
+        0.0,
+        18.0,
+        0.0,
+        -0.0,
+        1.0,
+        0.0
+      ],
+      "position_mm": [
+        80.0,
+        18.0,
+        0.0
+      ],
+      "properties": {
+        "category": "shaft",
+        "manufacturer": "Zoro Select",
+        "mass_g": "0.9",
+        "mpn": "DP7X03016H8-050P1"
+      },
+      "qty": 1,
+      "ref": "SH1",
+      "role": "3 x 16 pin pressed into the parent's lugs"
+    },
+    {
+      "bom_type": "purchased",
+      "component_ref": "B1",
+      "description": "Deep groove ball bearing 3x8x4 mm, double metal shield, finger and thumb joint pivots (2 per axis)",
+      "file": "components/B1.stl",
+      "kind": "component",
+      "mass_g": 0.9,
+      "material": null,
+      "name": "index/MCP_flex bearing 1",
+      "part_number": "693ZZ",
+      "pose": [
+        0.0,
+        0.9975640502598244,
+        -0.06975647374412532,
+        93.24735854835421,
+        -0.0,
+        0.06975647374412532,
+        0.9975640502598244,
+        14.916577957634331,
+        1.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "position_mm": [
+        93.24735854835421,
+        14.916577957634331,
+        0.0
+      ],
+      "properties": {
+        "category": "bearing",
+        "manufacturer": "3RACING (or NSK)",
+        "mass_g": "0.9",
+        "mpn": "693ZZ"
+      },
+      "qty": 1,
+      "ref": "B1",
+      "role": "bearing in the child's tongue"
+    },
+    {
+      "bom_type": "purchased",
+      "component_ref": "B1",
+      "description": "Deep groove ball bearing 3x8x4 mm, double metal shield, finger and thumb joint pivots (2 per axis)",
+      "file": "components/B1.stl",
+      "kind": "component",
+      "mass_g": 0.9,
+      "material": null,
+      "name": "index/MCP_flex bearing 2",
+      "part_number": "693ZZ",
+      "pose": [
+        0.0,
+        0.9975640502598244,
+        -0.06975647374412532,
+        92.96833265337771,
+        -0.0,
+        0.06975647374412532,
+        0.9975640502598244,
+        18.90683415867363,
+        1.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "position_mm": [
+        92.96833265337771,
+        18.90683415867363,
+        0.0
+      ],
+      "properties": {
+        "category": "bearing",
+        "manufacturer": "3RACING (or NSK)",
+        "mass_g": "0.9",
+        "mpn": "693ZZ"
+      },
+      "qty": 1,
+      "ref": "B1",
+      "role": "bearing in the child's tongue"
+    },
+    {
+      "bom_type": "purchased",
+      "component_ref": "SH1",
+      "description": "Dowel pin 3 mm x 16 mm, 18-8 stainless, ISO 2338 h8, joint axles through MR63ZZ/623ZZ",
+      "file": "components/SH1.stl",
+      "kind": "component",
+      "mass_g": 0.9,
+      "material": null,
+      "name": "index/MCP_flex pin",
+      "part_number": "DP7X03016H8-050P1",
+      "pose": [
+        0.0,
+        0.9975640502598244,
+        -0.06975647374412532,
+        92.96833265337771,
+        -0.0,
+        0.06975647374412532,
+        0.9975640502598244,
+        18.90683415867363,
+        1.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "position_mm": [
+        92.96833265337771,
+        18.90683415867363,
+        0.0
+      ],
+      "properties": {
+        "category": "shaft",
+        "manufacturer": "Zoro Select",
+        "mass_g": "0.9",
+        "mpn": "DP7X03016H8-050P1"
+      },
+      "qty": 1,
+      "ref": "SH1",
+      "role": "3 x 16 pin pressed into the parent's lugs"
+    },
+    {
+      "bom_type": "purchased",
+      "component_ref": "B1",
+      "description": "Deep groove ball bearing 3x8x4 mm, double metal shield, finger and thumb joint pivots (2 per axis)",
+      "file": "components/B1.stl",
+      "kind": "component",
+      "mass_g": 0.9,
+      "material": null,
+      "name": "index/PIP bearing 1",
+      "part_number": "693ZZ",
+      "pose": [
+        0.0,
+        0.9975640502598244,
+        -0.06975647374412532,
+        138.43816384617244,
+        -0.0,
+        0.06975647374412532,
+        0.9975640502598244,
+        18.07662690127066,
+        1.0,
+        0.0,
+        0.0,
+        -7.987816172678795
+      ],
+      "position_mm": [
+        138.43816384617244,
+        18.07662690127066,
+        -7.987816172678795
+      ],
+      "properties": {
+        "category": "bearing",
+        "manufacturer": "3RACING (or NSK)",
+        "mass_g": "0.9",
+        "mpn": "693ZZ"
+      },
+      "qty": 1,
+      "ref": "B1",
+      "role": "bearing in the child's tongue"
+    },
+    {
+      "bom_type": "purchased",
+      "component_ref": "B1",
+      "description": "Deep groove ball bearing 3x8x4 mm, double metal shield, finger and thumb joint pivots (2 per axis)",
+      "file": "components/B1.stl",
+      "kind": "component",
+      "mass_g": 0.9,
+      "material": null,
+      "name": "index/PIP bearing 2",
+      "part_number": "693ZZ",
+      "pose": [
+        0.0,
+        0.9975640502598244,
+        -0.06975647374412532,
+        138.15913795119593,
+        -0.0,
+        0.06975647374412532,
+        0.9975640502598244,
+        22.06688310230996,
+        1.0,
+        0.0,
+        0.0,
+        -7.987816172678795
+      ],
+      "position_mm": [
+        138.15913795119593,
+        22.06688310230996,
+        -7.987816172678795
+      ],
+      "properties": {
+        "category": "bearing",
+        "manufacturer": "3RACING (or NSK)",
+        "mass_g": "0.9",
+        "mpn": "693ZZ"
+      },
+      "qty": 1,
+      "ref": "B1",
+      "role": "bearing in the child's tongue"
+    },
+    {
+      "bom_type": "purchased",
+      "component_ref": "SH1",
+      "description": "Dowel pin 3 mm x 16 mm, 18-8 stainless, ISO 2338 h8, joint axles through MR63ZZ/623ZZ",
+      "file": "components/SH1.stl",
+      "kind": "component",
+      "mass_g": 0.9,
+      "material": null,
+      "name": "index/PIP pin",
+      "part_number": "DP7X03016H8-050P1",
+      "pose": [
+        0.0,
+        0.9975640502598244,
+        -0.06975647374412532,
+        138.15913795119593,
+        -0.0,
+        0.06975647374412532,
+        0.9975640502598244,
+        22.06688310230996,
+        1.0,
+        0.0,
+        0.0,
+        -7.987816172678795
+      ],
+      "position_mm": [
+        138.15913795119593,
+        22.06688310230996,
+        -7.987816172678795
+      ],
+      "properties": {
+        "category": "shaft",
+        "manufacturer": "Zoro Select",
+        "mass_g": "0.9",
+        "mpn": "DP7X03016H8-050P1"
+      },
+      "qty": 1,
+      "ref": "SH1",
+      "role": "3 x 16 pin pressed into the parent's lugs"
+    },
+    {
+      "bom_type": "purchased",
+      "component_ref": "B1",
+      "description": "Deep groove ball bearing 3x8x4 mm, double metal shield, finger and thumb joint pivots (2 per axis)",
+      "file": "components/B1.stl",
+      "kind": "component",
+      "mass_g": 0.9,
+      "material": null,
+      "name": "index/DIP bearing 1",
+      "part_number": "693ZZ",
+      "pose": [
+        0.0,
+        0.9975640502598244,
+        -0.06975647374412532,
+        161.9447655834482,
+        -0.0,
+        0.06975647374412532,
+        0.9975640502598244,
+        19.72036862038414,
+        1.0,
+        0.0,
+        0.0,
+        -18.97589097793698
+      ],
+      "position_mm": [
+        161.9447655834482,
+        19.72036862038414,
+        -18.97589097793698
+      ],
+      "properties": {
+        "category": "bearing",
+        "manufacturer": "3RACING (or NSK)",
+        "mass_g": "0.9",
+        "mpn": "693ZZ"
+      },
+      "qty": 1,
+      "ref": "B1",
+      "role": "bearing in the child's tongue"
+    },
+    {
+      "bom_type": "purchased",
+      "component_ref": "B1",
+      "description": "Deep groove ball bearing 3x8x4 mm, double metal shield, finger and thumb joint pivots (2 per axis)",
+      "file": "components/B1.stl",
+      "kind": "component",
+      "mass_g": 0.9,
+      "material": null,
+      "name": "index/DIP bearing 2",
+      "part_number": "693ZZ",
+      "pose": [
+        0.0,
+        0.9975640502598244,
+        -0.06975647374412532,
+        161.6657396884717,
+        -0.0,
+        0.06975647374412532,
+        0.9975640502598244,
+        23.710624821423437,
+        1.0,
+        0.0,
+        0.0,
+        -18.97589097793698
+      ],
+      "position_mm": [
+        161.6657396884717,
+        23.710624821423437,
+        -18.97589097793698
+      ],
+      "properties": {
+        "category": "bearing",
+        "manufacturer": "3RACING (or NSK)",
+        "mass_g": "0.9",
+        "mpn": "693ZZ"
+      },
+      "qty": 1,
+      "ref": "B1",
+      "role": "bearing in the child's tongue"
+    },
+    {
+      "bom_type": "purchased",
+      "component_ref": "SH1",
+      "description": "Dowel pin 3 mm x 16 mm, 18-8 stainless, ISO 2338 h8, joint axles through MR63ZZ/623ZZ",
+      "file": "components/SH1.stl",
+      "kind": "component",
+      "mass_g": 0.9,
+      "material": null,
+      "name": "index/DIP pin",
+      "part_number": "DP7X03016H8-050P1",
+      "pose": [
+        0.0,
+        0.9975640502598244,
+        -0.06975647374412532,
+        161.6657396884717,
+        -0.0,
+        0.06975647374412532,
+        0.9975640502598244,
+        23.710624821423437,
+        1.0,
+        0.0,
+        0.0,
+        -18.97589097793698
+      ],
+      "position_mm": [
+        161.6657396884717,
+        23.710624821423437,
+        -18.97589097793698
+      ],
+      "properties": {
+        "category": "shaft",
+        "manufacturer": "Zoro Select",
+        "mass_g": "0.9",
+        "mpn": "DP7X03016H8-050P1"
+      },
+      "qty": 1,
+      "ref": "SH1",
+      "role": "3 x 16 pin pressed into the parent's lugs"
+    },
+    {
+      "bom_type": "purchased",
+      "component_ref": "B1",
+      "description": "Deep groove ball bearing 3x8x4 mm, double metal shield, finger and thumb joint pivots (2 per axis)",
+      "file": "components/B1.stl",
+      "kind": "component",
+      "mass_g": 0.9,
+      "material": null,
+      "name": "middle/MCP_abd bearing 1",
+      "part_number": "693ZZ",
+      "pose": [
+        0.0,
+        1.0,
+        0.0,
+        82.0,
+        -1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        -0.0,
+        1.0,
+        -4.0
+      ],
+      "position_mm": [
+        82.0,
+        0.0,
+        -4.0
+      ],
+      "properties": {
+        "category": "bearing",
+        "manufacturer": "3RACING (or NSK)",
+        "mass_g": "0.9",
+        "mpn": "693ZZ"
+      },
+      "qty": 1,
+      "ref": "B1",
+      "role": "bearing in the child's tongue"
+    },
+    {
+      "bom_type": "purchased",
+      "component_ref": "B1",
+      "description": "Deep groove ball bearing 3x8x4 mm, double metal shield, finger and thumb joint pivots (2 per axis)",
+      "file": "components/B1.stl",
+      "kind": "component",
+      "mass_g": 0.9,
+      "material": null,
+      "name": "middle/MCP_abd bearing 2",
+      "part_number": "693ZZ",
+      "pose": [
+        0.0,
+        1.0,
+        0.0,
+        82.0,
+        -1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        -0.0,
+        1.0,
+        0.0
+      ],
+      "position_mm": [
+        82.0,
+        0.0,
+        0.0
+      ],
+      "properties": {
+        "category": "bearing",
+        "manufacturer": "3RACING (or NSK)",
+        "mass_g": "0.9",
+        "mpn": "693ZZ"
+      },
+      "qty": 1,
+      "ref": "B1",
+      "role": "bearing in the child's tongue"
+    },
+    {
+      "bom_type": "purchased",
+      "component_ref": "SH1",
+      "description": "Dowel pin 3 mm x 16 mm, 18-8 stainless, ISO 2338 h8, joint axles through MR63ZZ/623ZZ",
+      "file": "components/SH1.stl",
+      "kind": "component",
+      "mass_g": 0.9,
+      "material": null,
+      "name": "middle/MCP_abd pin",
+      "part_number": "DP7X03016H8-050P1",
+      "pose": [
+        0.0,
+        1.0,
+        0.0,
+        82.0,
+        -1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        -0.0,
+        1.0,
+        0.0
+      ],
+      "position_mm": [
+        82.0,
+        0.0,
+        0.0
+      ],
+      "properties": {
+        "category": "shaft",
+        "manufacturer": "Zoro Select",
+        "mass_g": "0.9",
+        "mpn": "DP7X03016H8-050P1"
+      },
+      "qty": 1,
+      "ref": "SH1",
+      "role": "3 x 16 pin pressed into the parent's lugs"
+    },
+    {
+      "bom_type": "purchased",
+      "component_ref": "B1",
+      "description": "Deep groove ball bearing 3x8x4 mm, double metal shield, finger and thumb joint pivots (2 per axis)",
+      "file": "components/B1.stl",
+      "kind": "component",
+      "mass_g": 0.9,
+      "material": null,
+      "name": "middle/MCP_flex bearing 1",
+      "part_number": "693ZZ",
+      "pose": [
+        0.0,
+        1.0,
+        0.0,
+        95.0,
+        0.0,
+        0.0,
+        1.0,
+        -4.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "position_mm": [
+        95.0,
+        -4.0,
+        0.0
+      ],
+      "properties": {
+        "category": "bearing",
+        "manufacturer": "3RACING (or NSK)",
+        "mass_g": "0.9",
+        "mpn": "693ZZ"
+      },
+      "qty": 1,
+      "ref": "B1",
+      "role": "bearing in the child's tongue"
+    },
+    {
+      "bom_type": "purchased",
+      "component_ref": "B1",
+      "description": "Deep groove ball bearing 3x8x4 mm, double metal shield, finger and thumb joint pivots (2 per axis)",
+      "file": "components/B1.stl",
+      "kind": "component",
+      "mass_g": 0.9,
+      "material": null,
+      "name": "middle/MCP_flex bearing 2",
+      "part_number": "693ZZ",
+      "pose": [
+        0.0,
+        1.0,
+        0.0,
+        95.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "position_mm": [
+        95.0,
+        0.0,
+        0.0
+      ],
+      "properties": {
+        "category": "bearing",
+        "manufacturer": "3RACING (or NSK)",
+        "mass_g": "0.9",
+        "mpn": "693ZZ"
+      },
+      "qty": 1,
+      "ref": "B1",
+      "role": "bearing in the child's tongue"
+    },
+    {
+      "bom_type": "purchased",
+      "component_ref": "SH1",
+      "description": "Dowel pin 3 mm x 16 mm, 18-8 stainless, ISO 2338 h8, joint axles through MR63ZZ/623ZZ",
+      "file": "components/SH1.stl",
+      "kind": "component",
+      "mass_g": 0.9,
+      "material": null,
+      "name": "middle/MCP_flex pin",
+      "part_number": "DP7X03016H8-050P1",
+      "pose": [
+        0.0,
+        1.0,
+        0.0,
+        95.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "position_mm": [
+        95.0,
+        0.0,
+        0.0
+      ],
+      "properties": {
+        "category": "shaft",
+        "manufacturer": "Zoro Select",
+        "mass_g": "0.9",
+        "mpn": "DP7X03016H8-050P1"
+      },
+      "qty": 1,
+      "ref": "SH1",
+      "role": "3 x 16 pin pressed into the parent's lugs"
+    },
+    {
+      "bom_type": "purchased",
+      "component_ref": "B1",
+      "description": "Deep groove ball bearing 3x8x4 mm, double metal shield, finger and thumb joint pivots (2 per axis)",
+      "file": "components/B1.stl",
+      "kind": "component",
+      "mass_g": 0.9,
+      "material": null,
+      "name": "middle/PIP bearing 1",
+      "part_number": "693ZZ",
+      "pose": [
+        0.0,
+        1.0,
+        0.0,
+        144.4850820400758,
+        0.0,
+        0.0,
+        1.0,
+        -4.0,
+        1.0,
+        0.0,
+        0.0,
+        -12.338016675583054
+      ],
+      "position_mm": [
+        144.4850820400758,
+        -4.0,
+        -12.338016675583054
+      ],
+      "properties": {
+        "category": "bearing",
+        "manufacturer": "3RACING (or NSK)",
+        "mass_g": "0.9",
+        "mpn": "693ZZ"
+      },
+      "qty": 1,
+      "ref": "B1",
+      "role": "bearing in the child's tongue"
+    },
+    {
+      "bom_type": "purchased",
+      "component_ref": "B1",
+      "description": "Deep groove ball bearing 3x8x4 mm, double metal shield, finger and thumb joint pivots (2 per axis)",
+      "file": "components/B1.stl",
+      "kind": "component",
+      "mass_g": 0.9,
+      "material": null,
+      "name": "middle/PIP bearing 2",
+      "part_number": "693ZZ",
+      "pose": [
+        0.0,
+        1.0,
+        0.0,
+        144.4850820400758,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        -12.338016675583054
+      ],
+      "position_mm": [
+        144.4850820400758,
+        0.0,
+        -12.338016675583054
+      ],
+      "properties": {
+        "category": "bearing",
+        "manufacturer": "3RACING (or NSK)",
+        "mass_g": "0.9",
+        "mpn": "693ZZ"
+      },
+      "qty": 1,
+      "ref": "B1",
+      "role": "bearing in the child's tongue"
+    },
+    {
+      "bom_type": "purchased",
+      "component_ref": "SH1",
+      "description": "Dowel pin 3 mm x 16 mm, 18-8 stainless, ISO 2338 h8, joint axles through MR63ZZ/623ZZ",
+      "file": "components/SH1.stl",
+      "kind": "component",
+      "mass_g": 0.9,
+      "material": null,
+      "name": "middle/PIP pin",
+      "part_number": "DP7X03016H8-050P1",
+      "pose": [
+        0.0,
+        1.0,
+        0.0,
+        144.4850820400758,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        -12.338016675583054
+      ],
+      "position_mm": [
+        144.4850820400758,
+        0.0,
+        -12.338016675583054
+      ],
+      "properties": {
+        "category": "shaft",
+        "manufacturer": "Zoro Select",
+        "mass_g": "0.9",
+        "mpn": "DP7X03016H8-050P1"
+      },
+      "qty": 1,
+      "ref": "SH1",
+      "role": "3 x 16 pin pressed into the parent's lugs"
+    },
+    {
+      "bom_type": "purchased",
+      "component_ref": "B1",
+      "description": "Deep groove ball bearing 3x8x4 mm, double metal shield, finger and thumb joint pivots (2 per axis)",
+      "file": "components/B1.stl",
+      "kind": "component",
+      "mass_g": 0.9,
+      "material": null,
+      "name": "middle/DIP bearing 1",
+      "part_number": "693ZZ",
+      "pose": [
+        0.0,
+        1.0,
+        0.0,
+        169.35620921672705,
+        0.0,
+        0.0,
+        1.0,
+        -4.0,
+        1.0,
+        0.0,
+        0.0,
+        -29.113803779705457
+      ],
+      "position_mm": [
+        169.35620921672705,
+        -4.0,
+        -29.113803779705457
+      ],
+      "properties": {
+        "category": "bearing",
+        "manufacturer": "3RACING (or NSK)",
+        "mass_g": "0.9",
+        "mpn": "693ZZ"
+      },
+      "qty": 1,
+      "ref": "B1",
+      "role": "bearing in the child's tongue"
+    },
+    {
+      "bom_type": "purchased",
+      "component_ref": "B1",
+      "description": "Deep groove ball bearing 3x8x4 mm, double metal shield, finger and thumb joint pivots (2 per axis)",
+      "file": "components/B1.stl",
+      "kind": "component",
+      "mass_g": 0.9,
+      "material": null,
+      "name": "middle/DIP bearing 2",
+      "part_number": "693ZZ",
+      "pose": [
+        0.0,
+        1.0,
+        0.0,
+        169.35620921672705,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        -29.113803779705457
+      ],
+      "position_mm": [
+        169.35620921672705,
+        0.0,
+        -29.113803779705457
+      ],
+      "properties": {
+        "category": "bearing",
+        "manufacturer": "3RACING (or NSK)",
+        "mass_g": "0.9",
+        "mpn": "693ZZ"
+      },
+      "qty": 1,
+      "ref": "B1",
+      "role": "bearing in the child's tongue"
+    },
+    {
+      "bom_type": "purchased",
+      "component_ref": "SH1",
+      "description": "Dowel pin 3 mm x 16 mm, 18-8 stainless, ISO 2338 h8, joint axles through MR63ZZ/623ZZ",
+      "file": "components/SH1.stl",
+      "kind": "component",
+      "mass_g": 0.9,
+      "material": null,
+      "name": "middle/DIP pin",
+      "part_number": "DP7X03016H8-050P1",
+      "pose": [
+        0.0,
+        1.0,
+        0.0,
+        169.35620921672705,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        -29.113803779705457
+      ],
+      "position_mm": [
+        169.35620921672705,
+        0.0,
+        -29.113803779705457
+      ],
+      "properties": {
+        "category": "shaft",
+        "manufacturer": "Zoro Select",
+        "mass_g": "0.9",
+        "mpn": "DP7X03016H8-050P1"
+      },
+      "qty": 1,
+      "ref": "SH1",
+      "role": "3 x 16 pin pressed into the parent's lugs"
+    },
+    {
+      "bom_type": "purchased",
+      "component_ref": "B1",
+      "description": "Deep groove ball bearing 3x8x4 mm, double metal shield, finger and thumb joint pivots (2 per axis)",
+      "file": "components/B1.stl",
+      "kind": "component",
+      "mass_g": 0.9,
+      "material": null,
+      "name": "ring/MCP_abd bearing 1",
+      "part_number": "693ZZ",
+      "pose": [
+        0.0,
+        1.0,
+        0.0,
+        79.0,
+        -1.0,
+        0.0,
+        0.0,
+        -18.0,
+        0.0,
+        -0.0,
+        1.0,
+        -4.0
+      ],
+      "position_mm": [
+        79.0,
+        -18.0,
+        -4.0
+      ],
+      "properties": {
+        "category": "bearing",
+        "manufacturer": "3RACING (or NSK)",
+        "mass_g": "0.9",
+        "mpn": "693ZZ"
+      },
+      "qty": 1,
+      "ref": "B1",
+      "role": "bearing in the child's tongue"
+    },
+    {
+      "bom_type": "purchased",
+      "component_ref": "B1",
+      "description": "Deep groove ball bearing 3x8x4 mm, double metal shield, finger and thumb joint pivots (2 per axis)",
+      "file": "components/B1.stl",
+      "kind": "component",
+      "mass_g": 0.9,
+      "material": null,
+      "name": "ring/MCP_abd bearing 2",
+      "part_number": "693ZZ",
+      "pose": [
+        0.0,
+        1.0,
+        0.0,
+        79.0,
+        -1.0,
+        0.0,
+        0.0,
+        -18.0,
+        0.0,
+        -0.0,
+        1.0,
+        0.0
+      ],
+      "position_mm": [
+        79.0,
+        -18.0,
+        0.0
+      ],
+      "properties": {
+        "category": "bearing",
+        "manufacturer": "3RACING (or NSK)",
+        "mass_g": "0.9",
+        "mpn": "693ZZ"
+      },
+      "qty": 1,
+      "ref": "B1",
+      "role": "bearing in the child's tongue"
+    },
+    {
+      "bom_type": "purchased",
+      "component_ref": "SH1",
+      "description": "Dowel pin 3 mm x 16 mm, 18-8 stainless, ISO 2338 h8, joint axles through MR63ZZ/623ZZ",
+      "file": "components/SH1.stl",
+      "kind": "component",
+      "mass_g": 0.9,
+      "material": null,
+      "name": "ring/MCP_abd pin",
+      "part_number": "DP7X03016H8-050P1",
+      "pose": [
+        0.0,
+        1.0,
+        0.0,
+        79.0,
+        -1.0,
+        0.0,
+        0.0,
+        -18.0,
+        0.0,
+        -0.0,
+        1.0,
+        0.0
+      ],
+      "position_mm": [
+        79.0,
+        -18.0,
+        0.0
+      ],
+      "properties": {
+        "category": "shaft",
+        "manufacturer": "Zoro Select",
+        "mass_g": "0.9",
+        "mpn": "DP7X03016H8-050P1"
+      },
+      "qty": 1,
+      "ref": "SH1",
+      "role": "3 x 16 pin pressed into the parent's lugs"
+    },
+    {
+      "bom_type": "purchased",
+      "component_ref": "B1",
+      "description": "Deep groove ball bearing 3x8x4 mm, double metal shield, finger and thumb joint pivots (2 per axis)",
+      "file": "components/B1.stl",
+      "kind": "component",
+      "mass_g": 0.9,
+      "material": null,
+      "name": "ring/MCP_flex bearing 1",
+      "part_number": "693ZZ",
+      "pose": [
+        0.0,
+        0.9975640502598244,
+        0.06975647374412532,
+        91.68930675840122,
+        0.0,
+        -0.06975647374412532,
+        0.9975640502598244,
+        -22.897090359712926,
+        1.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "position_mm": [
+        91.68930675840122,
+        -22.897090359712926,
+        0.0
+      ],
+      "properties": {
+        "category": "bearing",
+        "manufacturer": "3RACING (or NSK)",
+        "mass_g": "0.9",
+        "mpn": "693ZZ"
+      },
+      "qty": 1,
+      "ref": "B1",
+      "role": "bearing in the child's tongue"
+    },
+    {
+      "bom_type": "purchased",
+      "component_ref": "B1",
+      "description": "Deep groove ball bearing 3x8x4 mm, double metal shield, finger and thumb joint pivots (2 per axis)",
+      "file": "components/B1.stl",
+      "kind": "component",
+      "mass_g": 0.9,
+      "material": null,
+      "name": "ring/MCP_flex bearing 2",
+      "part_number": "693ZZ",
+      "pose": [
+        0.0,
+        0.9975640502598244,
+        0.06975647374412532,
+        91.96833265337771,
+        0.0,
+        -0.06975647374412532,
+        0.9975640502598244,
+        -18.90683415867363,
+        1.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "position_mm": [
+        91.96833265337771,
+        -18.90683415867363,
+        0.0
+      ],
+      "properties": {
+        "category": "bearing",
+        "manufacturer": "3RACING (or NSK)",
+        "mass_g": "0.9",
+        "mpn": "693ZZ"
+      },
+      "qty": 1,
+      "ref": "B1",
+      "role": "bearing in the child's tongue"
+    },
+    {
+      "bom_type": "purchased",
+      "component_ref": "SH1",
+      "description": "Dowel pin 3 mm x 16 mm, 18-8 stainless, ISO 2338 h8, joint axles through MR63ZZ/623ZZ",
+      "file": "components/SH1.stl",
+      "kind": "component",
+      "mass_g": 0.9,
+      "material": null,
+      "name": "ring/MCP_flex pin",
+      "part_number": "DP7X03016H8-050P1",
+      "pose": [
+        0.0,
+        0.9975640502598244,
+        0.06975647374412532,
+        91.96833265337771,
+        0.0,
+        -0.06975647374412532,
+        0.9975640502598244,
+        -18.90683415867363,
+        1.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "position_mm": [
+        91.96833265337771,
+        -18.90683415867363,
+        0.0
+      ],
+      "properties": {
+        "category": "shaft",
+        "manufacturer": "Zoro Select",
+        "mass_g": "0.9",
+        "mpn": "DP7X03016H8-050P1"
+      },
+      "qty": 1,
+      "ref": "SH1",
+      "role": "3 x 16 pin pressed into the parent's lugs"
+    },
+    {
+      "bom_type": "purchased",
+      "component_ref": "B1",
+      "description": "Deep groove ball bearing 3x8x4 mm, double metal shield, finger and thumb joint pivots (2 per axis)",
+      "file": "components/B1.stl",
+      "kind": "component",
+      "mass_g": 0.9,
+      "material": null,
+      "name": "ring/PIP bearing 1",
+      "part_number": "693ZZ",
+      "pose": [
+        0.0,
+        0.9975640502598244,
+        0.06975647374412532,
+        137.228816698628,
+        0.0,
+        -0.06975647374412532,
+        0.9975640502598244,
+        -26.08152310730279,
+        1.0,
+        0.0,
+        0.0,
+        -14.832815729997474
+      ],
+      "position_mm": [
+        137.228816698628,
+        -26.08152310730279,
+        -14.832815729997474
+      ],
+      "properties": {
+        "category": "bearing",
+        "manufacturer": "3RACING (or NSK)",
+        "mass_g": "0.9",
+        "mpn": "693ZZ"
+      },
+      "qty": 1,
+      "ref": "B1",
+      "role": "bearing in the child's tongue"
+    },
+    {
+      "bom_type": "purchased",
+      "component_ref": "B1",
+      "description": "Deep groove ball bearing 3x8x4 mm, double metal shield, finger and thumb joint pivots (2 per axis)",
+      "file": "components/B1.stl",
+      "kind": "component",
+      "mass_g": 0.9,
+      "material": null,
+      "name": "ring/PIP bearing 2",
+      "part_number": "693ZZ",
+      "pose": [
+        0.0,
+        0.9975640502598244,
+        0.06975647374412532,
+        137.50784259360452,
+        0.0,
+        -0.06975647374412532,
+        0.9975640502598244,
+        -22.091266906263492,
+        1.0,
+        0.0,
+        0.0,
+        -14.832815729997474
+      ],
+      "position_mm": [
+        137.50784259360452,
+        -22.091266906263492,
+        -14.832815729997474
+      ],
+      "properties": {
+        "category": "bearing",
+        "manufacturer": "3RACING (or NSK)",
+        "mass_g": "0.9",
+        "mpn": "693ZZ"
+      },
+      "qty": 1,
+      "ref": "B1",
+      "role": "bearing in the child's tongue"
+    },
+    {
+      "bom_type": "purchased",
+      "component_ref": "SH1",
+      "description": "Dowel pin 3 mm x 16 mm, 18-8 stainless, ISO 2338 h8, joint axles through MR63ZZ/623ZZ",
+      "file": "components/SH1.stl",
+      "kind": "component",
+      "mass_g": 0.9,
+      "material": null,
+      "name": "ring/PIP pin",
+      "part_number": "DP7X03016H8-050P1",
+      "pose": [
+        0.0,
+        0.9975640502598244,
+        0.06975647374412532,
+        137.50784259360452,
+        0.0,
+        -0.06975647374412532,
+        0.9975640502598244,
+        -22.091266906263492,
+        1.0,
+        0.0,
+        0.0,
+        -14.832815729997474
+      ],
+      "position_mm": [
+        137.50784259360452,
+        -22.091266906263492,
+        -14.832815729997474
+      ],
+      "properties": {
+        "category": "shaft",
+        "manufacturer": "Zoro Select",
+        "mass_g": "0.9",
+        "mpn": "DP7X03016H8-050P1"
+      },
+      "qty": 1,
+      "ref": "SH1",
+      "role": "3 x 16 pin pressed into the parent's lugs"
+    },
+    {
+      "bom_type": "purchased",
+      "component_ref": "B1",
+      "description": "Deep groove ball bearing 3x8x4 mm, double metal shield, finger and thumb joint pivots (2 per axis)",
+      "file": "components/B1.stl",
+      "kind": "component",
+      "mass_g": 0.9,
+      "material": null,
+      "name": "ring/DIP bearing 1",
+      "part_number": "693ZZ",
+      "pose": [
+        0.0,
+        0.9975640502598244,
+        0.06975647374412532,
+        158.03885491605664,
+        0.0,
+        -0.06975647374412532,
+        0.9975640502598244,
+        -27.536702736270186,
+        1.0,
+        0.0,
+        0.0,
+        -34.97790847330839
+      ],
+      "position_mm": [
+        158.03885491605664,
+        -27.536702736270186,
+        -34.97790847330839
+      ],
+      "properties": {
+        "category": "bearing",
+        "manufacturer": "3RACING (or NSK)",
+        "mass_g": "0.9",
+        "mpn": "693ZZ"
+      },
+      "qty": 1,
+      "ref": "B1",
+      "role": "bearing in the child's tongue"
+    },
+    {
+      "bom_type": "purchased",
+      "component_ref": "B1",
+      "description": "Deep groove ball bearing 3x8x4 mm, double metal shield, finger and thumb joint pivots (2 per axis)",
+      "file": "components/B1.stl",
+      "kind": "component",
+      "mass_g": 0.9,
+      "material": null,
+      "name": "ring/DIP bearing 2",
+      "part_number": "693ZZ",
+      "pose": [
+        0.0,
+        0.9975640502598244,
+        0.06975647374412532,
+        158.31788081103315,
+        0.0,
+        -0.06975647374412532,
+        0.9975640502598244,
+        -23.54644653523089,
+        1.0,
+        0.0,
+        0.0,
+        -34.97790847330839
+      ],
+      "position_mm": [
+        158.31788081103315,
+        -23.54644653523089,
+        -34.97790847330839
+      ],
+      "properties": {
+        "category": "bearing",
+        "manufacturer": "3RACING (or NSK)",
+        "mass_g": "0.9",
+        "mpn": "693ZZ"
+      },
+      "qty": 1,
+      "ref": "B1",
+      "role": "bearing in the child's tongue"
+    },
+    {
+      "bom_type": "purchased",
+      "component_ref": "SH1",
+      "description": "Dowel pin 3 mm x 16 mm, 18-8 stainless, ISO 2338 h8, joint axles through MR63ZZ/623ZZ",
+      "file": "components/SH1.stl",
+      "kind": "component",
+      "mass_g": 0.9,
+      "material": null,
+      "name": "ring/DIP pin",
+      "part_number": "DP7X03016H8-050P1",
+      "pose": [
+        0.0,
+        0.9975640502598244,
+        0.06975647374412532,
+        158.31788081103315,
+        0.0,
+        -0.06975647374412532,
+        0.9975640502598244,
+        -23.54644653523089,
+        1.0,
+        0.0,
+        0.0,
+        -34.97790847330839
+      ],
+      "position_mm": [
+        158.31788081103315,
+        -23.54644653523089,
+        -34.97790847330839
+      ],
+      "properties": {
+        "category": "shaft",
+        "manufacturer": "Zoro Select",
+        "mass_g": "0.9",
+        "mpn": "DP7X03016H8-050P1"
+      },
+      "qty": 1,
+      "ref": "SH1",
+      "role": "3 x 16 pin pressed into the parent's lugs"
+    },
+    {
+      "bom_type": "purchased",
+      "component_ref": "B1",
+      "description": "Deep groove ball bearing 3x8x4 mm, double metal shield, finger and thumb joint pivots (2 per axis)",
+      "file": "components/B1.stl",
+      "kind": "component",
+      "mass_g": 0.9,
+      "material": null,
+      "name": "little/MCP_abd bearing 1",
+      "part_number": "693ZZ",
+      "pose": [
+        0.0,
+        1.0,
+        0.0,
+        72.0,
+        -1.0,
+        0.0,
+        0.0,
+        -35.0,
+        0.0,
+        -0.0,
+        1.0,
+        -4.0
+      ],
+      "position_mm": [
+        72.0,
+        -35.0,
+        -4.0
+      ],
+      "properties": {
+        "category": "bearing",
+        "manufacturer": "3RACING (or NSK)",
+        "mass_g": "0.9",
+        "mpn": "693ZZ"
+      },
+      "qty": 1,
+      "ref": "B1",
+      "role": "bearing in the child's tongue"
+    },
+    {
+      "bom_type": "purchased",
+      "component_ref": "B1",
+      "description": "Deep groove ball bearing 3x8x4 mm, double metal shield, finger and thumb joint pivots (2 per axis)",
+      "file": "components/B1.stl",
+      "kind": "component",
+      "mass_g": 0.9,
+      "material": null,
+      "name": "little/MCP_abd bearing 2",
+      "part_number": "693ZZ",
+      "pose": [
+        0.0,
+        1.0,
+        0.0,
+        72.0,
+        -1.0,
+        0.0,
+        0.0,
+        -35.0,
+        0.0,
+        -0.0,
+        1.0,
+        0.0
+      ],
+      "position_mm": [
+        72.0,
+        -35.0,
+        0.0
+      ],
+      "properties": {
+        "category": "bearing",
+        "manufacturer": "3RACING (or NSK)",
+        "mass_g": "0.9",
+        "mpn": "693ZZ"
+      },
+      "qty": 1,
+      "ref": "B1",
+      "role": "bearing in the child's tongue"
+    },
+    {
+      "bom_type": "purchased",
+      "component_ref": "SH1",
+      "description": "Dowel pin 3 mm x 16 mm, 18-8 stainless, ISO 2338 h8, joint axles through MR63ZZ/623ZZ",
+      "file": "components/SH1.stl",
+      "kind": "component",
+      "mass_g": 0.9,
+      "material": null,
+      "name": "little/MCP_abd pin",
+      "part_number": "DP7X03016H8-050P1",
+      "pose": [
+        0.0,
+        1.0,
+        0.0,
+        72.0,
+        -1.0,
+        0.0,
+        0.0,
+        -35.0,
+        0.0,
+        -0.0,
+        1.0,
+        0.0
+      ],
+      "position_mm": [
+        72.0,
+        -35.0,
+        0.0
+      ],
+      "properties": {
+        "category": "shaft",
+        "manufacturer": "Zoro Select",
+        "mass_g": "0.9",
+        "mpn": "DP7X03016H8-050P1"
+      },
+      "qty": 1,
+      "ref": "SH1",
+      "role": "3 x 16 pin pressed into the parent's lugs"
+    },
+    {
+      "bom_type": "purchased",
+      "component_ref": "B1",
+      "description": "Deep groove ball bearing 3x8x4 mm, double metal shield, finger and thumb joint pivots (2 per axis)",
+      "file": "components/B1.stl",
+      "kind": "component",
+      "mass_g": 0.9,
+      "material": null,
+      "name": "little/MCP_flex bearing 1",
+      "part_number": "693ZZ",
+      "pose": [
+        0.0,
+        0.9876883405951378,
+        0.15643446504023087,
+        84.21421056757586,
+        0.0,
+        -0.15643446504023087,
+        0.9876883405951378,
+        -40.984401407903555,
+        1.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "position_mm": [
+        84.21421056757586,
+        -40.984401407903555,
+        0.0
+      ],
+      "properties": {
+        "category": "bearing",
+        "manufacturer": "3RACING (or NSK)",
+        "mass_g": "0.9",
+        "mpn": "693ZZ"
+      },
+      "qty": 1,
+      "ref": "B1",
+      "role": "bearing in the child's tongue"
+    },
+    {
+      "bom_type": "purchased",
+      "component_ref": "B1",
+      "description": "Deep groove ball bearing 3x8x4 mm, double metal shield, finger and thumb joint pivots (2 per axis)",
+      "file": "components/B1.stl",
+      "kind": "component",
+      "mass_g": 0.9,
+      "material": null,
+      "name": "little/MCP_flex bearing 2",
+      "part_number": "693ZZ",
+      "pose": [
+        0.0,
+        0.9876883405951378,
+        0.15643446504023087,
+        84.83994842773679,
+        0.0,
+        -0.15643446504023087,
+        0.9876883405951378,
+        -37.033648045523,
+        1.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "position_mm": [
+        84.83994842773679,
+        -37.033648045523,
+        0.0
+      ],
+      "properties": {
+        "category": "bearing",
+        "manufacturer": "3RACING (or NSK)",
+        "mass_g": "0.9",
+        "mpn": "693ZZ"
+      },
+      "qty": 1,
+      "ref": "B1",
+      "role": "bearing in the child's tongue"
+    },
+    {
+      "bom_type": "purchased",
+      "component_ref": "SH1",
+      "description": "Dowel pin 3 mm x 16 mm, 18-8 stainless, ISO 2338 h8, joint axles through MR63ZZ/623ZZ",
+      "file": "components/SH1.stl",
+      "kind": "component",
+      "mass_g": 0.9,
+      "material": null,
+      "name": "little/MCP_flex pin",
+      "part_number": "DP7X03016H8-050P1",
+      "pose": [
+        0.0,
+        0.9876883405951378,
+        0.15643446504023087,
+        84.83994842773679,
+        0.0,
+        -0.15643446504023087,
+        0.9876883405951378,
+        -37.033648045523,
+        1.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "position_mm": [
+        84.83994842773679,
+        -37.033648045523,
+        0.0
+      ],
+      "properties": {
+        "category": "shaft",
+        "manufacturer": "Zoro Select",
+        "mass_g": "0.9",
+        "mpn": "DP7X03016H8-050P1"
+      },
+      "qty": 1,
+      "ref": "SH1",
+      "role": "3 x 16 pin pressed into the parent's lugs"
+    },
+    {
+      "bom_type": "purchased",
+      "component_ref": "B1",
+      "description": "Deep groove ball bearing 3x8x4 mm, double metal shield, finger and thumb joint pivots (2 per axis)",
+      "file": "components/B1.stl",
+      "kind": "component",
+      "mass_g": 0.9,
+      "material": null,
+      "name": "little/PIP bearing 1",
+      "part_number": "693ZZ",
+      "pose": [
+        0.0,
+        0.9876883405951378,
+        0.15643446504023087,
+        119.01342051183546,
+        0.0,
+        -0.15643446504023087,
+        0.9876883405951378,
+        -46.49605479866115,
+        1.0,
+        0.0,
+        0.0,
+        -14.235050549804656
+      ],
+      "position_mm": [
+        119.01342051183546,
+        -46.49605479866115,
+        -14.235050549804656
+      ],
+      "properties": {
+        "category": "bearing",
+        "manufacturer": "3RACING (or NSK)",
+        "mass_g": "0.9",
+        "mpn": "693ZZ"
+      },
+      "qty": 1,
+      "ref": "B1",
+      "role": "bearing in the child's tongue"
+    },
+    {
+      "bom_type": "purchased",
+      "component_ref": "B1",
+      "description": "Deep groove ball bearing 3x8x4 mm, double metal shield, finger and thumb joint pivots (2 per axis)",
+      "file": "components/B1.stl",
+      "kind": "component",
+      "mass_g": 0.9,
+      "material": null,
+      "name": "little/PIP bearing 2",
+      "part_number": "693ZZ",
+      "pose": [
+        0.0,
+        0.9876883405951378,
+        0.15643446504023087,
+        119.63915837199639,
+        0.0,
+        -0.15643446504023087,
+        0.9876883405951378,
+        -42.545301436280596,
+        1.0,
+        0.0,
+        0.0,
+        -14.235050549804656
+      ],
+      "position_mm": [
+        119.63915837199639,
+        -42.545301436280596,
+        -14.235050549804656
+      ],
+      "properties": {
+        "category": "bearing",
+        "manufacturer": "3RACING (or NSK)",
+        "mass_g": "0.9",
+        "mpn": "693ZZ"
+      },
+      "qty": 1,
+      "ref": "B1",
+      "role": "bearing in the child's tongue"
+    },
+    {
+      "bom_type": "purchased",
+      "component_ref": "SH1",
+      "description": "Dowel pin 3 mm x 16 mm, 18-8 stainless, ISO 2338 h8, joint axles through MR63ZZ/623ZZ",
+      "file": "components/SH1.stl",
+      "kind": "component",
+      "mass_g": 0.9,
+      "material": null,
+      "name": "little/PIP pin",
+      "part_number": "DP7X03016H8-050P1",
+      "pose": [
+        0.0,
+        0.9876883405951378,
+        0.15643446504023087,
+        119.63915837199639,
+        0.0,
+        -0.15643446504023087,
+        0.9876883405951378,
+        -42.545301436280596,
+        1.0,
+        0.0,
+        0.0,
+        -14.235050549804656
+      ],
+      "position_mm": [
+        119.63915837199639,
+        -42.545301436280596,
+        -14.235050549804656
+      ],
+      "properties": {
+        "category": "shaft",
+        "manufacturer": "Zoro Select",
+        "mass_g": "0.9",
+        "mpn": "DP7X03016H8-050P1"
+      },
+      "qty": 1,
+      "ref": "SH1",
+      "role": "3 x 16 pin pressed into the parent's lugs"
+    },
+    {
+      "bom_type": "purchased",
+      "component_ref": "B1",
+      "description": "Deep groove ball bearing 3x8x4 mm, double metal shield, finger and thumb joint pivots (2 per axis)",
+      "file": "components/B1.stl",
+      "kind": "component",
+      "mass_g": 0.9,
+      "material": null,
+      "name": "little/DIP bearing 1",
+      "part_number": "693ZZ",
+      "pose": [
+        0.0,
+        0.9876883405951378,
+        0.15643446504023087,
+        131.78313539142331,
+        0.0,
+        -0.15643446504023087,
+        0.9876883405951378,
+        -48.518578942968574,
+        1.0,
+        0.0,
+        0.0,
+        -30.783276375545817
+      ],
+      "position_mm": [
+        131.78313539142331,
+        -48.518578942968574,
+        -30.783276375545817
+      ],
+      "properties": {
+        "category": "bearing",
+        "manufacturer": "3RACING (or NSK)",
+        "mass_g": "0.9",
+        "mpn": "693ZZ"
+      },
+      "qty": 1,
+      "ref": "B1",
+      "role": "bearing in the child's tongue"
+    },
+    {
+      "bom_type": "purchased",
+      "component_ref": "B1",
+      "description": "Deep groove ball bearing 3x8x4 mm, double metal shield, finger and thumb joint pivots (2 per axis)",
+      "file": "components/B1.stl",
+      "kind": "component",
+      "mass_g": 0.9,
+      "material": null,
+      "name": "little/DIP bearing 2",
+      "part_number": "693ZZ",
+      "pose": [
+        0.0,
+        0.9876883405951378,
+        0.15643446504023087,
+        132.40887325158423,
+        0.0,
+        -0.15643446504023087,
+        0.9876883405951378,
+        -44.56782558058802,
+        1.0,
+        0.0,
+        0.0,
+        -30.783276375545817
+      ],
+      "position_mm": [
+        132.40887325158423,
+        -44.56782558058802,
+        -30.783276375545817
+      ],
+      "properties": {
+        "category": "bearing",
+        "manufacturer": "3RACING (or NSK)",
+        "mass_g": "0.9",
+        "mpn": "693ZZ"
+      },
+      "qty": 1,
+      "ref": "B1",
+      "role": "bearing in the child's tongue"
+    },
+    {
+      "bom_type": "purchased",
+      "component_ref": "SH1",
+      "description": "Dowel pin 3 mm x 16 mm, 18-8 stainless, ISO 2338 h8, joint axles through MR63ZZ/623ZZ",
+      "file": "components/SH1.stl",
+      "kind": "component",
+      "mass_g": 0.9,
+      "material": null,
+      "name": "little/DIP pin",
+      "part_number": "DP7X03016H8-050P1",
+      "pose": [
+        0.0,
+        0.9876883405951378,
+        0.15643446504023087,
+        132.40887325158423,
+        0.0,
+        -0.15643446504023087,
+        0.9876883405951378,
+        -44.56782558058802,
+        1.0,
+        0.0,
+        0.0,
+        -30.783276375545817
+      ],
+      "position_mm": [
+        132.40887325158423,
+        -44.56782558058802,
+        -30.783276375545817
+      ],
+      "properties": {
+        "category": "shaft",
+        "manufacturer": "Zoro Select",
+        "mass_g": "0.9",
+        "mpn": "DP7X03016H8-050P1"
+      },
+      "qty": 1,
+      "ref": "SH1",
+      "role": "3 x 16 pin pressed into the parent's lugs"
+    },
+    {
+      "bom_type": "purchased",
+      "component_ref": "B2",
+      "description": "Deep groove ball bearing 3x10x4 mm shielded, thumb CMC saddle and palm arch hinge",
+      "file": "components/B2.stl",
+      "kind": "component",
+      "mass_g": 1.6,
+      "material": null,
+      "name": "thumb/CMC_abd bearing 1",
+      "part_number": "623ZZ",
+      "pose": [
+        0.0,
+        0.9564429409815729,
+        -0.29191933928145225,
+        19.167677357125807,
+        -0.8015764601434396,
+        0.1745363193538052,
+        0.5718498507216202,
+        28.71260059711352,
+        0.5978922800504392,
+        0.23399567062863824,
+        0.76666214696119,
+        -8.066648587844758
+      ],
+      "position_mm": [
+        19.167677357125807,
+        28.71260059711352,
+        -8.066648587844758
+      ],
+      "properties": {
+        "category": "bearing",
+        "manufacturer": "VXB",
+        "mass_g": "1.6",
+        "mpn": "623ZZ"
+      },
+      "qty": 1,
+      "ref": "B2",
+      "role": "bearing in the child's tongue"
+    },
+    {
+      "bom_type": "purchased",
+      "component_ref": "B2",
+      "description": "Deep groove ball bearing 3x10x4 mm shielded, thumb CMC saddle and palm arch hinge",
+      "file": "components/B2.stl",
+      "kind": "component",
+      "mass_g": 1.6,
+      "material": null,
+      "name": "thumb/CMC_abd bearing 2",
+      "part_number": "623ZZ",
+      "pose": [
+        0.0,
+        0.9564429409815729,
+        -0.29191933928145225,
+        18.0,
+        -0.8015764601434396,
+        0.1745363193538052,
+        0.5718498507216202,
+        31.0,
+        0.5978922800504392,
+        0.23399567062863824,
+        0.76666214696119,
+        -5.0
+      ],
+      "position_mm": [
+        18.0,
+        31.0,
+        -5.0
+      ],
+      "properties": {
+        "category": "bearing",
+        "manufacturer": "VXB",
+        "mass_g": "1.6",
+        "mpn": "623ZZ"
+      },
+      "qty": 1,
+      "ref": "B2",
+      "role": "bearing in the child's tongue"
+    },
+    {
+      "bom_type": "purchased",
+      "component_ref": "SH1",
+      "description": "Dowel pin 3 mm x 16 mm, 18-8 stainless, ISO 2338 h8, joint axles through MR63ZZ/623ZZ",
+      "file": "components/SH1.stl",
+      "kind": "component",
+      "mass_g": 0.9,
+      "material": null,
+      "name": "thumb/CMC_abd pin",
+      "part_number": "DP7X03016H8-050P1",
+      "pose": [
+        0.0,
+        0.9564429409815729,
+        -0.29191933928145225,
+        18.0,
+        -0.8015764601434396,
+        0.1745363193538052,
+        0.5718498507216202,
+        31.0,
+        0.5978922800504392,
+        0.23399567062863824,
+        0.76666214696119,
+        -5.0
+      ],
+      "position_mm": [
+        18.0,
+        31.0,
+        -5.0
+      ],
+      "properties": {
+        "category": "shaft",
+        "manufacturer": "Zoro Select",
+        "mass_g": "0.9",
+        "mpn": "DP7X03016H8-050P1"
+      },
+      "qty": 1,
+      "ref": "SH1",
+      "role": "3 x 16 pin pressed into the parent's lugs"
+    },
+    {
+      "bom_type": "purchased",
+      "component_ref": "B2",
+      "description": "Deep groove ball bearing 3x10x4 mm shielded, thumb CMC saddle and palm arch hinge",
+      "file": "components/B2.stl",
+      "kind": "component",
+      "mass_g": 1.6,
+      "material": null,
+      "name": "thumb/CMC_flex bearing 1",
+      "part_number": "623ZZ",
+      "pose": [
+        -0.0,
+        0.6257363778545805,
+        -0.7800346052768621,
+        29.975659476616094,
+        0.8579053952446115,
+        0.4007877714515293,
+        0.3215081570739749,
+        41.789677901943165,
+        0.5138076807621572,
+        -0.6691958963445209,
+        -0.5368226145622654,
+        -8.488041122529166
+      ],
+      "position_mm": [
+        29.975659476616094,
+        41.789677901943165,
+        -8.488041122529166
+      ],
+      "properties": {
+        "category": "bearing",
+        "manufacturer": "VXB",
+        "mass_g": "1.6",
+        "mpn": "623ZZ"
+      },
+      "qty": 1,
+      "ref": "B2",
+      "role": "bearing in the child's tongue"
+    },
+    {
+      "bom_type": "purchased",
+      "component_ref": "B2",
+      "description": "Deep groove ball bearing 3x10x4 mm shielded, thumb CMC saddle and palm arch hinge",
+      "file": "components/B2.stl",
+      "kind": "component",
+      "mass_g": 1.6,
+      "material": null,
+      "name": "thumb/CMC_flex bearing 2",
+      "part_number": "623ZZ",
+      "pose": [
+        -0.0,
+        0.6257363778545805,
+        -0.7800346052768621,
+        26.855521055508646,
+        0.8579053952446115,
+        0.4007877714515293,
+        0.3215081570739749,
+        43.075710530239064,
+        0.5138076807621572,
+        -0.6691958963445209,
+        -0.5368226145622654,
+        -10.635331580778228
+      ],
+      "position_mm": [
+        26.855521055508646,
+        43.075710530239064,
+        -10.635331580778228
+      ],
+      "properties": {
+        "category": "bearing",
+        "manufacturer": "VXB",
+        "mass_g": "1.6",
+        "mpn": "623ZZ"
+      },
+      "qty": 1,
+      "ref": "B2",
+      "role": "bearing in the child's tongue"
+    },
+    {
+      "bom_type": "purchased",
+      "component_ref": "SH1",
+      "description": "Dowel pin 3 mm x 16 mm, 18-8 stainless, ISO 2338 h8, joint axles through MR63ZZ/623ZZ",
+      "file": "components/SH1.stl",
+      "kind": "component",
+      "mass_g": 0.9,
+      "material": null,
+      "name": "thumb/CMC_flex pin",
+      "part_number": "DP7X03016H8-050P1",
+      "pose": [
+        -0.0,
+        0.6257363778545805,
+        -0.7800346052768621,
+        26.855521055508646,
+        0.8579053952446115,
+        0.4007877714515293,
+        0.3215081570739749,
+        43.075710530239064,
+        0.5138076807621572,
+        -0.6691958963445209,
+        -0.5368226145622654,
+        -10.635331580778228
+      ],
+      "position_mm": [
+        26.855521055508646,
+        43.075710530239064,
+        -10.635331580778228
+      ],
+      "properties": {
+        "category": "shaft",
+        "manufacturer": "Zoro Select",
+        "mass_g": "0.9",
+        "mpn": "DP7X03016H8-050P1"
+      },
+      "qty": 1,
+      "ref": "SH1",
+      "role": "3 x 16 pin pressed into the parent's lugs"
+    },
+    {
+      "bom_type": "purchased",
+      "component_ref": "B1",
+      "description": "Deep groove ball bearing 3x8x4 mm, double metal shield, finger and thumb joint pivots (2 per axis)",
+      "file": "components/B1.stl",
+      "kind": "component",
+      "mass_g": 0.9,
+      "material": null,
+      "name": "thumb/MCP_abd bearing 1",
+      "part_number": "693ZZ",
+      "pose": [
+        0.0,
+        0.9903311050311889,
+        -0.13872383503819471,
+        59.74917811384554,
+        -0.6557206658744384,
+        0.1047369923178141,
+        0.7477035313447444,
+        70.87839511848358,
+        0.7550035816770561,
+        0.0909640854839008,
+        0.6493805716272196,
+        -41.78044444002332
+      ],
+      "position_mm": [
+        59.74917811384554,
+        70.87839511848358,
+        -41.78044444002332
+      ],
+      "properties": {
+        "category": "bearing",
+        "manufacturer": "3RACING (or NSK)",
+        "mass_g": "0.9",
+        "mpn": "693ZZ"
+      },
+      "qty": 1,
+      "ref": "B1",
+      "role": "bearing in the child's tongue"
+    },
+    {
+      "bom_type": "purchased",
+      "component_ref": "B1",
+      "description": "Deep groove ball bearing 3x8x4 mm, double metal shield, finger and thumb joint pivots (2 per axis)",
+      "file": "components/B1.stl",
+      "kind": "component",
+      "mass_g": 0.9,
+      "material": null,
+      "name": "thumb/MCP_abd bearing 2",
+      "part_number": "693ZZ",
+      "pose": [
+        0.0,
+        0.9903311050311889,
+        -0.13872383503819471,
+        59.19428277369276,
+        -0.6557206658744384,
+        0.1047369923178141,
+        0.7477035313447444,
+        73.86920924386256,
+        0.7550035816770561,
+        0.0909640854839008,
+        0.6493805716272196,
+        -39.18292215351444
+      ],
+      "position_mm": [
+        59.19428277369276,
+        73.86920924386256,
+        -39.18292215351444
+      ],
+      "properties": {
+        "category": "bearing",
+        "manufacturer": "3RACING (or NSK)",
+        "mass_g": "0.9",
+        "mpn": "693ZZ"
+      },
+      "qty": 1,
+      "ref": "B1",
+      "role": "bearing in the child's tongue"
+    },
+    {
+      "bom_type": "purchased",
+      "component_ref": "SH1",
+      "description": "Dowel pin 3 mm x 16 mm, 18-8 stainless, ISO 2338 h8, joint axles through MR63ZZ/623ZZ",
+      "file": "components/SH1.stl",
+      "kind": "component",
+      "mass_g": 0.9,
+      "material": null,
+      "name": "thumb/MCP_abd pin",
+      "part_number": "DP7X03016H8-050P1",
+      "pose": [
+        0.0,
+        0.9903311050311889,
+        -0.13872383503819471,
+        59.19428277369276,
+        -0.6557206658744384,
+        0.1047369923178141,
+        0.7477035313447444,
+        73.86920924386256,
+        0.7550035816770561,
+        0.0909640854839008,
+        0.6493805716272196,
+        -39.18292215351444
+      ],
+      "position_mm": [
+        59.19428277369276,
+        73.86920924386256,
+        -39.18292215351444
+      ],
+      "properties": {
+        "category": "shaft",
+        "manufacturer": "Zoro Select",
+        "mass_g": "0.9",
+        "mpn": "DP7X03016H8-050P1"
+      },
+      "qty": 1,
+      "ref": "SH1",
+      "role": "3 x 16 pin pressed into the parent's lugs"
+    },
+    {
+      "bom_type": "purchased",
+      "component_ref": "B1",
+      "description": "Deep groove ball bearing 3x8x4 mm, double metal shield, finger and thumb joint pivots (2 per axis)",
+      "file": "components/B1.stl",
+      "kind": "component",
+      "mass_g": 0.9,
+      "material": null,
+      "name": "thumb/MCP_flex bearing 1",
+      "part_number": "693ZZ",
+      "pose": [
+        -0.0,
+        0.6257363778545805,
+        -0.7800346052768621,
+        69.63640498004943,
+        0.8579053952446115,
+        0.4007877714515293,
+        0.3215081570739749,
+        79.55528953185878,
+        0.5138076807621572,
+        -0.6691958963445209,
+        -0.5368226145622654,
+        -43.49923710796037
+      ],
+      "position_mm": [
+        69.63640498004943,
+        79.55528953185878,
+        -43.49923710796037
+      ],
+      "properties": {
+        "category": "bearing",
+        "manufacturer": "3RACING (or NSK)",
+        "mass_g": "0.9",
+        "mpn": "693ZZ"
+      },
+      "qty": 1,
+      "ref": "B1",
+      "role": "bearing in the child's tongue"
+    },
+    {
+      "bom_type": "purchased",
+      "component_ref": "B1",
+      "description": "Deep groove ball bearing 3x8x4 mm, double metal shield, finger and thumb joint pivots (2 per axis)",
+      "file": "components/B1.stl",
+      "kind": "component",
+      "mass_g": 0.9,
+      "material": null,
+      "name": "thumb/MCP_flex bearing 2",
+      "part_number": "693ZZ",
+      "pose": [
+        -0.0,
+        0.6257363778545805,
+        -0.7800346052768621,
+        66.516266558942,
+        0.8579053952446115,
+        0.4007877714515293,
+        0.3215081570739749,
+        80.84132216015468,
+        0.5138076807621572,
+        -0.6691958963445209,
+        -0.5368226145622654,
+        -45.64652756620943
+      ],
+      "position_mm": [
+        66.516266558942,
+        80.84132216015468,
+        -45.64652756620943
+      ],
+      "properties": {
+        "category": "bearing",
+        "manufacturer": "3RACING (or NSK)",
+        "mass_g": "0.9",
+        "mpn": "693ZZ"
+      },
+      "qty": 1,
+      "ref": "B1",
+      "role": "bearing in the child's tongue"
+    },
+    {
+      "bom_type": "purchased",
+      "component_ref": "SH1",
+      "description": "Dowel pin 3 mm x 16 mm, 18-8 stainless, ISO 2338 h8, joint axles through MR63ZZ/623ZZ",
+      "file": "components/SH1.stl",
+      "kind": "component",
+      "mass_g": 0.9,
+      "material": null,
+      "name": "thumb/MCP_flex pin",
+      "part_number": "DP7X03016H8-050P1",
+      "pose": [
+        -0.0,
+        0.6257363778545805,
+        -0.7800346052768621,
+        66.516266558942,
+        0.8579053952446115,
+        0.4007877714515293,
+        0.3215081570739749,
+        80.84132216015468,
+        0.5138076807621572,
+        -0.6691958963445209,
+        -0.5368226145622654,
+        -45.64652756620943
+      ],
+      "position_mm": [
+        66.516266558942,
+        80.84132216015468,
+        -45.64652756620943
+      ],
+      "properties": {
+        "category": "shaft",
+        "manufacturer": "Zoro Select",
+        "mass_g": "0.9",
+        "mpn": "DP7X03016H8-050P1"
+      },
+      "qty": 1,
+      "ref": "SH1",
+      "role": "3 x 16 pin pressed into the parent's lugs"
+    },
+    {
+      "bom_type": "purchased",
+      "component_ref": "B1",
+      "description": "Deep groove ball bearing 3x8x4 mm, double metal shield, finger and thumb joint pivots (2 per axis)",
+      "file": "components/B1.stl",
+      "kind": "component",
+      "mass_g": 0.9,
+      "material": null,
+      "name": "thumb/IP bearing 1",
+      "part_number": "693ZZ",
+      "pose": [
+        -0.0,
+        0.6257363778545805,
+        -0.7800346052768621,
+        93.3969996462159,
+        0.8579053952446115,
+        0.4007877714515293,
+        0.3215081570739749,
+        93.52758857699192,
+        0.5138076807621572,
+        -0.6691958963445209,
+        -0.5368226145622654,
+        -69.65662613101681
+      ],
+      "position_mm": [
+        93.3969996462159,
+        93.52758857699192,
+        -69.65662613101681
+      ],
+      "properties": {
+        "category": "bearing",
+        "manufacturer": "3RACING (or NSK)",
+        "mass_g": "0.9",
+        "mpn": "693ZZ"
+      },
+      "qty": 1,
+      "ref": "B1",
+      "role": "bearing in the child's tongue"
+    },
+    {
+      "bom_type": "purchased",
+      "component_ref": "B1",
+      "description": "Deep groove ball bearing 3x8x4 mm, double metal shield, finger and thumb joint pivots (2 per axis)",
+      "file": "components/B1.stl",
+      "kind": "component",
+      "mass_g": 0.9,
+      "material": null,
+      "name": "thumb/IP bearing 2",
+      "part_number": "693ZZ",
+      "pose": [
+        -0.0,
+        0.6257363778545805,
+        -0.7800346052768621,
+        90.27686122510846,
+        0.8579053952446115,
+        0.4007877714515293,
+        0.3215081570739749,
+        94.81362120528782,
+        0.5138076807621572,
+        -0.6691958963445209,
+        -0.5368226145622654,
+        -71.80391658926587
+      ],
+      "position_mm": [
+        90.27686122510846,
+        94.81362120528782,
+        -71.80391658926587
+      ],
+      "properties": {
+        "category": "bearing",
+        "manufacturer": "3RACING (or NSK)",
+        "mass_g": "0.9",
+        "mpn": "693ZZ"
+      },
+      "qty": 1,
+      "ref": "B1",
+      "role": "bearing in the child's tongue"
+    },
+    {
+      "bom_type": "purchased",
+      "component_ref": "SH1",
+      "description": "Dowel pin 3 mm x 16 mm, 18-8 stainless, ISO 2338 h8, joint axles through MR63ZZ/623ZZ",
+      "file": "components/SH1.stl",
+      "kind": "component",
+      "mass_g": 0.9,
+      "material": null,
+      "name": "thumb/IP pin",
+      "part_number": "DP7X03016H8-050P1",
+      "pose": [
+        -0.0,
+        0.6257363778545805,
+        -0.7800346052768621,
+        90.27686122510846,
+        0.8579053952446115,
+        0.4007877714515293,
+        0.3215081570739749,
+        94.81362120528782,
+        0.5138076807621572,
+        -0.6691958963445209,
+        -0.5368226145622654,
+        -71.80391658926587
+      ],
+      "position_mm": [
+        90.27686122510846,
+        94.81362120528782,
+        -71.80391658926587
+      ],
+      "properties": {
+        "category": "shaft",
+        "manufacturer": "Zoro Select",
+        "mass_g": "0.9",
+        "mpn": "DP7X03016H8-050P1"
+      },
+      "qty": 1,
+      "ref": "SH1",
+      "role": "3 x 16 pin pressed into the parent's lugs"
+    },
+    {
+      "bom_type": "purchased",
+      "component_ref": "B2",
+      "description": "Deep groove ball bearing 3x10x4 mm shielded, thumb CMC saddle and palm arch hinge",
+      "file": "components/B2.stl",
+      "kind": "component",
+      "mass_g": 1.6,
+      "material": null,
+      "name": "palm/arch_CMC45 bearing 1",
+      "part_number": "623ZZ",
+      "pose": [
+        0.0,
+        -0.0,
+        1.0,
+        34.0,
+        0.0,
+        1.0,
+        0.0,
+        -12.0,
+        -1.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "position_mm": [
+        34.0,
+        -12.0,
+        0.0
+      ],
+      "properties": {
+        "category": "bearing",
+        "manufacturer": "VXB",
+        "mass_g": "1.6",
+        "mpn": "623ZZ"
+      },
+      "qty": 1,
+      "ref": "B2",
+      "role": "bearing in the child's tongue"
+    },
+    {
+      "bom_type": "purchased",
+      "component_ref": "B2",
+      "description": "Deep groove ball bearing 3x10x4 mm shielded, thumb CMC saddle and palm arch hinge",
+      "file": "components/B2.stl",
+      "kind": "component",
+      "mass_g": 1.6,
+      "material": null,
+      "name": "palm/arch_CMC45 bearing 2",
+      "part_number": "623ZZ",
+      "pose": [
+        0.0,
+        -0.0,
+        1.0,
+        38.0,
+        0.0,
+        1.0,
+        0.0,
+        -12.0,
+        -1.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "position_mm": [
+        38.0,
+        -12.0,
+        0.0
+      ],
+      "properties": {
+        "category": "bearing",
+        "manufacturer": "VXB",
+        "mass_g": "1.6",
+        "mpn": "623ZZ"
+      },
+      "qty": 1,
+      "ref": "B2",
+      "role": "bearing in the child's tongue"
+    },
+    {
+      "bom_type": "purchased",
+      "component_ref": "SH1",
+      "description": "Dowel pin 3 mm x 16 mm, 18-8 stainless, ISO 2338 h8, joint axles through MR63ZZ/623ZZ",
+      "file": "components/SH1.stl",
+      "kind": "component",
+      "mass_g": 0.9,
+      "material": null,
+      "name": "palm/arch_CMC45 pin",
+      "part_number": "DP7X03016H8-050P1",
+      "pose": [
+        0.0,
+        -0.0,
+        1.0,
+        35.0,
+        0.0,
+        1.0,
+        0.0,
+        -12.0,
+        -1.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "position_mm": [
+        35.0,
+        -12.0,
+        0.0
+      ],
+      "properties": {
+        "category": "shaft",
+        "manufacturer": "Zoro Select",
+        "mass_g": "0.9",
+        "mpn": "DP7X03016H8-050P1"
+      },
+      "qty": 1,
+      "ref": "SH1",
+      "role": "3 x 16 pin pressed into the parent's lugs"
+    },
+    {
+      "bom_type": "purchased",
+      "component_ref": "B3",
+      "description": "Deep groove ball bearing 8x16x5 mm shielded, wrist gimbal idler side (opposite the servo horn)",
+      "file": "components/B3.stl",
+      "kind": "component",
+      "mass_g": 4.0,
+      "material": null,
+      "name": "wrist_cross 688ZZ 1",
+      "part_number": "688ZZ",
+      "pose": [
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        10.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "position_mm": [
+        0.0,
+        10.0,
+        0.0
+      ],
+      "properties": {
+        "category": "bearing",
+        "manufacturer": "VXB",
+        "mass_g": "4",
+        "mpn": "688ZZ"
+      },
+      "qty": 1,
+      "ref": "B3",
+      "role": "688ZZ on the wrist idler"
+    },
+    {
+      "bom_type": "purchased",
+      "component_ref": "B3",
+      "description": "Deep groove ball bearing 8x16x5 mm shielded, wrist gimbal idler side (opposite the servo horn)",
+      "file": "components/B3.stl",
+      "kind": "component",
+      "mass_g": 4.0,
+      "material": null,
+      "name": "wrist_cross 688ZZ 2",
+      "part_number": "688ZZ",
+      "pose": [
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        15.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "position_mm": [
+        0.0,
+        15.0,
+        0.0
+      ],
+      "properties": {
+        "category": "bearing",
+        "manufacturer": "VXB",
+        "mass_g": "4",
+        "mpn": "688ZZ"
+      },
+      "qty": 1,
+      "ref": "B3",
+      "role": "688ZZ on the wrist idler"
+    },
+    {
+      "bom_type": "purchased",
+      "component_ref": "SH2",
+      "description": "Dowel pin 8 mm x 20 mm, wrist gimbal idler axles in 688ZZ",
+      "file": "components/SH2.stl",
+      "kind": "component",
+      "mass_g": 7.9,
+      "material": null,
+      "name": "forearm_frame 8 mm pin",
+      "part_number": "Standard dowel pin 8 x 20 mm stainless",
+      "pose": [
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        16.4,
+        1.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "position_mm": [
+        0.0,
+        16.4,
+        0.0
+      ],
+      "properties": {
+        "category": "shaft",
+        "manufacturer": "Zoro Select",
+        "mass_g": "7.9",
+        "mpn": "Standard dowel pin 8 x 20 mm stainless"
+      },
+      "qty": 1,
+      "ref": "SH2",
+      "role": "8 x 20 pin pressed into the lug"
+    },
+    {
+      "bom_type": "purchased",
+      "component_ref": "B3",
+      "description": "Deep groove ball bearing 8x16x5 mm shielded, wrist gimbal idler side (opposite the servo horn)",
+      "file": "components/B3.stl",
+      "kind": "component",
+      "mass_g": 4.0,
+      "material": null,
+      "name": "palm 688ZZ 1",
+      "part_number": "688ZZ",
+      "pose": [
+        -0.0,
+        1.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        -1.0,
+        -4.6
+      ],
+      "position_mm": [
+        0.0,
+        0.0,
+        -4.6
+      ],
+      "properties": {
+        "category": "bearing",
+        "manufacturer": "VXB",
+        "mass_g": "4",
+        "mpn": "688ZZ"
+      },
+      "qty": 1,
+      "ref": "B3",
+      "role": "688ZZ on the wrist idler"
+    },
+    {
+      "bom_type": "purchased",
+      "component_ref": "B3",
+      "description": "Deep groove ball bearing 8x16x5 mm shielded, wrist gimbal idler side (opposite the servo horn)",
+      "file": "components/B3.stl",
+      "kind": "component",
+      "mass_g": 4.0,
+      "material": null,
+      "name": "palm 688ZZ 2",
+      "part_number": "688ZZ",
+      "pose": [
+        -0.0,
+        1.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        -1.0,
+        -9.6
+      ],
+      "position_mm": [
+        0.0,
+        0.0,
+        -9.6
+      ],
+      "properties": {
+        "category": "bearing",
+        "manufacturer": "VXB",
+        "mass_g": "4",
+        "mpn": "688ZZ"
+      },
+      "qty": 1,
+      "ref": "B3",
+      "role": "688ZZ on the wrist idler"
+    },
+    {
+      "bom_type": "purchased",
+      "component_ref": "SH2",
+      "description": "Dowel pin 8 mm x 20 mm, wrist gimbal idler axles in 688ZZ",
+      "file": "components/SH2.stl",
+      "kind": "component",
+      "mass_g": 7.9,
+      "material": null,
+      "name": "wrist_cross 8 mm pin",
+      "part_number": "Standard dowel pin 8 x 20 mm stainless",
+      "pose": [
+        -0.0,
+        1.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        -1.0,
+        -11.0
+      ],
+      "position_mm": [
+        0.0,
+        0.0,
+        -11.0
+      ],
+      "properties": {
+        "category": "shaft",
+        "manufacturer": "Zoro Select",
+        "mass_g": "7.9",
+        "mpn": "Standard dowel pin 8 x 20 mm stainless"
+      },
+      "qty": 1,
+      "ref": "SH2",
+      "role": "8 x 20 pin pressed into the lug"
+    },
+    {
+      "bom_type": "purchased",
+      "component_ref": "M1",
+      "description": "DYNAMIXEL X smart servo, TTL bus, 288:1, drives one tendon spool (pull-pull) per finger/thumb/palm DOF",
+      "file": "components/M1.stl",
+      "kind": "component",
+      "mass_g": 23.0,
+      "material": null,
+      "name": "XC330 index/MCP_abd (top r1 c1)",
+      "part_number": "XC330-T288-T",
+      "pose": [
+        1.0,
+        0.0,
+        0.0,
+        -106.5,
+        0.0,
+        1.0,
+        0.0,
+        -22.0,
+        0.0,
+        0.0,
+        1.0,
+        15.0
+      ],
+      "position_mm": [
+        -106.5,
+        -22.0,
+        15.0
+      ],
+      "properties": {
+        "category": "motor",
+        "manufacturer": "ROBOTIS",
+        "mass_g": "23",
+        "mpn": "XC330-T288-T"
+      },
+      "qty": 1,
+      "ref": "M1",
+      "role": "drives index/MCP_abd through its spool and tendon pair, four M2 into the pad"
+    },
+    {
+      "file": "components/spool.stl",
+      "kind": "made",
+      "mass_g": 1.2,
+      "material": "AlSi10Mg (laser powder bed)",
+      "name": "spool index/MCP_abd",
+      "pose": [
+        1.0,
+        0.0,
+        0.0,
+        -99.5,
+        0.0,
+        1.0,
+        0.0,
+        -22.0,
+        0.0,
+        0.0,
+        1.0,
+        28.0
+      ],
+      "properties": {
+        "category": "made",
+        "mass_g": "1.20",
+        "material": "AlSi10Mg (laser powder bed)",
+        "process": "turned or printed, four M2 to the horn"
+      },
+      "qty": 1
+    },
+    {
+      "bom_type": "purchased",
+      "component_ref": "M1",
+      "description": "DYNAMIXEL X smart servo, TTL bus, 288:1, drives one tendon spool (pull-pull) per finger/thumb/palm DOF",
+      "file": "components/M1.stl",
+      "kind": "component",
+      "mass_g": 23.0,
+      "material": null,
+      "name": "XC330 index/MCP_flex (top r1 c2)",
+      "part_number": "XC330-T288-T",
+      "pose": [
+        1.0,
+        0.0,
+        0.0,
+        -106.5,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        15.0
+      ],
+      "position_mm": [
+        -106.5,
+        0.0,
+        15.0
+      ],
+      "properties": {
+        "category": "motor",
+        "manufacturer": "ROBOTIS",
+        "mass_g": "23",
+        "mpn": "XC330-T288-T"
+      },
+      "qty": 1,
+      "ref": "M1",
+      "role": "drives index/MCP_flex through its spool and tendon pair, four M2 into the pad"
+    },
+    {
+      "file": "components/spool.stl",
+      "kind": "made",
+      "mass_g": 1.2,
+      "material": "AlSi10Mg (laser powder bed)",
+      "name": "spool index/MCP_flex",
+      "pose": [
+        1.0,
+        0.0,
+        0.0,
+        -99.5,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        28.0
+      ],
+      "properties": {
+        "category": "made",
+        "mass_g": "1.20",
+        "material": "AlSi10Mg (laser powder bed)",
+        "process": "turned or printed, four M2 to the horn"
+      },
+      "qty": 1
+    },
+    {
+      "bom_type": "purchased",
+      "component_ref": "M1",
+      "description": "DYNAMIXEL X smart servo, TTL bus, 288:1, drives one tendon spool (pull-pull) per finger/thumb/palm DOF",
+      "file": "components/M1.stl",
+      "kind": "component",
+      "mass_g": 23.0,
+      "material": null,
+      "name": "XC330 index/PIP (top r1 c3)",
+      "part_number": "XC330-T288-T",
+      "pose": [
+        1.0,
+        0.0,
+        0.0,
+        -106.5,
+        0.0,
+        1.0,
+        0.0,
+        22.0,
+        0.0,
+        0.0,
+        1.0,
+        15.0
+      ],
+      "position_mm": [
+        -106.5,
+        22.0,
+        15.0
+      ],
+      "properties": {
+        "category": "motor",
+        "manufacturer": "ROBOTIS",
+        "mass_g": "23",
+        "mpn": "XC330-T288-T"
+      },
+      "qty": 1,
+      "ref": "M1",
+      "role": "drives index/PIP through its spool and tendon pair, four M2 into the pad"
+    },
+    {
+      "file": "components/spool.stl",
+      "kind": "made",
+      "mass_g": 1.2,
+      "material": "AlSi10Mg (laser powder bed)",
+      "name": "spool index/PIP",
+      "pose": [
+        1.0,
+        0.0,
+        0.0,
+        -99.5,
+        0.0,
+        1.0,
+        0.0,
+        22.0,
+        0.0,
+        0.0,
+        1.0,
+        28.0
+      ],
+      "properties": {
+        "category": "made",
+        "mass_g": "1.20",
+        "material": "AlSi10Mg (laser powder bed)",
+        "process": "turned or printed, four M2 to the horn"
+      },
+      "qty": 1
+    },
+    {
+      "bom_type": "purchased",
+      "component_ref": "M1",
+      "description": "DYNAMIXEL X smart servo, TTL bus, 288:1, drives one tendon spool (pull-pull) per finger/thumb/palm DOF",
+      "file": "components/M1.stl",
+      "kind": "component",
+      "mass_g": 23.0,
+      "material": null,
+      "name": "XC330 index/DIP (top r2 c1)",
+      "part_number": "XC330-T288-T",
+      "pose": [
+        1.0,
+        0.0,
+        0.0,
+        -143.5,
+        0.0,
+        1.0,
+        0.0,
+        -22.0,
+        0.0,
+        0.0,
+        1.0,
+        15.0
+      ],
+      "position_mm": [
+        -143.5,
+        -22.0,
+        15.0
+      ],
+      "properties": {
+        "category": "motor",
+        "manufacturer": "ROBOTIS",
+        "mass_g": "23",
+        "mpn": "XC330-T288-T"
+      },
+      "qty": 1,
+      "ref": "M1",
+      "role": "drives index/DIP through its spool and tendon pair, four M2 into the pad"
+    },
+    {
+      "file": "components/spool.stl",
+      "kind": "made",
+      "mass_g": 1.2,
+      "material": "AlSi10Mg (laser powder bed)",
+      "name": "spool index/DIP",
+      "pose": [
+        1.0,
+        0.0,
+        0.0,
+        -136.5,
+        0.0,
+        1.0,
+        0.0,
+        -22.0,
+        0.0,
+        0.0,
+        1.0,
+        28.0
+      ],
+      "properties": {
+        "category": "made",
+        "mass_g": "1.20",
+        "material": "AlSi10Mg (laser powder bed)",
+        "process": "turned or printed, four M2 to the horn"
+      },
+      "qty": 1
+    },
+    {
+      "bom_type": "purchased",
+      "component_ref": "M1",
+      "description": "DYNAMIXEL X smart servo, TTL bus, 288:1, drives one tendon spool (pull-pull) per finger/thumb/palm DOF",
+      "file": "components/M1.stl",
+      "kind": "component",
+      "mass_g": 23.0,
+      "material": null,
+      "name": "XC330 middle/MCP_abd (top r2 c2)",
+      "part_number": "XC330-T288-T",
+      "pose": [
+        1.0,
+        0.0,
+        0.0,
+        -143.5,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        15.0
+      ],
+      "position_mm": [
+        -143.5,
+        0.0,
+        15.0
+      ],
+      "properties": {
+        "category": "motor",
+        "manufacturer": "ROBOTIS",
+        "mass_g": "23",
+        "mpn": "XC330-T288-T"
+      },
+      "qty": 1,
+      "ref": "M1",
+      "role": "drives middle/MCP_abd through its spool and tendon pair, four M2 into the pad"
+    },
+    {
+      "file": "components/spool.stl",
+      "kind": "made",
+      "mass_g": 1.2,
+      "material": "AlSi10Mg (laser powder bed)",
+      "name": "spool middle/MCP_abd",
+      "pose": [
+        1.0,
+        0.0,
+        0.0,
+        -136.5,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        28.0
+      ],
+      "properties": {
+        "category": "made",
+        "mass_g": "1.20",
+        "material": "AlSi10Mg (laser powder bed)",
+        "process": "turned or printed, four M2 to the horn"
+      },
+      "qty": 1
+    },
+    {
+      "bom_type": "purchased",
+      "component_ref": "M1",
+      "description": "DYNAMIXEL X smart servo, TTL bus, 288:1, drives one tendon spool (pull-pull) per finger/thumb/palm DOF",
+      "file": "components/M1.stl",
+      "kind": "component",
+      "mass_g": 23.0,
+      "material": null,
+      "name": "XC330 middle/MCP_flex (top r2 c3)",
+      "part_number": "XC330-T288-T",
+      "pose": [
+        1.0,
+        0.0,
+        0.0,
+        -143.5,
+        0.0,
+        1.0,
+        0.0,
+        22.0,
+        0.0,
+        0.0,
+        1.0,
+        15.0
+      ],
+      "position_mm": [
+        -143.5,
+        22.0,
+        15.0
+      ],
+      "properties": {
+        "category": "motor",
+        "manufacturer": "ROBOTIS",
+        "mass_g": "23",
+        "mpn": "XC330-T288-T"
+      },
+      "qty": 1,
+      "ref": "M1",
+      "role": "drives middle/MCP_flex through its spool and tendon pair, four M2 into the pad"
+    },
+    {
+      "file": "components/spool.stl",
+      "kind": "made",
+      "mass_g": 1.2,
+      "material": "AlSi10Mg (laser powder bed)",
+      "name": "spool middle/MCP_flex",
+      "pose": [
+        1.0,
+        0.0,
+        0.0,
+        -136.5,
+        0.0,
+        1.0,
+        0.0,
+        22.0,
+        0.0,
+        0.0,
+        1.0,
+        28.0
+      ],
+      "properties": {
+        "category": "made",
+        "mass_g": "1.20",
+        "material": "AlSi10Mg (laser powder bed)",
+        "process": "turned or printed, four M2 to the horn"
+      },
+      "qty": 1
+    },
+    {
+      "bom_type": "purchased",
+      "component_ref": "M1",
+      "description": "DYNAMIXEL X smart servo, TTL bus, 288:1, drives one tendon spool (pull-pull) per finger/thumb/palm DOF",
+      "file": "components/M1.stl",
+      "kind": "component",
+      "mass_g": 23.0,
+      "material": null,
+      "name": "XC330 middle/PIP (top r3 c1)",
+      "part_number": "XC330-T288-T",
+      "pose": [
+        1.0,
+        0.0,
+        0.0,
+        -180.5,
+        0.0,
+        1.0,
+        0.0,
+        -22.0,
+        0.0,
+        0.0,
+        1.0,
+        15.0
+      ],
+      "position_mm": [
+        -180.5,
+        -22.0,
+        15.0
+      ],
+      "properties": {
+        "category": "motor",
+        "manufacturer": "ROBOTIS",
+        "mass_g": "23",
+        "mpn": "XC330-T288-T"
+      },
+      "qty": 1,
+      "ref": "M1",
+      "role": "drives middle/PIP through its spool and tendon pair, four M2 into the pad"
+    },
+    {
+      "file": "components/spool.stl",
+      "kind": "made",
+      "mass_g": 1.2,
+      "material": "AlSi10Mg (laser powder bed)",
+      "name": "spool middle/PIP",
+      "pose": [
+        1.0,
+        0.0,
+        0.0,
+        -173.5,
+        0.0,
+        1.0,
+        0.0,
+        -22.0,
+        0.0,
+        0.0,
+        1.0,
+        28.0
+      ],
+      "properties": {
+        "category": "made",
+        "mass_g": "1.20",
+        "material": "AlSi10Mg (laser powder bed)",
+        "process": "turned or printed, four M2 to the horn"
+      },
+      "qty": 1
+    },
+    {
+      "bom_type": "purchased",
+      "component_ref": "M1",
+      "description": "DYNAMIXEL X smart servo, TTL bus, 288:1, drives one tendon spool (pull-pull) per finger/thumb/palm DOF",
+      "file": "components/M1.stl",
+      "kind": "component",
+      "mass_g": 23.0,
+      "material": null,
+      "name": "XC330 middle/DIP (top r3 c2)",
+      "part_number": "XC330-T288-T",
+      "pose": [
+        1.0,
+        0.0,
+        0.0,
+        -180.5,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        15.0
+      ],
+      "position_mm": [
+        -180.5,
+        0.0,
+        15.0
+      ],
+      "properties": {
+        "category": "motor",
+        "manufacturer": "ROBOTIS",
+        "mass_g": "23",
+        "mpn": "XC330-T288-T"
+      },
+      "qty": 1,
+      "ref": "M1",
+      "role": "drives middle/DIP through its spool and tendon pair, four M2 into the pad"
+    },
+    {
+      "file": "components/spool.stl",
+      "kind": "made",
+      "mass_g": 1.2,
+      "material": "AlSi10Mg (laser powder bed)",
+      "name": "spool middle/DIP",
+      "pose": [
+        1.0,
+        0.0,
+        0.0,
+        -173.5,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        28.0
+      ],
+      "properties": {
+        "category": "made",
+        "mass_g": "1.20",
+        "material": "AlSi10Mg (laser powder bed)",
+        "process": "turned or printed, four M2 to the horn"
+      },
+      "qty": 1
+    },
+    {
+      "bom_type": "purchased",
+      "component_ref": "M1",
+      "description": "DYNAMIXEL X smart servo, TTL bus, 288:1, drives one tendon spool (pull-pull) per finger/thumb/palm DOF",
+      "file": "components/M1.stl",
+      "kind": "component",
+      "mass_g": 23.0,
+      "material": null,
+      "name": "XC330 ring/MCP_abd (top r3 c3)",
+      "part_number": "XC330-T288-T",
+      "pose": [
+        1.0,
+        0.0,
+        0.0,
+        -180.5,
+        0.0,
+        1.0,
+        0.0,
+        22.0,
+        0.0,
+        0.0,
+        1.0,
+        15.0
+      ],
+      "position_mm": [
+        -180.5,
+        22.0,
+        15.0
+      ],
+      "properties": {
+        "category": "motor",
+        "manufacturer": "ROBOTIS",
+        "mass_g": "23",
+        "mpn": "XC330-T288-T"
+      },
+      "qty": 1,
+      "ref": "M1",
+      "role": "drives ring/MCP_abd through its spool and tendon pair, four M2 into the pad"
+    },
+    {
+      "file": "components/spool.stl",
+      "kind": "made",
+      "mass_g": 1.2,
+      "material": "AlSi10Mg (laser powder bed)",
+      "name": "spool ring/MCP_abd",
+      "pose": [
+        1.0,
+        0.0,
+        0.0,
+        -173.5,
+        0.0,
+        1.0,
+        0.0,
+        22.0,
+        0.0,
+        0.0,
+        1.0,
+        28.0
+      ],
+      "properties": {
+        "category": "made",
+        "mass_g": "1.20",
+        "material": "AlSi10Mg (laser powder bed)",
+        "process": "turned or printed, four M2 to the horn"
+      },
+      "qty": 1
+    },
+    {
+      "bom_type": "purchased",
+      "component_ref": "M1",
+      "description": "DYNAMIXEL X smart servo, TTL bus, 288:1, drives one tendon spool (pull-pull) per finger/thumb/palm DOF",
+      "file": "components/M1.stl",
+      "kind": "component",
+      "mass_g": 23.0,
+      "material": null,
+      "name": "XC330 ring/MCP_flex (top r4 c1)",
+      "part_number": "XC330-T288-T",
+      "pose": [
+        1.0,
+        0.0,
+        0.0,
+        -217.5,
+        0.0,
+        1.0,
+        0.0,
+        -22.0,
+        0.0,
+        0.0,
+        1.0,
+        15.0
+      ],
+      "position_mm": [
+        -217.5,
+        -22.0,
+        15.0
+      ],
+      "properties": {
+        "category": "motor",
+        "manufacturer": "ROBOTIS",
+        "mass_g": "23",
+        "mpn": "XC330-T288-T"
+      },
+      "qty": 1,
+      "ref": "M1",
+      "role": "drives ring/MCP_flex through its spool and tendon pair, four M2 into the pad"
+    },
+    {
+      "file": "components/spool.stl",
+      "kind": "made",
+      "mass_g": 1.2,
+      "material": "AlSi10Mg (laser powder bed)",
+      "name": "spool ring/MCP_flex",
+      "pose": [
+        1.0,
+        0.0,
+        0.0,
+        -210.5,
+        0.0,
+        1.0,
+        0.0,
+        -22.0,
+        0.0,
+        0.0,
+        1.0,
+        28.0
+      ],
+      "properties": {
+        "category": "made",
+        "mass_g": "1.20",
+        "material": "AlSi10Mg (laser powder bed)",
+        "process": "turned or printed, four M2 to the horn"
+      },
+      "qty": 1
+    },
+    {
+      "bom_type": "purchased",
+      "component_ref": "M1",
+      "description": "DYNAMIXEL X smart servo, TTL bus, 288:1, drives one tendon spool (pull-pull) per finger/thumb/palm DOF",
+      "file": "components/M1.stl",
+      "kind": "component",
+      "mass_g": 23.0,
+      "material": null,
+      "name": "XC330 ring/PIP (top r4 c2)",
+      "part_number": "XC330-T288-T",
+      "pose": [
+        1.0,
+        0.0,
+        0.0,
+        -217.5,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        15.0
+      ],
+      "position_mm": [
+        -217.5,
+        0.0,
+        15.0
+      ],
+      "properties": {
+        "category": "motor",
+        "manufacturer": "ROBOTIS",
+        "mass_g": "23",
+        "mpn": "XC330-T288-T"
+      },
+      "qty": 1,
+      "ref": "M1",
+      "role": "drives ring/PIP through its spool and tendon pair, four M2 into the pad"
+    },
+    {
+      "file": "components/spool.stl",
+      "kind": "made",
+      "mass_g": 1.2,
+      "material": "AlSi10Mg (laser powder bed)",
+      "name": "spool ring/PIP",
+      "pose": [
+        1.0,
+        0.0,
+        0.0,
+        -210.5,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        28.0
+      ],
+      "properties": {
+        "category": "made",
+        "mass_g": "1.20",
+        "material": "AlSi10Mg (laser powder bed)",
+        "process": "turned or printed, four M2 to the horn"
+      },
+      "qty": 1
+    },
+    {
+      "bom_type": "purchased",
+      "component_ref": "M1",
+      "description": "DYNAMIXEL X smart servo, TTL bus, 288:1, drives one tendon spool (pull-pull) per finger/thumb/palm DOF",
+      "file": "components/M1.stl",
+      "kind": "component",
+      "mass_g": 23.0,
+      "material": null,
+      "name": "XC330 ring/DIP (top r4 c3)",
+      "part_number": "XC330-T288-T",
+      "pose": [
+        1.0,
+        0.0,
+        0.0,
+        -217.5,
+        0.0,
+        1.0,
+        0.0,
+        22.0,
+        0.0,
+        0.0,
+        1.0,
+        15.0
+      ],
+      "position_mm": [
+        -217.5,
+        22.0,
+        15.0
+      ],
+      "properties": {
+        "category": "motor",
+        "manufacturer": "ROBOTIS",
+        "mass_g": "23",
+        "mpn": "XC330-T288-T"
+      },
+      "qty": 1,
+      "ref": "M1",
+      "role": "drives ring/DIP through its spool and tendon pair, four M2 into the pad"
+    },
+    {
+      "file": "components/spool.stl",
+      "kind": "made",
+      "mass_g": 1.2,
+      "material": "AlSi10Mg (laser powder bed)",
+      "name": "spool ring/DIP",
+      "pose": [
+        1.0,
+        0.0,
+        0.0,
+        -210.5,
+        0.0,
+        1.0,
+        0.0,
+        22.0,
+        0.0,
+        0.0,
+        1.0,
+        28.0
+      ],
+      "properties": {
+        "category": "made",
+        "mass_g": "1.20",
+        "material": "AlSi10Mg (laser powder bed)",
+        "process": "turned or printed, four M2 to the horn"
+      },
+      "qty": 1
+    },
+    {
+      "bom_type": "purchased",
+      "component_ref": "M1",
+      "description": "DYNAMIXEL X smart servo, TTL bus, 288:1, drives one tendon spool (pull-pull) per finger/thumb/palm DOF",
+      "file": "components/M1.stl",
+      "kind": "component",
+      "mass_g": 23.0,
+      "material": null,
+      "name": "XC330 little/MCP_abd (bottom r1 c1)",
+      "part_number": "XC330-T288-T",
+      "pose": [
+        1.0,
+        0.0,
+        0.0,
+        -106.5,
+        0.0,
+        1.0,
+        0.0,
+        -22.0,
+        0.0,
+        0.0,
+        1.0,
+        -15.0
+      ],
+      "position_mm": [
+        -106.5,
+        -22.0,
+        -15.0
+      ],
+      "properties": {
+        "category": "motor",
+        "manufacturer": "ROBOTIS",
+        "mass_g": "23",
+        "mpn": "XC330-T288-T"
+      },
+      "qty": 1,
+      "ref": "M1",
+      "role": "drives little/MCP_abd through its spool and tendon pair, four M2 into the pad"
+    },
+    {
+      "file": "components/spool.stl",
+      "kind": "made",
+      "mass_g": 1.2,
+      "material": "AlSi10Mg (laser powder bed)",
+      "name": "spool little/MCP_abd",
+      "pose": [
+        1.0,
+        0.0,
+        0.0,
+        -99.5,
+        0.0,
+        -1.0,
+        -1.2246467991473532e-16,
+        -22.0,
+        0.0,
+        1.2246467991473532e-16,
+        -1.0,
+        -28.0
+      ],
+      "properties": {
+        "category": "made",
+        "mass_g": "1.20",
+        "material": "AlSi10Mg (laser powder bed)",
+        "process": "turned or printed, four M2 to the horn"
+      },
+      "qty": 1
+    },
+    {
+      "bom_type": "purchased",
+      "component_ref": "M1",
+      "description": "DYNAMIXEL X smart servo, TTL bus, 288:1, drives one tendon spool (pull-pull) per finger/thumb/palm DOF",
+      "file": "components/M1.stl",
+      "kind": "component",
+      "mass_g": 23.0,
+      "material": null,
+      "name": "XC330 little/MCP_flex (bottom r1 c2)",
+      "part_number": "XC330-T288-T",
+      "pose": [
+        1.0,
+        0.0,
+        0.0,
+        -106.5,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        -15.0
+      ],
+      "position_mm": [
+        -106.5,
+        0.0,
+        -15.0
+      ],
+      "properties": {
+        "category": "motor",
+        "manufacturer": "ROBOTIS",
+        "mass_g": "23",
+        "mpn": "XC330-T288-T"
+      },
+      "qty": 1,
+      "ref": "M1",
+      "role": "drives little/MCP_flex through its spool and tendon pair, four M2 into the pad"
+    },
+    {
+      "file": "components/spool.stl",
+      "kind": "made",
+      "mass_g": 1.2,
+      "material": "AlSi10Mg (laser powder bed)",
+      "name": "spool little/MCP_flex",
+      "pose": [
+        1.0,
+        0.0,
+        0.0,
+        -99.5,
+        0.0,
+        -1.0,
+        -1.2246467991473532e-16,
+        0.0,
+        0.0,
+        1.2246467991473532e-16,
+        -1.0,
+        -28.0
+      ],
+      "properties": {
+        "category": "made",
+        "mass_g": "1.20",
+        "material": "AlSi10Mg (laser powder bed)",
+        "process": "turned or printed, four M2 to the horn"
+      },
+      "qty": 1
+    },
+    {
+      "bom_type": "purchased",
+      "component_ref": "M1",
+      "description": "DYNAMIXEL X smart servo, TTL bus, 288:1, drives one tendon spool (pull-pull) per finger/thumb/palm DOF",
+      "file": "components/M1.stl",
+      "kind": "component",
+      "mass_g": 23.0,
+      "material": null,
+      "name": "XC330 little/PIP (bottom r1 c3)",
+      "part_number": "XC330-T288-T",
+      "pose": [
+        1.0,
+        0.0,
+        0.0,
+        -106.5,
+        0.0,
+        1.0,
+        0.0,
+        22.0,
+        0.0,
+        0.0,
+        1.0,
+        -15.0
+      ],
+      "position_mm": [
+        -106.5,
+        22.0,
+        -15.0
+      ],
+      "properties": {
+        "category": "motor",
+        "manufacturer": "ROBOTIS",
+        "mass_g": "23",
+        "mpn": "XC330-T288-T"
+      },
+      "qty": 1,
+      "ref": "M1",
+      "role": "drives little/PIP through its spool and tendon pair, four M2 into the pad"
+    },
+    {
+      "file": "components/spool.stl",
+      "kind": "made",
+      "mass_g": 1.2,
+      "material": "AlSi10Mg (laser powder bed)",
+      "name": "spool little/PIP",
+      "pose": [
+        1.0,
+        0.0,
+        0.0,
+        -99.5,
+        0.0,
+        -1.0,
+        -1.2246467991473532e-16,
+        22.0,
+        0.0,
+        1.2246467991473532e-16,
+        -1.0,
+        -28.0
+      ],
+      "properties": {
+        "category": "made",
+        "mass_g": "1.20",
+        "material": "AlSi10Mg (laser powder bed)",
+        "process": "turned or printed, four M2 to the horn"
+      },
+      "qty": 1
+    },
+    {
+      "bom_type": "purchased",
+      "component_ref": "M1",
+      "description": "DYNAMIXEL X smart servo, TTL bus, 288:1, drives one tendon spool (pull-pull) per finger/thumb/palm DOF",
+      "file": "components/M1.stl",
+      "kind": "component",
+      "mass_g": 23.0,
+      "material": null,
+      "name": "XC330 little/DIP (bottom r2 c1)",
+      "part_number": "XC330-T288-T",
+      "pose": [
+        1.0,
+        0.0,
+        0.0,
+        -143.5,
+        0.0,
+        1.0,
+        0.0,
+        -22.0,
+        0.0,
+        0.0,
+        1.0,
+        -15.0
+      ],
+      "position_mm": [
+        -143.5,
+        -22.0,
+        -15.0
+      ],
+      "properties": {
+        "category": "motor",
+        "manufacturer": "ROBOTIS",
+        "mass_g": "23",
+        "mpn": "XC330-T288-T"
+      },
+      "qty": 1,
+      "ref": "M1",
+      "role": "drives little/DIP through its spool and tendon pair, four M2 into the pad"
+    },
+    {
+      "file": "components/spool.stl",
+      "kind": "made",
+      "mass_g": 1.2,
+      "material": "AlSi10Mg (laser powder bed)",
+      "name": "spool little/DIP",
+      "pose": [
+        1.0,
+        0.0,
+        0.0,
+        -136.5,
+        0.0,
+        -1.0,
+        -1.2246467991473532e-16,
+        -22.0,
+        0.0,
+        1.2246467991473532e-16,
+        -1.0,
+        -28.0
+      ],
+      "properties": {
+        "category": "made",
+        "mass_g": "1.20",
+        "material": "AlSi10Mg (laser powder bed)",
+        "process": "turned or printed, four M2 to the horn"
+      },
+      "qty": 1
+    },
+    {
+      "bom_type": "purchased",
+      "component_ref": "M1",
+      "description": "DYNAMIXEL X smart servo, TTL bus, 288:1, drives one tendon spool (pull-pull) per finger/thumb/palm DOF",
+      "file": "components/M1.stl",
+      "kind": "component",
+      "mass_g": 23.0,
+      "material": null,
+      "name": "XC330 thumb/CMC_abd (bottom r2 c2)",
+      "part_number": "XC330-T288-T",
+      "pose": [
+        1.0,
+        0.0,
+        0.0,
+        -143.5,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        -15.0
+      ],
+      "position_mm": [
+        -143.5,
+        0.0,
+        -15.0
+      ],
+      "properties": {
+        "category": "motor",
+        "manufacturer": "ROBOTIS",
+        "mass_g": "23",
+        "mpn": "XC330-T288-T"
+      },
+      "qty": 1,
+      "ref": "M1",
+      "role": "drives thumb/CMC_abd through its spool and tendon pair, four M2 into the pad"
+    },
+    {
+      "file": "components/spool.stl",
+      "kind": "made",
+      "mass_g": 1.2,
+      "material": "AlSi10Mg (laser powder bed)",
+      "name": "spool thumb/CMC_abd",
+      "pose": [
+        1.0,
+        0.0,
+        0.0,
+        -136.5,
+        0.0,
+        -1.0,
+        -1.2246467991473532e-16,
+        0.0,
+        0.0,
+        1.2246467991473532e-16,
+        -1.0,
+        -28.0
+      ],
+      "properties": {
+        "category": "made",
+        "mass_g": "1.20",
+        "material": "AlSi10Mg (laser powder bed)",
+        "process": "turned or printed, four M2 to the horn"
+      },
+      "qty": 1
+    },
+    {
+      "bom_type": "purchased",
+      "component_ref": "M1",
+      "description": "DYNAMIXEL X smart servo, TTL bus, 288:1, drives one tendon spool (pull-pull) per finger/thumb/palm DOF",
+      "file": "components/M1.stl",
+      "kind": "component",
+      "mass_g": 23.0,
+      "material": null,
+      "name": "XC330 thumb/CMC_flex (bottom r2 c3)",
+      "part_number": "XC330-T288-T",
+      "pose": [
+        1.0,
+        0.0,
+        0.0,
+        -143.5,
+        0.0,
+        1.0,
+        0.0,
+        22.0,
+        0.0,
+        0.0,
+        1.0,
+        -15.0
+      ],
+      "position_mm": [
+        -143.5,
+        22.0,
+        -15.0
+      ],
+      "properties": {
+        "category": "motor",
+        "manufacturer": "ROBOTIS",
+        "mass_g": "23",
+        "mpn": "XC330-T288-T"
+      },
+      "qty": 1,
+      "ref": "M1",
+      "role": "drives thumb/CMC_flex through its spool and tendon pair, four M2 into the pad"
+    },
+    {
+      "file": "components/spool.stl",
+      "kind": "made",
+      "mass_g": 1.2,
+      "material": "AlSi10Mg (laser powder bed)",
+      "name": "spool thumb/CMC_flex",
+      "pose": [
+        1.0,
+        0.0,
+        0.0,
+        -136.5,
+        0.0,
+        -1.0,
+        -1.2246467991473532e-16,
+        22.0,
+        0.0,
+        1.2246467991473532e-16,
+        -1.0,
+        -28.0
+      ],
+      "properties": {
+        "category": "made",
+        "mass_g": "1.20",
+        "material": "AlSi10Mg (laser powder bed)",
+        "process": "turned or printed, four M2 to the horn"
+      },
+      "qty": 1
+    },
+    {
+      "bom_type": "purchased",
+      "component_ref": "M1",
+      "description": "DYNAMIXEL X smart servo, TTL bus, 288:1, drives one tendon spool (pull-pull) per finger/thumb/palm DOF",
+      "file": "components/M1.stl",
+      "kind": "component",
+      "mass_g": 23.0,
+      "material": null,
+      "name": "XC330 thumb/MCP_abd (bottom r3 c1)",
+      "part_number": "XC330-T288-T",
+      "pose": [
+        1.0,
+        0.0,
+        0.0,
+        -180.5,
+        0.0,
+        1.0,
+        0.0,
+        -22.0,
+        0.0,
+        0.0,
+        1.0,
+        -15.0
+      ],
+      "position_mm": [
+        -180.5,
+        -22.0,
+        -15.0
+      ],
+      "properties": {
+        "category": "motor",
+        "manufacturer": "ROBOTIS",
+        "mass_g": "23",
+        "mpn": "XC330-T288-T"
+      },
+      "qty": 1,
+      "ref": "M1",
+      "role": "drives thumb/MCP_abd through its spool and tendon pair, four M2 into the pad"
+    },
+    {
+      "file": "components/spool.stl",
+      "kind": "made",
+      "mass_g": 1.2,
+      "material": "AlSi10Mg (laser powder bed)",
+      "name": "spool thumb/MCP_abd",
+      "pose": [
+        1.0,
+        0.0,
+        0.0,
+        -173.5,
+        0.0,
+        -1.0,
+        -1.2246467991473532e-16,
+        -22.0,
+        0.0,
+        1.2246467991473532e-16,
+        -1.0,
+        -28.0
+      ],
+      "properties": {
+        "category": "made",
+        "mass_g": "1.20",
+        "material": "AlSi10Mg (laser powder bed)",
+        "process": "turned or printed, four M2 to the horn"
+      },
+      "qty": 1
+    },
+    {
+      "bom_type": "purchased",
+      "component_ref": "M1",
+      "description": "DYNAMIXEL X smart servo, TTL bus, 288:1, drives one tendon spool (pull-pull) per finger/thumb/palm DOF",
+      "file": "components/M1.stl",
+      "kind": "component",
+      "mass_g": 23.0,
+      "material": null,
+      "name": "XC330 thumb/MCP_flex (bottom r3 c2)",
+      "part_number": "XC330-T288-T",
+      "pose": [
+        1.0,
+        0.0,
+        0.0,
+        -180.5,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        -15.0
+      ],
+      "position_mm": [
+        -180.5,
+        0.0,
+        -15.0
+      ],
+      "properties": {
+        "category": "motor",
+        "manufacturer": "ROBOTIS",
+        "mass_g": "23",
+        "mpn": "XC330-T288-T"
+      },
+      "qty": 1,
+      "ref": "M1",
+      "role": "drives thumb/MCP_flex through its spool and tendon pair, four M2 into the pad"
+    },
+    {
+      "file": "components/spool.stl",
+      "kind": "made",
+      "mass_g": 1.2,
+      "material": "AlSi10Mg (laser powder bed)",
+      "name": "spool thumb/MCP_flex",
+      "pose": [
+        1.0,
+        0.0,
+        0.0,
+        -173.5,
+        0.0,
+        -1.0,
+        -1.2246467991473532e-16,
+        0.0,
+        0.0,
+        1.2246467991473532e-16,
+        -1.0,
+        -28.0
+      ],
+      "properties": {
+        "category": "made",
+        "mass_g": "1.20",
+        "material": "AlSi10Mg (laser powder bed)",
+        "process": "turned or printed, four M2 to the horn"
+      },
+      "qty": 1
+    },
+    {
+      "bom_type": "purchased",
+      "component_ref": "M1",
+      "description": "DYNAMIXEL X smart servo, TTL bus, 288:1, drives one tendon spool (pull-pull) per finger/thumb/palm DOF",
+      "file": "components/M1.stl",
+      "kind": "component",
+      "mass_g": 23.0,
+      "material": null,
+      "name": "XC330 thumb/IP (bottom r3 c3)",
+      "part_number": "XC330-T288-T",
+      "pose": [
+        1.0,
+        0.0,
+        0.0,
+        -180.5,
+        0.0,
+        1.0,
+        0.0,
+        22.0,
+        0.0,
+        0.0,
+        1.0,
+        -15.0
+      ],
+      "position_mm": [
+        -180.5,
+        22.0,
+        -15.0
+      ],
+      "properties": {
+        "category": "motor",
+        "manufacturer": "ROBOTIS",
+        "mass_g": "23",
+        "mpn": "XC330-T288-T"
+      },
+      "qty": 1,
+      "ref": "M1",
+      "role": "drives thumb/IP through its spool and tendon pair, four M2 into the pad"
+    },
+    {
+      "file": "components/spool.stl",
+      "kind": "made",
+      "mass_g": 1.2,
+      "material": "AlSi10Mg (laser powder bed)",
+      "name": "spool thumb/IP",
+      "pose": [
+        1.0,
+        0.0,
+        0.0,
+        -173.5,
+        0.0,
+        -1.0,
+        -1.2246467991473532e-16,
+        22.0,
+        0.0,
+        1.2246467991473532e-16,
+        -1.0,
+        -28.0
+      ],
+      "properties": {
+        "category": "made",
+        "mass_g": "1.20",
+        "material": "AlSi10Mg (laser powder bed)",
+        "process": "turned or printed, four M2 to the horn"
+      },
+      "qty": 1
+    },
+    {
+      "bom_type": "purchased",
+      "component_ref": "M1",
+      "description": "DYNAMIXEL X smart servo, TTL bus, 288:1, drives one tendon spool (pull-pull) per finger/thumb/palm DOF",
+      "file": "components/M1.stl",
+      "kind": "component",
+      "mass_g": 23.0,
+      "material": null,
+      "name": "XC330 palm/arch_CMC45 (bottom r4 c2)",
+      "part_number": "XC330-T288-T",
+      "pose": [
+        1.0,
+        0.0,
+        0.0,
+        -217.5,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        -15.0
+      ],
+      "position_mm": [
+        -217.5,
+        0.0,
+        -15.0
+      ],
+      "properties": {
+        "category": "motor",
+        "manufacturer": "ROBOTIS",
+        "mass_g": "23",
+        "mpn": "XC330-T288-T"
+      },
+      "qty": 1,
+      "ref": "M1",
+      "role": "drives palm/arch_CMC45 through its spool and tendon pair, four M2 into the pad"
+    },
+    {
+      "file": "components/spool.stl",
+      "kind": "made",
+      "mass_g": 1.2,
+      "material": "AlSi10Mg (laser powder bed)",
+      "name": "spool palm/arch_CMC45",
+      "pose": [
+        1.0,
+        0.0,
+        0.0,
+        -210.5,
+        0.0,
+        -1.0,
+        -1.2246467991473532e-16,
+        0.0,
+        0.0,
+        1.2246467991473532e-16,
+        -1.0,
+        -28.0
+      ],
+      "properties": {
+        "category": "made",
+        "mass_g": "1.20",
+        "material": "AlSi10Mg (laser powder bed)",
+        "process": "turned or printed, four M2 to the horn"
+      },
+      "qty": 1
+    },
+    {
+      "bom_type": "purchased",
+      "component_ref": "M2",
+      "description": "DYNAMIXEL X smart servo, TTL, direct drive of the 2-axis wrist gimbal",
+      "file": "components/M2.stl",
+      "kind": "component",
+      "mass_g": 82.0,
+      "material": null,
+      "name": "XM430 wrist flexion",
+      "part_number": "XM430-W350-T",
+      "pose": [
+        1.0,
+        0.0,
+        0.0,
+        -12.0,
+        0.0,
+        1.0,
+        0.0,
+        -32.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0
+      ],
+      "position_mm": [
+        -12.0,
+        -32.0,
+        0.0
+      ],
+      "properties": {
+        "category": "motor",
+        "manufacturer": "ROBOTIS",
+        "mass_g": "82",
+        "mpn": "XM430-W350-T"
+      },
+      "qty": 1,
+      "ref": "M2",
+      "role": "drives wrist/flex_ext directly, four M2.5 to the case plate, four to the horn"
+    },
+    {
+      "bom_type": "purchased",
+      "component_ref": "M2",
+      "description": "DYNAMIXEL X smart servo, TTL, direct drive of the 2-axis wrist gimbal",
+      "file": "components/M2_2.stl",
+      "kind": "component",
+      "mass_g": 82.0,
+      "material": null,
+      "name": "XM430 wrist deviation",
+      "part_number": "XM430-W350-T",
+      "pose": [
+        1.0,
+        0.0,
+        0.0,
+        -12.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        32.0
+      ],
+      "position_mm": [
+        -12.0,
+        0.0,
+        32.0
+      ],
+      "properties": {
+        "category": "motor",
+        "manufacturer": "ROBOTIS",
+        "mass_g": "82",
+        "mpn": "XM430-W350-T"
+      },
+      "qty": 1,
+      "ref": "M2",
+      "role": "drives wrist/radial_ulnar directly, four M2.5 to the case plate, four to the horn"
+    },
+    {
+      "bom_type": "purchased",
+      "component_ref": "U1",
+      "description": "Arduino MKR-format DYNAMIXEL controller (SAMD21), embedded hand controller, reads fingertip FSRs on its analog pins",
+      "file": "components/U1.stl",
+      "kind": "component",
+      "mass_g": 10.0,
+      "material": null,
+      "name": "OpenRB-150",
+      "part_number": "OpenRB-150",
+      "pose": [
+        1.0,
+        0.0,
+        0.0,
+        -201.0,
+        0.0,
+        1.0,
+        0.0,
+        -40.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0
+      ],
+      "position_mm": [
+        -201.0,
+        -40.0,
+        0.0
+      ],
+      "properties": {
+        "category": "mcu",
+        "manufacturer": "ROBOTIS",
+        "mass_g": "10",
+        "mpn": "OpenRB-150"
+      },
+      "qty": 1,
+      "ref": "U1",
+      "role": "on its pad beside the servo bank"
+    },
+    {
+      "bom_type": "purchased",
+      "component_ref": "D1",
+      "description": "U2D2 Power Hub Board set: injects 12 V into a DYNAMIXEL TTL chain, passes data through",
+      "file": "components/D1.stl",
+      "kind": "component",
+      "mass_g": 10.0,
+      "material": null,
+      "name": "Power Hub A",
+      "part_number": "902-0145-001",
+      "pose": [
+        1.0,
+        0.0,
+        0.0,
+        -141.0,
+        0.0,
+        1.0,
+        0.0,
+        -39.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0
+      ],
+      "position_mm": [
+        -141.0,
+        -39.0,
+        0.0
+      ],
+      "properties": {
+        "category": "driver",
+        "manufacturer": "ROBOTIS",
+        "mass_g": "10",
+        "mpn": "902-0145-001"
+      },
+      "qty": 1,
+      "ref": "D1",
+      "role": "on its pad beside the servo bank"
+    },
+    {
+      "bom_type": "purchased",
+      "component_ref": "D1",
+      "description": "U2D2 Power Hub Board set: injects 12 V into a DYNAMIXEL TTL chain, passes data through",
+      "file": "components/D1.stl",
+      "kind": "component",
+      "mass_g": 10.0,
+      "material": null,
+      "name": "Power Hub B",
+      "part_number": "902-0145-001",
+      "pose": [
+        1.0,
+        0.0,
+        0.0,
+        -91.0,
+        0.0,
+        1.0,
+        0.0,
+        -39.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0
+      ],
+      "position_mm": [
+        -91.0,
+        -39.0,
+        0.0
+      ],
+      "properties": {
+        "category": "driver",
+        "manufacturer": "ROBOTIS",
+        "mass_g": "10",
+        "mpn": "902-0145-001"
+      },
+      "qty": 1,
+      "ref": "D1",
+      "role": "on its pad beside the servo bank"
+    },
+    {
+      "bom_type": "purchased",
+      "component_ref": "D2",
+      "description": "U2D2 USB to TTL/RS-485 adapter: ID assignment with DYNAMIXEL Wizard, PC teleoperation at 4 Mbps",
+      "file": "components/D2.stl",
+      "kind": "component",
+      "mass_g": 9.0,
+      "material": null,
+      "name": "U2D2",
+      "part_number": "902-0132-000",
+      "pose": [
+        1.0,
+        0.0,
+        0.0,
+        -210.0,
+        0.0,
+        1.0,
+        0.0,
+        -42.0,
+        0.0,
+        0.0,
+        1.0,
+        21.3
+      ],
+      "position_mm": [
+        -210.0,
+        -42.0,
+        21.3
+      ],
+      "properties": {
+        "category": "driver",
+        "manufacturer": "ROBOTIS",
+        "mass_g": "9",
+        "mpn": "902-0132-000"
+      },
+      "qty": 1,
+      "ref": "D2",
+      "role": "on its pad beside the servo bank"
+    },
+    {
+      "bom_type": "purchased",
+      "component_ref": "S1",
+      "description": "FSR 400 Short force sensing resistor, 5.6 mm active round, one per fingertip pad",
+      "file": "components/S1.stl",
+      "kind": "component",
+      "mass_g": 0.3,
+      "material": null,
+      "name": "FSR index",
+      "part_number": "34-00004",
+      "pose": [
+        0.0,
+        0.8201286029315653,
+        -0.5721792329799458,
+        169.294822097702,
+        0.9988092615730233,
+        -0.02791424926996093,
+        -0.04001066962257071,
+        24.244102232355228,
+        -0.04878584831641258,
+        -0.5714979171801184,
+        -0.8191520442889919,
+        -32.96419435773248
+      ],
+      "position_mm": [
+        169.294822097702,
+        24.244102232355228,
+        -32.96419435773248
+      ],
+      "properties": {
+        "category": "sensor",
+        "manufacturer": "Interlink Electronics",
+        "mass_g": "0.3",
+        "mpn": "34-00004"
+      },
+      "qty": 1,
+      "ref": "S1",
+      "role": "on the fingertip pad"
+    },
+    {
+      "bom_type": "purchased",
+      "component_ref": "S1",
+      "description": "FSR 400 Short force sensing resistor, 5.6 mm active round, one per fingertip pad",
+      "file": "components/S1.stl",
+      "kind": "component",
+      "mass_g": 0.3,
+      "material": null,
+      "name": "FSR middle",
+      "part_number": "34-00004",
+      "pose": [
+        -0.0,
+        0.6946583704589974,
+        -0.7193398003386512,
+        174.88897531630926,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        -0.7193398003386512,
+        -0.6946583704589974,
+        -45.02369464316879
+      ],
+      "position_mm": [
+        174.88897531630926,
+        0.0,
+        -45.02369464316879
+      ],
+      "properties": {
+        "category": "sensor",
+        "manufacturer": "Interlink Electronics",
+        "mass_g": "0.3",
+        "mpn": "34-00004"
+      },
+      "qty": 1,
+      "ref": "S1",
+      "role": "on the fingertip pad"
+    },
+    {
+      "bom_type": "purchased",
+      "component_ref": "S1",
+      "description": "FSR 400 Short force sensing resistor, 5.6 mm active round, one per fingertip pad",
+      "file": "components/S1.stl",
+      "kind": "component",
+      "mass_g": 0.3,
+      "material": null,
+      "name": "FSR ring",
+      "part_number": "34-00004",
+      "pose": [
+        -0.0,
+        0.533210989090272,
+        -0.8459822936169372,
+        159.888136717494,
+        0.9938265997430336,
+        0.09385711140896548,
+        0.05915684475329117,
+        -23.656249524705164,
+        0.11094453408437907,
+        -0.8407597063081333,
+        -0.5299192642332049,
+        -50.84240870784863
+      ],
+      "position_mm": [
+        159.888136717494,
+        -23.656249524705164,
+        -50.84240870784863
+      ],
+      "properties": {
+        "category": "sensor",
+        "manufacturer": "Interlink Electronics",
+        "mass_g": "0.3",
+        "mpn": "34-00004"
+      },
+      "qty": 1,
+      "ref": "S1",
+      "role": "on the fingertip pad"
+    },
+    {
+      "bom_type": "purchased",
+      "component_ref": "S1",
+      "description": "FSR 400 Short force sensing resistor, 5.6 mm active round, one per fingertip pad",
+      "file": "components/S1.stl",
+      "kind": "component",
+      "mass_g": 0.3,
+      "material": null,
+      "name": "FSR little",
+      "part_number": "34-00004",
+      "pose": [
+        -0.3786102921201638,
+        0.13424591765339058,
+        -0.9157686827436738,
+        130.47905033735705,
+        0.0,
+        0.9894252776863739,
+        0.14504351028309462,
+        -44.26217165839268,
+        0.9255561823577672,
+        0.05491496579841643,
+        -0.3746065934159122,
+        -44.825729409099836
+      ],
+      "position_mm": [
+        130.47905033735705,
+        -44.26217165839268,
+        -44.825729409099836
+      ],
+      "properties": {
+        "category": "sensor",
+        "manufacturer": "Interlink Electronics",
+        "mass_g": "0.3",
+        "mpn": "34-00004"
+      },
+      "qty": 1,
+      "ref": "S1",
+      "role": "on the fingertip pad"
+    },
+    {
+      "bom_type": "purchased",
+      "component_ref": "S1",
+      "description": "FSR 400 Short force sensing resistor, 5.6 mm active round, one per fingertip pad",
+      "file": "components/S1.stl",
+      "kind": "component",
+      "mass_g": 0.3,
+      "material": null,
+      "name": "FSR thumb",
+      "part_number": "34-00004",
+      "pose": [
+        0.0,
+        0.9912309946793509,
+        -0.1321405130419313,
+        102.2323941250134,
+        0.3640949456575077,
+        -0.1230706309069001,
+        -0.9231947196311482,
+        92.54021716688352,
+        -0.9313618365311392,
+        -0.04811169291515717,
+        -0.3609021951418156,
+        -90.5375672521094
+      ],
+      "position_mm": [
+        102.2323941250134,
+        92.54021716688352,
+        -90.5375672521094
+      ],
+      "properties": {
+        "category": "sensor",
+        "manufacturer": "Interlink Electronics",
+        "mass_g": "0.3",
+        "mpn": "34-00004"
+      },
+      "qty": 1,
+      "ref": "S1",
+      "role": "on the fingertip pad"
+    },
+    {
+      "bom_type": "purchased",
+      "component_ref": "P1",
+      "description": "Enclosed AC-DC supply, 12 V 29 A 350 W, feeds both power hubs and the OpenRB",
+      "file": "components/P1.stl",
+      "kind": "component",
+      "mass_g": 760.0,
+      "material": null,
+      "name": "12 V supply",
+      "part_number": "LRS-350-12",
+      "pose": [
+        1.0,
+        0.0,
+        0.0,
+        -400.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        -80.0
+      ],
+      "position_mm": [
+        -400.0,
+        0.0,
+        -80.0
+      ],
+      "properties": {
+        "category": "power",
+        "manufacturer": "MEAN WELL",
+        "mass_g": "760",
+        "mpn": "LRS-350-12"
+      },
+      "qty": 1,
+      "ref": "P1",
+      "role": "off the hand, in the robot base"
+    }
+  ],
+  "quantities": [
+    {
+      "component_ref": "M1",
+      "file_qty": 22,
+      "matches": true,
+      "placed_or_listed": 22
+    },
+    {
+      "component_ref": "M2",
+      "file_qty": 2,
+      "matches": true,
+      "placed_or_listed": 2
+    },
+    {
+      "component_ref": "U1",
+      "file_qty": 1,
+      "matches": true,
+      "placed_or_listed": 1
+    },
+    {
+      "component_ref": "D1",
+      "file_qty": 2,
+      "matches": true,
+      "placed_or_listed": 2
+    },
+    {
+      "component_ref": "D2",
+      "file_qty": 1,
+      "matches": true,
+      "placed_or_listed": 1
+    },
+    {
+      "component_ref": "C1",
+      "file_qty": 3,
+      "matches": true,
+      "placed_or_listed": 3
+    },
+    {
+      "component_ref": "C2",
+      "file_qty": 4,
+      "matches": true,
+      "placed_or_listed": 4
+    },
+    {
+      "component_ref": "C3",
+      "file_qty": 10,
+      "matches": true,
+      "placed_or_listed": 10
+    },
+    {
+      "component_ref": "P1",
+      "file_qty": 1,
+      "matches": true,
+      "placed_or_listed": 1
+    },
+    {
+      "component_ref": "P2",
+      "file_qty": 1,
+      "matches": true,
+      "placed_or_listed": 1
+    },
+    {
+      "component_ref": "P3",
+      "file_qty": 2,
+      "matches": true,
+      "placed_or_listed": 2
+    },
+    {
+      "component_ref": "P4",
+      "file_qty": 2,
+      "matches": true,
+      "placed_or_listed": 2
+    },
+    {
+      "component_ref": "PF1",
+      "file_qty": 3,
+      "matches": true,
+      "placed_or_listed": 3
+    },
+    {
+      "component_ref": "PF2",
+      "file_qty": 2,
+      "matches": true,
+      "placed_or_listed": 2
+    },
+    {
+      "component_ref": "PF3",
+      "file_qty": 3,
+      "matches": true,
+      "placed_or_listed": 3
+    },
+    {
+      "component_ref": "SW1",
+      "file_qty": 1,
+      "matches": true,
+      "placed_or_listed": 1
+    },
+    {
+      "component_ref": "ES1",
+      "file_qty": 1,
+      "matches": true,
+      "placed_or_listed": 1
+    },
+    {
+      "component_ref": "S1",
+      "file_qty": 5,
+      "matches": true,
+      "placed_or_listed": 5
+    },
+    {
+      "component_ref": "R1",
+      "file_qty": 5,
+      "matches": true,
+      "placed_or_listed": 5
+    },
+    {
+      "component_ref": "W1",
+      "file_qty": 2,
+      "matches": true,
+      "placed_or_listed": 2
+    },
+    {
+      "component_ref": "B1",
+      "file_qty": 38,
+      "matches": true,
+      "placed_or_listed": 38
+    },
+    {
+      "component_ref": "B2",
+      "file_qty": 6,
+      "matches": true,
+      "placed_or_listed": 6
+    },
+    {
+      "component_ref": "B3",
+      "file_qty": 4,
+      "matches": true,
+      "placed_or_listed": 4
+    },
+    {
+      "component_ref": "SH1",
+      "file_qty": 22,
+      "matches": true,
+      "placed_or_listed": 22
+    },
+    {
+      "component_ref": "SH2",
+      "file_qty": 2,
+      "matches": true,
+      "placed_or_listed": 2
+    },
+    {
+      "component_ref": "F1",
+      "file_qty": 240,
+      "matches": true,
+      "placed_or_listed": 240
+    },
+    {
+      "component_ref": "F2",
+      "file_qty": 16,
+      "matches": true,
+      "placed_or_listed": 16
+    },
+    {
+      "component_ref": "F3",
+      "file_qty": 60,
+      "matches": true,
+      "placed_or_listed": 60
+    },
+    {
+      "component_ref": "I1",
+      "file_qty": 60,
+      "matches": true,
+      "placed_or_listed": 60
+    },
+    {
+      "component_ref": "I2",
+      "file_qty": 60,
+      "matches": true,
+      "placed_or_listed": 60
+    },
+    {
+      "component_ref": "T1",
+      "file_qty": 1,
+      "matches": true,
+      "placed_or_listed": 1
+    },
+    {
+      "component_ref": "T2",
+      "file_qty": 1,
+      "matches": true,
+      "placed_or_listed": 1
+    },
+    {
+      "component_ref": "T3",
+      "file_qty": 2,
+      "matches": true,
+      "placed_or_listed": 2
+    }
+  ],
+  "schema": "viaform.assembly/1",
+  "units": {
+    "length": "mm",
+    "mass": "g",
+    "pose": "row-major 3x4, part frame in the assembly frame"
+  }
+}

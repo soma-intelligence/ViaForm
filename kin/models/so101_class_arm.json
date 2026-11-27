@@ -1,0 +1,329 @@
+{
+ "format": "viaform-kin",
+ "version": 1,
+ "name": "SO-101 class 6-axis desk arm",
+ "note": "Approximate: link lengths and servo limits follow the public SO-101 dimensions (Feetech STS3215, 2.9 N m, 300 deg/s) to the nearest few mm, but the wrist is a 3-axis spherical wrist (roll, pitch, roll) instead of SO-101's 2-axis wrist, so the arm is 6-axis and fits the analytic solver. Masses are rough. Not a drawing of the real arm.",
+ "links": [
+  {
+   "name": "base",
+   "inertial": {
+    "mass": 0.35,
+    "com": [
+     0,
+     0,
+     0.0312
+    ],
+    "inertia": [
+     0.00025356799999999997,
+     0.00025356799999999997,
+     0.00028,
+     0,
+     0,
+     0
+    ]
+   }
+  },
+  {
+   "name": "shoulder",
+   "inertial": {
+    "mass": 0.1,
+    "com": [
+     0,
+     0,
+     0.0163
+    ],
+    "inertia": [
+     3.135633333333333e-05,
+     3.135633333333333e-05,
+     4.4999999999999996e-05,
+     0,
+     0,
+     0
+    ]
+   }
+  },
+  {
+   "name": "upper_arm",
+   "inertial": {
+    "mass": 0.11,
+    "com": [
+     0,
+     0,
+     0.058
+    ],
+    "inertia": [
+     0.00013434666666666667,
+     0.00013434666666666667,
+     2.2000000000000003e-05,
+     0,
+     0,
+     0
+    ]
+   }
+  },
+  {
+   "name": "forearm",
+   "inertial": {
+    "mass": 0.1,
+    "com": [
+     0.0675,
+     0,
+     0
+    ],
+    "inertia": [
+     2e-05,
+     0.00016187500000000002,
+     0.00016187500000000002,
+     0,
+     0,
+     0
+    ]
+   }
+  },
+  {
+   "name": "wrist_1",
+   "inertial": {
+    "mass": 0.03,
+    "com": [
+     0.01,
+     0,
+     0
+    ],
+    "inertia": [
+     3.375e-06,
+     2.6874999999999997e-06,
+     2.6874999999999997e-06,
+     0,
+     0,
+     0
+    ]
+   }
+  },
+  {
+   "name": "wrist_2",
+   "inertial": {
+    "mass": 0.03,
+    "com": [
+     0.01,
+     0,
+     0
+    ],
+    "inertia": [
+     3.375e-06,
+     2.6874999999999997e-06,
+     2.6874999999999997e-06,
+     0,
+     0,
+     0
+    ]
+   }
+  },
+  {
+   "name": "gripper",
+   "inertial": {
+    "mass": 0.12,
+    "com": [
+     0.05,
+     0,
+     0
+    ],
+    "inertia": [
+     3.7500000000000003e-05,
+     0.00011875000000000003,
+     0.00011875000000000003,
+     0,
+     0,
+     0
+    ]
+   }
+  }
+ ],
+ "joints": [
+  {
+   "name": "shoulder_pan",
+   "kind": "revolute",
+   "parent": 0,
+   "origin": {
+    "xyz": [
+     0,
+     0,
+     0.0624
+    ],
+    "rpy": [
+     0,
+     0,
+     0
+    ]
+   },
+   "axis": [
+    0,
+    0,
+    1
+   ],
+   "limits": {
+    "lower": -1.9198621771937625,
+    "upper": 1.9198621771937625,
+    "velocity": 5.24,
+    "effort": 2.9
+   }
+  },
+  {
+   "name": "shoulder_lift",
+   "kind": "revolute",
+   "parent": 1,
+   "origin": {
+    "xyz": [
+     0.0304,
+     0,
+     0.0326
+    ],
+    "rpy": [
+     0,
+     0,
+     0
+    ]
+   },
+   "axis": [
+    0,
+    1,
+    0
+   ],
+   "limits": {
+    "lower": -1.7453292519943295,
+    "upper": 1.7453292519943295,
+    "velocity": 5.24,
+    "effort": 2.9
+   }
+  },
+  {
+   "name": "elbow_flex",
+   "kind": "revolute",
+   "parent": 2,
+   "origin": {
+    "xyz": [
+     0.028,
+     0,
+     0.116
+    ],
+    "rpy": [
+     0,
+     0,
+     0
+    ]
+   },
+   "axis": [
+    0,
+    1,
+    0
+   ],
+   "limits": {
+    "lower": -1.6929693744344996,
+    "upper": 1.6929693744344996,
+    "velocity": 5.24,
+    "effort": 2.9
+   }
+  },
+  {
+   "name": "wrist_roll_1",
+   "kind": "revolute",
+   "parent": 3,
+   "origin": {
+    "xyz": [
+     0.135,
+     0,
+     0.0
+    ],
+    "rpy": [
+     0,
+     0,
+     0
+    ]
+   },
+   "axis": [
+    1,
+    0,
+    0
+   ],
+   "limits": {
+    "lower": -2.792526803190927,
+    "upper": 2.792526803190927,
+    "velocity": 5.24,
+    "effort": 2.9
+   }
+  },
+  {
+   "name": "wrist_pitch",
+   "kind": "revolute",
+   "parent": 4,
+   "origin": {
+    "xyz": [
+     0,
+     0,
+     0
+    ],
+    "rpy": [
+     0,
+     0,
+     0
+    ]
+   },
+   "axis": [
+    0,
+    1,
+    0
+   ],
+   "limits": {
+    "lower": -1.7453292519943295,
+    "upper": 1.7453292519943295,
+    "velocity": 5.24,
+    "effort": 2.9
+   }
+  },
+  {
+   "name": "wrist_roll_2",
+   "kind": "revolute",
+   "parent": 5,
+   "origin": {
+    "xyz": [
+     0,
+     0,
+     0
+    ],
+    "rpy": [
+     0,
+     0,
+     0
+    ]
+   },
+   "axis": [
+    1,
+    0,
+    0
+   ],
+   "limits": {
+    "lower": -2.9670597283903604,
+    "upper": 2.9670597283903604,
+    "velocity": 5.24,
+    "effort": 2.9
+   }
+  }
+ ],
+ "end_effectors": [
+  {
+   "name": "gripper_tip",
+   "link": 6,
+   "offset": {
+    "xyz": [
+     0.1,
+     0,
+     0
+    ],
+    "rpy": [
+     0,
+     0,
+     0
+    ]
+   }
+  }
+ ]
+}

@@ -1,0 +1,653 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ViaForm Direct Canvas</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{--accent:#0a84ff;--accent2:#409cff;--bg:#1d1e21;--tb:#2c2d31;--sep:rgba(255,255,255,.085);--t1:#ececef;--t2:#a3a4aa;--t3:#6f7077;--orange:#ff9f0a;--green:#32d74b;--red:#ff453a;--purple:#bf5af2;--yellow:#ffd60a;--teal:#64d2ff;--mat:rgba(40,41,45,.78)}
+html,body{height:100%;background:#0b0c0e;overflow:hidden}
+body{font:13px/1.3 -apple-system,BlinkMacSystemFont,"SF Pro Text","Helvetica Neue",Arial,sans-serif;color:var(--t1);-webkit-font-smoothing:antialiased;user-select:none;cursor:default}
+.mono{font-family:"SF Mono",ui-monospace,Menlo,monospace;font-variant-numeric:tabular-nums}
+.win{position:fixed;inset:0;display:flex;flex-direction:column;background:var(--bg);border-radius:11px;overflow:hidden;box-shadow:inset 0 0 0 1px rgba(255,255,255,.13)}
+svg.i{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.45;stroke-linecap:round;stroke-linejoin:round;flex:none}
+/* toolbar */
+.tb{height:52px;flex:none;display:flex;align-items:center;padding:0 12px 0 20px;background:linear-gradient(#333438,#2b2c30);border-bottom:1px solid #050506;box-shadow:inset 0 -1px 0 rgba(255,255,255,.04);position:relative;z-index:20}
+.lights{display:flex;gap:8px;margin-right:18px}
+.lights i{width:12px;height:12px;border-radius:50%;display:block;box-shadow:inset 0 0 0 .5px rgba(0,0,0,.35)}
+.lights i:nth-child(1){background:#ff5f57}.lights i:nth-child(2){background:#febc2e}.lights i:nth-child(3){background:#28c840}
+.tbtn{height:28px;min-width:30px;border-radius:6px;display:flex;align-items:center;justify-content:center;gap:5px;color:#c9cad0;padding:0 7px;position:relative}
+.tbtn:hover{background:rgba(255,255,255,.08)}
+.tbtn.on{color:var(--accent2)}
+.ttl{margin:0 14px 0 6px;line-height:1.15}
+.ttl b{font-size:13px;font-weight:600;display:flex;align-items:center;gap:6px}
+.ttl span{font-size:11px;color:var(--t2)}
+.ttl b em{font-style:normal;font-size:10px;font-weight:600;color:var(--t2);background:rgba(255,255,255,.08);border-radius:4px;padding:1px 5px}
+.seg{display:flex;background:rgba(0,0,0,.28);border-radius:8px;padding:2px;box-shadow:inset 0 0 0 .5px rgba(255,255,255,.07),inset 0 1px 1px rgba(0,0,0,.25);position:absolute;left:50%;transform:translateX(-50%)}
+.seg button{all:unset;height:28px;padding:0 10px;display:flex;align-items:center;gap:6px;font-size:12px;font-weight:500;color:#c4c5cb;border-radius:6px;position:relative;cursor:default}
+.seg button+button::before{content:"";position:absolute;left:0;top:8px;bottom:8px;width:1px;background:rgba(255,255,255,.1)}
+.seg button.on::before,.seg button.on+button::before{display:none}
+.seg button:hover{color:#fff}
+.seg button.on{background:linear-gradient(#636469,#56575c);color:#fff;box-shadow:0 1px 2px rgba(0,0,0,.5),inset 0 .5px 0 rgba(255,255,255,.22)}
+.seg button.on svg{color:#6db4ff}
+.seg .dot{position:absolute;top:4px;right:4px;width:6px;height:6px;border-radius:50%;background:var(--orange);box-shadow:0 0 0 1.5px #2e2f33}
+.seg .dot.run{background:none;border:1.5px solid var(--accent2);border-right-color:transparent;width:8px;height:8px;top:3px;right:3px;box-shadow:none;animation:spin 1s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.tbr{margin-left:auto;display:flex;align-items:center;gap:2px}
+.jobsbtn{gap:6px;padding:0 9px;font-size:12px;font-weight:500}
+.vsep{width:1px;height:18px;background:rgba(255,255,255,.1);margin:0 6px}
+/* main */
+.main{flex:1;display:flex;min-height:0}
+.vp{flex:1;position:relative;overflow:hidden;background:#2a2d32}
+.vp>svg.scene{position:absolute;inset:0;width:100%;height:100%}
+.glass{background:var(--mat);-webkit-backdrop-filter:blur(22px) saturate(1.6);backdrop-filter:blur(22px) saturate(1.6);border:1px solid rgba(255,255,255,.1);box-shadow:0 10px 30px rgba(0,0,0,.38),0 0 0 .5px rgba(0,0,0,.6)}
+.rail{position:absolute;left:12px;top:12px;width:46px;border-radius:13px;padding:4px;display:flex;flex-direction:column;gap:2px;z-index:6}
+.rail button{all:unset;width:38px;height:36px;border-radius:9px;display:flex;align-items:center;justify-content:center;color:#d3d4d9;position:relative}
+.rail button svg{width:19px;height:19px}
+.rail button:hover{background:rgba(255,255,255,.08)}
+.rail button.on{background:var(--accent);color:#fff;box-shadow:0 1px 3px rgba(0,0,0,.4)}
+.rail hr{border:0;height:1px;background:rgba(255,255,255,.1);margin:3px 6px}
+.rail button .tip{display:none;position:absolute;left:46px;top:7px;white-space:nowrap;font-size:11.5px;background:#3a3b40;border:1px solid rgba(255,255,255,.12);padding:3px 8px;border-radius:6px;color:#eee;box-shadow:0 4px 12px rgba(0,0,0,.4)}
+.rail button:hover .tip{display:block}
+.chip{position:absolute;border-radius:10px;padding:7px 11px;font-size:12px;display:flex;align-items:center;gap:8px;z-index:5}
+.chip .k{color:var(--t2)}
+.badge{font-size:10.5px;font-weight:600;border-radius:5px;padding:1px 6px;display:inline-flex;align-items:center;gap:4px;white-space:nowrap}
+.b-stale{color:#ffb340;background:rgba(255,159,10,.15);box-shadow:inset 0 0 0 .5px rgba(255,159,10,.4)}
+.b-ok{color:#5be07a;background:rgba(50,215,75,.13);box-shadow:inset 0 0 0 .5px rgba(50,215,75,.35)}
+.b-run{color:#6db4ff;background:rgba(10,132,255,.15);box-shadow:inset 0 0 0 .5px rgba(10,132,255,.45)}
+.b-mute{color:var(--t2);background:rgba(255,255,255,.07)}
+.pill{position:absolute;border-radius:19px;height:38px;padding:0 5px;display:flex;align-items:center;gap:1px;z-index:7;font-size:12px;white-space:nowrap}
+.pill button{all:unset;height:30px;padding:0 10px;border-radius:15px;display:flex;align-items:center;gap:6px;color:#e2e3e8}
+.pill button:hover{background:rgba(255,255,255,.09)}
+.pill button.pri{background:var(--accent);color:#fff}
+.pill .s{width:1px;height:18px;background:rgba(255,255,255,.12);margin:0 4px}
+.pill .fld{height:26px;border-radius:7px;background:rgba(0,0,0,.35);box-shadow:inset 0 0 0 1px rgba(255,255,255,.08);display:flex;align-items:center;padding:0 8px;gap:6px;margin:0 3px}
+.pill .fld .k{color:var(--t2);font-size:11px}
+.pill .fld .mono{color:#fff;font-size:12px}
+.pill::after{content:"";position:absolute;width:9px;height:9px;background:inherit;left:var(--ax,30px);bottom:-5px;transform:rotate(45deg);border-right:1px solid rgba(255,255,255,.1);border-bottom:1px solid rgba(255,255,255,.1);display:var(--arrow,block)}
+.nav{position:absolute;left:50%;bottom:14px;transform:translateX(-50%);border-radius:11px;height:36px;display:flex;align-items:center;padding:0 4px;gap:1px;z-index:5}
+.nav button{all:unset;width:32px;height:28px;border-radius:7px;display:flex;align-items:center;justify-content:center;color:#cfd0d5}
+.nav button:hover{background:rgba(255,255,255,.08)}
+.nav button.on{color:var(--accent2)}
+.nav .s{width:1px;height:16px;background:rgba(255,255,255,.12);margin:0 3px}
+.cube{position:absolute;right:14px;top:12px;width:96px;height:96px;z-index:5}
+.triad{position:absolute;left:18px;bottom:100px;width:64px;height:64px;z-index:5}
+.activity{position:absolute;right:14px;bottom:14px;width:300px;border-radius:12px;z-index:8;overflow:hidden;transition:opacity .15s,transform .15s}
+.activity.hide{opacity:0;transform:translateY(8px);pointer-events:none}
+.activity h4{font-size:11px;font-weight:600;color:var(--t2);padding:9px 12px 5px;display:flex;justify-content:space-between}
+.job{display:grid;grid-template-columns:22px 1fr auto;gap:2px 8px;padding:6px 12px;align-items:center;border-top:1px solid var(--sep)}
+.job .n{font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.job .m{font-size:11px;color:var(--t2);grid-column:2/4}
+.job .bar{grid-column:2/4;height:4px;border-radius:2px;background:rgba(255,255,255,.1);overflow:hidden}
+.job .bar i{display:block;height:100%;border-radius:2px;background:var(--accent)}
+.job .ic{grid-row:1/4;align-self:start;margin-top:1px;color:var(--t2)}
+.caption{position:fixed;left:12px;bottom:12px;z-index:50;max-width:430px;border-radius:9px;padding:7px 11px;font-size:11.5px;line-height:1.35;background:rgba(10,10,12,.82);border:1px solid rgba(255,255,255,.14);color:#d8d9de}
+.caption b{color:#fff;font-weight:600}
+/* inspector */
+.insp{width:304px;flex:none;background:#25262a;border-left:1px solid #050506;display:flex;flex-direction:column;min-height:0;box-shadow:inset 1px 0 0 rgba(255,255,255,.04)}
+.ihead{padding:10px 12px 10px;border-bottom:1px solid var(--sep)}
+.lbl{font-size:11px;font-weight:600;color:var(--t2);display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+.lbl a{color:var(--accent2);font-weight:500;text-decoration:none}
+.lineage{display:flex;align-items:flex-start;justify-content:space-between;position:relative;padding:0 2px}
+.lineage::before{content:"";position:absolute;left:18px;right:18px;top:15px;height:1px;background:rgba(255,255,255,.14)}
+.ln{position:relative;display:flex;flex-direction:column;align-items:center;gap:4px;width:36px;z-index:1}
+.ln .c{width:30px;height:30px;border-radius:50%;background:#34353a;display:flex;align-items:center;justify-content:center;color:#cfd0d5;box-shadow:inset 0 0 0 1px rgba(255,255,255,.12),0 0 0 3px #25262a}
+.ln .c svg{width:15px;height:15px}
+.ln span{font-size:9.5px;color:var(--t2);white-space:nowrap}
+.ln.cur .c{background:var(--accent);color:#fff;box-shadow:0 0 0 3px #25262a,0 0 0 4px rgba(10,132,255,.5)}
+.ln.cur span{color:#fff}
+.ln .st{position:absolute;top:-2px;right:-1px;width:10px;height:10px;border-radius:50%;box-shadow:0 0 0 2px #25262a}
+.ln .st.stale{background:var(--orange)}.ln .st.ok{background:var(--green)}.ln .st.run{background:var(--accent2)}
+.ln:hover .c{filter:brightness(1.25)}
+.flowmsg{margin-top:10px;font-size:11.5px;color:#d0d1d6;line-height:1.4;background:rgba(255,159,10,.08);border:1px solid rgba(255,159,10,.25);border-radius:8px;padding:7px 9px;display:flex;gap:8px;align-items:flex-start}
+.flowmsg.okm{background:rgba(50,215,75,.07);border-color:rgba(50,215,75,.22)}
+.flowmsg.runm{background:rgba(10,132,255,.08);border-color:rgba(10,132,255,.3)}
+.flowmsg svg{margin-top:1px;flex:none}
+.flowmsg button{all:unset;color:var(--accent2);font-weight:600;margin-left:4px}
+.iseg{display:flex;background:rgba(0,0,0,.25);border-radius:7px;padding:2px;margin:10px 12px 4px;box-shadow:inset 0 0 0 .5px rgba(255,255,255,.07)}
+.iseg button{all:unset;flex:1;text-align:center;height:22px;line-height:22px;font-size:11.5px;font-weight:500;border-radius:5px;color:#c4c5cb}
+.iseg button.on{background:#58595e;color:#fff;box-shadow:0 1px 2px rgba(0,0,0,.4)}
+.ibody{flex:1;overflow:auto;padding:4px 6px 8px;min-height:0}
+.ibody::-webkit-scrollbar{width:0}
+.sh{font-size:11px;font-weight:600;color:var(--t3);padding:10px 8px 4px;display:flex;justify-content:space-between}
+.row{height:26px;display:flex;align-items:center;gap:7px;padding:0 8px;border-radius:6px;font-size:12.5px;color:#e4e5ea;white-space:nowrap}
+.row:hover{background:rgba(255,255,255,.05)}
+.row.sel{background:var(--accent);color:#fff}
+.row.sel .meta,.row.sel svg{color:#fff}
+.row svg{color:#9fa0a6}
+.row .ch{width:10px;color:var(--t3);font-size:9px}
+.row .meta{margin-left:auto;font-size:11px;color:var(--t3);display:flex;gap:5px;align-items:center}
+.row.ind1{padding-left:24px}.row.ind2{padding-left:40px}
+.row .lk{color:var(--accent2)!important}
+.row.sel .lk{color:#fff!important}
+.row.dim{color:var(--t3)}
+.cards{border-top:1px solid var(--sep);padding:8px 12px 12px;flex:none}
+.card{background:#2e2f34;border:1px solid rgba(255,255,255,.07);border-radius:9px;padding:9px 10px;margin-top:8px;font-size:11.5px}
+.card .t{display:flex;align-items:center;gap:7px;font-weight:600;font-size:12px;margin-bottom:6px}
+.card .t .badge{margin-left:auto}
+.kv{display:grid;grid-template-columns:1fr auto;gap:3px 10px;color:var(--t2)}
+.kv b{color:#e8e9ee;font-weight:500;text-align:right}
+.links{display:flex;flex-wrap:wrap;gap:5px;margin-top:7px}
+.lnk{display:inline-flex;align-items:center;gap:4px;font-size:11px;padding:2px 7px 2px 5px;border-radius:5px;background:rgba(255,255,255,.06);color:#d6d7dc;box-shadow:inset 0 0 0 .5px rgba(255,255,255,.1)}
+.lnk svg{width:12px;height:12px}
+.lnk.st{color:#ffb340;background:rgba(255,159,10,.1)}
+.btnrow{display:flex;gap:6px;margin-top:8px}
+.mbtn{all:unset;height:22px;padding:0 10px;border-radius:6px;font-size:11.5px;font-weight:500;background:#4a4b50;color:#fff;box-shadow:0 .5px 1px rgba(0,0,0,.4),inset 0 .5px 0 rgba(255,255,255,.15);display:inline-flex;align-items:center;gap:5px}
+.mbtn.pri{background:var(--accent)}
+.prog{height:4px;border-radius:2px;background:rgba(255,255,255,.1);overflow:hidden;margin-top:6px}
+.prog i{display:block;height:100%;background:var(--accent);border-radius:2px}
+.thumbrow{display:flex;gap:6px;margin-top:6px}
+/* misc in-viewport panels */
+.vpanel{position:absolute;border-radius:12px;z-index:5;font-size:12px}
+.hud .kv{grid-template-columns:auto auto;gap:4px 18px}
+.gx{position:absolute;inset:0;z-index:2}
+.fade-in{animation:fi .22s ease-out}
+@keyframes fi{from{opacity:.0;transform:translateY(3px)}to{opacity:1;transform:none}}
+</style>
+</head>
+<body>
+<div class="win">
+  <div class="tb">
+    <div class="lights"><i></i><i></i><i></i></div>
+    <div class="tbtn" title="Projects"><svg class="i" data-i="sidebar"></svg></div>
+    <div class="ttl"><b>Racer 3in <em>v8</em></b><span>ViaForm Projects · Edited</span></div>
+    <div class="tbtn"><svg class="i" data-i="undo"></svg></div>
+    <div class="tbtn"><svg class="i" data-i="redo"></svg></div>
+    <div class="seg" id="seg"></div>
+    <div class="tbr">
+      <div class="tbtn jobsbtn on" id="jobsBtn" title="Activity"><svg viewBox="0 0 18 18" width="18" height="18"><circle cx="9" cy="9" r="7" fill="none" stroke="rgba(255,255,255,.18)" stroke-width="2"/><circle cx="9" cy="9" r="7" fill="none" stroke="#409cff" stroke-width="2" stroke-dasharray="44" stroke-dashoffset="17" transform="rotate(-90 9 9)" stroke-linecap="round"/></svg><span>3 jobs</span></div>
+      <div class="vsep"></div>
+      <div class="tbtn"><svg class="i" data-i="search"></svg></div>
+      <div class="tbtn"><svg class="i" data-i="share"></svg></div>
+      <div class="tbtn on" id="inspBtn"><svg class="i" data-i="inspector"></svg></div>
+    </div>
+  </div>
+  <div class="main">
+    <div class="vp" id="vp">
+      <div id="scene"></div>
+      <div class="rail glass" id="rail"></div>
+      <div id="over"></div>
+      <svg class="cube" id="cube" viewBox="0 0 96 96"></svg>
+      <svg class="triad" id="triad" viewBox="0 0 64 64"></svg>
+      <div class="nav glass" id="nav"></div>
+      <div class="activity glass" id="activity"></div>
+    </div>
+    <div class="insp" id="insp">
+      <div class="ihead">
+        <div class="lbl"><span>Lineage</span><a id="lnMode">Frame v8 → Export</a></div>
+        <div class="lineage" id="lineage"></div>
+        <div id="flowmsg"></div>
+      </div>
+      <div class="iseg" id="iseg"></div>
+      <div class="ibody" id="ibody"></div>
+      <div class="cards" id="cards"></div>
+    </div>
+  </div>
+</div>
+<div class="caption"><b>B. Direct Canvas</b>. The model fills the window; tools float beside it and one inspector carries the lineage, so every discipline reads and feeds the same selection.</div>
+<script>
+const I={
+sidebar:'<rect x="2.5" y="3.5" width="15" height="13" rx="2.5"/><path d="M7.5 3.5v13M4.5 6.5h1.2M4.5 9h1.2"/>',
+inspector:'<rect x="2.5" y="3.5" width="15" height="13" rx="2.5"/><path d="M12.5 3.5v13M14.4 6.5h1.2M14.4 9h1.2"/>',
+undo:'<path d="M7 5 3.5 8.5 7 12"/><path d="M3.5 8.5H12a4.5 4.5 0 0 1 0 9H9"/>',
+redo:'<path d="m13 5 3.5 3.5L13 12"/><path d="M16.5 8.5H8a4.5 4.5 0 0 0 0 9h3"/>',
+search:'<circle cx="8.5" cy="8.5" r="5.2"/><path d="m12.5 12.5 4.5 4.5"/>',
+share:'<path d="M10 2.8v10M6.5 6.2 10 2.8l3.5 3.4"/><path d="M6.5 9H5a1.5 1.5 0 0 0-1.5 1.5v5A1.5 1.5 0 0 0 5 17h10a1.5 1.5 0 0 0 1.5-1.5v-5A1.5 1.5 0 0 0 15 9h-1.5"/>',
+cube:'<path d="m10 2.5 6.5 3.7v7.6L10 17.5l-6.5-3.7V6.2Z"/><path d="M3.5 6.2 10 10l6.5-3.8M10 10v7.5"/>',
+design:'<path d="m10 2.5 6.5 3.7v7.6L10 17.5l-6.5-3.7V6.2Z"/><path d="M3.5 6.2 10 10l6.5-3.8M10 10v7.5"/>',
+gen:'<path d="M8 3.5 9.3 7l3.5 1.3-3.5 1.3L8 13.1 6.7 9.6 3.2 8.3 6.7 7Z"/><path d="M14.5 11.5l.7 1.8 1.8.7-1.8.7-.7 1.8-.7-1.8-1.8-.7 1.8-.7ZM14.2 2.8l.5 1.2 1.2.5-1.2.5-.5 1.2-.5-1.2-1.2-.5 1.2-.5Z"/>',
+asm:'<circle cx="6" cy="6" r="2.6"/><circle cx="14" cy="14" r="2.6"/><path d="M7.9 7.9l4.2 4.2"/><path d="M11 3.5h5.5V9M9 16.5H3.5V11"/>',
+elec:'<rect x="5" y="5" width="10" height="10" rx="1.5"/><rect x="8" y="8" width="4" height="4" rx=".5"/><path d="M8 2.5V5M12 2.5V5M8 15v2.5M12 15v2.5M2.5 8H5M2.5 12H5M15 8h2.5M15 12h2.5"/>',
+sim:'<path d="M2.5 7.5h9a2.5 2.5 0 1 0-2.5-2.5"/><path d="M2.5 11h12a2.5 2.5 0 1 1-2.5 2.5"/><path d="M2.5 14.5h5"/>',
+train:'<circle cx="4.5" cy="6" r="1.8"/><circle cx="4.5" cy="14" r="1.8"/><circle cx="10" cy="4" r="1.8"/><circle cx="10" cy="10" r="1.8"/><circle cx="10" cy="16" r="1.8"/><circle cx="15.5" cy="10" r="1.8"/><path d="M6.2 6.6 8.3 9.3M6.2 5.4l2-1M6.2 13.4l2-2.6M6.2 14.6l2 1M11.7 4.8l2.3 4M11.8 10h1.9M11.7 15.2l2.3-4"/>',
+render:'<circle cx="10" cy="10" r="3.2"/><path d="M10 2.5v1.8M10 15.7v1.8M2.5 10h1.8M15.7 10h1.8M4.7 4.7l1.3 1.3M14 14l1.3 1.3M4.7 15.3 6 14M14 6l1.3-1.3"/>',
+mfg:'<path d="M5.5 7.5V3h9v4.5"/><rect x="2.5" y="7.5" width="15" height="6.5" rx="1.5"/><path d="M5.5 12v5h9v-5"/><path d="M7.5 14.5h5"/>',
+select:'<path d="M5 3l10 6.2-4.3 1.1 2.7 5-1.8 1-2.7-5-3.1 3.1Z"/>',
+sketch:'<path d="M3.5 16.5l1-4L13 4a1.8 1.8 0 0 1 2.6 2.6L7.5 15.1Z"/><path d="m11.6 5.4 2.6 2.6"/>',
+rect:'<rect x="3.5" y="5" width="13" height="10" rx="1"/>',
+circle:'<circle cx="10" cy="10" r="6.5"/><circle cx="10" cy="10" r=".6" fill="currentColor"/>',
+extrude:'<path d="M3.5 13.5 10 17l6.5-3.5L10 10Z"/><path d="M10 10V2.5M7.5 5 10 2.5 12.5 5"/>',
+fillet:'<path d="M3.5 16.5V9a5.5 5.5 0 0 1 5.5-5.5h7.5"/><path d="M3.5 16.5h3M16.5 3.5v3" opacity=".5"/>',
+shell:'<rect x="3" y="3" width="14" height="14" rx="2"/><rect x="6.5" y="6.5" width="7" height="7" rx="1"/>',
+move:'<path d="M10 2.5v15M2.5 10h15M7.8 4.7 10 2.5l2.2 2.2M7.8 15.3l2.2 2.2 2.2-2.2M4.7 7.8 2.5 10l2.2 2.2M15.3 7.8l2.2 2.2-2.2 2.2"/>',
+measure:'<path d="m2.8 13.2 10.4-10.4 4 4L6.8 17.2Z"/><path d="m6 10 1.6 1.6M8.5 7.5l1.6 1.6M11 5l1.6 1.6"/>',
+section:'<path d="m10 2.5 6.5 3.7v7.6L10 17.5l-6.5-3.7V6.2Z" opacity=".45"/><path d="M2 12 18 7"/>',
+load:'<path d="M10 2.5v10M6.5 9 10 12.5 13.5 9"/><path d="M4 16.5h12"/>',
+keep:'<circle cx="10" cy="10" r="6.5"/><path d="m5.4 14.6 9.2-9.2"/>',
+fix:'<path d="M10 4 16 15H4Z"/><path d="M3 17.5h14M6 17.5l-1.5 1.5M10 17.5 8.5 19M14 17.5 12.5 19"/>',
+target:'<circle cx="10" cy="10" r="6.5"/><circle cx="10" cy="10" r="3.3"/><circle cx="10" cy="10" r=".6" fill="currentColor"/>',
+grid:'<rect x="3" y="3" width="5.5" height="5.5" rx="1"/><rect x="11.5" y="3" width="5.5" height="5.5" rx="1"/><rect x="3" y="11.5" width="5.5" height="5.5" rx="1"/><rect x="11.5" y="11.5" width="5.5" height="5.5" rx="1"/>',
+scatter:'<path d="M3 3v14h14"/><circle cx="7" cy="12" r="1"/><circle cx="10" cy="8" r="1"/><circle cx="13" cy="10" r="1"/><circle cx="14.5" cy="5.5" r="1"/>',
+joint:'<circle cx="10" cy="10" r="3"/><path d="M10 2.5v4.5M10 13v4.5"/><path d="M5.5 5.5a6.4 6.4 0 0 0 0 9M14.5 5.5a6.4 6.4 0 0 1 0 9"/>',
+motion:'<circle cx="10" cy="10" r="7"/><path d="M8.3 7v6l5-3Z"/>',
+explode:'<rect x="7" y="7" width="6" height="6" rx="1"/><path d="M4.5 4.5 2.5 2.5M15.5 4.5l2-2M4.5 15.5l-2 2M15.5 15.5l2 2"/>',
+contact:'<rect x="2.5" y="8" width="7" height="7" rx="1"/><rect x="10.5" y="5" width="7" height="7" rx="1"/>',
+trace:'<path d="M3 15.5h4.5l5-6h4.5"/><circle cx="3" cy="15.5" r="1.4"/><circle cx="17" cy="9.5" r="1.4"/>',
+via:'<circle cx="10" cy="10" r="5.5"/><circle cx="10" cy="10" r="2"/>',
+comp:'<rect x="5.5" y="4" width="9" height="12" rx="1"/><path d="M5.5 7h-2M5.5 10h-2M5.5 13h-2M14.5 7h2M14.5 10h2M14.5 13h2"/>',
+schem:'<path d="M2.5 10h3l1.5-4 3 8 3-8 1.5 4h3"/>',
+board3d:'<path d="M2.5 12 10 15.5l7.5-3.5L10 8.5Z"/><path d="M10 8.5V4M7.5 6.2 10 4l2.5 2.2"/>',
+check:'<path d="m4 10.5 4 4 8-9"/>',
+wind:'<path d="M2.5 7.5h9a2.5 2.5 0 1 0-2.5-2.5M2.5 11h12a2.5 2.5 0 1 1-2.5 2.5M2.5 14.5h5"/>',
+cloud:'<path d="M6 15.5a3.5 3.5 0 0 1-.4-7A4.8 4.8 0 0 1 14.8 8 3.8 3.8 0 0 1 14.5 15.5Z"/>',
+gate:'<path d="M4 17.5V4.5h12v13"/><path d="M7 17.5V7.5h6v10"/>',
+play:'<path d="M6 4v12l10-6Z"/>',
+pause:'<path d="M6.5 4v12M13.5 4v12"/>',
+stress:'<path d="M3 16.5c3-1 4-9 7-9s4 6 7 3"/><path d="M3 3v13.5h14" opacity=".5"/>',
+chart:'<path d="M3 3v14h14"/><path d="m5.5 13 3.5-4 3 2.5 4.5-6"/>',
+dice:'<rect x="3" y="3" width="14" height="14" rx="3"/><circle cx="7" cy="7" r=".9" fill="currentColor"/><circle cx="13" cy="13" r=".9" fill="currentColor"/><circle cx="10" cy="10" r=".9" fill="currentColor"/>',
+gauge:'<path d="M3.5 14a6.5 6.5 0 1 1 13 0"/><path d="m10 14 3.5-4.5"/>',
+camera:'<path d="M3 6.5h3l1.5-2h5l1.5 2h3v9.5H3Z"/><circle cx="10" cy="11" r="3"/>',
+sun:'<circle cx="10" cy="10" r="3.2"/><path d="M10 2.5v1.8M10 15.7v1.8M2.5 10h1.8M15.7 10h1.8M4.7 4.7l1.3 1.3M14 14l1.3 1.3M4.7 15.3 6 14M14 6l1.3-1.3"/>',
+mat:'<circle cx="10" cy="10" r="7"/><path d="M5 7.5a5.5 5.5 0 0 1 4-3" opacity=".7"/><path d="M3 10c2 2 12 2 14 0"/>',
+env:'<circle cx="10" cy="10" r="7"/><path d="M3 10h14M10 3c-2.5 2-2.5 12 0 14M10 3c2.5 2 2.5 12 0 14"/>',
+light:'<path d="M7.5 14.5h5M8 17h4"/><path d="M10 2.5a5 5 0 0 0-3 9c.6.5 1 1.3 1 2h4c0-.7.4-1.5 1-2a5 5 0 0 0-3-9Z"/>',
+export:'<path d="M10 12.5V2.8M6.5 6.2 10 2.8l3.5 3.4"/><path d="M3.5 11v4.5a1.5 1.5 0 0 0 1.5 1.5h10a1.5 1.5 0 0 0 1.5-1.5V11"/>',
+printer:'<path d="M3 4h14M5 4v3h10V4"/><path d="M8 7v3h4V7"/><path d="M4 16.5h12M6 13.5h8"/>',
+layers:'<path d="m10 3 7.5 4L10 11 2.5 7Z"/><path d="m2.5 10.5 7.5 4 7.5-4M2.5 14l7.5 4 7.5-4"/>',
+orbit:'<ellipse cx="10" cy="10" rx="7.5" ry="3.5"/><path d="M10 2.5v15" opacity=".5"/><circle cx="10" cy="10" r="1.5"/>',
+hand:'<path d="M7 10V4.5a1.2 1.2 0 0 1 2.4 0V9M9.4 8.5V3.5a1.2 1.2 0 0 1 2.4 0v5M11.8 8.5v-4a1.2 1.2 0 0 1 2.4 0V12a5 5 0 0 1-5 5h-.6a5 5 0 0 1-4-2L2.8 12.4a1.2 1.2 0 0 1 1.9-1.5L7 13"/>',
+zoom:'<circle cx="8.5" cy="8.5" r="5.2"/><path d="m12.5 12.5 4.5 4.5M6.5 8.5h4M8.5 6.5v4"/>',
+fit:'<path d="M3 7V3h4M13 3h4v4M17 13v4h-4M7 17H3v-4"/>',
+eye:'<path d="M2 10s3-5.5 8-5.5S18 10 18 10s-3 5.5-8 5.5S2 10 2 10Z"/><circle cx="10" cy="10" r="2.5"/>',
+link:'<path d="M8.5 11.5a3 3 0 0 0 4.2 0l2.6-2.6a3 3 0 0 0-4.2-4.2L10 5.8"/><path d="M11.5 8.5a3 3 0 0 0-4.2 0l-2.6 2.6a3 3 0 0 0 4.2 4.2L10 14.2"/>',
+warn:'<path d="M10 3 18 16.5H2Z"/><path d="M10 8v4M10 14.4v.1"/>',
+sync:'<path d="M15.5 8A6 6 0 0 0 4.6 6.5M4.5 12a6 6 0 0 0 10.9 1.5"/><path d="M4.5 3.5v3h3M15.5 16.5v-3h-3"/>',
+clock:'<circle cx="10" cy="10" r="7"/><path d="M10 6v4l2.8 1.8"/>',
+body:'<path d="m10 2.5 6.5 3.7v7.6L10 17.5l-6.5-3.7V6.2Z"/><path d="M3.5 6.2 10 10l6.5-3.8M10 10v7.5"/>',
+plane:'<path d="M2.5 13.5 7 6.5h10.5L13 13.5Z"/>',
+folder:'<path d="M2.5 5.5a1.5 1.5 0 0 1 1.5-1.5h3.5l2 2H16a1.5 1.5 0 0 1 1.5 1.5v7a1.5 1.5 0 0 1-1.5 1.5H4a1.5 1.5 0 0 1-1.5-1.5Z"/>',
+battery:'<rect x="2.5" y="6" width="13" height="8" rx="1.5"/><path d="M17.5 8.5v3"/><path d="M5 8.5v3M7.5 8.5v3"/>',
+motor:'<ellipse cx="10" cy="6" rx="5" ry="2"/><path d="M5 6v8c0 1.1 2.2 2 5 2s5-.9 5-2V6"/>',
+prop:'<path d="M10 10c-6 2-8 0-7.5-1.5S7 7 10 10Zm0 0c6-2 8 0 7.5 1.5S13 13 10 10Z"/><circle cx="10" cy="10" r="1.3"/>',
+star:'<path d="m10 3 2.1 4.3 4.7.7-3.4 3.3.8 4.7L10 13.8 5.8 16l.8-4.7L3.2 8l4.7-.7Z"/>',
+plus:'<path d="M10 4v12M4 10h12"/>',
+more:'<circle cx="5" cy="10" r=".8" fill="currentColor"/><circle cx="10" cy="10" r=".8" fill="currentColor"/><circle cx="15" cy="10" r=".8" fill="currentColor"/>',
+doc:'<path d="M5 2.5h6.5l3.5 3.5v11.5H5Z"/><path d="M11.5 2.5V6H15"/>',
+lock:'<rect x="4.5" y="9" width="11" height="8" rx="1.5"/><path d="M7 9V6.5a3 3 0 0 1 6 0V9"/>',
+compare:'<rect x="2.5" y="4" width="6.5" height="12" rx="1"/><rect x="11" y="4" width="6.5" height="12" rx="1"/>',
+refine:'<path d="M3 17 13 7M11 3.5l1 2.5 2.5 1-2.5 1-1 2.5-1-2.5-2.5-1 2.5-1Z"/>',
+seed:'<path d="M10 17.5V10M10 10c0-4 3-6.5 6.5-6.5 0 4-3 6.5-6.5 6.5ZM10 12c0-3-2.3-5-5.5-5 0 3 2.3 5 5.5 5Z"/>',
+};
+function ic(n,cls){return `<svg class="i ${cls||''}" viewBox="0 0 20 20">${I[n]||''}</svg>`}
+function hydrate(root){(root||document).querySelectorAll('svg[data-i]').forEach(s=>{s.setAttribute('viewBox','0 0 20 20');s.innerHTML=I[s.dataset.i]||''})}
+/* ---------- tiny 3D painter for the SVG viewport ---------- */
+function View(o){const ca=Math.cos(o.yaw),sa=Math.sin(o.yaw),cp=Math.cos(o.pitch),sp=Math.sin(o.pitch);
+ return{o,P(x,y,z){const x1=x*ca-y*sa,y1=x*sa+y*ca;return[o.cx+x1*o.s,o.cy+(y1*sp-z*cp)*o.s,y1*cp+z*sp]},
+  rot(n){return[n[0]*ca-n[1]*sa,n[0]*sa+n[1]*ca,n[2]]},
+  facing(n){const r=this.rot(n);return r[1]*cp+r[2]*sp>0.0005}}}
+const LIGHT=(()=>{const v=[-0.55,0.5,0.95],l=Math.hypot(...v);return v.map(x=>x/l)})();
+function area(o){let a=0;for(let i=0;i<o.length;i++){const p=o[i],q=o[(i+1)%o.length];a+=p[0]*q[1]-q[0]*p[1]}return a/2}
+function circ(cx,cy,r,n=28,a0=0){const o=[];for(let i=0;i<n;i++){const a=a0+i/n*Math.PI*2;o.push([cx+Math.cos(a)*r,cy+Math.sin(a)*r])}return o}
+function rectO(x0,y0,x1,y1){return[[x0,y0],[x1,y0],[x1,y1],[x0,y1]]}
+function xf(o,th,dx=0,dy=0){const c=Math.cos(th),s=Math.sin(th);return o.map(([x,y])=>[x*c-y*s+dx,x*s+y*c+dy])}
+function prism(o,z0,z1,m,extra){if(area(o)<0)o=o.slice().reverse();const f=[];
+ f.push({p:o.map(([x,y])=>[x,y,z1]),n:[0,0,1],m,k:'top'});
+ f.push({p:o.slice().reverse().map(([x,y])=>[x,y,z0]),n:[0,0,-1],m,k:'bot'});
+ for(let i=0;i<o.length;i++){const a=o[i],b=o[(i+1)%o.length];const dx=b[0]-a[0],dy=b[1]-a[1],l=Math.hypot(dx,dy)||1;
+  f.push({p:[[a[0],a[1],z0],[b[0],b[1],z0],[b[0],b[1],z1],[a[0],a[1],z1]],n:[dy/l,-dx/l,0],m,k:'side'})}
+ return{faces:f,deco:extra||[]}}
+function decal(o,z,m){return{p:o.map(([x,y])=>[x,y,z]),n:[0,0,1],m,k:'top'}}
+function shadeCol(c,f){return`rgb(${c.map(v=>Math.max(0,Math.min(255,Math.round(v*f)))).join(',')})`}
+function paint(objs,V,opt={}){
+ const out=[];
+ const prep=objs.map((ob,oi)=>{const fs=[];
+  ob.faces.concat(ob.deco||[]).forEach((f,fi)=>{if(f.k!=='flat'&&!V.facing(f.n))return;
+   const pp=f.p.map(p=>V.P(...p));const d=pp.reduce((s,p)=>s+p[2],0)/pp.length;fs.push({f,pp,d:d+(fi>=ob.faces.length?0.02:0)+(f.k==='top'?0.01:0)})});
+  const d=fs.length?fs.reduce((s,x)=>s+x.d,0)/fs.length:0;return{ob,fs,d:(ob.layer||0)*1e4+(ob.bias||0)+d}});
+ prep.sort((a,b)=>a.d-b.d);
+ for(const {ob,fs} of prep){fs.sort((a,b)=>a.d-b.d);
+  for(const {f,pp} of fs){const m=f.m;const r=V.rot(f.n);const lam=Math.max(0,r[0]*LIGHT[0]+r[1]*LIGHT[1]+r[2]*LIGHT[2]);
+   const k=(m.amb??.42)+(m.dif??.68)*lam+(f.k==='top'?(m.topb??.06):0);
+   const fill=m.fill||shadeCol(m.c,k);
+   const st=m.smooth&&f.k==='side'?`stroke="${fill}" stroke-width=".7"`:(m.e?`stroke="${m.e}" stroke-width="${m.ew||.9}" stroke-linejoin="round"`:'stroke="none"');
+   out.push(`<path d="M${pp.map(p=>p[0].toFixed(1)+' '+p[1].toFixed(1)).join('L')}Z" fill="${fill}" ${m.a!=null?`fill-opacity="${m.a}"`:''} ${st}${m.f?` filter="${m.f}"`:''}/>`)}}
+ return out.join('')}
+/* frame outline: one closed polygon for a 3 inch X frame */
+function frameOutline(p={}){p=Object.assign({armW:9,tipW:7,padR:9.5,reach:60,plate:19,conc:14,pinch:0},p);
+ const pts=[];const h=Math.sqrt(p.padR*p.padR-(p.tipW/2)**2);
+ for(let k=0;k<4;k++){const th=Math.PI/4+k*Math.PI/2;const loc=[];
+  loc.push([p.plate,-p.armW/2]);loc.push([(p.plate+p.reach-h)/2,-(p.armW+p.tipW)/4+p.pinch]);loc.push([p.reach-h,-p.tipW/2]);
+  const a1=Math.atan2(-p.tipW/2,-h);for(let i=1;i<14;i++){const a=a1+(-2*a1)*i/14;loc.push([p.reach+Math.cos(a)*p.padR,Math.sin(a)*p.padR])}
+  loc.push([p.reach-h,p.tipW/2]);loc.push([(p.plate+p.reach-h)/2,(p.armW+p.tipW)/4-p.pinch]);loc.push([p.plate,p.armW/2]);
+  xf(loc,th).forEach(q=>pts.push(q));
+  const A=xf([[p.plate,p.armW/2]],th)[0],B=xf([[p.plate,-p.armW/2]],th+Math.PI/2)[0],cm=th+Math.PI/4,C=[Math.cos(cm)*p.conc,Math.sin(cm)*p.conc];
+  for(let i=1;i<7;i++){const t=i/7,u=1-t;pts.push([u*u*A[0]+2*u*t*C[0]+t*t*B[0],u*u*A[1]+2*u*t*C[1]+t*t*B[1]])}}
+ return pts}
+function armOutline(k,p={}){p=Object.assign({armW:9,tipW:7,padR:9.5,reach:60,plate:19},p);const th=Math.PI/4+k*Math.PI/2;const h=Math.sqrt(p.padR*p.padR-(p.tipW/2)**2);
+ const loc=[[p.plate-4,-p.armW/2-.6],[p.reach-h,-p.tipW/2]];const a1=Math.atan2(-p.tipW/2,-h);for(let i=1;i<14;i++){const a=a1+(-2*a1)*i/14;loc.push([p.reach+Math.cos(a)*p.padR,Math.sin(a)*p.padR])}
+ loc.push([p.reach-h,p.tipW/2],[p.plate-4,p.armW/2+.6]);return xf(loc,th)}
+function slot(r0,r1,w,th){const o=[];const n=8;for(let i=0;i<=n;i++){const a=-Math.PI/2+i/n*Math.PI;o.push([r1+Math.cos(a)*w/2,Math.sin(a)*w/2*1.0])}
+ for(let i=0;i<=n;i++){const a=Math.PI/2+i/n*Math.PI;o.push([r0+Math.cos(a)*w/2*.8,Math.sin(a)*w/2*.8])}return xf(o,th)}
+const MAT={
+ carbon:{c:[70,75,84],e:'rgba(8,9,12,.9)',ew:.9,amb:.5,dif:.62},
+ carbonR:{c:[52,55,62],e:'rgba(0,0,0,.6)',ew:.6,amb:.45,dif:.9,topb:.12},
+ hole:{fill:'#121418',e:'rgba(0,0,0,.6)',ew:.5},
+ alu:{c:[176,181,190],smooth:1,amb:.5,dif:.55},
+ aluTop:{c:[200,204,212],e:'rgba(20,22,26,.7)',ew:.7,amb:.55,dif:.45},
+ bell:{c:[40,44,52],smooth:1,amb:.55,dif:.6},
+ bellTop:{c:[58,62,72],e:'rgba(0,0,0,.6)',ew:.6},
+ pcb:{c:[40,104,70],e:'rgba(6,20,12,.9)',ew:.7,amb:.5,dif:.6},
+ chip:{c:[30,32,36],e:'rgba(0,0,0,.8)',ew:.5},
+ part:{c:[150,120,80],e:'rgba(0,0,0,.6)',ew:.4},
+ conn:{c:[214,214,206],e:'rgba(40,40,40,.8)',ew:.5},
+ cam:{c:[46,48,54],e:'rgba(0,0,0,.85)',ew:.7},
+ prop:{c:[160,180,205],a:.16,e:'rgba(180,205,240,.45)',ew:.7,amb:.8,dif:.2},
+ blade:{c:[220,224,232],e:'rgba(30,34,40,.6)',ew:.5,amb:.6,dif:.45},
+ bat:{c:[60,64,72],e:'rgba(0,0,0,.8)',ew:.7},
+ batLabel:{c:[232,120,40],e:'none'},
+ strap:{c:[200,60,50],e:'rgba(0,0,0,.6)',ew:.5},
+};
+function drone(o={}){o=Object.assign({ex:0,props:'disc',sel:null,fp:{},frameM:MAT.carbon,battery:false,board:true,bladeA:.4},o);
+ const objs=[];const T=3,E=o.ex;
+ const fr=prism(frameOutline(o.fp),0,T,o.frameM);
+ for(let k=0;k<4;k++){const th=Math.PI/4+k*Math.PI/2;fr.deco.push(decal(slot(27,43,3.2,th),T+.01,MAT.hole))}
+ [[1,1],[1,-1],[-1,1],[-1,-1]].forEach(([a,b])=>fr.deco.push(decal(circ(a*12.5,b*12.5,1.4,10),T+.01,MAT.hole)));
+ if(o.sel!=null){fr.deco.push(decal(armOutline(o.sel,o.fp),T+.02,{fill:'rgba(10,132,255,.30)',e:'#3d9bff',ew:1.6}))}
+ objs.push(Object.assign(fr,{layer:0}));
+ const reach=(o.fp.reach||60);
+ for(let k=0;k<4;k++){const th=Math.PI/4+k*Math.PI/2,mx=Math.cos(th)*reach,my=Math.sin(th)*reach;
+  const m=prism(circ(mx,my,7,26),T+E*.4,T+9+E*.4,MAT.alu);m.deco.push(decal(circ(mx,my,7,26),T+9+E*.4+.01,MAT.aluTop));m.layer=1;objs.push(m);
+  const b=prism(circ(mx,my,6.4,24),T+9+E*.4,T+13+E*.55,MAT.bell);b.deco.push(decal(circ(mx,my,6.4,24),T+13.01+E*.55,MAT.bellTop),decal(circ(mx,my,2,10),T+13.02+E*.55,{fill:'#9aa0aa',e:'rgba(0,0,0,.5)',ew:.4}));b.layer=1;b.bias=.1;objs.push(b);
+  const pz=T+14.5+E*1.1;
+  if(o.props==='disc'){const d={faces:[decal(circ(mx,my,33,48),pz,MAT.prop)],deco:[],layer:2};objs.push(d)}
+  if(o.props==='blades'||o.props==='both'){const a=o.bladeA+k*1.3;const bl=prism(xf(rectO(-32,-2.8,32,2.8),a,mx,my),pz-.6,pz,MAT.blade);bl.layer=2;objs.push(bl);
+   if(o.props==='both')objs.push({faces:[decal(circ(mx,my,33,48),pz-.7,{c:[160,180,205],a:.08,e:'rgba(180,205,240,.25)',ew:.6})],deco:[],layer:2,bias:-1})}}
+ if(o.board){const bz=T+2+E*.7;const pb=prism(rectO(-18,-18,18,18),bz,bz+1.6,MAT.pcb);
+  [[1,1],[1,-1],[-1,1],[-1,-1]].forEach(([a,b])=>pb.deco.push(decal(circ(a*15.25,b*15.25,1.6,10),bz+1.61,{fill:'#d8b45a',e:'rgba(0,0,0,.5)',ew:.4})));pb.layer=1;objs.push(pb);
+  const ch=prism(rectO(-4.5,-4.5,4.5,4.5),bz+1.6,bz+2.8,MAT.chip);ch.layer=1;ch.bias=.2;objs.push(ch);
+  [[-11,8,4,3],[9,-11,5,3],[-12,-10,3,5],[10,9,3,3],[-3,11,6,2.4]].forEach(([x,y,w,h],i)=>{const q=prism(rectO(x,y,x+w,y+h),bz+1.6,bz+2.6,i%2?MAT.part:MAT.chip);q.layer=1;q.bias=.2;objs.push(q)});
+  const cn=prism(rectO(-17,-6,-13,6),bz+1.6,bz+4.4,MAT.conn);cn.layer=1;cn.bias=.3;objs.push(cn)}
+ const cam=prism(rectO(20,-7,30,7),T,T+12,MAT.cam);cam.layer=1;objs.push(cam);
+ if(o.battery){const bt=prism(rectO(-34,-15,30,15),T+9+E*1.3,T+27+E*1.3,MAT.bat);bt.deco.push(decal(rectO(-20,-15.01,10,15.01),T+27.01+E*1.3,{c:[232,120,40],e:'none'}));bt.layer=3;objs.push(bt);
+  const sp=prism(rectO(-6,-16,-1,16),T+27+E*1.3,T+27.8+E*1.3,MAT.strap);sp.layer=3;sp.bias=1;objs.push(sp)}
+ return objs}
+function gridSVG(V,ext=120,step=10,z=0,col='255,255,255',op=.13){let s='';
+ for(let i=-ext;i<=ext;i+=step){const maj=i%50===0;const a=V.P(i,-ext,z),b=V.P(i,ext,z),c=V.P(-ext,i,z),d=V.P(ext,i,z);const fo=(1-Math.abs(i)/ext*.85);const w=maj?.9:.6;const o=(maj?op*1.6:op)*fo;
+  s+=`<line x1="${a[0].toFixed(1)}" y1="${a[1].toFixed(1)}" x2="${b[0].toFixed(1)}" y2="${b[1].toFixed(1)}" stroke="rgba(${col},${o.toFixed(3)})" stroke-width="${w}"/><line x1="${c[0].toFixed(1)}" y1="${c[1].toFixed(1)}" x2="${d[0].toFixed(1)}" y2="${d[1].toFixed(1)}" stroke="rgba(${col},${o.toFixed(3)})" stroke-width="${w}"/>`}
+ const o=V.P(0,0,z),x=V.P(ext,0,z),y=V.P(0,ext,z);
+ s+=`<line x1="${o[0]}" y1="${o[1]}" x2="${x[0]}" y2="${x[1]}" stroke="rgba(255,90,80,.45)" stroke-width="1"/><line x1="${o[0]}" y1="${o[1]}" x2="${y[0]}" y2="${y[1]}" stroke="rgba(90,220,110,.4)" stroke-width="1"/>`;
+ return s}
+function shadow(V,fp,z=0,blur='url(#soft)',op=.55,s=1){const o=frameOutline(fp).map(([x,y])=>V.P(x*s,y*s,z));return`<path d="M${o.map(p=>p[0].toFixed(1)+' '+p[1].toFixed(1)).join('L')}Z" fill="#000" opacity="${op}" filter="${blur}"/>`}
+const DEFS=`<defs><filter id="soft" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation="9"/></filter><filter id="soft2" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation="3"/></filter>
+<filter id="noise" x="0" y="0" width="100%" height="100%"><feTurbulence type="fractalNoise" baseFrequency=".9" numOctaves="2" seed="4"/><feColorMatrix values="0 0 0 0 .5  0 0 0 0 .5  0 0 0 0 .52  0 0 0 .9 0"/></filter>
+<linearGradient id="vpbg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#454952"/><stop offset=".55" stop-color="#30333a"/><stop offset="1" stop-color="#202328"/></linearGradient>
+<radialGradient id="vign" cx=".5" cy=".45" r=".75"><stop offset=".55" stop-color="#000" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity=".35"/></radialGradient></defs>`;
+/* ---------- product data ---------- */
+const MODES=[['design','Design','design'],['gen','Generative','gen'],['asm','Assembly','asm'],['elec','Electronics','elec'],['sim','Simulation','sim'],['train','Training','train'],['render','Render','render'],['mfg','Manufacture','mfg']];
+const LN=[['gen','Study','gen'],['design','Frame','design'],['asm','Joints','asm'],['elec','Board','elec'],['sim','Flight','sim'],['train','Policy','train'],['render','Render','render'],['mfg','Make','mfg']];
+const S={mode:'design',tab:'items',stale:{elec:1,sim:1,train:1,render:1},run:{gen:1},jobs:true,insp:true};
+const TIPS={select:'Select',sketch:'Sketch  S',rect:'Rectangle  R',circle:'Circle  C',extrude:'Push / Pull  E',fillet:'Fillet  F',shell:'Shell',move:'Move  M',measure:'Measure',section:'Section view',fix:'Fixed geometry',load:'Load case',keep:'Keep-out region',target:'Objectives',gen:'Generate',grid:'Outcome grid',scatter:'Trade-off plot',joint:'Joint  J',contact:'Contact set',motion:'Drive joint',explode:'Explode',schem:'Wire',comp:'Place part',trace:'Route trace  X',via:'Via',board3d:'Mount in body',check:'Run checks',play:'Fly',wind:'Weather',cloud:'Wind field',gate:'Course',stress:'Stress study',chart:'Charts',train:'Train policy',dice:'Domain randomization',gauge:'PID gains',mat:'Materials',env:'Environment',light:'Lights',camera:'Camera',render:'Render',printer:'Print plate',layers:'Slice preview',export:'Export',doc:'Drawings'};
+const RAIL={design:['select','sketch','rect','circle','|','extrude','fillet','shell','move','|','measure','section'],
+ gen:['select','|','fix','load','keep','target','mat','|','gen','grid','scatter'],
+ asm:['select','joint','contact','motion','explode','|','measure','section'],
+ elec:['select','schem','comp','trace','via','|','board3d','check'],
+ sim:['select','play','wind','gate','|','stress','chart','camera'],
+ train:['select','train','dice','gauge','|','chart','play'],
+ render:['select','mat','env','light','camera','|','render','compare'],
+ mfg:['select','printer','layers','|','export','doc','check']};
+const RAILON={design:'fillet',gen:'grid',asm:'motion',elec:'trace',sim:'play',train:'chart',render:'render',mfg:'printer'};
+const MSG={
+ design:['stale','Frame v8 changed arm width 9.0 to 9.6 mm. Board mount, Flight, Policy and Render still read v7.','Update all'],
+ gen:['run','Study 2 is running in the background: 74 of 120 outcomes. Outcome #14 is the Frame used in Design.',''],
+ asm:['ok','Joints follow Frame v8. Motor spin drives the prop sweep that Flight and Render use.',''],
+ elec:['stale','Mount holes moved 0.4 mm with Frame v8. Board to arm clearance must be re-checked.','Re-check'],
+ sim:['stale','Run 12 flew Frame v7 (11.0 g). Frame v8 weighs 11.6 g.','Re-run on v8'],
+ train:['stale','Policy v5 learned on Flight run 12, which used Frame v7. Retraining waits for the re-run.','Queue'],
+ render:['stale','Shot 3 still shows the v7 arms.','Re-render'],
+ mfg:['ok','Exports read Frame v8 and board rev 196. Nothing is out of date.','']};
+function R(icon,label,meta,cls){return`<div class="row ${cls||''}">${icon==='>'?'':ic(icon)}${label}<span class="meta">${meta||''}</span></div>`}
+function SH(t,r){return`<div class="sh"><span>${t}</span><span>${r||''}</span></div>`}
+const st=(m,t)=>S.stale[m]?`<span class="badge b-stale">${t||'v7'}</span>`:`<span class="badge b-ok">v8</span>`;
+const lk=`<svg class="i lk" viewBox="0 0 20 20" style="width:13px;height:13px">${I.link}</svg>`;
+const ITEMS={
+ design:()=>SH('Bodies','5')+R('body','Frame',`${lk}Outcome #14`,'')+R('body','Arm 2','face set','sel ind1')+R('motor','Motor 1 to 4','×4')+R('camera','Camera pod','')+R('prop','Prop sweep','×4 · ref')
+  +SH('Components','2')+R('elec','Flight controller',`${lk}rev 196 ${st('elec','mount')}`)+R('battery','Battery 4S 650','strap')
+  +SH('Sketches','3')+R('sketch','Plate outline','')+R('sketch','Mount pattern 30.5','')+R('sketch','Arm profile','driven')
+  +SH('Planes')+R('plane','XY','')+R('plane','Motor plane','offset 3'),
+ gen:()=>SH('Study 2 setup')+R('fix','Fixed: motor pads','×4')+R('load','Load: crash 12 g','case 1')+R('load','Load: full thrust','case 2')+R('load','Load: hover gust','case 3')
+  +R('keep','Keep-out: stack 36 mm',`${lk}board`)+R('keep','Keep-out: prop sweep','×4')+R('keep','Keep-out: camera pod','')
+  +R('target','Minimize mass','')+R('target','Stiffness ≥ 40 N/mm','')+R('mat','Carbon twill 3 mm','')
+  +SH('Outcomes','74 / 120')+R('star','Outcome #14','in Design','sel')+R('gen','Outcome #31','10.9 g')+R('gen','Outcome #52','12.4 g')+R('gen','Outcome #67','11.2 g'),
+ asm:()=>SH('Joints','7')+R('joint','Rigid: frame to stack','')+R('joint','Revolute: motor 1','28.4k rpm')+R('joint','Revolute: motor 2','28.4k rpm','sel')+R('joint','Revolute: motor 3','')+R('joint','Revolute: motor 4','')+R('joint','Slider: battery strap','±6 mm')+R('joint','Rigid: camera tilt 25°','')
+  +SH('Contact sets')+R('contact','Props vs frame','clear')+R('contact','Battery vs stack','0.8 mm')
+  +SH('Motion studies')+R('motion','Arm fold check','')+R('motion','Spin up 0 to 100%',`${lk}Flight`),
+ elec:()=>SH('Schematic')+R('doc','Power','5V, 3V3')+R('doc','MCU','STM32F405')+R('doc','ESC 4 in 1','')+R('doc','Sensors','IMU, baro')
+  +SH('Board rev 196')+R('layers','Layers','4')+R('comp','U1 STM32F405','LQFP64','sel')+R('comp','U2 ICM-42688','LGA14')+R('comp','J1 XT30','power')+R('comp','J2 camera','JST 3')+R('via','Nets','112')
+  +SH('Mounted in')+R('body','Frame v8 · plate',`${st('elec','re-check')}`),
+ sim:()=>SH('Scenario')+R('gate','Obstacle course','14 waypoints')+R('cloud','Breezy afternoon','1.7 m/s')+R('train','PID + policy v5',`${lk}Training`)+R('dice','Seed 1','')
+  +SH('Airframe')+R('body','Frame',st('sim'))+R('motor','4 motors 1404','')+R('battery','All-up 153 g','')
+  +SH('Studies')+R('play','Flight run 12','19.7 s','sel')+R('stress','Stress: crash 12 g','182 MPa')+R('stress','Modal','first 412 Hz'),
+ train:()=>SH('Episodes','policy v5')+[['2 412','846','14/14'],['2 411','839','14/14'],['2 410','612','gate 9'],['2 409','851','14/14'],['2 408','790','14/14'],['2 407','402','crash'],['2 406','844','14/14'],['2 405','828','14/14']].map((e,i)=>R(i==0?'play':'>',`<span class="mono" style="width:44px">${e[0]}</span><span class="mono" style="color:${+e[1]>800?'#5be07a':+e[1]>600?'#ffd60a':'#ff6961'}">${e[1]}</span>`,e[2],(i==0?'sel':'')+(i?' ind1':''))).join('')
+  +SH('Controller')+R('gauge','PID rate','P 46 · I 38 · D 31')+R('train','NN residual','64×64 · tanh')+R('dice','Randomization','wind, mass ±8%'),
+ render:()=>SH('Scene')+R('env','Studio soft box','HDR')+R('light','Key, rim, fill','3')+R('camera','Shot 3 · hero','35 mm','sel')+R('camera','Shot 1 · top','')+R('camera','Turntable','120 fr')
+  +SH('Materials')+R('mat','Carbon twill','Frame')+R('mat','Anodized blue','Motors')+R('mat','Solder mask green','Board')+R('mat','Smoked PC','Props'),
+ mfg:()=>SH('Targets')+R('export','STEP AP242','Frame v8','sel')+R('printer','3MF plate A','PETG-CF')+R('doc','DXF for CNC carbon','3 mm')+R('elec','KiCad project','rev 196')+R('layers','Gerber + drill','4 layers')+R('doc','BOM','23 lines')
+  +SH('Checks')+R('check','Wall ≥ 1.2 mm','pass')+R('check','Overhang ≤ 45°','pass')+R('check','DRC',' 0 errors')};
+const HIST={
+ design:()=>SH('Timeline','12 features')+R('sketch','Plate outline','')+R('gen','Generate: Outcome #14',`${lk}Study 2`)+R('extrude','Extrude 3 mm','')+R('fillet','Fillet 1.5 mm','arms','sel')+R('section','Pattern slots','×4')+R('circle','Hole M3 30.5','×4')+R('board3d','Mount FC rev 196',st('elec','re-check'))+R('motor','Insert motors','×4')+R('camera','Camera pod','')+R('move','Tilt 25°','')+R('>','<span style="color:#6f7077">Marker</span>','','dim'),
+ gen:()=>SH('Studies')+R('gen','Study 1','48 outcomes')+R('gen','Study 2','running','sel')+SH('Applied to Design')+R('star','#14 → Frame v8','today 10:42')+R('star','#9 → Frame v7','yesterday'),
+ asm:()=>SH('Changes')+R('joint','Motor joints','v8')+R('motion','Spin study','v8')+R('contact','Contact set','v7'),
+ elec:()=>SH('Revisions')+R('elec','rev 196','mounted','sel')+R('elec','rev 195','DRC clean')+R('elec','rev 194','ESC split'),
+ sim:()=>SH('Runs')+R('play','Run 12 · v7','19.7 s','sel')+R('play','Run 11 · v7','crash at gate 9')+R('play','Run 10 · v6','14/14'),
+ train:()=>SH('Policies')+R('train','v5','reward 846','sel')+R('train','v4','reward 801')+R('train','v3','reward 655'),
+ render:()=>SH('Queue')+R('render','Shot 3 · 4K','38%','sel')+R('render','Turntable','queued')+R('check','Shot 1 · 4K','done'),
+ mfg:()=>SH('Export log')+R('export','STEP · Frame v8','10:44')+R('elec','KiCad rev 196','10:12')+R('printer','Plate A sliced','09:58')};
+function card(icon,title,badge,kv,links,btns){return`<div class="card"><div class="t">${ic(icon)}${title}${badge||''}</div><div class="kv">${kv.map(([k,v])=>`<span>${k}</span><b>${v}</b>`).join('')}</div>${links?`<div class="links">${links.map(([i,t,s,m])=>`<span class="lnk ${s?'st':''}" data-go="${m||''}">${ic(i)}${t}</span>`).join('')}</div>`:''}${btns?`<div class="btnrow">${btns}</div>`:''}</div>`}
+const CARDS={
+ design:()=>card('body','Arm 2 · Frame v8','<span class="badge b-mute">selected</span>',[['Width','9.6 mm'],['Thickness','3.0 mm'],['Mass','2.9 g'],['Peak stress (run 12)',S.stale.sim?'<span style="color:#ffb340">182 MPa · v7</span>':'176 MPa']],[['gen','Outcome #14',0,'gen'],['sim','Flight run 12',S.stale.sim,'sim'],['render','Shot 3',S.stale.render,'render'],['mfg','Plate A',0,'mfg']]),
+ gen:()=>card('star','Outcome #14','<span class="badge b-ok">in Design</span>',[['Mass','11.6 g'],['Stiffness','52 N/mm'],['Safety factor','2.4'],['Max displacement','0.079 mm']],[['design','Frame v8',0,'design'],['sim','Flight run 12',S.stale.sim,'sim']],'<button class="mbtn pri">Use as Frame</button><button class="mbtn">Compare</button>'),
+ asm:()=>card('joint','Revolute: motor 2','',[['Axis','Z, pad 2'],['Speed (from Flight)','28 400 rpm'],['Prop sweep','Ø 76.2 mm'],['Clearance to arm','4.1 mm']],[['sim','Flight run 12',S.stale.sim,'sim'],['render','Turntable',0,'render']]),
+ elec:()=>card('elec','Board rev 196','<span class="badge '+(S.stale.elec?'b-stale">mount stale':'b-ok">mounted')+'</span>',[['Size','36 × 36 mm'],['Holes','30.5 mm, M3'],['Clearance to arm',S.stale.elec?'<span style="color:#ffb340">0.6 mm · v7</span>':'1.0 mm'],['DRC','0 errors']],[['design','Frame v8 plate',0,'design'],['sim','IMU model in Flight',0,'sim']]),
+ sim:()=>card('play','Flight run 12',S.stale.sim?'<span class="badge b-stale">Frame v7</span>':'<span class="badge b-ok">Frame v8</span>',[['Time','19.7 s'],['Waypoints','14 / 14'],['Peak arm stress','182 MPa'],['Tracking cost','7.53 → 2.38']],[['train','Feeds policy v6',S.stale.train,'train'],['design','Stress on Arm 2',0,'design']]),
+ train:()=>card('train','Policy v5',S.stale.train?'<span class="badge b-stale">run 12 · v7</span>':'<span class="badge b-ok">current</span>',[['Steps','1.2 M'],['Mean reward','846'],['Success','93%'],['Deployed to','Flight, firmware']],[['sim','Flight run 12',S.stale.sim,'sim'],['elec','FC firmware rev 196',0,'elec']],'<button class="mbtn pri">Deploy to Flight</button>'),
+ render:()=>card('camera','Shot 3 · hero',S.stale.render?'<span class="badge b-stale">Frame v7</span>':'<span class="badge b-ok">v8</span>',[['Size','3840 × 2160'],['Samples','512 / pixel'],['Progress','38%'],['Remaining','2 min']],[['design','Frame v8',0,'design'],['asm','Prop motion blur',0,'asm']])+'<div class="prog"><i style="width:38%"></i></div>',
+ mfg:()=>card('export','STEP AP242','<span class="badge b-ok">v8</span>',[['Bodies','9'],['Includes','Board rev 196'],['Units','mm'],['Size','2.4 MB']],[['design','Frame v8',0,'design'],['elec','KiCad rev 196',0,'elec']],'<button class="mbtn pri">Export</button><button class="mbtn">Reveal</button>')};
+const PILL={
+ design:`<button>${ic('fillet')}Fillet</button><button>${ic('shell')}Shell</button><button>${ic('move')}Move</button><span class="s"></span><span class="fld"><span class="k">Width</span><span class="mono">9.6 mm</span></span><span class="s"></span><button>${ic('gen')}Regenerate arm</button>`,
+ gen:`<button class="pri">${ic('check')}Use as Frame v9</button><button>${ic('compare')}Compare with v8</button><button>${ic('refine')}Refine around #31</button>`,
+ asm:`<button>${ic('motion')}Drive</button><button>${ic('joint')}Edit joint</button><span class="s"></span><span class="fld"><span class="k">Speed</span><span class="mono">28 400 rpm</span></span>`,
+ elec:`<button>${ic('board3d')}Show in Frame</button><button class="pri">${ic('check')}Re-check clearance</button>`,
+ sim:`<button class="pri">${ic('play')}Re-run on v8</button><button>${ic('stress')}Stress here</button><button>${ic('camera')}Record</button>`,
+ train:`<button class="pri">${ic('check')}Deploy v5 to Flight</button><button>${ic('compare')}Compare v4</button>`,
+ render:`<button class="pri">${ic('render')}Re-render on v8</button><button>${ic('camera')}Set shot</button><button>${ic('mat')}Materials</button>`,
+ mfg:`<button class="pri">${ic('export')}Export all</button><button>${ic('printer')}Send to printer</button><span class="s"></span><span class="fld"><span class="k">Layer</span><span class="mono">14 / 30</span></span>`};
+function jobsHTML(){const j=[['gen','Generative study 2','74 of 120 outcomes · 3 min left',62,''],['render','Render shot 3 · 4K','Frame v7 · 512 spp',38,''],['train','Train policy v6','Waits for Flight run 13 on Frame v8',0,'queued']];
+ return`<h4><span>Activity</span><span style="font-weight:500">3 jobs · on this Mac</span></h4>`+j.map(([i,n,m,p,q])=>`<div class="job"><span class="ic">${ic(i)}</span><span class="n">${n}</span><span style="font-size:11px;color:${q?'#a3a4aa':'#6db4ff'}" class="mono">${q||p+'%'}</span><span class="m">${m}</span><span class="bar"><i style="width:${p}%;${q?'background:#55565c':''}"></i></span></div>`).join('')}
+/* ---------- viewports ---------- */
+function rng(seed){let s=seed*9301+49297;return()=>{s=(s*9301+49297)%233280;return s/233280}}
+function pth(o,V){return'M'+o.map(p=>{const q=V?V.P(...p):p;return q[0].toFixed(1)+' '+q[1].toFixed(1)}).join('L')+'Z'}
+function stdView(W,H,s,cx,cy,yaw){return View({cx:cx??W*.47,cy:cy??H*.53,s:s??Math.min(W,H)/205,yaw:yaw??2.0,pitch:.6})}
+function dim(V,a,b,off,label,col='#3d9bff'){const A=V.P(...a),B=V.P(...b),O=[off[0],off[1]];const a2=V.P(a[0]+O[0],a[1]+O[1],a[2]),b2=V.P(b[0]+O[0],b[1]+O[1],b[2]);
+ const mx=(a2[0]+b2[0])/2,my=(a2[1]+b2[1])/2;const ang=Math.atan2(b2[1]-a2[1],b2[0]-a2[0]);const ah=(p,d)=>{const x=p[0],y=p[1],c=Math.cos(ang+d),s=Math.sin(ang+d);return`M${x} ${y}l${(7*c-3*s).toFixed(1)} ${(7*s+3*c).toFixed(1)}M${x} ${y}l${(7*c+3*s).toFixed(1)} ${(7*s-3*c).toFixed(1)}`};
+ return`<g stroke="${col}" stroke-width="1.1" fill="none"><path d="M${A[0]} ${A[1]}L${a2[0]} ${a2[1]}M${B[0]} ${B[1]}L${b2[0]} ${b2[1]}" stroke-dasharray="2 3" opacity=".7"/><path d="M${a2[0]} ${a2[1]}L${b2[0]} ${b2[1]}"/><path d="${ah(a2,0)}${ah(b2,Math.PI)}"/></g>
+ <g transform="translate(${mx} ${my})"><rect x="-30" y="-11" width="60" height="22" rx="6" fill="${col}"/><text x="0" y="4.5" text-anchor="middle" font-size="12" font-weight="600" fill="#fff" font-family="SF Mono,Menlo,monospace">${label}</text></g>`}
+const VP={};
+VP.design=(W,H)=>{const V=stdView(W,H);
+ const svg=`<rect width="${W}" height="${H}" fill="url(#vpbg)"/>${gridSVG(V,130)}${shadow(V,{},0,'url(#soft)',.5)}${paint(drone({sel:1,props:'disc',fp:{armW:9.6}}),V)}
+ ${dim(V,[Math.cos(2.356)*19,Math.sin(2.356)*19,3],[Math.cos(2.356)*60,Math.sin(2.356)*60,3],[-14*Math.cos(.785),-14*Math.sin(.785)],'41.0')}
+ <rect width="${W}" height="${H}" fill="url(#vign)"/>`;
+ const t=V.P(Math.cos(2.356)*42,Math.sin(2.356)*42,3);const fh=V.P(Math.cos(2.356)*20,Math.sin(2.356)*20,3);
+ const html=`<div class="chip glass" style="left:72px;top:12px">${ic('design')}<b>Frame v8</b><span class="k">from Outcome #14 · 11.6 g · carbon 3 mm</span><span class="badge b-run">Study 2 running</span></div>
+ <svg class="gx" viewBox="0 0 ${W} ${H}" style="pointer-events:none"><circle cx="${fh[0]}" cy="${fh[1]}" r="6" fill="#0a84ff" stroke="#fff" stroke-width="1.5"/><path d="M${fh[0]+9} ${fh[1]-9}l12 -12m0 0h-6m6 0v6" stroke="#fff" stroke-width="1.4" fill="none"/></svg>`;
+ return{svg,html,pill:[t[0]-150,t[1]-96,150],cube:V};};
+function miniFrame(p,sel,ph){const o=frameOutline(p);const sl=[0,1,2,3].map(k=>slot(26,24+p.reach*.33,Math.max(2,p.armW*.32),Math.PI/4+k*Math.PI/2));
+ const tint=p.t;return`<svg viewBox="-78 -78 156 156" style="width:100%;height:100%"><defs><linearGradient id="mg${p.id}" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="${tint[0]}"/><stop offset="1" stop-color="${tint[1]}"/></linearGradient></defs>
+ <path d="${pth(o)}" transform="translate(2.5 3.5)" fill="#000" opacity=".45"/><path d="${pth(o)}" fill="url(#mg${p.id})" stroke="${sel?'#4aa3ff':'rgba(0,0,0,.6)'}" stroke-width="${sel?2:1}"/>${sl.map(s=>`<path d="${pth(s)}" fill="#14161a"/>`).join('')}
+ ${[[1,1],[1,-1],[-1,1],[-1,-1]].map(([a,b])=>`<circle cx="${a*12.5}" cy="${b*12.5}" r="1.6" fill="#14161a"/>`).join('')}${[0,1,2,3].map(k=>{const th=Math.PI/4+k*Math.PI/2;return`<circle cx="${Math.cos(th)*p.reach}" cy="${Math.sin(th)*p.reach}" r="3" fill="#14161a"/>`}).join('')}</svg>`}
+function variants(){const v=[];for(let i=0;i<12;i++){const r=rng(i*7+3);const id=[14,31,52,67,8,23,44,71,3,58,62,73][i];
+ const armW=6+r()*5,tipW=5+r()*2.6,conc=10+r()*8,plate=16+r()*5,pinch=-1+r()*2.6;const mass=(9.4+armW*.22+plate*.05+(conc-10)*.05+r()*.4).toFixed(1);const stiff=Math.round(28+armW*3.2+r()*6);
+ const hot=Math.max(0,Math.min(1,(9-armW)/3));const t=[`rgb(${70+hot*90},${76-hot*10},${86-hot*30})`,`rgb(${48+hot*60},${52},${60})`];
+ v.push({id,armW:i==0?9.6:armW,tipW,conc,plate,pinch,reach:60,mass:i==0?'11.6':mass,stiff:i==0?52:stiff,sf:(1.4+armW*.11).toFixed(1),t})}return v}
+VP.gen=(W,H)=>{const vs=variants();const L=72,Rw=340,gw=W-L-Rw-36;
+ const cards=vs.map((p,i)=>{const sel=p.id==14,hov=p.id==31,gen=i>=10;
+  return`<div style="position:relative;border-radius:11px;background:${sel?'rgba(10,132,255,.12)':'rgba(255,255,255,.035)'};border:1px solid ${sel?'#2f8fff':hov?'rgba(255,255,255,.35)':'rgba(255,255,255,.07)'};padding:8px 10px;display:flex;flex-direction:column;${hov?'box-shadow:0 8px 24px rgba(0,0,0,.4)':''}">
+  <div style="display:flex;justify-content:space-between;font-size:11.5px;font-weight:600"><span>#${p.id}</span>${sel?'<span class="badge b-run">Frame v8</span>':gen?'<span class="badge b-mute">generating</span>':p.stiff<40?'<span class="badge b-stale">soft</span>':''}</div>
+  <div style="flex:1;min-height:0;padding:2px 10px;${gen?'opacity:.25;filter:blur(1.5px)':''}">${miniFrame(p,sel)}</div>
+  <div class="mono" style="display:flex;justify-content:space-between;font-size:11px;color:#a3a4aa"><span><b style="color:#e8e9ee;font-weight:500">${gen?'··':p.mass}</b> g</span><span><b style="color:#e8e9ee;font-weight:500">${gen?'··':p.stiff}</b> N/mm</span><span>SF ${gen?'··':p.sf}</span></div></div>`}).join('');
+ const pts=vs.slice(0,10).map(p=>[+p.mass,p.stiff,p.id]);const extra=[];const r=rng(99);for(let i=0;i<62;i++)extra.push([10+r()*4,30+r()*36]);
+ const PW=Rw-28,PH=250,mx=m=>16+(m-9.8)/4.4*(PW-30),my=s=>PH-24-(s-26)/46*(PH-40);
+ const sc=`<svg viewBox="0 0 ${PW} ${PH}" style="width:${PW}px;height:${PH}px"><g stroke="rgba(255,255,255,.07)">${[0,1,2,3,4].map(i=>`<line x1="16" x2="${PW-8}" y1="${16+i*(PH-40)/4}" y2="${16+i*(PH-40)/4}"/>`).join('')}</g>
+ <path d="M${mx(10.1)} ${my(34)} Q${mx(10.9)} ${my(58)} ${mx(13.8)} ${my(68)}" stroke="#409cff" stroke-width="1.5" fill="none" stroke-dasharray="4 3"/>
+ ${extra.map(([a,b])=>`<circle cx="${mx(a)}" cy="${my(b)}" r="2.6" fill="rgba(255,255,255,.22)"/>`).join('')}
+ ${pts.map(([a,b,id])=>`<circle cx="${mx(a)}" cy="${my(b)}" r="${id==14?6:4}" fill="${id==14?'#0a84ff':id==31?'#fff':'#9fb4cc'}" stroke="${id==14?'#fff':'none'}" stroke-width="1.5"/>${id==14||id==31?`<text x="${mx(a)+9}" y="${my(b)+4}" font-size="11" fill="#e8e9ee" font-weight="600">#${id}</text>`:''}`).join('')}
+ <text x="${PW-8}" y="${PH-6}" font-size="10.5" fill="#8a8b91" text-anchor="end">mass (g) →</text><text x="18" y="12" font-size="10.5" fill="#8a8b91">stiffness (N/mm)</text></svg>`;
+ const svg=`<rect width="${W}" height="${H}" fill="#1f2125"/><rect width="${W}" height="${H}" fill="url(#vign)" opacity=".6"/>`;
+ const html=`<div style="position:absolute;left:${L}px;top:14px;width:${gw}px;display:flex;align-items:center;gap:10px;font-size:12px;z-index:4"><b style="font-size:15px;font-weight:600">Study 2</b><span style="color:#a3a4aa">74 of 120 outcomes · 3 load cases · keep-outs from Board rev 196 and prop sweep</span><span style="margin-left:auto" class="badge b-run">${ic('gen')}running</span></div>
+ <div style="position:absolute;left:${L}px;top:46px;width:${gw}px;bottom:62px;display:grid;grid-template-columns:repeat(4,1fr);grid-template-rows:repeat(3,1fr);gap:10px;z-index:4">${cards}</div>
+ <div class="vpanel glass" style="right:14px;top:14px;width:${Rw-8}px;padding:12px 10px 8px"><div class="lbl" style="padding:0 4px"><span>Trade-off</span><span style="font-weight:500">Pareto front</span></div>${sc}
+ <div style="display:flex;gap:14px;font-size:11px;color:#a3a4aa;padding:4px 6px"><span><i style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#0a84ff;margin-right:5px"></i>in Design</span><span><i style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#fff;margin-right:5px"></i>hovered</span><span><i style="display:inline-block;width:8px;height:8px;border-radius:50%;background:rgba(255,255,255,.3);margin-right:5px"></i>Study 1</span></div></div>`;
+ const col=1,row=0,cw=(gw-30)/4;return{svg,html,pill:[L+col*(cw+10)+cw/2-140,46+((H-108-20)/3)+18,140],cube:null};};
+VP.asm=(W,H)=>{const V=stdView(W,H,Math.min(W,H)/215,W*.47,H*.6);const objs=drone({ex:18,props:'blades',bladeA:.2});
+ let ex='';for(let k=0;k<4;k++){const th=Math.PI/4+k*Math.PI/2,x=Math.cos(th)*60,y=Math.sin(th)*60;const a=V.P(x,y,3),b=V.P(x,y,3+18*.4),c=V.P(x,y,17.5+18*1.1);ex+=`<path d="M${a[0]} ${a[1]}L${b[0]} ${b[1]}M${c[0]} ${c[1]}L${c[0]} ${c[1]-0}" stroke="#ffd60a" stroke-dasharray="3 3" stroke-width="1" opacity=".7"/>`;}
+ const jg=[0,1,2,3].map(k=>{const th=Math.PI/4+k*Math.PI/2,x=Math.cos(th)*60,y=Math.sin(th)*60;const o=circ(x,y,10.5,30).map(([a,b])=>V.P(a,b,3+13+18*.55));const sel=k==1;
+  return`<path d="${'M'+o.map(p=>p[0].toFixed(1)+' '+p[1].toFixed(1)).join('L')}Z" fill="none" stroke="${sel?'#3d9bff':'rgba(255,214,10,.85)'}" stroke-width="${sel?2.2:1.4}" ${sel?'':'stroke-dasharray="5 3"'}/>`}).join('');
+ const m2=V.P(Math.cos(2.356)*60,Math.sin(2.356)*60,16+18*.55);
+ const svg=`<rect width="${W}" height="${H}" fill="url(#vpbg)"/>${gridSVG(V,130)}${shadow(V,{},0,'url(#soft)',.4)}${ex}${paint(objs,V)}${jg}
+ <g transform="translate(${m2[0]} ${m2[1]-34})"><path d="M-26 6a30 12 0 0 0 52 0" fill="none" stroke="#3d9bff" stroke-width="2"/><path d="M26 6l-8 -1m8 1l-3 7" stroke="#3d9bff" stroke-width="2" fill="none"/></g><rect width="${W}" height="${H}" fill="url(#vign)"/>`;
+ const html=`<div class="chip glass" style="left:72px;top:12px">${ic('asm')}<b>Exploded</b><span class="k">7 joints · follows Frame v8</span></div>
+ <div class="vpanel glass" style="left:72px;bottom:62px;width:430px;padding:10px 12px"><div class="lbl"><span>Motion: spin up 0 to 100%</span><span class="mono" style="color:#e8e9ee">0.42 s</span></div>
+ <svg viewBox="0 0 400 34" style="width:100%;height:34px"><rect x="0" y="14" width="400" height="5" rx="2.5" fill="rgba(255,255,255,.1)"/><rect x="0" y="14" width="168" height="5" rx="2.5" fill="#0a84ff"/>${[0,1,2,3,4,5,6,7,8].map(i=>`<line x1="${i*50}" x2="${i*50}" y1="24" y2="28" stroke="rgba(255,255,255,.3)"/>`).join('')}<circle cx="168" cy="16.5" r="7" fill="#fff"/><path d="M0 10 C80 10 120 2 400 2" stroke="#ffd60a" fill="none" stroke-width="1.2"/></svg>
+ <div style="display:flex;gap:6px;margin-top:4px"><button class="mbtn">${ic('play')}Play</button><span style="font-size:11px;color:#a3a4aa;align-self:center">rpm curve from Flight run 12 motor log</span></div></div>`;
+ return{svg,html,pill:[m2[0]-110,m2[1]-120,110],cube:V};};
+VP.elec=(W,H)=>{const cx=W*.43,cy=H*.52,s=15.5,X=x=>cx+x*s,Y=y=>cy+y*s;let g='';
+ for(let x=-30;x<=30;x+=2)for(let y=-26;y<=26;y+=2)g+=`<circle cx="${X(x)}" cy="${Y(y)}" r=".8" fill="rgba(255,255,255,.12)"/>`;
+ const tr=[];const r=rng(5);const pins=[];for(let i=0;i<16;i++){pins.push([-5+i*.65,-6],[-5+i*.65,6],[-6,-5+i*.65],[6,-5+i*.65])}
+ const ends=[[-16,-16],[16,-16],[16,16],[-16,16],[-17,0],[17,3],[0,17],[0,-17]];
+ for(let i=0;i<34;i++){const p=pins[(i*5)%pins.length],e=ends[i%8];const ex=e[0]+(r()-.5)*6,ey=e[1]+(r()-.5)*6;const mxp=Math.abs(ex-p[0])>Math.abs(ey-p[1])?[p[0]+Math.sign(ex-p[0])*Math.abs(ey-p[1]),ey]:[ex,p[1]+Math.sign(ey-p[1])*Math.abs(ex-p[0])];
+  tr.push(`<path d="M${X(p[0])} ${Y(p[1])}L${X(mxp[0])} ${Y(mxp[1])}L${X(ex)} ${Y(ey)}" stroke="${i%3?'#c8463c':'#3b6fd6'}" stroke-width="${i%7?2.2:4}" fill="none" stroke-linejoin="round" opacity="${i%3?.9:.75}"/><circle cx="${X(ex)}" cy="${Y(ey)}" r="3.2" fill="#d9b25c" stroke="#111" stroke-width=".5"/>`)}
+ const qf=[];for(let i=0;i<16;i++){const t=-4.6+i*.62;qf.push(`<rect x="${X(t)-2}" y="${Y(-5.9)}" width="4" height="${s*.8}" fill="#d9b25c"/><rect x="${X(t)-2}" y="${Y(5.1)}" width="4" height="${s*.8}" fill="#d9b25c"/><rect y="${Y(t)-2}" x="${X(-5.9)}" height="4" width="${s*.8}" fill="#d9b25c"/><rect y="${Y(t)-2}" x="${X(5.1)}" height="4" width="${s*.8}" fill="#d9b25c"/>`)}
+ const caps=[];for(let i=0;i<22;i++){const x=-14+r()*28,y=-14+r()*28;if(Math.abs(x)<8&&Math.abs(y)<8)continue;const v=r()>.5;caps.push(`<g transform="translate(${X(x)} ${Y(y)}) rotate(${v?90:0})"><rect x="-9" y="-4" width="7" height="8" fill="#d9b25c"/><rect x="2" y="-4" width="7" height="8" fill="#d9b25c"/><rect x="-11" y="-6" width="22" height="12" fill="none" stroke="rgba(230,230,220,.55)" stroke-width=".8"/></g>`)}
+ const motorPads=[[-16,-16,'M1'],[16,-16,'M2'],[16,16,'M3'],[-16,16,'M4']].map(([x,y,l])=>`<rect x="${X(x)-14}" y="${Y(y)-9}" width="28" height="18" rx="3" fill="#d9b25c"/><text x="${X(x)}" y="${Y(y)+(y<0?24:-14)}" font-size="11" fill="rgba(235,235,225,.8)" text-anchor="middle" font-family="SF Mono,Menlo,monospace">${l}</text>`).join('');
+ const holes=[[1,1],[1,-1],[-1,1],[-1,-1]].map(([a,b])=>`<circle cx="${X(a*15.25)}" cy="${Y(b*15.25)}" r="${s*1.9}" fill="none" stroke="#d9b25c" stroke-width="5"/><circle cx="${X(a*15.25)}" cy="${Y(b*15.25)}" r="${s*1.6}" fill="#15171a"/>`).join('');
+ const fo=xf(frameOutline({armW:9.6}),0).map(([x,y])=>[X(x),Y(y)]);
+ const svg=`<rect width="${W}" height="${H}" fill="#141619"/>${g}
+ <path d="${pth(fo)}" fill="rgba(255,159,10,.04)" stroke="#ff9f0a" stroke-width="1.3" stroke-dasharray="7 5" opacity=".75"/>
+ <rect x="${X(-18)}" y="${Y(-18)}" width="${36*s}" height="${36*s}" rx="${s*1.2}" fill="#173726" stroke="#e8e6d8" stroke-width="1.5"/>
+ <rect x="${X(-18)}" y="${Y(-18)}" width="${36*s}" height="${36*s}" rx="${s*1.2}" fill="url(#cu)" opacity=".35"/>
+ ${tr.join('')}${caps.join('')}${motorPads}${holes}
+ <rect x="${X(-5)}" y="${Y(-5)}" width="${10*s}" height="${10*s}" rx="3" fill="#222428" stroke="#3d9bff" stroke-width="2.5"/>${qf.join('')}<circle cx="${X(-3.8)}" cy="${Y(-3.8)}" r="3" fill="#555"/>
+ <text x="${X(0)}" y="${Y(0)+5}" text-anchor="middle" font-size="14" fill="#e8e6d8" font-family="SF Mono,Menlo,monospace">U1</text>
+ <rect x="${X(9)}" y="${Y(-12)}" width="${3*s}" height="${3*s}" rx="2" fill="#222428" stroke="rgba(230,230,220,.6)"/><text x="${X(10.5)}" y="${Y(-12)-6}" text-anchor="middle" font-size="11" fill="rgba(235,235,225,.8)" font-family="SF Mono,Menlo,monospace">U2 IMU</text>
+ <rect x="${X(-17.5)}" y="${Y(-3)}" width="${4*s}" height="${6*s}" rx="2" fill="none" stroke="rgba(230,230,220,.7)" stroke-width="1.2"/><text x="${X(-15.5)}" y="${Y(4.8)}" text-anchor="middle" font-size="11" fill="rgba(235,235,225,.8)" font-family="SF Mono,Menlo,monospace">J1</text>
+ <text x="${X(-17)}" y="${Y(17.3)}" font-size="12" fill="rgba(235,235,225,.65)" font-family="SF Mono,Menlo,monospace">VIAFORM FC  rev 196</text>
+ ${(()=>{const a=[X(15.25+1.9),Y(-15.25-1.9)];const b=[X(19.2),Y(-19.6)];return`<path d="M${a[0]} ${a[1]}L${b[0]} ${b[1]}" stroke="#ff9f0a" stroke-width="1.6"/><g transform="translate(${b[0]+8} ${b[1]-24})"><rect width="132" height="22" rx="6" fill="#ff9f0a"/><text x="66" y="15" text-anchor="middle" font-size="11.5" font-weight="600" fill="#1d1300">0.6 mm to arm · v8</text></g>`})()}`;
+ const V=View({cx:130,cy:118,s:1.25,yaw:2.0,pitch:.6});const inset=`<svg viewBox="0 0 260 190" style="width:260px;height:190px"><rect width="260" height="190" fill="#2a2d33"/>${gridSVG(V,90,15)}${paint(drone({props:'none'}).map(o=>o),V)}</svg>`;
+ const html=`<div class="chip glass" style="left:72px;top:12px">${ic('elec')}<b>Board</b><span class="k">rev 196 · 4 layers · 36 × 36 mm</span><span style="display:flex;gap:4px">${[['F.Cu','#c8463c'],['In1','#a0a0a0'],['In2','#a0a0a0'],['B.Cu','#3b6fd6'],['Silk','#e8e6d8']].map(([n,c])=>`<span class="badge b-mute"><i style="width:7px;height:7px;border-radius:2px;background:${c}"></i>${n}</span>`).join('')}</span></div>
+ <div class="vpanel glass" style="right:14px;top:12px;width:262px;padding:0;overflow:hidden"><div style="display:flex;align-items:center;gap:6px;padding:8px 10px;font-size:12px;font-weight:600">${ic('board3d')}Mounted in Frame v8<span class="badge ${S.stale.elec?'b-stale">re-check':'b-ok">clear'}</span></div>${inset}</div>`;
+ return{svg:`<defs><linearGradient id="cu" x1="0" x2="1" y1="0" y2="1"><stop offset="0" stop-color="#2d6b4a"/><stop offset="1" stop-color="#0d2a1a"/></linearGradient></defs>`+svg,html,pill:[X(15)-60,Y(-15)-110,60],cube:null};};
+VP.sim=(W,H)=>{const hz=H*.36,vx=W*.5;let s=`<defs><linearGradient id="sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#7fa6c9"/><stop offset="1" stop-color="#c9d6dc"/></linearGradient><linearGradient id="gnd" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#7b9566"/><stop offset="1" stop-color="#4d6b3c"/></linearGradient>
+ <radialGradient id="fea" cx="0" cy="0" r="62" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#32d74b"/><stop offset=".3" stop-color="#ff453a"/><stop offset=".45" stop-color="#ff9f0a"/><stop offset=".62" stop-color="#ffd60a"/><stop offset=".8" stop-color="#4fc3f7"/><stop offset="1" stop-color="#2d5bd6"/></radialGradient></defs>
+ <rect width="${W}" height="${hz}" fill="url(#sky)"/><rect y="${hz}" width="${W}" height="${H-hz}" fill="url(#gnd)"/>`;
+ for(let i=-24;i<=24;i++){s+=`<line x1="${vx+i*14}" y1="${hz}" x2="${vx+i*160}" y2="${H}" stroke="rgba(255,255,255,.07)"/>`}
+ for(let d=1;d<22;d++){const y=hz+(H-hz)*Math.pow(d/21,2.2);s+=`<line x1="0" x2="${W}" y1="${y}" y2="${y}" stroke="rgba(255,255,255,.06)"/>`}
+ const r=rng(2);for(let i=0;i<26;i++){const x=r()*W,h=24+r()*50,w=h*.38;const y=hz+2+r()*6;s+=`<path d="M${x} ${y-h}L${x+w} ${y}L${x-w} ${y}Z" fill="${['#2f5a35','#3a6a3c','#29502f'][i%3]}" opacity=".9"/>`}
+ const P=(X,Z,Y)=>{const k=520/Z;return[vx+X*k,hz+(H-hz)*0+ (1.6-Y)*k*.55+ (H-hz)*0.0 + 60*k/10]};
+ const gates=[[-3,9,1.4],[2,14,1.8],[-1,20,1.5],[3,27,2.2],[0,36,1.6],[-4,46,1.9]];let traj=[[0.5,4.2,1.1]];gates.forEach(g=>traj.push(g));
+ const tp=traj.map(([x,z,y])=>P(x,z,y));let d=`M${tp[0][0]} ${tp[0][1]}`;for(let i=1;i<tp.length;i++){const a=tp[i-1],b=tp[i];d+=` Q${a[0]+(b[0]-a[0])*.1} ${(a[1]+b[1])/2-20} ${b[0]} ${b[1]}`}
+ gates.slice().reverse().forEach(([x,z,y],j)=>{const k=520/z,c=P(x,z,y),w=1.3*k,h=1.0*k;const gp=P(x,z,0);s+=`<path d="M${c[0]-w/2} ${gp[1]}V${c[1]-h/2}H${c[0]+w/2}V${gp[1]}" fill="none" stroke="#ff7a1a" stroke-width="${Math.max(2,k*.09)}" stroke-linejoin="round"/><path d="M${c[0]-w/2} ${c[1]-h/2}H${c[0]+w/2}V${c[1]+h/2}H${c[0]-w/2}Z" fill="rgba(255,122,26,.08)" stroke="rgba(255,255,255,.65)" stroke-width="${Math.max(1,k*.03)}" stroke-dasharray="${k*.12} ${k*.08}"/><ellipse cx="${gp[0]}" cy="${gp[1]}" rx="${w*.6}" ry="${w*.06}" fill="rgba(0,0,0,.18)"/>`});
+ s+=`<path d="${d}" fill="none" stroke="#fff" stroke-width="2.4" stroke-dasharray="1 7" stroke-linecap="round" opacity=".95"/><path d="${d}" fill="none" stroke="#0a84ff" stroke-width="1.2" opacity=".7"/>`;
+ for(let i=0;i<14;i++){const x=r()*W,y=hz-60+r()*(H*.7);s+=`<path d="M${x} ${y}q30 -6 60 0t60 0" stroke="rgba(255,255,255,.35)" fill="none" stroke-width="1.2"/>`}
+ const V=View({cx:W*.44,cy:H*.7,s:2.0,yaw:2.3,pitch:.42});s+=`<ellipse cx="${W*.44+30}" cy="${H*.7+150}" rx="110" ry="20" fill="rgba(0,0,0,.25)" filter="url(#soft2)"/><g transform="rotate(-8 ${W*.44} ${H*.7})">${paint(drone({props:'both',battery:true,board:false,bladeA:1.1}),V)}</g>`;
+ const fo=frameOutline({armW:9});
+ const html=`<div class="chip glass" style="left:72px;top:12px">${ic('sim')}<b>Run 12</b><span class="k">Obstacle course · Breezy afternoon · PID + policy v5</span>${S.stale.sim?'<span class="badge b-stale">Frame v7</span>':'<span class="badge b-ok">Frame v8</span>'}</div>
+ <div class="vpanel glass hud" style="right:14px;top:120px;width:236px;padding:12px 14px"><div style="display:flex;align-items:baseline;justify-content:space-between;margin-bottom:8px"><b class="mono" style="font-size:22px;font-weight:600">19.7 s</b><span class="badge b-ok">FLYING</span></div>
+ <div class="kv"><span>Speed</span><b class="mono">7.4 m/s</b><span>Altitude</span><b class="mono">1.69 m</b><span>Wind</span><b class="mono">1.7 m/s, gust 4.0</b><span>Thrust</span><b class="mono">96% · T/W 4.5</b><span>Waypoints</span><b class="mono">8 / 14</b><span>NN residual</span><b class="mono">2.94 m/s²</b></div>
+ <div style="margin-top:9px;display:grid;grid-template-columns:auto 1fr;gap:5px 8px;font-size:11px;color:#a3a4aa;align-items:center">${['Battery 12.43 V',...['M1','M2','M3','M4']].map((m,i)=>`<span>${m}</span><span style="height:5px;border-radius:3px;background:rgba(255,255,255,.12)"><i style="display:block;height:100%;width:${[78,64,71,58,69][i]}%;border-radius:3px;background:${i?'#32d74b':'#64d2ff'}"></i></span>`).join('')}</div></div>
+ <div class="vpanel glass" style="left:72px;bottom:62px;width:300px;padding:10px 12px"><div class="lbl" style="margin-bottom:4px"><span>Stress at crash, 12 g</span>${S.stale.sim?'<span class="badge b-stale">v7 mesh</span>':'<span class="badge b-ok">v8 mesh</span>'}</div>
+ <div style="display:flex;gap:10px;align-items:center"><svg viewBox="-75 -75 150 150" style="width:150px;height:150px"><path d="${pth(fo)}" fill="url(#fea)" stroke="rgba(0,0,0,.6)"/>${[0,1,2,3].map(k=>`<path d="${pth(slot(27,43,3.2,Math.PI/4+k*Math.PI/2))}" fill="#1b1d22"/>`).join('')}<circle cx="${Math.cos(2.356)*20}" cy="${Math.sin(2.356)*20}" r="5" fill="none" stroke="#fff" stroke-width="1.5"/></svg>
+ <div style="font-size:11px;color:#a3a4aa;flex:1"><div style="height:8px;border-radius:4px;background:linear-gradient(90deg,#2d5bd6,#4fc3f7,#ffd60a,#ff9f0a,#ff453a)"></div><div class="mono" style="display:flex;justify-content:space-between;margin-top:3px"><span>0</span><span>182 MPa</span></div><div style="margin-top:8px;color:#e8e9ee">Peak at Arm 2 root</div><div>Safety factor 2.4</div><div style="margin-top:4px;color:#409cff">Show on Frame →</div></div></div></div>`;
+ return{svg:s,html,pill:[W*.44-80,H*.7-170,80],cube:null};};
+function curve(seed,max,tau,n=160,noise=60){const r=rng(seed);const a=[];for(let i=0;i<n;i++){const t=i/n;a.push(max*(1-Math.exp(-t/tau))+(r()-.5)*noise*(1-t*.4)-80)}return a}
+function smooth(a,k=8){return a.map((_,i)=>{let s=0,c=0;for(let j=Math.max(0,i-k);j<=i;j++){s+=a[j];c++}return s/c})}
+VP.train=(W,H)=>{const L=72,CW=Math.round((W-L-28)*.62),CH=Math.round(H*.56);const pw=CW-60,ph=CH-80;const X=i=>48+i/159*pw,Y=v=>24+ph-(v+100)/1000*ph;
+ const runs=[[3,'#8e8e93',820,.35,'v3'],[4,'#bf5af2',900,.28,'v4'],[5,'#0a84ff',940,.22,'v5']];
+ let ch=`<g stroke="rgba(255,255,255,.07)">${[0,1,2,3,4,5].map(i=>`<line x1="48" x2="${48+pw}" y1="${24+i*ph/5}" y2="${24+i*ph/5}"/>`).join('')}</g>${[0,200,400,600,800,1000].map((v,i)=>`<text x="40" y="${24+ph-i*ph/5+4}" text-anchor="end" font-size="10.5" fill="#8a8b91" font-family="SF Mono,Menlo,monospace">${v-100}</text>`).join('')}${[0,.3,.6,.9,1.2].map((v,i)=>`<text x="${48+i*pw/4}" y="${ph+42}" text-anchor="middle" font-size="10.5" fill="#8a8b91" font-family="SF Mono,Menlo,monospace">${v}M</text>`).join('')}`;
+ runs.forEach(([sd,c,mx,tau])=>{const a=curve(sd,mx,tau),sm=smooth(a);ch+=`<path d="M${a.map((v,i)=>X(i).toFixed(1)+' '+Y(v).toFixed(1)).join('L')}" fill="none" stroke="${c}" stroke-width="1" opacity=".22"/><path d="M${sm.map((v,i)=>X(i).toFixed(1)+' '+Y(v).toFixed(1)).join('L')}" fill="none" stroke="${c}" stroke-width="2"/>`});
+ ch+=`<path d="M${X(0)} ${Y(-80)}L${X(40)} ${Y(560)}L${X(90)} ${Y(800)}L${X(159)} ${Y(880)}" fill="none" stroke="#32d74b" stroke-width="1.6" stroke-dasharray="5 5" opacity=".8"/><line x1="${X(159)}" x2="${X(159)}" y1="24" y2="${24+ph}" stroke="rgba(255,255,255,.25)" stroke-dasharray="2 3"/><circle cx="${X(159)}" cy="${Y(smooth(curve(5,940,.22)).pop())}" r="4.5" fill="#0a84ff" stroke="#fff" stroke-width="1.5"/>`;
+ const leg=`<div style="display:flex;gap:14px;font-size:11px;color:#a3a4aa">${runs.map(r=>`<span><i style="display:inline-block;width:12px;height:2px;background:${r[1]};vertical-align:middle;margin-right:5px"></i>${r[4]}</span>`).join('')}<span><i style="display:inline-block;width:12px;border-top:2px dashed #32d74b;vertical-align:middle;margin-right:5px"></i>v6 expected on Frame v8</span></div>`;
+ const RW=W-L-CW-42,RH=CH;const r=rng(3);let tr='';const cs=[[.15,.85],[.3,.6],[.55,.7],[.45,.35],[.75,.45],[.6,.15],[.85,.2]];
+ for(let e=0;e<9;e++){const col=e==0?'#0a84ff':e==3?'#ff453a':'rgba(255,255,255,.28)';tr+=`<path d="M${cs.map(([x,y])=>((x+(r()-.5)*.05)*RW).toFixed(1)+' '+((y+(r()-.5)*.05)*(RH-60)+10).toFixed(1)).slice(0,e==3?4:7).join('L')}" fill="none" stroke="${col}" stroke-width="${e==0?2.2:1}" stroke-linejoin="round"/>`}
+ tr+=cs.map(([x,y],i)=>`<rect x="${x*RW-9}" y="${y*(RH-60)+1}" width="18" height="18" rx="2" fill="none" stroke="#ff7a1a" stroke-width="2"/><text x="${x*RW+13}" y="${y*(RH-60)+7}" font-size="10" fill="#8a8b91">${i+1}</text>`).join('')+`<circle cx="${cs[3][0]*RW+4}" cy="${cs[3][1]*(RH-60)+12}" r="6" fill="none" stroke="#ff453a" stroke-width="1.5"/><path d="M${cs[3][0]*RW} ${cs[3][1]*(RH-60)+8}l8 8m0 -8l-8 8" stroke="#ff453a" stroke-width="1.5"/>`;
+ const sr=(t,k)=>1-Math.exp(-t*k)*Math.cos(t*k*1.6);let pid='';const PW=CW-40,PH2=H-CH-14-62-60;['#8e8e93','#0a84ff'].forEach((c,j)=>{pid+=`<path d="M${[...Array(100)].map((_,i)=>{const t=i/99*4;return(20+i/99*PW).toFixed(1)+' '+(PH2-10-sr(t,j?2.6:1.6)*(PH2-30)*.85).toFixed(1)}).join('L')}" fill="none" stroke="${c}" stroke-width="1.8"/>`});pid+=`<line x1="20" x2="${PW+20}" y1="${PH2-10-(PH2-30)*.85}" y2="${PH2-10-(PH2-30)*.85}" stroke="rgba(255,255,255,.3)" stroke-dasharray="3 3"/>`;
+ const svg=`<rect width="${W}" height="${H}" fill="#1c1e22"/>`;
+ const html=`<div class="vpanel glass" style="left:${L}px;top:14px;width:${CW}px;height:${CH}px;padding:12px 14px"><div class="lbl" style="margin-bottom:2px"><span style="font-size:13px;color:#ececef">Mean episode reward</span>${leg}</div><svg viewBox="0 0 ${CW-28} ${CH-40}" style="width:${CW-28}px;height:${CH-40}px">${ch}</svg></div>
+ <div class="vpanel glass" style="left:${L+CW+14}px;top:14px;width:${RW}px;height:${CH}px;padding:12px 14px;overflow:hidden"><div class="lbl"><span style="font-size:13px;color:#ececef">Episode 2 412 replay</span><span class="badge b-ok">846</span></div><svg viewBox="0 0 ${RW} ${RH-40}" style="width:${RW-28}px;height:${RH-50}px">${tr}</svg></div>
+ <div class="vpanel glass" style="left:${L}px;top:${CH+28}px;width:${CW}px;height:${PH2+40}px;padding:10px 14px"><div class="lbl"><span style="font-size:13px;color:#ececef">Rate loop step response</span><span style="font-weight:500">PID v4 gray · tuned v5 blue · overshoot 6%</span></div><svg viewBox="0 0 ${PW+40} ${PH2}" style="width:${PW}px;height:${PH2}px">${pid}</svg></div>`;
+ return{svg,html,pill:[L+CW-330,CH-30,300],cube:null};};
+VP.render=(W,H)=>{const V=stdView(W,H,Math.min(W,H)/180,W*.47,H*.47,2.15);const save={...MAT};
+ Object.assign(MAT,{alu:{c:[40,110,215],smooth:1,amb:.45,dif:.75},aluTop:{c:[70,140,235],e:'rgba(0,0,0,.4)',ew:.5},carbon:{c:[46,49,56],e:'rgba(0,0,0,.55)',ew:.6,amb:.38,dif:.95,topb:.14}});
+ const objs=drone({props:'blades',battery:true,frameM:MAT.carbon,bladeA:.7});const d=paint(objs,V);Object.assign(MAT,save);
+ const fy=V.P(0,0,0)[1]+28;const tiles=[];const tw=96,cols=Math.ceil(W/tw),rows=Math.ceil(H/tw),N=cols*rows,done=Math.floor(N*.38);
+ for(let i=done;i<N;i++){const x=(i%cols)*tw,y=Math.floor(i/cols)*tw;tiles.push(i<done+5?`<path d="M${x+2} ${y+16}V${y+2}H${x+16}M${x+tw-16} ${y+2}H${x+tw-2}V${y+16}M${x+tw-2} ${y+tw-16}V${y+tw-2}H${x+tw-16}M${x+16} ${y+tw-2}H${x+2}V${y+tw-16}" stroke="#ff9f0a" stroke-width="2" fill="none"/>`:`<rect x="${x}" y="${y}" width="${tw}" height="${tw}" filter="url(#noise)" opacity=".5"/>`)}
+ const svg=`<defs><radialGradient id="studio" cx=".5" cy=".38" r=".8"><stop offset="0" stop-color="#5d626c"/><stop offset=".55" stop-color="#2b2e34"/><stop offset="1" stop-color="#121316"/></radialGradient><linearGradient id="rf" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".22"/><stop offset=".5" stop-color="#fff" stop-opacity="0"/></linearGradient><mask id="rm"><rect width="${W}" height="${H}" y="${fy}" fill="url(#rf)"/></mask></defs>
+ <rect width="${W}" height="${H}" fill="url(#studio)"/><rect x="${W*.18}" y="-40" width="${W*.5}" height="70" rx="20" fill="#fff" opacity=".22" filter="url(#soft)"/>
+ <ellipse cx="${W*.47}" cy="${fy}" rx="${W*.36}" ry="70" fill="#000" opacity=".5" filter="url(#soft)"/>
+ <g mask="url(#rm)"><g transform="translate(0 ${2*fy}) scale(1 -1)">${d}</g></g>${d}
+ <g opacity=".9">${tiles.join('')}</g><rect width="${W}" height="${H}" fill="url(#vign)"/>`;
+ const html=`<div class="chip glass" style="left:72px;top:12px">${ic('camera')}<b>Shot 3 · hero</b><span class="k">35 mm · studio soft box · 512 spp</span><span class="mono" style="color:#6db4ff">38%</span>${S.stale.render?'<span class="badge b-stale">Frame v7</span>':''}</div>
+ <div class="vpanel glass" style="right:14px;top:120px;width:200px;padding:10px"><div class="lbl"><span>Look</span></div>${[['Carbon twill','#2f3238'],['Anodized blue','#2c6fd6'],['Solder mask','#1f6a45'],['Smoked PC','#c9ced8']].map(([n,c])=>`<div class="row" style="padding:0 4px"><i style="width:16px;height:16px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#fff8,${c} 45%,#000 120%);box-shadow:inset 0 0 0 .5px rgba(255,255,255,.2)"></i>${n}</div>`).join('')}</div>`;
+ const t=V.P(-10,0,40);return{svg,html,pill:[t[0]-130,t[1]-90,130],cube:V};};
+VP.mfg=(W,H)=>{const V=stdView(W,H,Math.min(W,H)/250,W*.47,H*.55,2.0);const B=110;
+ const bed=prism(rectO(-B,-B,B,B),-6,0,{c:[44,46,52],e:'rgba(0,0,0,.8)',ew:1});bed.deco.push(decal(rectO(-B+4,-B+4,B-4,B-4),.01,{c:[120,96,60],e:'none',amb:.45,dif:.4}));bed.layer=0;
+ const L1=1.4;const fo=frameOutline({armW:9.6});const solid=prism(fo,0,L1,{c:[232,128,40],e:'rgba(60,25,0,.8)',ew:.7,amb:.5,dif:.55});solid.layer=1;
+ const ghost=prism(fo,L1,3,{c:[200,210,230],a:.1,e:'rgba(200,215,240,.35)',ew:.7});ghost.layer=2;
+ const pod=prism(rectO(68,-18,88,18),0,12,{c:[200,210,230],a:.1,e:'rgba(200,215,240,.35)',ew:.7});pod.layer=2;const podS=prism(rectO(68,-18,88,18),0,L1,{c:[232,128,40],e:'rgba(60,25,0,.8)',ew:.7});podS.layer=1;
+ const top=fo.map(([x,y])=>V.P(x,y,L1));let hatch='';for(let i=-90;i<=90;i+=4){const a=V.P(i-60,-60+0,L1),b=V.P(i+60,60,L1);hatch+=`<line x1="${a[0]}" y1="${a[1]}" x2="${b[0]}" y2="${b[1]}" stroke="#ffd60a" stroke-width=".7" opacity=".55"/>`}
+ const nz=V.P(Math.cos(.785)*52,Math.sin(.785)*52,L1);
+ const svg=`<rect width="${W}" height="${H}" fill="url(#vpbg)"/>${shadow(V,{},-6,'url(#soft)',.25,1.6)}${paint([bed],V)}${gridSVG(V,B-4,10,.02,'0,0,0',.18)}${paint([podS,solid],V)}
+ <clipPath id="tc"><path d="M${top.map(p=>p[0].toFixed(1)+' '+p[1].toFixed(1)).join('L')}Z"/></clipPath><g clip-path="url(#tc)">${hatch}</g><path d="M${top.map(p=>p[0].toFixed(1)+' '+p[1].toFixed(1)).join('L')}Z" fill="none" stroke="#ff6a00" stroke-width="1.6"/>${paint([ghost,pod],V)}
+ <g transform="translate(${nz[0]} ${nz[1]})"><path d="M-5 -2L0 6L5 -2Z" fill="#c9ccd2"/><rect x="-14" y="-40" width="28" height="38" rx="4" fill="#3a3d44" stroke="rgba(255,255,255,.2)"/><rect x="-14" y="-40" width="28" height="8" rx="3" fill="#4a4e57"/></g><rect width="${W}" height="${H}" fill="url(#vign)"/>`;
+ const html=`<div class="chip glass" style="left:72px;top:12px">${ic('printer')}<b>Plate A</b><span class="k">Frame v8 prototype + camera pod · PETG-CF · 0.1 mm</span><span class="mono">2 h 14 m · 9.8 g</span></div>
+ <div class="vpanel glass" style="right:14px;top:122px;width:44px;height:300px;padding:10px 0;display:flex;flex-direction:column;align-items:center;gap:6px"><span class="mono" style="font-size:10.5px;color:#a3a4aa">30</span><div style="flex:1;width:5px;border-radius:3px;background:rgba(255,255,255,.12);position:relative"><i style="position:absolute;bottom:0;left:0;right:0;height:46%;border-radius:3px;background:#ff9f0a"></i><i style="position:absolute;bottom:46%;left:-6px;width:17px;height:17px;margin-bottom:-8px;border-radius:50%;background:#fff;box-shadow:0 1px 4px rgba(0,0,0,.5)"></i></div><span class="mono" style="font-size:10.5px;color:#a3a4aa">1</span></div>
+ <div class="vpanel glass" style="left:72px;bottom:62px;padding:8px 12px;display:flex;gap:14px;font-size:11.5px;color:#a3a4aa">${[['#ff6a00','Perimeter'],['#ffd60a','Infill 40%'],['#c8d2e6','Unprinted']].map(([c,n])=>`<span><i style="display:inline-block;width:9px;height:9px;border-radius:2px;background:${c};margin-right:5px"></i>${n}</span>`).join('')}</div>`;
+ const t=V.P(Math.cos(2.356)*30,Math.sin(2.356)*30,3);return{svg,html,pill:[t[0]-120,t[1]-100,120],cube:V};};
+
+/* ---------- view cube + triad driven by the scene camera ---------- */
+function cubeSVG(V){if(!V)return'';const o=V.o;const C=View({cx:48,cy:50,s:17,yaw:o.yaw,pitch:o.pitch});
+ const F=[{n:[0,0,1],c:[0,0,1],u:[1,0,0],v:[0,1,0],t:'TOP'},{n:[0,-1,0],c:[0,-1,0],u:[1,0,0],v:[0,0,-1],t:'FRONT'},{n:[1,0,0],c:[1,0,0],u:[0,1,0],v:[0,0,-1],t:'RIGHT'},{n:[0,1,0],c:[0,1,0],u:[-1,0,0],v:[0,0,-1],t:'BACK'},{n:[-1,0,0],c:[-1,0,0],u:[0,-1,0],v:[0,0,-1],t:'LEFT'},{n:[0,0,-1],c:[0,0,-1],u:[1,0,0],v:[0,-1,0],t:'BOTTOM'}];
+ let s='';const ring=[];for(let i=0;i<=40;i++){const a=i/40*Math.PI*2;ring.push(C.P(1.7*Math.cos(a),1.7*Math.sin(a),-1))}
+ s+=`<path d="M${ring.map(p=>p[0].toFixed(1)+' '+p[1].toFixed(1)).join('L')}" fill="none" stroke="rgba(255,255,255,.2)" stroke-width="4"/>`;
+ F.filter(f=>C.facing(f.n)).forEach(f=>{const pts=[[-1,-1],[1,-1],[1,1],[-1,1]].map(([a,b])=>C.P(f.c[0]+f.u[0]*a+f.v[0]*b,f.c[1]+f.u[1]*a+f.v[1]*b,f.c[2]+f.u[2]*a+f.v[2]*b));
+  const r=C.rot(f.n);const lam=Math.max(0,r[0]*LIGHT[0]+r[1]*LIGHT[1]+r[2]*LIGHT[2]);const g=Math.round(92+lam*58);
+  s+=`<path d="M${pts.map(p=>p[0].toFixed(1)+' '+p[1].toFixed(1)).join('L')}Z" fill="rgb(${g},${g+3},${g+9})" fill-opacity=".92" stroke="rgba(235,236,240,.7)" stroke-width=".8" stroke-linejoin="round"/>`;
+  const O=C.P(...f.c),U=C.P(f.c[0]+f.u[0],f.c[1]+f.u[1],f.c[2]+f.u[2]),W=C.P(f.c[0]+f.v[0],f.c[1]+f.v[1],f.c[2]+f.v[2]);
+  const k=f.t.length>4?1/120:1/100;let ux=U[0]-O[0],uy=U[1]-O[1],vx=W[0]-O[0],vy=W[1]-O[1];if(ux*vy-uy*vx<0){ux=-ux;uy=-uy}if(vy<0&&Math.abs(vy)>Math.abs(vx)*.3){ux=-ux;uy=-uy;vx=-vx;vy=-vy}
+  s+=`<text transform="matrix(${(ux*k).toFixed(4)} ${(uy*k).toFixed(4)} ${(vx*k).toFixed(4)} ${(vy*k).toFixed(4)} ${O[0].toFixed(1)} ${O[1].toFixed(1)})" font-size="40" font-weight="700" fill="rgba(255,255,255,.9)" text-anchor="middle" dominant-baseline="central">${f.t}</text>`});
+ return s}
+function triadSVG(V){if(!V)return'';const C=View({cx:22,cy:42,s:20,yaw:V.o.yaw,pitch:V.o.pitch});const c=C.P(0,0,0);
+ return[[[1,0,0],'#ff5f57','X'],[[0,1,0],'#32d74b','Y'],[[0,0,1],'#0a84ff','Z']].map(([a,col,t])=>({p:C.P(...a),col,t})).sort((A,B)=>A.p[2]-B.p[2])
+  .map(({p,col,t})=>`<path d="M${c[0]} ${c[1]}L${p[0].toFixed(1)} ${p[1].toFixed(1)}" stroke="${col}" stroke-width="2" stroke-linecap="round"/><circle cx="${p[0].toFixed(1)}" cy="${p[1].toFixed(1)}" r="5.5" fill="${col}"/><text x="${p[0].toFixed(1)}" y="${(p[1]+2.6).toFixed(1)}" font-size="7.5" font-weight="700" fill="#fff" text-anchor="middle">${t}</text>`).join('')+`<circle cx="${c[0]}" cy="${c[1]}" r="2" fill="#ddd"/>`}
+
+/* ---------- chrome ---------- */
+function renderSeg(){document.getElementById('seg').innerHTML=MODES.map(([id,n,i],k)=>`<button class="${S.mode===id?'on':''}" data-m="${id}" title="${n}  ⌘${k+1}">${ic(i)}${n}${S.run[id]?'<span class="dot run"></span>':S.stale[id]?'<span class="dot"></span>':''}</button>`).join('')}
+function renderRail(){const on=RAILON[S.mode];document.getElementById('rail').innerHTML=RAIL[S.mode].map(t=>t==='|'?'<hr>':`<button class="${t===on?'on':''}">${ic(t)}<span class="tip">${TIPS[t]||t}</span></button>`).join('')}
+function renderNav(){document.getElementById('nav').innerHTML=[['orbit'],['hand'],['zoom'],['fit'],'|',['eye'],['section'],['grid'],'|',['camera']].map(b=>b==='|'?'<span class="s"></span>':`<button class="${b[0]==='orbit'?'on':''}">${ic(b[0])}</button>`).join('')}
+function renderLineage(){const cur=S.mode;document.getElementById('lineage').innerHTML=LN.map(([m,n,i])=>{const st=S.run[m]?'run':S.stale[m]?'stale':'ok';return`<div class="ln ${m===cur?'cur':''}" data-m="${m}" title="${n}"><span class="c">${ic(i)}</span><span>${n}</span><i class="st ${st}"></i></div>`}).join('');
+ const [k,t,b]=MSG[cur];const icn=k==='stale'?'warn':k==='run'?'sync':'check';const col=k==='stale'?'#ffb340':k==='run'?'#6db4ff':'#5be07a';
+ document.getElementById('flowmsg').innerHTML=`<div class="flowmsg ${k==='ok'?'okm':k==='run'?'runm':''}"><svg class="i" viewBox="0 0 20 20" style="color:${col}">${I[icn]}</svg><span>${t}${b?`<button data-fix="${cur}">${b}</button>`:''}</span></div>`;
+ const name=MODES.find(m=>m[0]===cur)[1];document.getElementById('lnMode').textContent=`Frame v8 into ${name}`}
+function renderInsp(){document.getElementById('iseg').innerHTML=['items','history'].map(t=>`<button class="${S.tab===t?'on':''}" data-t="${t}">${t==='items'?'Items':'History'}</button>`).join('');
+ document.getElementById('ibody').innerHTML=(S.tab==='items'?ITEMS:HIST)[S.mode]();document.getElementById('cards').innerHTML=CARDS[S.mode]();renderLineage()}
+function renderScene(){const vp=document.getElementById('vp');const W=vp.clientWidth,H=vp.clientHeight;const r=VP[S.mode](W,H);
+ document.getElementById('scene').innerHTML=`<svg class="scene" viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" style="position:absolute;inset:0">${DEFS}${r.svg}</svg>`;
+ const [px,py,ax]=r.pill;const x=Math.max(66,Math.min(W-560,px)),y=Math.max(60,py);
+ document.getElementById('over').innerHTML=`<div class="fade-in">${r.html||''}</div><div class="pill glass fade-in" style="left:${x}px;top:${y}px;--ax:${Math.max(16,ax+(px-x))}px">${PILL[S.mode]}</div>`;
+ const cube=document.getElementById('cube'),tri=document.getElementById('triad');cube.innerHTML=cubeSVG(r.cube);tri.innerHTML=triadSVG(r.cube);cube.style.display=tri.style.display=r.cube?'':'none'}
+function renderJobs(){const a=document.getElementById('activity');a.innerHTML=jobsHTML();a.classList.toggle('hide',!S.jobs)}
+function setMode(m){if(!VP[m])return;S.mode=m;try{history.replaceState(null,'','#'+m)}catch(e){}renderSeg();renderRail();renderInsp();renderScene()}
+document.getElementById('seg').style.zIndex=2;document.getElementById('scene').style.cssText='position:absolute;inset:0';
+document.addEventListener('click',e=>{const m=e.target.closest('[data-m]');if(m){setMode(m.dataset.m);return}
+ const g=e.target.closest('[data-go]');if(g&&g.dataset.go){setMode(g.dataset.go);return}
+ const t=e.target.closest('[data-t]');if(t){S.tab=t.dataset.t;renderInsp();return}
+ const f=e.target.closest('[data-fix]');if(f){const k=f.dataset.fix;const chain={design:['elec','sim','train','render'],elec:['elec'],sim:['sim'],train:['train'],render:['render']}[k]||[];chain.forEach(c=>delete S.stale[c]);renderSeg();renderInsp();renderScene();return}
+ if(e.target.closest('#jobsBtn')){S.jobs=!S.jobs;renderJobs();document.getElementById('jobsBtn').classList.toggle('on',S.jobs);return}
+ if(e.target.closest('#inspBtn')){S.insp=!S.insp;document.getElementById('insp').style.display=S.insp?'':'none';document.getElementById('inspBtn').classList.toggle('on',S.insp);renderScene()}});
+document.addEventListener('keydown',e=>{if(e.metaKey||e.ctrlKey){const i=+e.key;if(i>=1&&i<=8){e.preventDefault();setMode(MODES[i-1][0])}}});
+let rz;window.addEventListener('resize',()=>{clearTimeout(rz);rz=setTimeout(renderScene,80)});
+hydrate();renderNav();renderJobs();
+{const h=location.hash.slice(1);setMode(VP[h]?h:'design')}
+</script>
+</body>
+</html>
