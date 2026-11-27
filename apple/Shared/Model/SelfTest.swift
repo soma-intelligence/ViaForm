@@ -136,6 +136,7 @@ enum SelfTest {
         for (ok, what) in UnitSettingsSelfTest.checks() { check(ok, what) } // P2-23 display units
         for (ok, what) in MainActor.assumeIsolated({ UnitStringsSelfTest.checks() }) { check(ok, what) } // P2-23 unit strings
         for (ok, what) in MainActor.assumeIsolated({ ViewportAccessibilitySelfTest.checks() }) { check(ok, what) }
+        for (ok, what) in MainActor.assumeIsolated({ CameraFlightSelfTest.checks() }) { check(ok, what) }
         for (ok, what) in MainActor.assumeIsolated({ AboutCreditsSelfTest.checks() }) { check(ok, what) } // P3-14 credits
         // CAD UI gaps (docs/research/cad-ui/gaps.md), 2026-11-24.
         for (ok, what) in MainActor.assumeIsolated({ SketchSelfTest.checks() }) { check(ok, what) } // B-1 to B-5, B-9

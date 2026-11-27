@@ -21,34 +21,59 @@ enum CameraFlight {
         return VFMotion.reduced
     }
 
+    /// One flight from the camera as it is now to `target`, stepped by elapsed time.
+    @MainActor
+    struct Flight {
+        let start: OrbitCamera
+        /// `target` with yaw and roll unwrapped to the short way round.
+        let end: OrbitCamera
+        let target: OrbitCamera
+        let seconds: Double
+        /// The camera this flight set last; any other camera means someone else moved it.
+        var last: OrbitCamera
+
+        init(from start: OrbitCamera, to target: OrbitCamera) {
+            var end = target
+            end.yaw = start.yaw + remainder(end.yaw - start.yaw, 2 * .pi)
+            end.roll = start.roll + remainder(end.roll - start.roll, 2 * .pi)
+            let turn = max(abs(end.yaw - start.yaw), abs(end.pitch - start.pitch), abs(end.roll - start.roll))
+            self.start = start
+            self.end = end
+            self.target = target
+            self.seconds = CameraFlight.duration * min(1, max(0.45, turn / (.pi / 2)))
+            self.last = start
+        }
+
+        /// Moves the model's camera to where the flight is `elapsed` seconds in. Returns false
+        /// when the flight is over: it reached the target, or a drag or pinch moved the camera
+        /// since the last step (then the camera is left where the user put it).
+        @discardableResult
+        mutating func step(_ model: DesignModel, elapsed: Double) -> Bool {
+            if model.camera != last { return false }
+            let t = min(1, elapsed / seconds)
+            last = t >= 1 ? target : CameraFlight.mix(start, end, CameraFlight.ease(t))
+            model.camera = last
+            model.cameraChanged(final: t >= 1)
+            return t < 1
+        }
+    }
+
     static func fly(_ model: DesignModel, to target: OrbitCamera) {
         let key = ObjectIdentifier(model)
         flights[key]?.cancel()
         flights[key] = nil
-        let start = model.camera
-        var end = target
-        end.yaw = start.yaw + remainder(end.yaw - start.yaw, 2 * .pi)
-        end.roll = start.roll + remainder(end.roll - start.roll, 2 * .pi)
-        let turn = max(abs(end.yaw - start.yaw), abs(end.pitch - start.pitch), abs(end.roll - start.roll))
-        guard !jumps, start != end else {
+        var flight = Flight(from: model.camera, to: target)
+        guard !jumps, flight.start != flight.end else {
             model.camera = target
             model.cameraChanged(final: true)
             return
         }
-        let seconds = duration * min(1, max(0.45, turn / (.pi / 2)))
         flights[key] = Task { @MainActor [weak model] in
             let clock = ContinuousClock()
             let began = clock.now
-            var last = start
             while !Task.isCancelled, let model {
-                // Someone else moved the camera (a drag, a pinch): leave it to them.
-                if model.camera != last { break }
                 let d = began.duration(to: clock.now).components
-                let t = min(1, (Double(d.seconds) + Double(d.attoseconds) * 1e-18) / seconds)
-                last = t >= 1 ? target : mix(start, end, ease(t))
-                model.camera = last
-                model.cameraChanged(final: t >= 1)
-                if t >= 1 { break }
+                guard flight.step(model, elapsed: Double(d.seconds) + Double(d.attoseconds) * 1e-18) else { break }
                 try? await Task.sleep(for: .milliseconds(8))
             }
         }
@@ -96,5 +121,51 @@ extension DesignModel {
     /// Flies the camera to any camera.
     func fly(to c: OrbitCamera) {
         CameraFlight.fly(self, to: c)
+    }
+}
+
+/// `--selftest` checks for camera flights. The flight is stepped by hand with chosen elapsed
+/// times, so no timer runs and the self test does not wait.
+@MainActor
+enum CameraFlightSelfTest {
+    static func checks() -> [(Bool, String)] {
+        let m = DesignModel()
+        m.viewSize = CGSize(width: 1200, height: 800)
+        m.setView(.iso)
+        let iso = m.camera
+        var front = iso
+        front.standard(.front)
+
+        // A flight left alone passes between the two views and ends exactly on the target.
+        var whole = CameraFlight.Flight(from: iso, to: front)
+        let goesOn = whole.step(m, elapsed: whole.seconds / 2)
+        let between = m.camera != iso && m.camera != front
+        let stops = !whole.step(m, elapsed: whole.seconds)
+        let lands = m.camera == front
+
+        // A drag during the flight takes over: the next step stops and leaves the dragged camera.
+        m.camera = iso
+        var cut = CameraFlight.Flight(from: iso, to: front)
+        cut.step(m, elapsed: cut.seconds * 0.3)
+        var dragged = m.camera
+        dragged.yaw += 0.25
+        m.camera = dragged
+        m.cameraChanged(final: true)
+        let gaveUp = !cut.step(m, elapsed: cut.seconds * 0.6)
+        let kept = m.camera == dragged
+
+        // Yaw takes the short way round across the seam at plus or minus pi.
+        var a = iso, b = iso
+        a.yaw = 3.0
+        b.yaw = -3.0
+        let short = CameraFlight.Flight(from: a, to: b)
+        let shortWay = abs(short.end.yaw - short.start.yaw) < .pi
+
+        return [
+            (goesOn && between, "view cube flight passes between the two views half way"),
+            (stops && lands, "view cube flight ends exactly on the target view"),
+            (gaveUp && kept, "a drag during a view cube flight stops the flight and keeps the dragged camera"),
+            (shortWay, "view cube flight turns the short way round across the yaw seam"),
+        ]
     }
 }
